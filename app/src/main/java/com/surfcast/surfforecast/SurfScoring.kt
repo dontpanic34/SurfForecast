@@ -1,7 +1,6 @@
 @file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
-import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -97,6 +96,7 @@ fun findBestSlot(
     }
 
     var best: BestSlotResult? = null
+    var bestAvg = Double.NEGATIVE_INFINITY
 
     for (windowSize in listOf(3, 2)) {
         if (sorted.size < windowSize) continue
@@ -104,8 +104,9 @@ fun findBestSlot(
             val window = scores.subList(start, start + windowSize)
             val avg = window.average()
             if (avg <= 0.0) continue
-            if (best == null || avg > best.averageScore) {
+            if (best == null || avg > bestAvg) {
                 val windowHours = sorted.subList(start, start + windowSize)
+                bestAvg = avg
                 best = BestSlotResult(
                     startHour = sorted[start].rawTime.hour,
                     endHour = sorted[start + windowSize - 1].rawTime.hour,
@@ -196,7 +197,11 @@ fun isNearHighTide(hourly: HourlyUiModel, dailyTide: DailyTideInfo?): Boolean {
     val highTimeStr = dailyTide?.highTideTime ?: return false
     return try {
         val highTime = LocalTime.parse(highTimeStr, DateTimeFormatter.ofPattern("HH:mm"))
-        val diffMinutes = abs(Duration.between(highTime, hourly.rawTime.toLocalTime()).toMinutes())
+        val hourlyTime = hourly.rawTime.toLocalTime()
+        val highMinutes = highTime.hour * 60 + highTime.minute
+        val hourlyMinutes = hourlyTime.hour * 60 + hourlyTime.minute
+        val rawDiff = abs(highMinutes - hourlyMinutes)
+        val diffMinutes = minOf(rawDiff, 1440 - rawDiff)
         diffMinutes <= 60
     } catch (e: Exception) {
         false
