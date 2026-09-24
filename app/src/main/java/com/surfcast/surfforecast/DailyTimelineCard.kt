@@ -4,6 +4,9 @@ package com.surfcast.surfforecast
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -19,6 +22,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,6 +53,11 @@ import kotlin.math.roundToInt
  * De haut en bas ensuite : vent (vitesse + direction abregee) + meteo, courbe de houle
  * coloree par score (point rouge = heure actuelle), puis heures (lever/coucher aux
  * extremites).
+ *
+ * Scrub tactile : glisser (ou taper) n'importe ou dans le corps de la carte deplace
+ * l'heure selectionnee ([selectedHour] / [onHourSelected]), qui pilote aussi les encarts
+ * Houle/Vent/Meteo affiches plus bas dans "Previsions de la semaine" — meme etat partage
+ * que ces trois cartes, donc la selection reste synchronisee dans les deux sens.
  */
 @Composable
 fun DailyTimelineCard(
@@ -59,6 +68,8 @@ fun DailyTimelineCard(
     windUnit: String,
     idealSwellDirection: Int?,
     surferLevel: String,
+    selectedHour: HourlyUiModel?,
+    onHourSelected: (HourlyUiModel) -> Unit,
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
@@ -91,6 +102,8 @@ fun DailyTimelineCard(
     val nowIndex = curveHours.indexOfFirst {
         it.rawTime.toLocalDate() == now.toLocalDate() && it.rawTime.hour == now.hour
     }
+
+    val selectedIndex = selectedHour?.let { sel -> curveHours.indexOfFirst { it.rawTime == sel.rawTime } } ?: -1
 
     val tideInfo = dailyTides[selectedDate]
     val sun = dailySunInfo[selectedDate]
@@ -170,16 +183,45 @@ fun DailyTimelineCard(
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
             } else {
+                val primaryColor = MaterialTheme.colorScheme.primary
+
+                // --- Scrub tactile : glisser ou taper deplace l'heure selectionnee,
+                // partagee avec les encarts Houle/Vent/Meteo (synchro bidirectionnelle). ---
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pointerInput(timelineItems) {
+                            detectHorizontalDragGestures { change, _ ->
+                                val x = change.position.x.coerceIn(0f, size.width.toFloat())
+                                val widthPerItem = size.width / timelineItems.size.toFloat()
+                                val index = (x / widthPerItem).toInt().coerceIn(0, timelineItems.size - 1)
+                                onHourSelected(timelineItems[index])
+                            }
+                        }
+                        .pointerInput(timelineItems) {
+                            detectTapGestures { offset ->
+                                val widthPerItem = size.width / timelineItems.size.toFloat()
+                                val index = (offset.x / widthPerItem).toInt().coerceIn(0, timelineItems.size - 1)
+                                onHourSelected(timelineItems[index])
+                            }
+                        }
+                ) {
                 // --- Haut : vent (vitesse + direction abrégée) + météo ---
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    timelineItems.forEach { hourly ->
+                    timelineItems.forEachIndexed { index, hourly ->
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
                         val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
                         val rotationAngle = (degrees + 180f) % 360f
                         val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourly.windSpeedKmh)
+                        val isSelected = index == selectedIndex
 
                         Column(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(
+                                    color = if (isSelected) primaryColor.copy(alpha = 0.14f) else Color.Transparent,
+                                    shape = RoundedCornerShape(4.dp)
+                                ),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(hourly), fontSize = 11.sp)
@@ -222,6 +264,7 @@ fun DailyTimelineCard(
                     hours = curveHours,
                     scores = scores,
                     nowIndex = nowIndex,
+                    selectedIndex = selectedIndex,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(64.dp)
@@ -263,6 +306,7 @@ fun DailyTimelineCard(
                     timelineItems.forEachIndexed { index, hourly ->
                         val isFirst = index == 0
                         val isLast = index == timelineItems.lastIndex
+                        val isSelected = index == selectedIndex
 
                         Column(
                             modifier = Modifier.weight(1f),
@@ -301,8 +345,8 @@ fun DailyTimelineCard(
                                     Text(
                                         text = String.format(Locale.FRANCE, "%02dh", hourly.rawTime.hour),
                                         fontSize = 7.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = onSurfaceColor.copy(alpha = 0.5f),
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                        color = if (isSelected) primaryColor else onSurfaceColor.copy(alpha = 0.5f),
                                         maxLines = 1,
                                         textAlign = TextAlign.Center
                                     )
@@ -310,6 +354,7 @@ fun DailyTimelineCard(
                             }
                         }
                     }
+                }
                 }
             }
             }
@@ -479,6 +524,7 @@ private fun DailyTimelineSwellCanvas(
     hours: List<HourlyUiModel>,
     scores: List<Int>,
     nowIndex: Int,
+    selectedIndex: Int,
     modifier: Modifier = Modifier
 ) {
     if (hours.size < 2) {
@@ -486,6 +532,7 @@ private fun DailyTimelineSwellCanvas(
         return
     }
 
+    val primaryColor = MaterialTheme.colorScheme.primary
     val density = LocalDensity.current
     val labelTextPaint = remember(density) {
         Paint().apply {
@@ -560,8 +607,23 @@ private fun DailyTimelineSwellCanvas(
             }
         }
 
+        // Ligne verticale : heure selectionnee via le scrub tactile (synchro avec les
+        // encarts Houle/Vent/Meteo), tracee avant le point "heure actuelle" pour que
+        // ce dernier reste visible par-dessus si les deux coincident.
+        if (selectedIndex in points.indices) {
+            val selPoint = points[selectedIndex]
+            drawLine(
+                color = primaryColor.copy(alpha = 0.6f),
+                start = Offset(selPoint.x, padY),
+                end = Offset(selPoint.x, baseY),
+                strokeWidth = 1.6.dp.toPx()
+            )
+            drawCircle(color = Color.White, radius = 3.5.dp.toPx(), center = selPoint)
+            drawCircle(color = primaryColor, radius = 2.4.dp.toPx(), center = selPoint)
+        }
+
         // Point rouge : heure actuelle, si elle fait partie des données affichées
-        if (nowIndex in points.indices) {
+        if (nowIndex in points.indices && nowIndex != selectedIndex) {
             val nowPoint = points[nowIndex]
             drawCircle(color = Color.White, radius = 3.5.dp.toPx(), center = nowPoint)
             drawCircle(color = Color(0xFFE53935), radius = 2.4.dp.toPx(), center = nowPoint)
