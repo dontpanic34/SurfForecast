@@ -51,28 +51,43 @@ import java.util.Locale
 
 /**
  * Les calques radar disponibles, tous fournis par Xweather (ex-AerisWeather, cf.
- * XWEATHER_API_KEY dans local.properties) : precipitation
- * previsionnelle, nuages (satellite visible), temperature. Meme source pour tous les jours
- * (J0 a J+3), y compris "aujourd'hui" -- contrairement a une precedente version qui melangeait
- * RainViewer (aujourd'hui uniquement) et OpenWeatherMap (temperature uniquement).
+ * XWEATHER_API_KEY dans local.properties) : precipitation, nuages (satellite geocolor),
+ * temperature. Meme source pour tous les jours (J0 a J+3), y compris "aujourd'hui" --
+ * contrairement a une precedente version qui melangeait RainViewer (aujourd'hui uniquement) et
+ * OpenWeatherMap (temperature uniquement).
  */
 enum class RadarLayer { PRECIPITATION, CLOUDS, TEMPERATURE }
 
-/** Code de calque Xweather (segment d'URL apres les identifiants). */
-private fun RadarLayer.xweatherLayerCode(): String = when (this) {
-    RadarLayer.PRECIPITATION -> "precip-forecast"
-    RadarLayer.CLOUDS -> "sat-vis"
-    RadarLayer.TEMPERATURE -> "temperatures"
+/**
+ * Code de calque Xweather (segment d'URL apres les identifiants). Xweather utilise des noms
+ * de calque distincts pour l'observe/passe et pour la prevision (ex : "radar" vs "fradar") : le
+ * decalage temporel determine donc lequel utiliser. Les nuages (satellite) n'ont pas de variante
+ * prevision -- ils restent sur l'observation la plus recente (cf. clampage dans RadarScreen).
+ */
+private fun RadarLayer.xweatherLayerCode(minutesOffset: Long): String {
+    val isForecast = minutesOffset > 0
+    return when (this) {
+        RadarLayer.PRECIPITATION -> if (isForecast) "fradar" else "radar"
+        RadarLayer.CLOUDS -> "satellite-geocolor"
+        RadarLayer.TEMPERATURE -> if (isForecast) "ftemperatures" else "temperatures"
+    }
+}
+
+/** Xweather exprime le decalage temporel comme "current", ou un entier signe suivi d'une
+ * unite ("+180min" pour dans 3h, "-10min" pour il y a 10 min) -- cf. doc "Time Offsets". */
+private fun xweatherTimeOffset(minutesOffset: Long): String = when {
+    minutesOffset == 0L -> "current"
+    minutesOffset > 0 -> "+${minutesOffset}min"
+    else -> "${minutesOffset}min"
 }
 
 /**
  * Gabarit de tuile Xweather Raster Maps : tuiles PNG standard 256px, pas de decodage a faire
  * (contrairement a d'autres fournisseurs dont les tuiles encodent des valeurs dans les canaux
- * RGB). Le decalage temporel se passe en minutes depuis maintenant (negatif = passe, positif =
- * futur), ce qui permet d'utiliser le meme calque pour "aujourd'hui" et les jours suivants.
+ * RGB).
  */
 private fun xweatherTileUrlTemplate(layerCode: String, minutesOffset: Long, apiKey: String): String {
-    return "https://maps1.aerisapi.com/$apiKey/$layerCode/{z}/{x}/{y}/${minutesOffset}min.png"
+    return "https://maps.api.xweather.com/$apiKey/$layerCode/{z}/{x}/{y}/${xweatherTimeOffset(minutesOffset)}.png"
 }
 
 @Composable
@@ -184,7 +199,7 @@ fun RadarScreen(
                 }
             } else {
                 RadarMapView(
-                    layerCode = selectedLayer.xweatherLayerCode(),
+                    layerCode = selectedLayer.xweatherLayerCode(effectiveMinutesOffset),
                     minutesOffset = effectiveMinutesOffset,
                     apiKey = apiKey,
                     centerLat = centerLat,
