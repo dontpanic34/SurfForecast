@@ -311,6 +311,10 @@ fun RadarScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
+                        // La Dialog est en plein ecran (usePlatformDefaultWidth = false), donc
+                        // sans ceci le slider/bouton Lecture se retrouvent sous la barre de
+                        // navigation systeme (geste/boutons) et deviennent inutilisables.
+                        .navigationBarsPadding()
                 )
             }
         }
