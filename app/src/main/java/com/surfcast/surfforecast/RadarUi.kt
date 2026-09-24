@@ -51,7 +51,7 @@ import java.util.Locale
 
 /**
  * Les calques radar disponibles, tous fournis par Xweather (ex-AerisWeather, cf.
- * XWEATHER_CLIENT_ID/XWEATHER_CLIENT_SECRET dans local.properties) : precipitation
+ * XWEATHER_API_KEY dans local.properties) : precipitation
  * previsionnelle, nuages (satellite visible), temperature. Meme source pour tous les jours
  * (J0 a J+3), y compris "aujourd'hui" -- contrairement a une precedente version qui melangeait
  * RainViewer (aujourd'hui uniquement) et OpenWeatherMap (temperature uniquement).
@@ -71,8 +71,8 @@ private fun RadarLayer.xweatherLayerCode(): String = when (this) {
  * RGB). Le decalage temporel se passe en minutes depuis maintenant (negatif = passe, positif =
  * futur), ce qui permet d'utiliser le meme calque pour "aujourd'hui" et les jours suivants.
  */
-private fun xweatherTileUrlTemplate(layerCode: String, minutesOffset: Long, clientId: String, clientSecret: String): String {
-    return "https://maps1.aerisapi.com/${clientId}_${clientSecret}/$layerCode/{z}/{x}/{y}/${minutesOffset}min.png"
+private fun xweatherTileUrlTemplate(layerCode: String, minutesOffset: Long, apiKey: String): String {
+    return "https://maps1.aerisapi.com/$apiKey/$layerCode/{z}/{x}/{y}/${minutesOffset}min.png"
 }
 
 @Composable
@@ -166,17 +166,16 @@ fun RadarScreen(
         }
     }
 
-    val clientId = BuildConfig.XWEATHER_CLIENT_ID
-    val clientSecret = BuildConfig.XWEATHER_CLIENT_SECRET
-    val credentialsMissing = clientId.isBlank() || clientSecret.isBlank()
+    val apiKey = BuildConfig.XWEATHER_API_KEY
+    val credentialsMissing = apiKey.isBlank()
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (credentialsMissing) {
                 Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
                     Text(
-                        text = "Radar : ajoute tes identifiants Xweather gratuits dans local.properties " +
-                            "(XWEATHER_CLIENT_ID=... et XWEATHER_CLIENT_SECRET=...) pour l'activer.",
+                        text = "Radar : ajoute ta cle API Xweather gratuite dans local.properties " +
+                            "(XWEATHER_API_KEY=...) pour l'activer.",
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(24.dp),
@@ -187,8 +186,7 @@ fun RadarScreen(
                 RadarMapView(
                     layerCode = selectedLayer.xweatherLayerCode(),
                     minutesOffset = effectiveMinutesOffset,
-                    clientId = clientId,
-                    clientSecret = clientSecret,
+                    apiKey = apiKey,
                     centerLat = centerLat,
                     centerLon = centerLon,
                     onMapReady = { mapViewRef = it },
@@ -443,8 +441,7 @@ private fun RadarDayTabs(
 private fun RadarMapView(
     layerCode: String,
     minutesOffset: Long,
-    clientId: String,
-    clientSecret: String,
+    apiKey: String,
     centerLat: Double,
     centerLon: Double,
     onMapReady: (MapView) -> Unit,
@@ -474,8 +471,8 @@ private fun RadarMapView(
         onDispose { mapView.onDetach() }
     }
 
-    LaunchedEffect(layerCode, minutesOffset, clientId, clientSecret) {
-        val urlTemplate = xweatherTileUrlTemplate(layerCode, minutesOffset, clientId, clientSecret)
+    LaunchedEffect(layerCode, minutesOffset, apiKey) {
+        val urlTemplate = xweatherTileUrlTemplate(layerCode, minutesOffset, apiKey)
         // XYTileSource construit chaque URL de tuile comme baseUrl + z + "/" + x + "/" + y +
         // imageFilenameEnding, sans rien pouvoir inserer apres {y} : on doit donc decouper le
         // gabarit "{z}/{x}/{y}" autour de ce point plutot que de coller ".png" en dur, sinon le
