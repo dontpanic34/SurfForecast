@@ -108,6 +108,7 @@ fun QuiverScreen(
     var family by remember { mutableStateOf<String?>(null) }
     var dimensions by remember { mutableStateOf("") }
     var finSetup by remember { mutableStateOf("") }
+    var boardPendingDelete by remember { mutableStateOf<QuiverBoard?>(null) }
 
     fun resetForm() {
         model = ""
@@ -185,7 +186,7 @@ fun QuiverScreen(
                                     color = AppColors.WindHigh,
                                     modifier = Modifier
                                         .clip(CircleShape)
-                                        .clickable { onDeleteBoard(board) }
+                                        .clickable { boardPendingDelete = board }
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
@@ -269,5 +270,26 @@ fun QuiverScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+
+    boardPendingDelete?.let { board ->
+        AlertDialog(
+            onDismissRequest = { boardPendingDelete = null },
+            title = { Text("Supprimer cette planche ?") },
+            text = { Text("${board.model} sera definitivement supprimee du quiver.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteBoard(board)
+                    boardPendingDelete = null
+                }) {
+                    Text("Supprimer", color = AppColors.WindHigh)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { boardPendingDelete = null }) {
+                    Text("Annuler")
+                }
+            }
+        )
     }
 }

@@ -368,7 +368,16 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteQuiverBoard(board: QuiverBoard) {
         viewModelScope.launch {
-            sessionLogDao.deleteQuiverBoard(board)
+            try {
+                sessionLogDao.deleteQuiverBoard(board)
+            } catch (e: Exception) {
+                val current = _uiState.value
+                if (current is SurfUiState.Success) {
+                    _uiState.value = current.copy(
+                        popupError = "Impossible de supprimer cette planche : elle est utilisee dans une session enregistree."
+                    )
+                }
+            }
         }
     }
 
