@@ -496,8 +496,14 @@ private fun RadarMapView(
         // ne chargent jamais.
         val baseUrl = urlTemplate.substringBefore("{z}")
         val imageFilenameEnding = urlTemplate.substringAfter("{y}")
+        // Le niveau de zoom max de RainViewer (gratuit) est 7 : au-dela, leur serveur renvoie
+        // une tuile "Zoom Level Not Supported" au lieu de la precipitation/des nuages. En le
+        // declarant ici, osmdroid arrete de demander des tuiles au-dela et se contente
+        // d'agrandir la derniere tuile z=7 valide (la carte de fond, elle, continue de zoomer
+        // normalement). OpenWeatherMap tolere un zoom bien plus eleve.
+        val maxZoom = if (layer == RadarLayer.TEMPERATURE) 18 else 7
         val tileSource = XYTileSource(
-            "RainViewer-${layer.name}-$frameIndex", 0, 19, 256, imageFilenameEnding,
+            "RainViewer-${layer.name}-$frameIndex", 0, maxZoom, 256, imageFilenameEnding,
             arrayOf(baseUrl)
         )
         tileProvider.setTileSource(tileSource)
