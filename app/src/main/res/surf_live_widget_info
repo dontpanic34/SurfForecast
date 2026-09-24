@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#EB1A1E24"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/widget_text_swell"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="🌊 --m - --s - --°C"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:singleLine="true" />
+
+    <ImageView
+        android:layout_width="1dp"
+        android:layout_height="18dp"
+        android:background="#33FFFFFF"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/widget_text_tide"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.2"
+        android:text="↑ --h-- (--) ↓ --h--"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:singleLine="true" />
+
+    <ImageView
+        android:layout_width="1dp"
+        android:layout_height="18dp"
+        android:background="#33FFFFFF"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/widget_text_wind"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.1"
+        android:text="💨 -- -- km/h"
+        android:textColor="#FFD600"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:gravity="end"
+        android:singleLine="true" />
+
+</LinearLayout>
