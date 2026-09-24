@@ -184,6 +184,22 @@ fun RadarScreen(
                         )
                     }
                 }
+                // Le calque Temperature (OpenWeatherMap) ne depend pas des trames RainViewer :
+                // on l'affiche des que la cle API est presente, sans attendre/exiger le succes
+                // du fetch RainViewer (host inutilise pour ce calque).
+                selectedLayer == RadarLayer.TEMPERATURE -> {
+                    RadarMapView(
+                        host = currentFrames?.host ?: "",
+                        layer = selectedLayer,
+                        layerFrames = activeFrames,
+                        frameIndex = frameIndex,
+                        centerLat = centerLat,
+                        centerLon = centerLon,
+                        temperatureApiKey = temperatureApiKey,
+                        onMapReady = { mapViewRef = it },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 currentFrames != null && activeFrames.isNotEmpty() -> {
                     RadarMapView(
                         host = currentFrames.host,
