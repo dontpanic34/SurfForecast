@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 
 import android.app.Application
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -12,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -370,11 +372,22 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 sessionLogDao.deleteQuiverBoard(board)
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                // Ne jamais avaler une annulation de coroutine (ex: ViewModel efface
+                // pendant la suppression) : elle doit continuer a se propager.
+                throw e
+            } catch (e: SQLiteConstraintException) {
                 val current = _uiState.value
                 if (current is SurfUiState.Success) {
                     _uiState.value = current.copy(
                         popupError = "Impossible de supprimer cette planche : elle est utilisee dans une session enregistree."
+                    )
+                }
+            } catch (e: Exception) {
+                val current = _uiState.value
+                if (current is SurfUiState.Success) {
+                    _uiState.value = current.copy(
+                        popupError = "Impossible de supprimer cette planche : une erreur est survenue."
                     )
                 }
             }
