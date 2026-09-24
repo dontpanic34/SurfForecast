@@ -129,8 +129,14 @@ private fun PillSelector(
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = {
-                    if (newValue.isNotBlank()) {
-                        onAddNew(newValue.trim())
+                    val trimmed = newValue.trim()
+                    if (trimmed.isNotBlank()) {
+                        val existing = options.firstOrNull { it.second.equals(trimmed, ignoreCase = true) }
+                        if (existing != null) {
+                            onSelect(existing.first)
+                        } else {
+                            onAddNew(trimmed)
+                        }
                         newValue = ""
                         showAddField = false
                     }
@@ -214,6 +220,18 @@ fun SessionLogEntryDialog(
     var rating by remember { mutableStateOf(0) }
     var comment by remember { mutableStateOf("") }
     var mediaUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingMicroSpotName by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(microSpots, pendingMicroSpotName) {
+        val pending = pendingMicroSpotName
+        if (pending != null) {
+            val match = microSpots.firstOrNull { it.name.equals(pending, ignoreCase = true) }
+            if (match != null) {
+                selectedMicroSpotId = match.id
+                pendingMicroSpotName = null
+            }
+        }
+    }
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -270,7 +288,10 @@ fun SessionLogEntryDialog(
                     options = microSpots.map { it.id to it.name },
                     selectedId = selectedMicroSpotId,
                     onSelect = { selectedMicroSpotId = it },
-                    onAddNew = { onAddMicroSpot(it) },
+                    onAddNew = { name ->
+                        pendingMicroSpotName = name
+                        onAddMicroSpot(name)
+                    },
                     addPrompt = "Nom du sous-spot",
                     onSurfaceColor = colors.onBackground,
                     primaryColor = colors.primary
