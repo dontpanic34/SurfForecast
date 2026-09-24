@@ -71,3 +71,13 @@ fun radarTileUrlTemplate(host: String, frame: RadarFrame): String {
 fun satelliteTileUrlTemplate(host: String, frame: RadarFrame): String {
     return "$host${frame.path}/256/{z}/{x}/{y}/0/0_0.png"
 }
+
+/**
+ * Calque "Temperature" : tuiles OpenWeatherMap (fournisseur tiers, cle API gratuite requise,
+ * cf. OPENWEATHERMAP_API_KEY dans local.properties). Contrairement a la precipitation et aux
+ * nuages, ce calque n'a pas d'historique/prevision chez OpenWeatherMap gratuit : une seule
+ * image "actuelle", pas de defilement temporel.
+ */
+fun temperatureTileUrlTemplate(apiKey: String): String {
+    return "https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=$apiKey"
+}

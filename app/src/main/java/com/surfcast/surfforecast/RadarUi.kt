@@ -45,10 +45,9 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** Les calques radar disponibles. Foudre/Temperature/Vent necessitent une source de donnees
- * supplementaire (cle API tierce ou source communautaire non officielle) et ne sont pas
- * encore branches. */
-enum class RadarLayer { PRECIPITATION, CLOUDS }
+/** Les calques radar disponibles. Temperature utilise OpenWeatherMap (cle API gratuite,
+ * cf. OPENWEATHERMAP_API_KEY dans local.properties). Foudre et Vent ne sont pas retenus. */
+enum class RadarLayer { PRECIPITATION, CLOUDS, TEMPERATURE }
 
 @Composable
 fun RadarIcon(
@@ -74,17 +73,27 @@ private fun initOsmdroidConfig(context: Context) {
     config.osmdroidTileCache = File(context.cacheDir, "osmdroid_tiles")
 }
 
-/** Trames du calque actif : precipitation = past+nowcast (radar), nuages = satellite (past uniquement). */
+/** Une trame factice pour les calques sans historique (Temperature) : juste "maintenant". */
+private val staticNowFrame = RadarFrame(time = System.currentTimeMillis() / 1000, path = "")
+
+/** Trames du calque actif : precipitation = past+nowcast (radar), nuages = satellite (past
+ * uniquement), temperature = une seule trame "actuelle" (OpenWeatherMap gratuit n'a pas
+ * d'historique/prevision). */
 private fun RainviewerFrames.framesFor(layer: RadarLayer): List<RadarFrame> = when (layer) {
     RadarLayer.PRECIPITATION -> all
     RadarLayer.CLOUDS -> satellite
+    RadarLayer.TEMPERATURE -> listOf(staticNowFrame)
 }
 
 /** Index "maintenant" dans les trames du calque actif (derniere trame passee = la plus recente). */
 private fun RainviewerFrames.nowIndexFor(layer: RadarLayer): Int = when (layer) {
     RadarLayer.PRECIPITATION -> nowIndex
     RadarLayer.CLOUDS -> (satellite.size - 1).coerceAtLeast(0)
+    RadarLayer.TEMPERATURE -> 0
 }
+
+/** Les calques avec defilement temporel (slider + lecture) : Temperature est une image fixe. */
+private fun RadarLayer.hasTimeControls(): Boolean = this != RadarLayer.TEMPERATURE
 
 @Composable
 fun RadarScreen(
@@ -123,6 +132,7 @@ fun RadarScreen(
 
     LaunchedEffect(isPlaying, frames, selectedLayer) {
         val f = frames ?: return@LaunchedEffect
+        if (!selectedLayer.hasTimeControls()) return@LaunchedEffect
         val activeFrames = f.framesFor(selectedLayer)
         if (activeFrames.isEmpty()) return@LaunchedEffect
         while (isPlaying) {
@@ -154,11 +164,26 @@ fun RadarScreen(
         }
     }
 
+    val temperatureApiKey = BuildConfig.OPENWEATHERMAP_API_KEY
+    val temperatureKeyMissing = selectedLayer == RadarLayer.TEMPERATURE && temperatureApiKey.isBlank()
+
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(modifier = Modifier.fillMaxSize()) {
             val currentFrames = frames
             val activeFrames = currentFrames?.framesFor(selectedLayer) ?: emptyList()
             when {
+                temperatureKeyMissing -> {
+                    Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
+                        Text(
+                            text = "Calque Temperature : ajoute ta cle API OpenWeatherMap gratuite " +
+                                "dans local.properties (OPENWEATHERMAP_API_KEY=...) pour l'activer.",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            color = colors.onBackground
+                        )
+                    }
+                }
                 currentFrames != null && activeFrames.isNotEmpty() -> {
                     RadarMapView(
                         host = currentFrames.host,
@@ -167,6 +192,7 @@ fun RadarScreen(
                         frameIndex = frameIndex,
                         centerLat = centerLat,
                         centerLon = centerLon,
+                        temperatureApiKey = temperatureApiKey,
                         onMapReady = { mapViewRef = it },
                         modifier = Modifier.fillMaxSize()
                     )
@@ -254,7 +280,7 @@ fun RadarScreen(
                     .padding(end = 16.dp)
             )
 
-            if (currentFrames != null && activeFrames.isNotEmpty()) {
+            if (currentFrames != null && activeFrames.isNotEmpty() && selectedLayer.hasTimeControls()) {
                 RadarBottomPanel(
                     layer = selectedLayer,
                     layerFrames = activeFrames,
@@ -345,6 +371,25 @@ private fun PrecipitationIcon(color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun TemperatureIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val stemLeft = w * 0.42f
+        val stemWidth = w * 0.16f
+        val bulbCenter = Offset(w * 0.5f, h * 0.78f)
+        val bulbRadius = w * 0.22f
+
+        drawRect(
+            color = color,
+            topLeft = Offset(stemLeft, h * 0.06f),
+            size = androidx.compose.ui.geometry.Size(stemWidth, h * 0.62f)
+        )
+        drawCircle(color = color, radius = bulbRadius, center = bulbCenter)
+    }
+}
+
+@Composable
 private fun RadarLayerSelector(
     selectedLayer: RadarLayer,
     onLayerSelected: (RadarLayer) -> Unit,
@@ -357,7 +402,7 @@ private fun RadarLayerSelector(
             .padding(4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        val entries = listOf(RadarLayer.PRECIPITATION, RadarLayer.CLOUDS)
+        val entries = listOf(RadarLayer.PRECIPITATION, RadarLayer.TEMPERATURE, RadarLayer.CLOUDS)
         entries.forEach { layer ->
             val isSelected = layer == selectedLayer
             Box(
@@ -371,6 +416,7 @@ private fun RadarLayerSelector(
                 when (layer) {
                     RadarLayer.PRECIPITATION -> PrecipitationIcon(color = Color.White, modifier = Modifier.size(16.dp))
                     RadarLayer.CLOUDS -> CloudsIcon(color = Color.White, modifier = Modifier.size(18.dp))
+                    RadarLayer.TEMPERATURE -> TemperatureIcon(color = Color.White, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -385,6 +431,7 @@ private fun RadarMapView(
     frameIndex: Int,
     centerLat: Double,
     centerLon: Double,
+    temperatureApiKey: String,
     onMapReady: (MapView) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -414,15 +461,28 @@ private fun RadarMapView(
         onDispose { mapView.onDetach() }
     }
 
-    LaunchedEffect(frameIndex, layer, layerFrames) {
-        val frame = layerFrames.getOrNull(frameIndex) ?: return@LaunchedEffect
+    LaunchedEffect(frameIndex, layer, layerFrames, temperatureApiKey) {
         val urlTemplate = when (layer) {
-            RadarLayer.PRECIPITATION -> radarTileUrlTemplate(host, frame)
-            RadarLayer.CLOUDS -> satelliteTileUrlTemplate(host, frame)
+            RadarLayer.PRECIPITATION -> {
+                val frame = layerFrames.getOrNull(frameIndex) ?: return@LaunchedEffect
+                radarTileUrlTemplate(host, frame)
+            }
+            RadarLayer.CLOUDS -> {
+                val frame = layerFrames.getOrNull(frameIndex) ?: return@LaunchedEffect
+                satelliteTileUrlTemplate(host, frame)
+            }
+            RadarLayer.TEMPERATURE -> temperatureTileUrlTemplate(temperatureApiKey)
         }
+        // XYTileSource construit chaque URL de tuile comme baseUrl + z + "/" + x + "/" + y +
+        // imageFilenameEnding, sans rien pouvoir inserer apres {y} : on doit donc decouper le
+        // gabarit "{z}/{x}/{y}" autour de ce point plutot que de coller ".png" en dur, sinon
+        // le suffixe (palette RainViewer, cle API OpenWeatherMap...) est perdu et les tuiles
+        // ne chargent jamais.
+        val baseUrl = urlTemplate.substringBefore("{z}")
+        val imageFilenameEnding = urlTemplate.substringAfter("{y}")
         val tileSource = XYTileSource(
-            "RainViewer-${layer.name}-$frameIndex", 0, 19, 256, ".png",
-            arrayOf(urlTemplate.substringBefore("{z}"))
+            "RainViewer-${layer.name}-$frameIndex", 0, 19, 256, imageFilenameEnding,
+            arrayOf(baseUrl)
         )
         tileProvider.setTileSource(tileSource)
         mapView.invalidate()

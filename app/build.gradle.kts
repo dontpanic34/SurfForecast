@@ -1,8 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
+
+// Cle API OpenWeatherMap (calque Temperature du radar) : lue depuis local.properties,
+// jamais commitee. Voir README / message de handoff pour la procedure de creation du
+// compte gratuit. Vide par defaut : le calque Temperature affiche alors un message
+// invitant a configurer la cle plutot que d'essayer de charger des tuiles.
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val openWeatherMapApiKey: String = localProperties.getProperty("OPENWEATHERMAP_API_KEY", "")
 
 android {
     namespace = "com.surfcast.surfforecast"
@@ -18,6 +32,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "OPENWEATHERMAP_API_KEY", "\"$openWeatherMapApiKey\"")
     }
 
     buildTypes {
@@ -33,6 +48,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
