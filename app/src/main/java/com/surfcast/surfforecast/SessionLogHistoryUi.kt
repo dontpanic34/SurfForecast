@@ -58,8 +58,9 @@ fun SessionLogHistoryScreen(
         allSessions.groupBy { Instant.ofEpochMilli(it.session.startTime).atZone(zone).toLocalDate() }
     }
 
-    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
-    var selectedDate by remember { mutableStateOf<LocalDate?>(sessionsByDate.keys.maxOrNull()) }
+    val initialSelectedDate = remember(sessionsByDate) { sessionsByDate.keys.maxOrNull() }
+    var currentMonth by remember { mutableStateOf(initialSelectedDate?.let { YearMonth.from(it) } ?: YearMonth.now()) }
+    var selectedDate by remember { mutableStateOf(initialSelectedDate) }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
@@ -251,8 +252,9 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
                     fontWeight = FontWeight.SemiBold,
                     color = colors.onSurface
                 )
+                val rating = session.session.rating.coerceIn(0, 5)
                 Text(
-                    text = "★".repeat(session.session.rating) + "☆".repeat(5 - session.session.rating),
+                    text = "★".repeat(rating) + "☆".repeat(5 - rating),
                     fontSize = 13.sp,
                     color = AppColors.WindHigh
                 )
@@ -282,8 +284,16 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
             val mediaUriString = session.session.mediaUri
             if (!mediaUriString.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                val isVideo = mediaUriString.contains("video") ||
-                    context.contentResolver.getType(android.net.Uri.parse(mediaUriString))?.startsWith("video") == true
+                // La permission de lecture persistante n'est pas garantie (SessionLogUi.kt
+                // garde l'URI meme si takePersistableUriPermission echoue) : getType() peut
+                // donc lever une SecurityException apres redemarrage du process.
+                val isVideo = remember(mediaUriString) {
+                    mediaUriString.contains("video") || try {
+                        context.contentResolver.getType(android.net.Uri.parse(mediaUriString))?.startsWith("video") == true
+                    } catch (_: SecurityException) {
+                        false
+                    }
+                }
 
                 if (isVideo) {
                     OutlinedButton(onClick = {
@@ -291,7 +301,12 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
                             setDataAndType(android.net.Uri.parse(mediaUriString), "video/*")
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
-                        context.startActivity(intent)
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            // Aucune appli pour lire la video (ActivityNotFoundException) ou
+                            // permission perdue (SecurityException) : on ignore plutot que de crasher.
+                        }
                     }) {
                         Text("Lire la video", fontSize = 12.sp)
                     }
