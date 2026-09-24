@@ -891,6 +891,8 @@ fun DynamicCardsSection(
                                 windUnit = viewModel.windUnit,
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
+                                selectedHour = selectedHourlyItem,
+                                onHourSelected = { selectedHourlyItem = it },
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
