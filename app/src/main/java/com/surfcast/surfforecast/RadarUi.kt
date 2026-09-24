@@ -1,7 +1,12 @@
 @file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat
 import com.surfcast.surfforecast.ui.theme.AppColors
 import kotlinx.coroutines.delay
 import org.osmdroid.config.Configuration
@@ -31,11 +37,18 @@ import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.TilesOverlay
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+/** Les calques radar disponibles. Foudre/Temperature/Vent necessitent une source de donnees
+ * supplementaire (cle API tierce ou source communautaire non officielle) et ne sont pas
+ * encore branches. */
+enum class RadarLayer { PRECIPITATION, CLOUDS }
 
 @Composable
 fun RadarIcon(
@@ -61,6 +74,18 @@ private fun initOsmdroidConfig(context: Context) {
     config.osmdroidTileCache = File(context.cacheDir, "osmdroid_tiles")
 }
 
+/** Trames du calque actif : precipitation = past+nowcast (radar), nuages = satellite (past uniquement). */
+private fun RainviewerFrames.framesFor(layer: RadarLayer): List<RadarFrame> = when (layer) {
+    RadarLayer.PRECIPITATION -> all
+    RadarLayer.CLOUDS -> satellite
+}
+
+/** Index "maintenant" dans les trames du calque actif (derniere trame passee = la plus recente). */
+private fun RainviewerFrames.nowIndexFor(layer: RadarLayer): Int = when (layer) {
+    RadarLayer.PRECIPITATION -> nowIndex
+    RadarLayer.CLOUDS -> (satellite.size - 1).coerceAtLeast(0)
+}
+
 @Composable
 fun RadarScreen(
     centerLat: Double,
@@ -68,11 +93,15 @@ fun RadarScreen(
     onDismiss: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
 
     var frames by remember { mutableStateOf<RainviewerFrames?>(null) }
     var loadError by remember { mutableStateOf<String?>(null) }
     var frameIndex by remember { mutableStateOf(0) }
     var isPlaying by remember { mutableStateOf(false) }
+    var selectedLayer by remember { mutableStateOf(RadarLayer.PRECIPITATION) }
+    var mapViewRef by remember { mutableStateOf<MapView?>(null) }
+    var locationError by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         try {
@@ -84,25 +113,61 @@ fun RadarScreen(
         }
     }
 
-    LaunchedEffect(isPlaying, frames) {
+    // Changer de calque repart sur la trame "maintenant" de ce calque (les deux calques
+    // n'ont pas forcement le meme nombre de trames ni le meme pas de temps).
+    LaunchedEffect(selectedLayer, frames) {
         val f = frames ?: return@LaunchedEffect
-        if (f.all.isEmpty()) return@LaunchedEffect
+        isPlaying = false
+        frameIndex = f.nowIndexFor(selectedLayer)
+    }
+
+    LaunchedEffect(isPlaying, frames, selectedLayer) {
+        val f = frames ?: return@LaunchedEffect
+        val activeFrames = f.framesFor(selectedLayer)
+        if (activeFrames.isEmpty()) return@LaunchedEffect
         while (isPlaying) {
             delay(600)
-            frameIndex = (frameIndex + 1) % f.all.size
+            frameIndex = (frameIndex + 1) % activeFrames.size
+        }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            locationError = false
+            locateUserOnMap(context, mapViewRef) { locationError = true }
+        } else {
+            locationError = true
+        }
+    }
+
+    fun onLocateClick() {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            locationError = false
+            locateUserOnMap(context, mapViewRef) { locationError = true }
+        } else {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(modifier = Modifier.fillMaxSize()) {
             val currentFrames = frames
+            val activeFrames = currentFrames?.framesFor(selectedLayer) ?: emptyList()
             when {
-                currentFrames != null && currentFrames.all.isNotEmpty() -> {
+                currentFrames != null && activeFrames.isNotEmpty() -> {
                     RadarMapView(
-                        frames = currentFrames,
+                        host = currentFrames.host,
+                        layer = selectedLayer,
+                        layerFrames = activeFrames,
                         frameIndex = frameIndex,
                         centerLat = centerLat,
                         centerLon = centerLon,
+                        onMapReady = { mapViewRef = it },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -110,6 +175,18 @@ fun RadarScreen(
                     Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
                         Text(
                             text = "Radar indisponible : $loadError",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            color = colors.onBackground
+                        )
+                    }
+                }
+                currentFrames != null -> {
+                    // Trames chargees mais vides pour ce calque (ex : pas de satellite disponible).
+                    Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
+                        Text(
+                            text = "Calque indisponible pour le moment.",
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(24.dp),
@@ -126,21 +203,62 @@ fun RadarScreen(
                 }
             }
 
-            Box(
+            Column(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(16.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.45f))
-                    .clickable { onDismiss() }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(text = "Fermer", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .clickable { onDismiss() }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(text = "Fermer", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .clickable { onLocateClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    LocateMeIcon(color = Color.White, modifier = Modifier.size(18.dp))
+                }
+
+                if (locationError) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "Position indisponible",
+                            color = Color.White,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
             }
 
-            currentFrames?.let { f ->
+            RadarLayerSelector(
+                selectedLayer = selectedLayer,
+                onLayerSelected = { selectedLayer = it },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 16.dp)
+            )
+
+            if (currentFrames != null && activeFrames.isNotEmpty()) {
                 RadarBottomPanel(
-                    frames = f,
+                    layer = selectedLayer,
+                    layerFrames = activeFrames,
+                    nowIndex = currentFrames.nowIndexFor(selectedLayer),
                     frameIndex = frameIndex,
                     onFrameIndexChange = {
                         isPlaying = false
@@ -157,12 +275,117 @@ fun RadarScreen(
     }
 }
 
+/** Centre + zoome la carte sur la derniere position connue de l'utilisateur, via l'overlay
+ * de localisation d'osmdroid (pas de dependance Play Services necessaire). */
+@SuppressLint("MissingPermission")
+private fun locateUserOnMap(context: Context, mapView: MapView?, onError: () -> Unit) {
+    val map = mapView ?: return
+    val provider = GpsMyLocationProvider(context)
+    val overlay = MyLocationNewOverlay(provider, map)
+    overlay.runOnFirstFix {
+        val location = overlay.myLocation
+        map.post {
+            if (location != null) {
+                map.controller.animateTo(location)
+                map.controller.setZoom(11.0)
+            } else {
+                onError()
+            }
+            overlay.disableMyLocation()
+        }
+    }
+    overlay.enableMyLocation()
+}
+
+@Composable
+private fun LocateMeIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val center = Offset(w / 2f, h / 2f)
+        val radius = minOf(w, h) / 2f * 0.55f
+        drawCircle(color = color, radius = radius, center = center, style = Stroke(width = w * 0.09f))
+        drawCircle(color = color, radius = w * 0.07f, center = center)
+        drawLine(color = color, start = Offset(center.x, 0f), end = Offset(center.x, h * 0.18f), strokeWidth = w * 0.08f)
+        drawLine(color = color, start = Offset(center.x, h), end = Offset(center.x, h * 0.82f), strokeWidth = w * 0.08f)
+        drawLine(color = color, start = Offset(0f, center.y), end = Offset(w * 0.18f, center.y), strokeWidth = w * 0.08f)
+        drawLine(color = color, start = Offset(w, center.y), end = Offset(w * 0.82f, center.y), strokeWidth = w * 0.08f)
+    }
+}
+
+@Composable
+private fun CloudsIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        drawCircle(color = color, radius = w * 0.22f, center = Offset(w * 0.35f, h * 0.55f))
+        drawCircle(color = color, radius = w * 0.28f, center = Offset(w * 0.58f, h * 0.45f))
+        drawCircle(color = color, radius = w * 0.18f, center = Offset(w * 0.78f, h * 0.58f))
+        drawRect(
+            color = color,
+            topLeft = Offset(w * 0.22f, h * 0.5f),
+            size = androidx.compose.ui.geometry.Size(w * 0.6f, h * 0.28f)
+        )
+    }
+}
+
+@Composable
+private fun PrecipitationIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.5f, h * 0.05f)
+            cubicTo(w * 0.95f, h * 0.55f, w * 0.8f, h * 0.95f, w * 0.5f, h * 0.95f)
+            cubicTo(w * 0.2f, h * 0.95f, w * 0.05f, h * 0.55f, w * 0.5f, h * 0.05f)
+            close()
+        }
+        drawPath(path = path, color = color)
+    }
+}
+
+@Composable
+private fun RadarLayerSelector(
+    selectedLayer: RadarLayer,
+    onLayerSelected: (RadarLayer) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.Black.copy(alpha = 0.45f))
+            .padding(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        val entries = listOf(RadarLayer.PRECIPITATION, RadarLayer.CLOUDS)
+        entries.forEach { layer ->
+            val isSelected = layer == selectedLayer
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) AppColors.TideHigh.copy(alpha = 0.9f) else Color.Transparent)
+                    .clickable { onLayerSelected(layer) },
+                contentAlignment = Alignment.Center
+            ) {
+                when (layer) {
+                    RadarLayer.PRECIPITATION -> PrecipitationIcon(color = Color.White, modifier = Modifier.size(16.dp))
+                    RadarLayer.CLOUDS -> CloudsIcon(color = Color.White, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun RadarMapView(
-    frames: RainviewerFrames,
+    host: String,
+    layer: RadarLayer,
+    layerFrames: List<RadarFrame>,
     frameIndex: Int,
     centerLat: Double,
     centerLon: Double,
+    onMapReady: (MapView) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -187,14 +410,19 @@ private fun RadarMapView(
 
     DisposableEffect(mapView) {
         mapView.overlayManager.add(overlay)
+        onMapReady(mapView)
         onDispose { mapView.onDetach() }
     }
 
-    LaunchedEffect(frameIndex, frames) {
-        val frame = frames.all.getOrNull(frameIndex) ?: return@LaunchedEffect
+    LaunchedEffect(frameIndex, layer, layerFrames) {
+        val frame = layerFrames.getOrNull(frameIndex) ?: return@LaunchedEffect
+        val urlTemplate = when (layer) {
+            RadarLayer.PRECIPITATION -> radarTileUrlTemplate(host, frame)
+            RadarLayer.CLOUDS -> satelliteTileUrlTemplate(host, frame)
+        }
         val tileSource = XYTileSource(
-            "RainViewer-$frameIndex", 0, 19, 256, ".png",
-            arrayOf(radarTileUrlTemplate(frames.host, frame).substringBefore("{z}"))
+            "RainViewer-${layer.name}-$frameIndex", 0, 19, 256, ".png",
+            arrayOf(urlTemplate.substringBefore("{z}"))
         )
         tileProvider.setTileSource(tileSource)
         mapView.invalidate()
@@ -208,7 +436,9 @@ private fun RadarMapView(
 
 @Composable
 private fun RadarBottomPanel(
-    frames: RainviewerFrames,
+    layer: RadarLayer,
+    layerFrames: List<RadarFrame>,
+    nowIndex: Int,
     frameIndex: Int,
     onFrameIndexChange: (Int) -> Unit,
     isPlaying: Boolean,
@@ -216,11 +446,16 @@ private fun RadarBottomPanel(
     modifier: Modifier = Modifier
 ) {
     val zone = ZoneId.systemDefault()
-    val currentFrame = frames.all.getOrNull(frameIndex)
+    val currentFrame = layerFrames.getOrNull(frameIndex)
     val timeFormatted = currentFrame?.let {
         Instant.ofEpochSecond(it.time).atZone(zone).format(DateTimeFormatter.ofPattern("EEE d MMM - HH:mm", Locale.FRANCE))
     } ?: ""
-    val isForecast = frameIndex > frames.nowIndex
+    val isForecast = frameIndex > nowIndex
+    val label = when {
+        layer == RadarLayer.CLOUDS -> "Nuages - $timeFormatted"
+        isForecast -> "Prevision - $timeFormatted"
+        else -> "Radar - $timeFormatted"
+    }
 
     Surface(
         modifier = modifier,
@@ -233,7 +468,7 @@ private fun RadarBottomPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isForecast) "Prevision - $timeFormatted" else "Radar - $timeFormatted",
+                    text = label,
                     color = Color.White,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
@@ -254,8 +489,8 @@ private fun RadarBottomPanel(
             Slider(
                 value = frameIndex.toFloat(),
                 onValueChange = { onFrameIndexChange(it.toInt()) },
-                valueRange = 0f..(frames.all.size - 1).coerceAtLeast(1).toFloat(),
-                steps = (frames.all.size - 2).coerceAtLeast(0),
+                valueRange = 0f..(layerFrames.size - 1).coerceAtLeast(1).toFloat(),
+                steps = (layerFrames.size - 2).coerceAtLeast(0),
                 colors = SliderDefaults.colors(
                     thumbColor = Color.White,
                     activeTrackColor = AppColors.WindHigh,

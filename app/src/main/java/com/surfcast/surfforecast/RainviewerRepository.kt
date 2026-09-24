@@ -13,7 +13,8 @@ data class RadarFrame(val time: Long, val path: String)
 data class RainviewerFrames(
     val host: String,
     val past: List<RadarFrame>,
-    val nowcast: List<RadarFrame>
+    val nowcast: List<RadarFrame>,
+    val satellite: List<RadarFrame>
 ) {
     val all: List<RadarFrame> get() = past + nowcast
     val nowIndex: Int get() = (past.size - 1).coerceAtLeast(0)
@@ -43,19 +44,30 @@ class RainviewerRepository {
         val json = JSONObject(response.toString())
         val host = json.getString("host")
         val radar = json.getJSONObject("radar")
+        val satellite = json.optJSONObject("satellite")
 
-        fun parseFrames(key: String) = radar.optJSONArray(key)?.let { arr ->
-            (0 until arr.length()).map { i ->
-                val obj = arr.getJSONObject(i)
+        fun parseFrames(arr: org.json.JSONArray?) = arr?.let {
+            (0 until it.length()).map { i ->
+                val obj = it.getJSONObject(i)
                 RadarFrame(time = obj.getLong("time"), path = obj.getString("path"))
             }
         } ?: emptyList()
 
-        RainviewerFrames(host = host, past = parseFrames("past"), nowcast = parseFrames("nowcast"))
+        RainviewerFrames(
+            host = host,
+            past = parseFrames(radar.optJSONArray("past")),
+            nowcast = parseFrames(radar.optJSONArray("nowcast")),
+            satellite = parseFrames(satellite?.optJSONArray("infrared"))
+        )
     }
 }
 
-// Gabarit d'URL de tuile RainViewer : taille 256px, palette 2 (Universal Blue), lissage+neige actives.
+/** Calque "Precipitation" : taille 256px, palette 2 (Universal Blue), lissage+neige actives. */
 fun radarTileUrlTemplate(host: String, frame: RadarFrame): String {
     return "$host${frame.path}/256/{z}/{x}/{y}/2/1_1.png"
+}
+
+/** Calque "Nuages" (satellite infrarouge) : pas de palette couleur/options, juste taille+position. */
+fun satelliteTileUrlTemplate(host: String, frame: RadarFrame): String {
+    return "$host${frame.path}/256/{z}/{x}/{y}/0/0_0.png"
 }
