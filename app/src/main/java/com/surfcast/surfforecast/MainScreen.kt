@@ -514,9 +514,6 @@ fun MainScreen(viewModel: SurfViewModel) {
                                         RadarScreen(
                                             centerLat = activeSpot?.latitude?.takeIf { it != 0.0 } ?: 45.20,
                                             centerLon = activeSpot?.longitude?.takeIf { it != 0.0 } ?: -1.20,
-                                            groupedByDate = groupedByDate,
-                                            dailyTides = state.dailyTides,
-                                            windUnit = viewModel.windUnit,
                                             onDismiss = { showRadarDialog = false }
                                         )
                                     }

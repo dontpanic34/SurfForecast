@@ -13,7 +13,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -24,11 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -46,16 +42,38 @@ import org.osmdroid.views.overlay.TilesOverlay
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.io.File
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-/** Les calques radar disponibles. Temperature utilise OpenWeatherMap (cle API gratuite,
- * cf. OPENWEATHERMAP_API_KEY dans local.properties). Foudre et Vent ne sont pas retenus. */
+/**
+ * Les calques radar disponibles, tous fournis par Xweather (ex-AerisWeather, cf.
+ * XWEATHER_CLIENT_ID/XWEATHER_CLIENT_SECRET dans local.properties) : precipitation
+ * previsionnelle, nuages (satellite visible), temperature. Meme source pour tous les jours
+ * (J0 a J+3), y compris "aujourd'hui" -- contrairement a une precedente version qui melangeait
+ * RainViewer (aujourd'hui uniquement) et OpenWeatherMap (temperature uniquement).
+ */
 enum class RadarLayer { PRECIPITATION, CLOUDS, TEMPERATURE }
+
+/** Code de calque Xweather (segment d'URL apres les identifiants). */
+private fun RadarLayer.xweatherLayerCode(): String = when (this) {
+    RadarLayer.PRECIPITATION -> "precip-forecast"
+    RadarLayer.CLOUDS -> "sat-vis"
+    RadarLayer.TEMPERATURE -> "temperatures"
+}
+
+/**
+ * Gabarit de tuile Xweather Raster Maps : tuiles PNG standard 256px, pas de decodage a faire
+ * (contrairement a d'autres fournisseurs dont les tuiles encodent des valeurs dans les canaux
+ * RGB). Le decalage temporel se passe en minutes depuis maintenant (negatif = passe, positif =
+ * futur), ce qui permet d'utiliser le meme calque pour "aujourd'hui" et les jours suivants.
+ */
+private fun xweatherTileUrlTemplate(layerCode: String, minutesOffset: Long, clientId: String, clientSecret: String): String {
+    return "https://maps1.aerisapi.com/${clientId}_${clientSecret}/$layerCode/{z}/{x}/{y}/${minutesOffset}min.png"
+}
 
 @Composable
 fun RadarIcon(
@@ -81,87 +99,47 @@ private fun initOsmdroidConfig(context: Context) {
     config.osmdroidTileCache = File(context.cacheDir, "osmdroid_tiles")
 }
 
-/** Une trame factice pour les calques sans historique (Temperature) : juste "maintenant". */
-private val staticNowFrame = RadarFrame(time = System.currentTimeMillis() / 1000, path = "")
-
-/** Trames du calque actif : precipitation = past+nowcast (radar), nuages = satellite (past
- * uniquement), temperature = une seule trame "actuelle" (OpenWeatherMap gratuit n'a pas
- * d'historique/prevision). */
-private fun RainviewerFrames.framesFor(layer: RadarLayer): List<RadarFrame> = when (layer) {
-    RadarLayer.PRECIPITATION -> all
-    RadarLayer.CLOUDS -> satellite
-    RadarLayer.TEMPERATURE -> listOf(staticNowFrame)
+private fun radarDayLabel(date: LocalDate, today: LocalDate): String {
+    val days = ChronoUnit.DAYS.between(today, date)
+    return when {
+        days == 0L -> "Aujourd'hui"
+        days == 1L -> "Demain"
+        days > 1L -> "J+$days"
+        else -> date.format(DateTimeFormatter.ofPattern("dd/MM"))
+    }
 }
-
-/** Index "maintenant" dans les trames du calque actif (derniere trame passee = la plus recente). */
-private fun RainviewerFrames.nowIndexFor(layer: RadarLayer): Int = when (layer) {
-    RadarLayer.PRECIPITATION -> nowIndex
-    RadarLayer.CLOUDS -> (satellite.size - 1).coerceAtLeast(0)
-    RadarLayer.TEMPERATURE -> 0
-}
-
-/** Les calques avec defilement temporel (slider + lecture) : Temperature est une image fixe. */
-private fun RadarLayer.hasTimeControls(): Boolean = this != RadarLayer.TEMPERATURE
 
 @Composable
 fun RadarScreen(
     centerLat: Double,
     centerLon: Double,
-    groupedByDate: Map<LocalDate, List<HourlyUiModel>>,
-    dailyTides: Map<LocalDate, DailyTideInfo>,
-    windUnit: String,
     onDismiss: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
-    val density = LocalDensity.current
 
     val today = remember { LocalDate.now() }
-    val availableDates = remember(groupedByDate) { groupedByDate.keys.sorted() }
-    var selectedRadarDate by remember(availableDates) {
-        mutableStateOf(availableDates.firstOrNull { it == today } ?: availableDates.firstOrNull() ?: today)
-    }
-    val isToday = selectedRadarDate == today
-
-    var frames by remember { mutableStateOf<RainviewerFrames?>(null) }
-    var loadError by remember { mutableStateOf<String?>(null) }
-    var frameIndex by remember { mutableStateOf(0) }
-    var isPlaying by remember { mutableStateOf(false) }
+    // Xweather (offre gratuite) couvre environ 4 jours de prevision : J0 a J+3.
+    val availableDates = remember { (0..3).map { today.plusDays(it.toLong()) } }
+    var selectedDate by remember { mutableStateOf(today) }
+    var selectedHour by remember { mutableStateOf(LocalTime.now().hour) }
     var selectedLayer by remember { mutableStateOf(RadarLayer.PRECIPITATION) }
+    var isPlaying by remember { mutableStateOf(false) }
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
     var locationError by remember { mutableStateOf(false) }
-    // Hauteur reelle (mesuree) de la colonne de controles flottants (Fermer/localiser/erreur
-    // de position/onglets de jour) : sert a decaler le contenu de RadarForecastDayList pour
-    // qu'il ne soit pas masque dessous, sans valeur magique qui se desynchronise si cette
-    // colonne grandit (ex: ajout de l'erreur de position + des onglets en meme temps).
-    var topOverlayHeightPx by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
-        try {
-            val result = RainviewerRepository().fetchFrames()
-            frames = result
-            frameIndex = result.nowIndex
-        } catch (e: Exception) {
-            loadError = e.message ?: "Chargement du radar impossible"
-        }
+    val minutesOffset = remember(selectedDate, selectedHour) {
+        ChronoUnit.MINUTES.between(LocalDateTime.now(), LocalDateTime.of(selectedDate, LocalTime.of(selectedHour, 0)))
     }
+    // Le satellite est une observation, pas une prevision : demander une image satellite dans
+    // le futur (Demain/J+2/J+3) n'a pas de sens et ne renverrait rien. On reste sur "maintenant"
+    // pour ce calque tant que le jour selectionne est dans le futur.
+    val effectiveMinutesOffset = if (selectedLayer == RadarLayer.CLOUDS) minutesOffset.coerceAtMost(0L) else minutesOffset
 
-    // Changer de calque repart sur la trame "maintenant" de ce calque (les deux calques
-    // n'ont pas forcement le meme nombre de trames ni le meme pas de temps).
-    LaunchedEffect(selectedLayer, frames) {
-        val f = frames ?: return@LaunchedEffect
-        isPlaying = false
-        frameIndex = f.nowIndexFor(selectedLayer)
-    }
-
-    LaunchedEffect(isPlaying, frames, selectedLayer) {
-        val f = frames ?: return@LaunchedEffect
-        if (!selectedLayer.hasTimeControls()) return@LaunchedEffect
-        val activeFrames = f.framesFor(selectedLayer)
-        if (activeFrames.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(isPlaying) {
         while (isPlaying) {
-            delay(600)
-            frameIndex = (frameIndex + 1) % activeFrames.size
+            delay(700)
+            selectedHour = (selectedHour + 1) % 24
         }
     }
 
@@ -188,108 +166,39 @@ fun RadarScreen(
         }
     }
 
-    val temperatureApiKey = BuildConfig.OPENWEATHERMAP_API_KEY
-    val temperatureKeyMissing = selectedLayer == RadarLayer.TEMPERATURE && temperatureApiKey.isBlank()
+    val clientId = BuildConfig.XWEATHER_CLIENT_ID
+    val clientSecret = BuildConfig.XWEATHER_CLIENT_SECRET
+    val credentialsMissing = clientId.isBlank() || clientSecret.isBlank()
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val currentFrames = frames
-            val activeFrames = currentFrames?.framesFor(selectedLayer) ?: emptyList()
-            if (!isToday) {
-                RadarForecastDayList(
-                    dayHours = groupedByDate[selectedRadarDate] ?: emptyList(),
-                    dailyTideInfo = dailyTides[selectedRadarDate],
-                    windUnit = windUnit,
-                    backgroundColor = colors.background,
-                    onSurfaceColor = colors.onBackground,
-                    topContentPadding = with(density) { topOverlayHeightPx.toDp() },
+            if (credentialsMissing) {
+                Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
+                    Text(
+                        text = "Radar : ajoute tes identifiants Xweather gratuits dans local.properties " +
+                            "(XWEATHER_CLIENT_ID=... et XWEATHER_CLIENT_SECRET=...) pour l'activer.",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        color = colors.onBackground
+                    )
+                }
+            } else {
+                RadarMapView(
+                    layerCode = selectedLayer.xweatherLayerCode(),
+                    minutesOffset = effectiveMinutesOffset,
+                    clientId = clientId,
+                    clientSecret = clientSecret,
+                    centerLat = centerLat,
+                    centerLon = centerLon,
+                    onMapReady = { mapViewRef = it },
                     modifier = Modifier.fillMaxSize()
                 )
-            } else
-            when {
-                temperatureKeyMissing -> {
-                    Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
-                        Text(
-                            text = "Calque Temperature : ajoute ta cle API OpenWeatherMap gratuite " +
-                                "dans local.properties (OPENWEATHERMAP_API_KEY=...) pour l'activer.",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(24.dp),
-                            color = colors.onBackground
-                        )
-                    }
-                }
-                // Le calque Temperature (OpenWeatherMap) ne depend pas des trames RainViewer :
-                // on l'affiche des que la cle API est presente, sans attendre/exiger le succes
-                // du fetch RainViewer (host inutilise pour ce calque).
-                selectedLayer == RadarLayer.TEMPERATURE -> {
-                    RadarMapView(
-                        host = currentFrames?.host ?: "",
-                        layer = selectedLayer,
-                        layerFrames = activeFrames,
-                        frameIndex = frameIndex,
-                        centerLat = centerLat,
-                        centerLon = centerLon,
-                        temperatureApiKey = temperatureApiKey,
-                        onMapReady = { mapViewRef = it },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-                currentFrames != null && activeFrames.isNotEmpty() -> {
-                    RadarMapView(
-                        host = currentFrames.host,
-                        layer = selectedLayer,
-                        layerFrames = activeFrames,
-                        frameIndex = frameIndex,
-                        centerLat = centerLat,
-                        centerLon = centerLon,
-                        temperatureApiKey = temperatureApiKey,
-                        onMapReady = { mapViewRef = it },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-                loadError != null -> {
-                    Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
-                        Text(
-                            text = "Radar indisponible : $loadError",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(24.dp),
-                            color = colors.onBackground
-                        )
-                    }
-                }
-                currentFrames != null -> {
-                    // Trames chargees mais vides pour ce calque (ex : pas de satellite disponible).
-                    Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
-                        Text(
-                            text = "Calque indisponible pour le moment.",
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(24.dp),
-                            color = colors.onBackground
-                        )
-                    }
-                }
-                else -> {
-                    Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = colors.primary)
-                        }
-                    }
-                }
             }
 
             Column(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .onGloballyPositioned { coordinates ->
-                        // onGloballyPositioned precede padding() dans la chaine : les
-                        // coordonnees rapportees couvrent donc tout le noeud, padding compris
-                        // (haut ET bas), pour que RadarForecastDayList sache exactement jusqu'ou
-                        // descendre son propre padding du haut.
-                        topOverlayHeightPx = coordinates.size.height
-                    }
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -329,23 +238,15 @@ fun RadarScreen(
                     }
                 }
 
-                if (availableDates.size > 1) {
-                    RadarDayTabs(
-                        availableDates = availableDates,
-                        today = today,
-                        selectedDate = selectedRadarDate,
-                        onSelectDate = { date ->
-                            selectedRadarDate = date
-                            // Quitter "Aujourd'hui" cache le panneau de lecture (RadarBottomPanel) :
-                            // sans ca, la lecture animee du radar continuait en tache de fond
-                            // (tick toutes les 600ms) sans aucun moyen de la mettre en pause.
-                            isPlaying = false
-                        }
-                    )
-                }
+                RadarDayTabs(
+                    availableDates = availableDates,
+                    today = today,
+                    selectedDate = selectedDate,
+                    onSelectDate = { selectedDate = it }
+                )
             }
 
-            if (isToday) {
+            if (!credentialsMissing) {
                 RadarLayerSelector(
                     selectedLayer = selectedLayer,
                     onLayerSelected = { selectedLayer = it },
@@ -353,26 +254,23 @@ fun RadarScreen(
                         .align(Alignment.CenterEnd)
                         .padding(end = 16.dp)
                 )
-            }
 
-            if (isToday && currentFrames != null && activeFrames.isNotEmpty() && selectedLayer.hasTimeControls()) {
                 RadarBottomPanel(
-                    layer = selectedLayer,
-                    layerFrames = activeFrames,
-                    nowIndex = currentFrames.nowIndexFor(selectedLayer),
-                    frameIndex = frameIndex,
-                    onFrameIndexChange = {
+                    selectedDate = selectedDate,
+                    today = today,
+                    selectedHour = selectedHour,
+                    onHourChange = {
                         isPlaying = false
-                        frameIndex = it
+                        selectedHour = it
                     },
                     isPlaying = isPlaying,
                     onTogglePlay = { isPlaying = !isPlaying },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        // La Dialog est en plein ecran (usePlatformDefaultWidth = false), donc
-                        // sans ceci le slider/bouton Lecture se retrouvent sous la barre de
-                        // navigation systeme (geste/boutons) et deviennent inutilisables.
+                        // La Dialog est en plein ecran (usePlatformDefaultWidth = false), donc sans
+                        // ceci le slider/bouton Lecture se retrouvent sous la barre de navigation
+                        // systeme (geste/boutons) et deviennent inutilisables.
                         .navigationBarsPadding()
                 )
             }
@@ -502,22 +400,8 @@ private fun RadarLayerSelector(
     }
 }
 
-private fun radarDayLabel(date: LocalDate, today: LocalDate): String {
-    val days = ChronoUnit.DAYS.between(today, date)
-    return when {
-        days == 0L -> "Aujourd'hui"
-        days == 1L -> "Demain"
-        days > 1L -> "J+$days"
-        else -> date.format(DateTimeFormatter.ofPattern("dd/MM"))
-    }
-}
-
-/**
- * Onglets de jour (Aujourd'hui/Demain/J+2...) : "Aujourd'hui" garde la carte radar en direct
- * (RainViewer/OpenWeatherMap), les autres jours n'ont pas de carte animee disponible
- * gratuitement au-dela de +/-2h, donc ils basculent sur les previsions heure par heure deja
- * calculees pour le spot (cf. RadarForecastDayList).
- */
+/** Onglets de jour (Aujourd'hui/Demain/J+2/J+3) : meme calque Xweather pour tous, seul le
+ * decalage temporel (minutesOffset) change. */
 @Composable
 private fun RadarDayTabs(
     availableDates: List<LocalDate>,
@@ -555,70 +439,14 @@ private fun RadarDayTabs(
     }
 }
 
-/**
- * Vue de repli pour Demain/J+2/J+3... : pas de carte radar animee disponible gratuitement au
- * dela de +/-2h autour de maintenant, donc on affiche les previsions heure par heure deja
- * calculees pour le spot suivi (meme donnees que "Prevision heure par heure" dans l'ecran
- * principal), plutot que de laisser croire a une carte qui n'existe pas.
- */
-@Composable
-private fun RadarForecastDayList(
-    dayHours: List<HourlyUiModel>,
-    dailyTideInfo: DailyTideInfo?,
-    windUnit: String,
-    backgroundColor: Color,
-    onSurfaceColor: Color,
-    // Hauteur mesuree (pas une valeur figee) de la colonne de controles flottants qui se
-    // superpose en haut de l'ecran (Fermer/localiser/erreur de position/onglets de jour) :
-    // evite que cette liste passe sous ces controles quand leur hauteur varie (ex: l'erreur
-    // de position et les onglets affiches en meme temps).
-    topContentPadding: Dp,
-    modifier: Modifier = Modifier
-) {
-    Surface(modifier = modifier, color = backgroundColor) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
-                .padding(top = topContentPadding + 10.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
-        ) {
-            Text(
-                text = "Pas de carte radar au-dela de quelques heures : voici les previsions heure par heure.",
-                fontSize = 12.sp,
-                color = onSurfaceColor.copy(alpha = 0.6f)
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            if (dayHours.isEmpty()) {
-                Text(
-                    text = "Aucune prevision disponible pour ce jour.",
-                    fontSize = 12.sp,
-                    color = onSurfaceColor.copy(alpha = 0.6f)
-                )
-            } else {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    dayHours.forEach { hourly ->
-                        HourlyForecastRow(
-                            hourlyData = hourly,
-                            windUnit = windUnit,
-                            dailyTideInfo = dailyTideInfo
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
 @Composable
 private fun RadarMapView(
-    host: String,
-    layer: RadarLayer,
-    layerFrames: List<RadarFrame>,
-    frameIndex: Int,
+    layerCode: String,
+    minutesOffset: Long,
+    clientId: String,
+    clientSecret: String,
     centerLat: Double,
     centerLon: Double,
-    temperatureApiKey: String,
     onMapReady: (MapView) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -635,8 +463,6 @@ private fun RadarMapView(
 
     // NB : cette version d'osmdroid n'expose pas de canal alpha sur TilesOverlay/Overlay,
     // un vrai crossfade entre deux calques n'est donc pas possible avec cette lib.
-    // Le cache disque (clearTileCache cible uniquement la frame courante) limite le
-    // clignotement une fois les tuiles d'une frame deja vues.
     val tileProvider = remember { MapTileProviderBasic(context) }
     val overlay = remember {
         TilesOverlay(tileProvider, context).apply { loadingBackgroundColor = android.graphics.Color.TRANSPARENT }
@@ -648,33 +474,21 @@ private fun RadarMapView(
         onDispose { mapView.onDetach() }
     }
 
-    LaunchedEffect(frameIndex, layer, layerFrames, temperatureApiKey) {
-        val urlTemplate = when (layer) {
-            RadarLayer.PRECIPITATION -> {
-                val frame = layerFrames.getOrNull(frameIndex) ?: return@LaunchedEffect
-                radarTileUrlTemplate(host, frame)
-            }
-            RadarLayer.CLOUDS -> {
-                val frame = layerFrames.getOrNull(frameIndex) ?: return@LaunchedEffect
-                satelliteTileUrlTemplate(host, frame)
-            }
-            RadarLayer.TEMPERATURE -> temperatureTileUrlTemplate(temperatureApiKey)
-        }
+    LaunchedEffect(layerCode, minutesOffset, clientId, clientSecret) {
+        val urlTemplate = xweatherTileUrlTemplate(layerCode, minutesOffset, clientId, clientSecret)
         // XYTileSource construit chaque URL de tuile comme baseUrl + z + "/" + x + "/" + y +
         // imageFilenameEnding, sans rien pouvoir inserer apres {y} : on doit donc decouper le
-        // gabarit "{z}/{x}/{y}" autour de ce point plutot que de coller ".png" en dur, sinon
-        // le suffixe (palette RainViewer, cle API OpenWeatherMap...) est perdu et les tuiles
-        // ne chargent jamais.
+        // gabarit "{z}/{x}/{y}" autour de ce point plutot que de coller ".png" en dur, sinon le
+        // decalage temporel (.../${minutesOffset}min.png) est perdu et les tuiles ne chargent
+        // jamais (meme bug deja rencontre avec RainViewer).
         val baseUrl = urlTemplate.substringBefore("{z}")
         val imageFilenameEnding = urlTemplate.substringAfter("{y}")
-        // Le niveau de zoom max de RainViewer (gratuit) est 7 : au-dela, leur serveur renvoie
-        // une tuile "Zoom Level Not Supported" au lieu de la precipitation/des nuages. En le
-        // declarant ici, osmdroid arrete de demander des tuiles au-dela et se contente
-        // d'agrandir la derniere tuile z=7 valide (la carte de fond, elle, continue de zoomer
-        // normalement). OpenWeatherMap tolere un zoom bien plus eleve.
-        val maxZoom = if (layer == RadarLayer.TEMPERATURE) 18 else 7
+        // Xweather ne documente pas de plafond de zoom accessible depuis cet environnement (doc
+        // bloquee) : 12 est une valeur prudente issue des standards du secteur pour des calques
+        // meteo (au-dela, la donnee n'apporte de toute facon plus de detail reel). A ajuster si
+        // des tuiles d'erreur apparaissent en zoomant, comme observe avec RainViewer.
         val tileSource = XYTileSource(
-            "RainViewer-${layer.name}-$frameIndex", 0, maxZoom, 256, imageFilenameEnding,
+            "Xweather-$layerCode-$minutesOffset", 0, 12, 256, imageFilenameEnding,
             arrayOf(baseUrl)
         )
         tileProvider.setTileSource(tileSource)
@@ -689,26 +503,15 @@ private fun RadarMapView(
 
 @Composable
 private fun RadarBottomPanel(
-    layer: RadarLayer,
-    layerFrames: List<RadarFrame>,
-    nowIndex: Int,
-    frameIndex: Int,
-    onFrameIndexChange: (Int) -> Unit,
+    selectedDate: LocalDate,
+    today: LocalDate,
+    selectedHour: Int,
+    onHourChange: (Int) -> Unit,
     isPlaying: Boolean,
     onTogglePlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val zone = ZoneId.systemDefault()
-    val currentFrame = layerFrames.getOrNull(frameIndex)
-    val timeFormatted = currentFrame?.let {
-        Instant.ofEpochSecond(it.time).atZone(zone).format(DateTimeFormatter.ofPattern("EEE d MMM - HH:mm", Locale.FRANCE))
-    } ?: ""
-    val isForecast = frameIndex > nowIndex
-    val label = when {
-        layer == RadarLayer.CLOUDS -> "Nuages - $timeFormatted"
-        isForecast -> "Prevision - $timeFormatted"
-        else -> "Radar - $timeFormatted"
-    }
+    val label = "${radarDayLabel(selectedDate, today)} - ${String.format(Locale.FRANCE, "%02dh00", selectedHour)}"
 
     Surface(
         modifier = modifier,
@@ -740,10 +543,10 @@ private fun RadarBottomPanel(
             Spacer(modifier = Modifier.height(6.dp))
 
             Slider(
-                value = frameIndex.toFloat(),
-                onValueChange = { onFrameIndexChange(it.toInt()) },
-                valueRange = 0f..(layerFrames.size - 1).coerceAtLeast(1).toFloat(),
-                steps = (layerFrames.size - 2).coerceAtLeast(0),
+                value = selectedHour.toFloat(),
+                onValueChange = { onHourChange(it.toInt()) },
+                valueRange = 0f..23f,
+                steps = 22,
                 colors = SliderDefaults.colors(
                     thumbColor = Color.White,
                     activeTrackColor = AppColors.WindHigh,

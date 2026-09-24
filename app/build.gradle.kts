@@ -6,17 +6,18 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// Cle API OpenWeatherMap (calque Temperature du radar) : lue depuis local.properties,
-// jamais commitee. Voir README / message de handoff pour la procedure de creation du
-// compte gratuit. Vide par defaut : le calque Temperature affiche alors un message
-// invitant a configurer la cle plutot que d'essayer de charger des tuiles.
+// Identifiants Xweather (ex-AerisWeather) pour les calques du radar (precipitation, nuages,
+// temperature, sur tous les jours J0..J+3) : lus depuis local.properties, jamais commites.
+// Vides par defaut : le radar affiche alors un message invitant a les configurer plutot que
+// d'essayer de charger des tuiles.
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
         localPropertiesFile.inputStream().use { load(it) }
     }
 }
-val openWeatherMapApiKey: String = localProperties.getProperty("OPENWEATHERMAP_API_KEY", "")
+val xweatherClientId: String = localProperties.getProperty("XWEATHER_CLIENT_ID", "")
+val xweatherClientSecret: String = localProperties.getProperty("XWEATHER_CLIENT_SECRET", "")
 
 android {
     namespace = "com.surfcast.surfforecast"
@@ -32,7 +33,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "OPENWEATHERMAP_API_KEY", "\"$openWeatherMapApiKey\"")
+        buildConfigField("String", "XWEATHER_CLIENT_ID", "\"$xweatherClientId\"")
+        buildConfigField("String", "XWEATHER_CLIENT_SECRET", "\"$xweatherClientSecret\"")
     }
 
     buildTypes {
