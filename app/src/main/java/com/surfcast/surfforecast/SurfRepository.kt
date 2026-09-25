@@ -1,6 +1,7 @@
 package com.surfcast.surfforecast
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -87,12 +88,13 @@ class SurfRepository {
     private suspend fun fetchMarineBlock(
         lat: Double,
         lon: Double,
+        waveModel: WaveModel,
         days: Int
     ): RawMarineHourly {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
                 "latitude=$lat&longitude=$lon" +
                 "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wind_wave_peak_period" +
-                "&models=meteofrance_wave" +
+                "&models=${waveModel.apiParam}" +
                 "&forecast_days=$days" +
                 "&timezone=auto"
 
@@ -245,21 +247,41 @@ class SurfRepository {
         val today = LocalDate.now()
         val cutoffDate = today.plusDays(2)
 
-        val marineData = fetchMarineBlock(lat, lon, 7)
-        val shortWeather = fetchWeatherBlock(lat, lon, config.shortTermWeather, 2)
+        // Meme principe que pour la meteo : MFWAM (court terme) est plus precis sur la
+        // bathymetrie cotiere francaise mais sa portee est limitee, ECMWF WAM (long terme)
+        // prend le relais au-dela pour la houle longue distance.
+        // Les 4 appels sont independants : on les lance en parallele plutot qu'en
+        // sequence pour ne pas cumuler leurs latences reseau.
+        val shortMarineDeferred = async { fetchMarineBlock(lat, lon, config.shortTermWave, 2) }
+        val longMarineDeferred = async { fetchMarineBlock(lat, lon, config.longTermWave, 7) }
+        val shortWeatherDeferred = async { fetchWeatherBlock(lat, lon, config.shortTermWeather, 2) }
         // Le lever/coucher du soleil est une donnee purement astronomique (independante
         // du modele meteo) : on ne la demande qu'une fois, sur l'appel long terme qui
         // couvre deja les 7 jours.
-        val longWeather = fetchWeatherBlock(lat, lon, config.longTermWeather, 7, includeDailySun = true)
+        val longWeatherDeferred = async {
+            fetchWeatherBlock(lat, lon, config.longTermWeather, 7, includeDailySun = true)
+        }
 
+        val shortMarine = shortMarineDeferred.await()
+        val longMarine = longMarineDeferred.await()
+        val shortWeather = shortWeatherDeferred.await()
+        val longWeather = longWeatherDeferred.await()
+
+        val marineMapShort = shortMarine.times.indices.associate { i -> shortMarine.times[i] to i }
         val weatherMapShort = shortWeather.times.indices.associate { i -> shortWeather.times[i] to i }
         val weatherMapLong = longWeather.times.indices.associate { i -> longWeather.times[i] to i }
 
         val resultList = mutableListOf<HourlyUiModel>()
 
-        for (i in marineData.times.indices) {
-            val t = marineData.times[i]
+        for (i in longMarine.times.indices) {
+            val t = longMarine.times[i]
             val isShortTerm = t.toLocalDate() < cutoffDate
+
+            val (mIndex, mData) = if (isShortTerm && marineMapShort.containsKey(t)) {
+                marineMapShort[t]!! to shortMarine
+            } else {
+                i to longMarine
+            }
 
             val (wIndex, wData) = if (isShortTerm && weatherMapShort.containsKey(t)) {
                 weatherMapShort[t]!! to shortWeather
@@ -267,9 +289,9 @@ class SurfRepository {
                 (weatherMapLong[t] ?: 0) to longWeather
             }
 
-            val h = marineData.waveHeights[i]
-            val p = marineData.wavePeriods[i]
-            val dirFloat = marineData.waveDirections[i]
+            val h = mData.waveHeights[mIndex]
+            val p = mData.wavePeriods[mIndex]
+            val dirFloat = mData.waveDirections[mIndex]
             val windKmh = wData.windSpeeds.getOrElse(wIndex) { 10.0 }.roundToInt()
             val windDirDeg = wData.windDirections.getOrElse(wIndex) { 0.0 }
 
