@@ -658,18 +658,21 @@ private fun DailyTimelineSwellCanvas(
             drawPath(path = segPath, color = segColor, style = Stroke(width = 2.6.dp.toPx()))
         }
 
-        // Une seule pastille "periode" au pic de houle du jour (plutot qu'une etiquette
-        // par point) : lisible en un coup d'oeil, sans surcharger la courbe.
-        val peakIndex = hours.indices.maxByOrNull { hours[it].waveHeight } ?: -1
-        if (peakIndex in points.indices) {
-            val peak = points[peakIndex]
-            val label = "${hours[peakIndex].wavePeriod.roundToInt()}s"
+        // Trois pastilles "periode" reparties dans la journee (matin / milieu / fin)
+        // plutot qu'une seule au pic : donne une idee de comment la periode evolue sur
+        // la journee, sans surcharger la courbe d'une etiquette par point.
+        val periodIndices = listOf(0.15, 0.5, 0.85)
+            .map { frac -> (frac * (hours.size - 1)).roundToInt().coerceIn(0, hours.size - 1) }
+            .distinct()
+        periodIndices.forEach { idx ->
+            val point = points[idx]
+            val label = "${hours[idx].wavePeriod.roundToInt()}s"
             val textW = periodTextPaint.measureText(label)
             val bubbleLow = plotLeft + textW / 2f + 6.dp.toPx()
             val bubbleHigh = (w - textW / 2f - 6.dp.toPx()).coerceAtLeast(bubbleLow)
             val bubbleCenter = Offset(
-                peak.x.coerceIn(bubbleLow, bubbleHigh),
-                (peak.y - 16.dp.toPx()).coerceAtLeast(padY + 8.dp.toPx())
+                point.x.coerceIn(bubbleLow, bubbleHigh),
+                (point.y - 16.dp.toPx()).coerceAtLeast(padY + 8.dp.toPx())
             )
             drawCircle(
                 color = Color.Black.copy(alpha = 0.35f),
