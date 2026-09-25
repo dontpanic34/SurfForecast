@@ -21,6 +21,7 @@ import com.surfcast.surfforecast.ui.theme.AppColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.Locale
@@ -39,59 +40,77 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
         val repository = SurfRepository()
         val config = ForecastEngineConfig()
 
+        // Correctif critique : onUpdate() est un BroadcastReceiver.onReceive(). Une fois qu'il
+        // revient, Android considere le receiver termine et peut tuer le processus a tout
+        // moment -- y compris avant qu'une coroutine "fire and forget" lancee ici n'ait eu le
+        // temps de terminer ses appels reseau. Resultat observe : le widget reste bloque sur
+        // les valeurs par defaut ("--m") quasi a chaque fois, meme apres plusieurs secondes.
+        // goAsync() indique explicitement a Android d'attendre la fin du travail (fenetre
+        // etendue) avant de pouvoir tuer le processus ; pendingResult.finish() la libere.
+        val pendingResult = goAsync()
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val forecast = repository.getHybridForecast(spot.latitude, spot.longitude, config).hourly
-                val today = LocalDate.now()
+                // Borne le travail reseau total : goAsync() n'accorde qu'une fenetre limitee
+                // avant qu'Android ne considere le broadcast en timeout (ANR). Sans cette
+                // limite, un reseau lent (getHybridForecast + getTides sont enchaines, chacun
+                // avec un connectTimeout/readTimeout de 10s) pourrait depasser cette fenetre
+                // et empecher pendingResult.finish() d'etre appele a temps.
+                withTimeoutOrNull(15_000) {
+                    val forecast = repository.getHybridForecast(spot.latitude, spot.longitude, config).hourly
+                    val today = LocalDate.now()
 
-                val tides = repository.getTides(
-                    spot.latitude,
-                    spot.longitude,
-                    today.toString(),
-                    today.plusDays(1).toString()
-                )
-                val todayTide = tides[today]
-
-                val currentHour = LocalTime.now().hour
-
-                val currentHourModel = forecast.firstOrNull {
-                    it.rawTime.toLocalDate() == today && it.rawTime.hour == currentHour
-                } ?: forecast.firstOrNull()
-
-                if (currentHourModel != null) {
-                    val formattedH = String.format(Locale.US, "%.1fm", currentHourModel.waveHeight)
-                    val periodSec = currentHourModel.wavePeriod.toInt()
-                    val tempVal = currentHourModel.temperature.toInt()
-
-                    val dirFr = SurfUnitsHelper.formatCardinalFr(currentHourModel.windDirectionStr)
-                    val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
-                    val rotationAngle = (degrees + 180f) % 360f
-
-                    val arrowColorCompose = SurfUnitsHelper.getSurfWindColor(dirFr, currentHourModel.windSpeedKmh)
-                    val arrowColorInt = arrowColorCompose.toArgb()
-
-                    val speed = SurfUnitsHelper.formatWindValue(currentHourModel.windSpeedKmh, windUnit)
-                    val unit = when (windUnit) {
-                        "knots" -> "kts"
-                        "bft" -> "bft"
-                        else -> "km/h"
-                    }
-
-                    val data = CachedWidgetData(
-                        formattedH = formattedH,
-                        periodSec = periodSec,
-                        tempVal = tempVal,
-                        dirFr = dirFr,
-                        rotationAngle = rotationAngle,
-                        arrowColorInt = arrowColorInt,
-                        speed = speed,
-                        unit = unit,
-                        todayTide = todayTide
+                    val tides = repository.getTides(
+                        spot.latitude,
+                        spot.longitude,
+                        today.toString(),
+                        today.plusDays(1).toString()
                     )
-                    cachedData = data
-                    renderWidgets(context, appWidgetManager, appWidgetIds, data)
+                    val todayTide = tides[today]
+
+                    val currentHour = LocalTime.now().hour
+
+                    val currentHourModel = forecast.firstOrNull {
+                        it.rawTime.toLocalDate() == today && it.rawTime.hour == currentHour
+                    } ?: forecast.firstOrNull()
+
+                    if (currentHourModel != null) {
+                        val formattedH = String.format(Locale.US, "%.1fm", currentHourModel.waveHeight)
+                        val periodSec = currentHourModel.wavePeriod.toInt()
+                        val tempVal = currentHourModel.temperature.toInt()
+
+                        val dirFr = SurfUnitsHelper.formatCardinalFr(currentHourModel.windDirectionStr)
+                        val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
+                        val rotationAngle = (degrees + 180f) % 360f
+
+                        val arrowColorCompose = SurfUnitsHelper.getSurfWindColor(dirFr, currentHourModel.windSpeedKmh)
+                        val arrowColorInt = arrowColorCompose.toArgb()
+
+                        val speed = SurfUnitsHelper.formatWindValue(currentHourModel.windSpeedKmh, windUnit)
+                        val unit = when (windUnit) {
+                            "knots" -> "kts"
+                            "bft" -> "bft"
+                            else -> "km/h"
+                        }
+
+                        val data = CachedWidgetData(
+                            formattedH = formattedH,
+                            periodSec = periodSec,
+                            tempVal = tempVal,
+                            dirFr = dirFr,
+                            rotationAngle = rotationAngle,
+                            arrowColorInt = arrowColorInt,
+                            speed = speed,
+                            unit = unit,
+                            todayTide = todayTide
+                        )
+                        cachedData = data
+                        renderWidgets(context, appWidgetManager, appWidgetIds, data)
+                    }
                 }
             } catch (_: Exception) {
+            } finally {
+                pendingResult.finish()
             }
         }
     }
@@ -261,7 +280,14 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
 
         val strokeW = 5.5f * density
         val inset = strokeW / 2f + 3f * density
-        val bounds = RectF(inset, inset, widthPx - inset, heightPx - inset)
+        // Anneau toujours parfaitement circulaire, quel que soit le cadre reellement
+        // accorde par le launcher (certains n'accordent pas un carre exact, cf. Niagara/
+        // launcher par defaut qui ont tous deux etire l'ancien ovale sur tout le cadre) :
+        // on se base sur la plus petite dimension et on centre, sans jamais etirer.
+        val diameter = (minOf(widthPx, heightPx) - 2 * inset).coerceAtLeast(1f)
+        val cx = widthPx / 2f
+        val cy = heightPx / 2f
+        val bounds = RectF(cx - diameter / 2f, cy - diameter / 2f, cx + diameter / 2f, cy + diameter / 2f)
 
         val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
@@ -286,8 +312,8 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             canvas.drawArc(bounds, startAngle, sweepAngle, false, arcPaint)
 
             val markerAngleRad = Math.toRadians((startAngle + sweepAngle).toDouble())
-            val cx = bounds.centerX()
-            val cy = bounds.centerY()
+            // bounds est toujours centre sur (cx, cy) (cf. plus haut) : pas besoin de
+            // recalculer via bounds.centerX()/centerY().
             val rx = bounds.width() / 2f
             val ry = bounds.height() / 2f
             val markerX = (cx + rx * cos(markerAngleRad)).toFloat()
@@ -319,12 +345,12 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             if (coef != null) "$t ($coef)" else t
         }
         if (highLabel != null) {
-            canvas.drawText(highLabel, widthPx / 2f, inset + labelPaint.textSize, labelPaint)
+            canvas.drawText(highLabel, cx, bounds.top + labelPaint.textSize + 2f * density, labelPaint)
         }
 
         val lowLabel = tideInfo?.lowTideTime
         if (lowLabel != null) {
-            canvas.drawText(lowLabel, widthPx / 2f, heightPx - inset - 2f * density, labelPaint)
+            canvas.drawText(lowLabel, cx, bounds.bottom - 2f * density, labelPaint)
         }
 
         return bitmap
