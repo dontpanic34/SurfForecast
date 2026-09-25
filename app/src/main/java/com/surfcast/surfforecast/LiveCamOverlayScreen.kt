@@ -163,6 +163,10 @@ fun LiveCamOverlayScreen(
     var showLinkSuccess by remember(currentSpotName) { mutableStateOf(false) }
 
     val activeCamera = spotWebcams.cameras.getOrElse(selectedCamIndex) { spotWebcams.cameras.first() }
+    // Meme raison que currentSpotNameState/searchTargetCamNameState : le WebViewClient
+    // est cree une seule fois dans factory, donc un simple val ne refleterait jamais
+    // les changements de camera (ex. selection d'une autre webcam dans la liste).
+    val activeCameraState = rememberUpdatedState(activeCamera)
 
     val mismatchTitle = realPageTitle
     // Decoupe sur espaces ET tirets (utile pour les noms composes, ex "Le Grand Crohot")
@@ -259,6 +263,29 @@ fun LiveCamOverlayScreen(
                                 }, 500)
                                 mainHandler.postDelayed({ isLoading = false }, 600)
                             } else {
+                                // Correctif : les URLs directes du catalogue (ex. Capbreton) pointent
+                                // vers un identifiant GoSurf precis, qui devient parfois perime (GoSurf
+                                // renumerote ses pages). GoSurf redirige alors en silence vers son annuaire
+                                // general (reponse 200, pas d'erreur HTTP) : sans ce controle, l'appli
+                                // affichait cet annuaire generique sans jamais lancer la recherche assistee.
+                                // On detecte ce cas via l'URL finale (une vraie page camera contient toujours
+                                // "/webcam/") plutot que via le seul titre, plus fiable et sans attendre un clic.
+                                val finalUrl = url ?: ""
+                                val isGoSurfCamera = activeCameraState.value.pageUrl.contains("gosurf.fr")
+                                val landedOnDirectory = isGoSurfCamera &&
+                                    finalUrl.contains("gosurf.fr") &&
+                                    !finalUrl.contains("/webcam/")
+                                if (isGoSurfCamera && (loadError || landedOnDirectory)) {
+                                    searchTargetCamName = activeCameraState.value.camName
+                                    isLoading = true
+                                    loadError = false
+                                    manualNavigation = true
+                                    view?.settings?.useWideViewPort = false
+                                    view?.settings?.loadWithOverviewMode = false
+                                    view?.loadUrl("https://gosurf.fr/list")
+                                    return
+                                }
+
                                 injectFullscreenJS(view)
                                 val retryDelays = listOf(300L, 800L, 1600L, 3000L)
                                 retryDelays.forEach { delay ->
