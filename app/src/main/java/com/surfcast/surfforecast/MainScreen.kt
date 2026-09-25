@@ -1247,18 +1247,14 @@ fun ContinuousWaveCanvas(
 
     val density = LocalDensity.current
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    // Pour les traits/icones (pas de chip possible dessus, contrairement au texte) : on
-    // choisit la variante foncee ou claire de chaque couleur maree selon le theme actif,
-    // pour rester visible sur fond blanc comme sur fond quasi noir.
+    // Texte simple, sans fond ni ombre : on choisit la variante claire ou foncee de
+    // chaque couleur maree selon le theme actif, pour rester lisible sur fond blanc
+    // comme sur fond quasi noir sans alterer l'identite de la couleur elle-meme.
     val isDarkTheme = isDarkSurfaceTheme()
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
+    val tideColorInt = tideLineColor.toArgb()
 
-    // Teinte vive (jamais la variante "Dark" pensee pour fond clair) : la lisibilite sur
-    // les deux themes vient d'une ombre portee derriere chaque texte (drawTextWithShadow),
-    // pas d'un assombrissement de la couleur qui la ferait se fondre dans un fond sombre.
-    val tideColorInt = AppColors.TideHigh.toArgb()
-
-    val heightTextPaint = remember(density) {
+    val heightTextPaint = remember(density, tideColorInt) {
         Paint().apply {
             color = tideColorInt
             textSize = with(density) { 8.5.sp.toPx() }
@@ -1287,7 +1283,7 @@ fun ContinuousWaveCanvas(
         }
     }
 
-    val waterTextPaint = remember(density) {
+    val waterTextPaint = remember(density, tideColorInt) {
         Paint().apply {
             color = tideColorInt
             textSize = with(density) { 7.5.sp.toPx() }
@@ -1393,7 +1389,7 @@ fun ContinuousWaveCanvas(
                 center = Offset(thX, thBottom + 1.dp.toPx())
             )
 
-            drawTextWithShadow(
+            drawContext.canvas.nativeCanvas.drawText(
                 "$feels°",
                 colLeft + 7.5.dp.toPx(),
                 padY + 7.5.dp.toPx(),
@@ -1431,7 +1427,7 @@ fun ContinuousWaveCanvas(
             drawPath(path = dropPath, color = tideLineColor.copy(alpha = 0.25f))
             drawPath(path = dropPath, color = tideLineColor, style = Stroke(width = 0.85.dp.toPx()))
 
-            drawTextWithShadow(
+            drawContext.canvas.nativeCanvas.drawText(
                 "$water°",
                 colLeft + 7.5.dp.toPx(),
                 padY + 17.5.dp.toPx(),
@@ -1453,7 +1449,7 @@ fun ContinuousWaveCanvas(
                 drawCircle(color = tideLineColor, radius = 2.2.dp.toPx(), center = closestPoint)
             }
 
-            drawTextWithShadow(hText, targetX - hTextW / 2f, textY, heightTextPaint)
+            drawContext.canvas.nativeCanvas.drawText(hText, targetX - hTextW / 2f, textY, heightTextPaint)
         }
 
         for (i in 0 until daysCount) {
@@ -1478,24 +1474,25 @@ fun DailyTideCanvas(
 
     val density = LocalDensity.current
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    // Traits/icones (pas de chip possible dessus) : variante foncee ou claire selon le
-    // theme actif. Le texte, lui, garde toujours la teinte vive + un chip (cf. plus bas).
+    // Texte simple, sans fond ni ombre : variante claire ou foncee selon le theme actif
+    // (meme couleur pour le texte et les traits/icones), pour rester lisible sur fond
+    // blanc comme sur fond quasi noir.
     val isDarkTheme = isDarkSurfaceTheme()
     val highIconColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
     val lowIconColor = if (isDarkTheme) AppColors.TideLow else AppColors.TideLowDark
 
-    val highTextPaint = remember(density) {
+    val highTextPaint = remember(density, highIconColor) {
         Paint().apply {
-            color = AppColors.TideHigh.toArgb()
+            color = highIconColor.toArgb()
             textSize = with(density) { 7.2.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
 
-    val lowTextPaint = remember(density) {
+    val lowTextPaint = remember(density, lowIconColor) {
         Paint().apply {
-            color = AppColors.TideLow.toArgb()
+            color = lowIconColor.toArgb()
             textSize = with(density) { 7.2.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -1578,7 +1575,7 @@ fun DailyTideCanvas(
             drawPath(headPath, color = highIconColor, style = Stroke(width = 0.9.dp.toPx()))
 
             val highBaseline = row1Y - (highTextPaint.descent() + highTextPaint.ascent()) / 2f
-            drawTextWithShadow(highTimeStr, textStartX, highBaseline, highTextPaint)
+            drawContext.canvas.nativeCanvas.drawText(highTimeStr, textStartX, highBaseline, highTextPaint)
         }
 
         if (lowTimeStr.isNotEmpty()) {
@@ -1613,7 +1610,7 @@ fun DailyTideCanvas(
             drawPath(headPath2, color = lowIconColor, style = Stroke(width = 0.9.dp.toPx()))
 
             val lowBaseline = row2Y - (lowTextPaint.descent() + lowTextPaint.ascent()) / 2f
-            drawTextWithShadow(lowTimeStr, textStartX, lowBaseline, lowTextPaint)
+            drawContext.canvas.nativeCanvas.drawText(lowTimeStr, textStartX, lowBaseline, lowTextPaint)
         }
 
         if (coef != null) {

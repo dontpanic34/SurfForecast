@@ -14,10 +14,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,9 +46,7 @@ fun HourlyForecastRow(
     val rotationAngle = (degrees + 180f) % 360f
 
     // Code couleur vent (jaune = vent de terre, orange = vent de mer modere, rouge = vent
-    // de mer fort) : on garde les teintes vives d'origine, la lisibilite sur les deux
-    // themes vient d'une ombre portee derriere le texte (cf. textShadow plus bas), pas
-    // d'un assombrissement qui rendrait les 3 paliers indistinguables entre eux.
+    // de mer fort) : texte simple dans la teinte vive d'origine, sans fond ni ombre.
     val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyData.windSpeedKmh)
     val speedFormatted = SurfUnitsHelper.formatWindValue(hourlyData.windSpeedKmh, windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
@@ -77,12 +73,6 @@ fun HourlyForecastRow(
         isCurrentHour -> primaryColor.copy(alpha = 0.8f)
         else -> Color.Transparent
     }
-
-    val textShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.85f),
-        offset = Offset(0f, 0.6f),
-        blurRadius = 3.5f
-    )
 
     Row(
         modifier = modifier
@@ -200,31 +190,24 @@ fun HourlyForecastRow(
             modifier = Modifier.weight(0.9f)
         )
 
-        // Col 5 : Énergie (couleur foncée + ombre pour lisibilité en mode clair)
+        // Col 5 : Énergie
         Text(
             text = "${hourlyData.energyKj}kJ",
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF8F6300),
-                shadow = textShadow,
-                textAlign = TextAlign.Center
-            ),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF8F6300),
+            textAlign = TextAlign.Center,
             maxLines = 1,
             modifier = Modifier.weight(1.2f)
         )
 
-        // Col 6 : Direction cardinale (ombre portee pour la lisibilite, sans toucher a la
-        // couleur vive du code jaune/orange/rouge)
+        // Col 6 : Direction cardinale
         Text(
             text = dirFr,
-            style = TextStyle(
-                fontSize = if (dirFr.length >= 3) 10.sp else 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = windColor,
-                shadow = textShadow,
-                textAlign = TextAlign.End
-            ),
+            fontSize = if (dirFr.length >= 3) 10.sp else 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = windColor,
+            textAlign = TextAlign.End,
             maxLines = 1,
             modifier = Modifier.weight(1.0f)
         )
@@ -254,16 +237,13 @@ fun HourlyForecastRow(
             }
         }
 
-        // Col 8 : Vitesse du vent (meme raison que Col 6)
+        // Col 8 : Vitesse du vent
         Text(
             text = "$speedFormatted $unitSymbol",
-            style = TextStyle(
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = windColor,
-                shadow = textShadow,
-                textAlign = TextAlign.End
-            ),
+            fontSize = 11.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = windColor,
+            textAlign = TextAlign.End,
             maxLines = 1,
             modifier = Modifier.weight(1.6f)
         )

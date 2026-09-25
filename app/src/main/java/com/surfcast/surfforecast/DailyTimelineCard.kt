@@ -17,7 +17,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -25,7 +24,6 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -186,13 +184,6 @@ fun DailyTimelineCard(
                 )
             } else {
                 val primaryColor = MaterialTheme.colorScheme.primary
-                // Ombre portee (pas de fond derriere le texte, trop lourd visuellement) :
-                // garde le vent lisible sur les deux themes sans alterer sa couleur.
-                val windTextShadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.85f),
-                    offset = Offset(0f, 0.6f),
-                    blurRadius = 3.5f
-                )
 
                 // --- Scrub tactile : glisser ou taper deplace l'heure selectionnee,
                 // partagee avec les encarts Houle/Vent/Meteo (synchro bidirectionnelle). ---
@@ -221,10 +212,8 @@ fun DailyTimelineCard(
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
                         val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
                         val rotationAngle = (degrees + 180f) % 360f
-                        // Teinte vive d'origine (code jaune/orange/rouge selon force/direction) :
-                        // la lisibilite sur les deux themes vient d'une ombre portee derriere le
-                        // texte (windTextShadow), pas d'un assombrissement qui rendrait les 3
-                        // paliers indistinguables entre eux.
+                        // Teinte vive d'origine, respecte le code jaune/orange/rouge selon
+                        // force/direction -- texte simple, sans fond ni ombre.
                         val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourly.windSpeedKmh)
                         val isSelected = index == selectedIndex
 
@@ -255,22 +244,16 @@ fun DailyTimelineCard(
                             }
                             Text(
                                 text = dirFr,
-                                style = TextStyle(
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = arrowColor,
-                                    shadow = windTextShadow
-                                ),
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = arrowColor,
                                 maxLines = 1
                             )
                             Text(
                                 text = SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit),
-                                style = TextStyle(
-                                    fontSize = 8.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = arrowColor,
-                                    shadow = windTextShadow
-                                ),
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = arrowColor,
                                 maxLines = 1
                             )
                         }
