@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fond rond du widget "montre" (Tache : refonte widget, cercle de maree). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#EB1A1E24" />
+    <stroke
+        android:width="1dp"
+        android:color="#22FFFFFF" />
+</shape>
