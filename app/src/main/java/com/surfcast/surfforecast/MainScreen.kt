@@ -79,6 +79,7 @@ fun MainScreen(viewModel: SurfViewModel) {
     var showSessionLogDialog by remember { mutableStateOf(false) }
     var showSessionLogEntry by remember { mutableStateOf(false) }
     var showQuiverDialog by remember { mutableStateOf(false) }
+    var showWeatherDetail by remember { mutableStateOf(false) }
     var showLiveCam by rememberSaveable { mutableStateOf(false) }
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var directWebcamSpot by remember { mutableStateOf<String?>(null) }
@@ -481,6 +482,10 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             )
                                         }
 
+                                        IconButton(onClick = { showWeatherDetail = true }, modifier = Modifier.size(32.dp)) {
+                                            Text(text = "🌤️", fontSize = 18.sp)
+                                        }
+
                                         IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp)) {
                                             Icon(
                                                 imageVector = Icons.Default.Settings,
@@ -499,6 +504,16 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             onOpenNewEntry = { showSessionLogEntry = true },
                                             onOpenQuiver = { showQuiverDialog = true },
                                             onDismiss = { showSessionLogDialog = false }
+                                        )
+                                    }
+
+                                    if (showWeatherDetail) {
+                                        WeatherDetailScreen(
+                                            spotName = state.spotName,
+                                            groupedByDate = groupedByDate,
+                                            availableDates = availableDates,
+                                            windUnit = viewModel.windUnit,
+                                            onDismiss = { showWeatherDetail = false }
                                         )
                                     }
 

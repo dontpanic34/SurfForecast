@@ -81,6 +81,7 @@ class SurfRepository {
         val windSpeeds: List<Double>,
         val windDirections: List<Double>,
         val cloudCovers: List<Int>,
+        val apparentTemperatures: List<Double> = emptyList(),
         val sunriseByDate: Map<LocalDate, LocalTime> = emptyMap(),
         val sunsetByDate: Map<LocalDate, LocalTime> = emptyMap()
     )
@@ -166,7 +167,7 @@ class SurfRepository {
 
         val url = "https://api.open-meteo.com/v1/forecast?" +
                 "latitude=$lat&longitude=$lon" +
-                "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,cloudcover" +
+                "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,cloudcover,apparent_temperature" +
                 modelParam +
                 dailyParam +
                 "&forecast_days=$safeDays" +
@@ -195,6 +196,7 @@ class SurfRepository {
         val windSpeedArr = getArray("wind_speed_10m")
         val windDirArr = getArray("wind_direction_10m")
         val cloudArr = getArray("cloudcover")
+        val apparentArr = getArray("apparent_temperature")
 
         val times = mutableListOf<LocalDateTime>()
         val temps = mutableListOf<Double>()
@@ -202,16 +204,21 @@ class SurfRepository {
         val windSpeeds = mutableListOf<Double>()
         val windDirs = mutableListOf<Double>()
         val clouds = mutableListOf<Int>()
+        val apparentTemps = mutableListOf<Double>()
 
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
         for (i in 0 until timeArr.length()) {
             times.add(LocalDateTime.parse(timeArr.getString(i), formatter))
-            temps.add(if (i < tempArr.length() && !tempArr.isNull(i)) tempArr.getDouble(i) else 20.0)
+            val temp = if (i < tempArr.length() && !tempArr.isNull(i)) tempArr.getDouble(i) else 20.0
+            temps.add(temp)
             codes.add(if (i < codeArr.length() && !codeArr.isNull(i)) codeArr.getInt(i) else 0)
             windSpeeds.add(if (i < windSpeedArr.length() && !windSpeedArr.isNull(i)) windSpeedArr.getDouble(i) else 10.0)
             windDirs.add(if (i < windDirArr.length() && !windDirArr.isNull(i)) windDirArr.getDouble(i) else 0.0)
             clouds.add(if (i < cloudArr.length() && !cloudArr.isNull(i)) cloudArr.getInt(i) else 0)
+            // Repli sur la temperature de l'air si le ressenti n'est pas dispo pour cette
+            // heure (plutot que 20.0 par defaut, qui n'a pas de sens comme "ressenti").
+            apparentTemps.add(if (i < apparentArr.length() && !apparentArr.isNull(i)) apparentArr.getDouble(i) else temp)
         }
 
         val sunriseByDate = mutableMapOf<LocalDate, LocalTime>()
@@ -236,7 +243,7 @@ class SurfRepository {
             }
         }
 
-        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, clouds, sunriseByDate, sunsetByDate)
+        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, clouds, apparentTemps, sunriseByDate, sunsetByDate)
     }
 
     suspend fun getHybridForecast(
@@ -307,7 +314,10 @@ class SurfRepository {
                     windDirectionStr = getCardinalDirection(windDirDeg),
                     weatherCode = wData.weatherCodes.getOrElse(wIndex) { 0 },
                     temperature = wData.temperatures.getOrElse(wIndex) { 20.0 }.roundToInt(),
-                    cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 }
+                    cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 },
+                    feelsLike = wData.apparentTemperatures.getOrElse(wIndex) {
+                        wData.temperatures.getOrElse(wIndex) { 20.0 }
+                    }.roundToInt()
                 )
             )
         }

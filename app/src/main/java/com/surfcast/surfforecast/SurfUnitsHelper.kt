@@ -114,4 +114,22 @@ object SurfUnitsHelper {
             else -> if (hourly.cloudCover > 60) "☁️" else if (isDay) "☀️" else "🌙"
         }
     }
+
+    /** Libelle FR du temps, meme decoupage de codes WMO que resolveRealWeatherEmoji. */
+    fun weatherCodeLabel(code: Int): String = when (code) {
+        0 -> "Dégagé"
+        1, 2 -> "Partiellement nuageux"
+        3 -> "Nuageux"
+        45, 48 -> "Brouillard"
+        51, 53, 55, 61, 63, 65 -> "Pluie"
+        71, 73, 75, 77, 85, 86 -> "Neige"
+        80, 81, 82 -> "Averses"
+        95, 96, 99 -> "Orage"
+        else -> "Variable"
+    }
+
+    /** Vrai si le code WMO correspond a une forme de precipitation (pluie, averse, neige, orage). */
+    fun isPrecipitationCode(code: Int): Boolean = code in intArrayOf(
+        51, 53, 55, 61, 63, 65, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99
+    )
 }

@@ -26,7 +26,8 @@ data class HourlyUiModel(
     val windDirectionStr: String,
     val weatherCode: Int,
     val temperature: Int,
-    val cloudCover: Int = 0
+    val cloudCover: Int = 0,
+    val feelsLike: Int = temperature
 )
 
 @Composable
