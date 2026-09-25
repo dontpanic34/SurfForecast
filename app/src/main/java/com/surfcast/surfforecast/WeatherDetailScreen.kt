@@ -1,6 +1,8 @@
 package com.surfcast.surfforecast
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -13,7 +15,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +44,10 @@ import kotlin.math.roundToInt
  * sur plusieurs jours dans des cartes sombres semi-transparentes -- volontairement un
  * habillage a part du reste de l'appli (qui suit le theme clair/sombre), pour un ecran
  * plus "esthetique" comme demande.
+ *
+ * Le bandeau "heure par heure" suit le jour selectionne dans le bandeau "plusieurs
+ * jours" (tape sur un jour) : la section "hero" en haut, elle, reste toujours sur les
+ * conditions actuelles (comme Google Meteo).
  */
 @Composable
 fun WeatherDetailScreen(
@@ -67,8 +76,11 @@ fun WeatherDetailScreen(
         todayHours.firstOrNull()
     }
 
+    var selectedDate by remember(referenceDate) { mutableStateOf(referenceDate) }
+
     val updateTime = remember { now.format(DateTimeFormatter.ofPattern("HH:mm")) }
     val hourFormatter = remember { DateTimeFormatter.ofPattern("HH'h'") }
+    val dayFormatter = remember { DateTimeFormatter.ofPattern("EEEE d", Locale.FRANCE) }
 
     // Dialog plein ecran (comme QuiverScreen/SessionLogHistoryScreen) : sans ca, cet
     // ecran se contentait de s'inserer comme un item de plus dans la liste qui l'ouvre,
@@ -116,6 +128,24 @@ fun WeatherDetailScreen(
                     )
                 }
             } else {
+                // Si le jour selectionne a disparu des donnees (fenetre de prevision qui
+                // a glisse suite a un rafraichissement en arriere-plan), on retombe sur
+                // aujourd'hui plutot que de laisser le bandeau horaire vide indefiniment.
+                val effectiveSelectedDate = if (selectedDate in availableDates) selectedDate else referenceDate
+                val selectedDayHours = groupedByDate[effectiveSelectedDate].orEmpty()
+                val isTodaySelected = effectiveSelectedDate == referenceDate
+                val hourlyStripItems = if (isTodaySelected) {
+                    (todayHours.filter { it.rawTime.hour >= currentHourModel.rawTime.hour } +
+                        groupedByDate[referenceDate.plusDays(1)].orEmpty()).take(24)
+                } else {
+                    selectedDayHours
+                }
+                val hourlyStripSubtitle = if (isTodaySelected) {
+                    null
+                } else {
+                    effectiveSelectedDate.format(dayFormatter).replaceFirstChar { it.uppercase() }
+                }
+
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -131,17 +161,20 @@ fun WeatherDetailScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     HourlyStripCard(
-                        currentHourModel = currentHourModel,
-                        todayHours = todayHours,
-                        tomorrowHours = groupedByDate[referenceDate.plusDays(1)].orEmpty(),
-                        hourFormatter = hourFormatter
+                        items = hourlyStripItems,
+                        nowRawTime = if (isTodaySelected) currentHourModel.rawTime else null,
+                        subtitle = hourlyStripSubtitle,
+                        hourFormatter = hourFormatter,
+                        windUnit = windUnit
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
 
                     DailyStripCard(
                         availableDates = availableDates,
-                        groupedByDate = groupedByDate
+                        groupedByDate = groupedByDate,
+                        selectedDate = effectiveSelectedDate,
+                        onSelectDate = { date -> selectedDate = date }
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -218,12 +251,12 @@ private fun WeatherHeroSection(
 
 @Composable
 private fun HourlyStripCard(
-    currentHourModel: HourlyUiModel,
-    todayHours: List<HourlyUiModel>,
-    tomorrowHours: List<HourlyUiModel>,
-    hourFormatter: DateTimeFormatter
+    items: List<HourlyUiModel>,
+    nowRawTime: java.time.LocalDateTime?,
+    subtitle: String?,
+    hourFormatter: DateTimeFormatter,
+    windUnit: String
 ) {
-    val items = (todayHours.filter { it.rawTime.hour >= currentHourModel.rawTime.hour } + tomorrowHours).take(24)
     if (items.isEmpty()) return
 
     Column(
@@ -248,15 +281,27 @@ private fun HourlyStripCard(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
+            if (subtitle != null) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "· $subtitle",
+                    color = Color.White.copy(alpha = 0.65f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
         Spacer(modifier = Modifier.height(10.dp))
+        val windUnitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
         LazyRow(
             contentPadding = PaddingValues(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             items(items) { hourly ->
-                val isNow = hourly.rawTime.hour == currentHourModel.rawTime.hour &&
-                    hourly.rawTime.toLocalDate() == currentHourModel.rawTime.toLocalDate()
+                val isNow = nowRawTime != null && hourly.rawTime == nowRawTime
+                val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
+                val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourly.windSpeedKmh)
+                val windSpeed = SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit)
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -268,6 +313,14 @@ private fun HourlyStripCard(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(hourly), fontSize = 20.sp)
                     Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "$dirFr $windSpeed $windUnitSymbol",
+                        color = windColor,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (isNow) "Maintenant" else hourly.rawTime.format(hourFormatter),
                         color = Color.White.copy(alpha = if (isNow) 1f else 0.7f),
@@ -283,7 +336,9 @@ private fun HourlyStripCard(
 @Composable
 private fun DailyStripCard(
     availableDates: List<LocalDate>,
-    groupedByDate: Map<LocalDate, List<HourlyUiModel>>
+    groupedByDate: Map<LocalDate, List<HourlyUiModel>>,
+    selectedDate: LocalDate,
+    onSelectDate: (LocalDate) -> Unit
 ) {
     if (availableDates.isEmpty()) return
     val today = LocalDate.now()
@@ -331,12 +386,21 @@ private fun DailyStripCard(
                         today.plusDays(1) -> "Dem."
                         else -> date.format(dayFormatter).replace(".", "").replaceFirstChar { it.uppercase() } + "."
                     }
+                    val isSelected = date == selectedDate
 
                     Column(
                         modifier = Modifier
                             .width(58.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(Color.White.copy(alpha = 0.08f))
+                            .background(Color.White.copy(alpha = if (isSelected) 0.2f else 0.08f))
+                            .then(
+                                if (isSelected) {
+                                    Modifier.border(1.5.dp, Color.White.copy(alpha = 0.8f), RoundedCornerShape(14.dp))
+                                } else {
+                                    Modifier
+                                }
+                            )
+                            .clickable { onSelectDate(date) }
                             .padding(vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
