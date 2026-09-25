@@ -1254,9 +1254,8 @@ fun ContinuousWaveCanvas(
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
 
     // Teinte vive (jamais la variante "Dark" pensee pour fond clair) : la lisibilite sur
-    // les deux themes vient du petit fond sombre dessine derriere chaque texte
-    // (drawTextWithChip), pas d'un assombrissement de la couleur qui la ferait se fondre
-    // dans ce fond sombre en theme sombre.
+    // les deux themes vient d'une ombre portee derriere chaque texte (drawTextWithShadow),
+    // pas d'un assombrissement de la couleur qui la ferait se fondre dans un fond sombre.
     val tideColorInt = AppColors.TideHigh.toArgb()
 
     val heightTextPaint = remember(density) {
@@ -1394,7 +1393,7 @@ fun ContinuousWaveCanvas(
                 center = Offset(thX, thBottom + 1.dp.toPx())
             )
 
-            drawTextWithChip(
+            drawTextWithShadow(
                 "$feels°",
                 colLeft + 7.5.dp.toPx(),
                 padY + 7.5.dp.toPx(),
@@ -1432,7 +1431,7 @@ fun ContinuousWaveCanvas(
             drawPath(path = dropPath, color = tideLineColor.copy(alpha = 0.25f))
             drawPath(path = dropPath, color = tideLineColor, style = Stroke(width = 0.85.dp.toPx()))
 
-            drawTextWithChip(
+            drawTextWithShadow(
                 "$water°",
                 colLeft + 7.5.dp.toPx(),
                 padY + 17.5.dp.toPx(),
@@ -1454,7 +1453,7 @@ fun ContinuousWaveCanvas(
                 drawCircle(color = tideLineColor, radius = 2.2.dp.toPx(), center = closestPoint)
             }
 
-            drawTextWithChip(hText, targetX - hTextW / 2f, textY, heightTextPaint)
+            drawTextWithShadow(hText, targetX - hTextW / 2f, textY, heightTextPaint)
         }
 
         for (i in 0 until daysCount) {
@@ -1525,8 +1524,6 @@ fun DailyTideCanvas(
 
         val iconW = 5.2.dp.toPx()
         val iconH = 4.8.dp.toPx()
-        // Marge suffisante pour que le chip sombre derriere le texte (drawTextWithChip)
-        // ne recouvre pas l'icone vaguelette/fleche juste a gauche.
         val iconGap = 3.2.dp.toPx()
 
         val highTextW = if (highTimeStr.isNotEmpty()) highTextPaint.measureText(highTimeStr) else 0f
@@ -1581,7 +1578,7 @@ fun DailyTideCanvas(
             drawPath(headPath, color = highIconColor, style = Stroke(width = 0.9.dp.toPx()))
 
             val highBaseline = row1Y - (highTextPaint.descent() + highTextPaint.ascent()) / 2f
-            drawTextWithChip(highTimeStr, textStartX, highBaseline, highTextPaint)
+            drawTextWithShadow(highTimeStr, textStartX, highBaseline, highTextPaint)
         }
 
         if (lowTimeStr.isNotEmpty()) {
@@ -1616,7 +1613,7 @@ fun DailyTideCanvas(
             drawPath(headPath2, color = lowIconColor, style = Stroke(width = 0.9.dp.toPx()))
 
             val lowBaseline = row2Y - (lowTextPaint.descent() + lowTextPaint.ascent()) / 2f
-            drawTextWithChip(lowTimeStr, textStartX, lowBaseline, lowTextPaint)
+            drawTextWithShadow(lowTimeStr, textStartX, lowBaseline, lowTextPaint)
         }
 
         if (coef != null) {

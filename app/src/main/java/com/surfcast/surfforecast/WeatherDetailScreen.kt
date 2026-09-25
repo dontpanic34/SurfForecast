@@ -1,6 +1,5 @@
 package com.surfcast.surfforecast
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -24,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -47,8 +48,6 @@ fun WeatherDetailScreen(
     windUnit: String,
     onDismiss: () -> Unit
 ) {
-    BackHandler { onDismiss() }
-
     val today = LocalDate.now()
     // Si les prévisions ne couvrent pas la date du jour (fuseau horaire du spot différent
     // de celui de l'appareil, ou données pas encore rafraîchies), on retombe sur la
@@ -71,6 +70,13 @@ fun WeatherDetailScreen(
     val updateTime = remember { now.format(DateTimeFormatter.ofPattern("HH:mm")) }
     val hourFormatter = remember { DateTimeFormatter.ofPattern("HH'h'") }
 
+    // Dialog plein ecran (comme QuiverScreen/SessionLogHistoryScreen) : sans ca, cet
+    // ecran se contentait de s'inserer comme un item de plus dans la liste qui l'ouvre,
+    // au lieu de recouvrir tout l'ecran par-dessus.
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -142,6 +148,7 @@ fun WeatherDetailScreen(
                 }
             }
         }
+    }
     }
 }
 
