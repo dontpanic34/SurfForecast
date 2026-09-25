@@ -17,7 +17,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -25,7 +24,6 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -110,15 +108,6 @@ fun DailyTimelineCard(
     val tideInfo = dailyTides[selectedDate]
     val sun = dailySunInfo[selectedDate]
     val hourFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-
-    // Legere ombre portee : garde le texte colore (vent, energie) lisible meme sur un
-    // fond blanc en theme clair, sans avoir a foncer les couleurs au point de perdre
-    // le code couleur (jaune/orange/rouge).
-    val infoTextShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.3f),
-        offset = Offset(0.5f, 1f),
-        blurRadius = 1.8f
-    )
 
     // Point 3 : score par heure (0-100), sert a colorer la courbe segment par segment.
     val scores = curveHours.map { hourly ->
@@ -223,9 +212,14 @@ fun DailyTimelineCard(
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
                         val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
                         val rotationAngle = (degrees + 180f) % 360f
-                        // Palette foncee (vs. getSurfWindColor) : texte/icone de petite taille
-                        // sur fond clair, doit rester lisible meme en theme clair.
-                        val arrowColor = SurfUnitsHelper.getSurfWindTextColor(dirFr, hourly.windSpeedKmh)
+                        // Teinte vive d'origine (code jaune/orange/rouge selon force/direction) :
+                        // la lisibilite en theme clair vient d'un petit fond sombre derriere le
+                        // texte (windChipModifier), pas d'un assombrissement qui rendrait les 3
+                        // paliers indistinguables entre eux.
+                        val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourly.windSpeedKmh)
+                        val windChipModifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.38f), RoundedCornerShape(3.dp))
+                            .padding(horizontal = 2.dp, vertical = 0.5.dp)
                         val isSelected = index == selectedIndex
 
                         Column(
@@ -250,28 +244,24 @@ fun DailyTimelineCard(
                                         close()
                                     }
                                     drawPath(path = path, color = arrowColor)
-                                    drawPath(path = path, color = Color.Black.copy(alpha = 0.25f), style = Stroke(width = 0.6.dp.toPx()))
+                                    drawPath(path = path, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 0.6.dp.toPx()))
                                 }
                             }
                             Text(
                                 text = dirFr,
-                                style = TextStyle(
-                                    fontSize = 8.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = arrowColor,
-                                    shadow = infoTextShadow
-                                ),
-                                maxLines = 1
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = arrowColor,
+                                maxLines = 1,
+                                modifier = windChipModifier
                             )
                             Text(
                                 text = SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit),
-                                style = TextStyle(
-                                    fontSize = 8.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = arrowColor,
-                                    shadow = infoTextShadow
-                                ),
-                                maxLines = 1
+                                fontSize = 8.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = arrowColor,
+                                maxLines = 1,
+                                modifier = windChipModifier.padding(top = 1.dp)
                             )
                         }
                     }

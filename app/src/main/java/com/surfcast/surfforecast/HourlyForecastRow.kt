@@ -47,9 +47,15 @@ fun HourlyForecastRow(
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
 
-    // Palette foncee (vs. getSurfWindColor) : meilleur contraste en petite taille sur
-    // fond clair pour les 3 paliers (jaune/orange/rouge), pas seulement le jaune.
-    val windColor = SurfUnitsHelper.getSurfWindTextColor(dirFr, hourlyData.windSpeedKmh)
+    // Code couleur vent (jaune = vent de terre, orange = vent de mer modere, rouge = vent
+    // de mer fort) : on garde les teintes vives d'origine, la lisibilite en theme clair
+    // vient d'un fond sombre derriere le texte (cf. windChipModifier), pas d'un assombrissement
+    // de la couleur qui rendrait les 3 paliers indistinguables entre eux.
+    val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyData.windSpeedKmh)
+    val windChipShape = RoundedCornerShape(4.dp)
+    val windChipModifier = Modifier
+        .background(Color.Black.copy(alpha = 0.4f), windChipShape)
+        .padding(horizontal = 3.dp, vertical = 1.dp)
     val speedFormatted = SurfUnitsHelper.formatWindValue(hourlyData.windSpeedKmh, windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
 
@@ -212,19 +218,18 @@ fun HourlyForecastRow(
             modifier = Modifier.weight(1.2f)
         )
 
-        // Col 6 : Direction cardinale (avec ombre contrastée)
-        Text(
-            text = dirFr,
-            style = TextStyle(
+        // Col 6 : Direction cardinale (fond sombre derriere le texte pour la lisibilite,
+        // sans toucher a la couleur vive du code jaune/orange/rouge)
+        Box(modifier = Modifier.weight(1.0f), contentAlignment = Alignment.CenterEnd) {
+            Text(
+                text = dirFr,
                 fontSize = if (dirFr.length >= 3) 10.sp else 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = windColor,
-                shadow = textShadow,
-                textAlign = TextAlign.End
-            ),
-            maxLines = 1,
-            modifier = Modifier.weight(1.0f)
-        )
+                maxLines = 1,
+                modifier = windChipModifier
+            )
+        }
 
         // Col 7 : Flèche de vent
         Box(
@@ -246,24 +251,22 @@ fun HourlyForecastRow(
                         close()
                     }
                     drawPath(path = path, color = windColor)
-                    drawPath(path = path, color = Color.Gray, style = Stroke(width = 0.8.dp.toPx()))
+                    drawPath(path = path, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 0.8.dp.toPx()))
                 }
             }
         }
 
-        // Col 8 : Vitesse du vent (avec ombre contrastée)
-        Text(
-            text = "$speedFormatted $unitSymbol",
-            style = TextStyle(
+        // Col 8 : Vitesse du vent (fond sombre derriere le texte, meme raison que Col 6)
+        Box(modifier = Modifier.weight(1.6f), contentAlignment = Alignment.CenterEnd) {
+            Text(
+                text = "$speedFormatted $unitSymbol",
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = windColor,
-                shadow = textShadow,
-                textAlign = TextAlign.End
-            ),
-            maxLines = 1,
-            modifier = Modifier.weight(1.6f)
-        )
+                maxLines = 1,
+                modifier = windChipModifier
+            )
+        }
     }
 }
 

@@ -74,46 +74,24 @@ object SurfUnitsHelper {
     }
 
     /**
-     * Classe une direction cardinale FR en vent de terre (offshore, cote large ouest de
-     * la France) ou vent de mer (onshore), pour les deux palettes de couleur vent
-     * ci-dessous. Partagee entre [getSurfWindColor] et [getSurfWindTextColor] pour que les
-     * deux palettes restent toujours d'accord sur la classification d'une direction.
+     * Code couleur vent officiel de l'appli, base sur la direction ET la force : jaune =
+     * vent de terre (offshore, favorable, quelle que soit sa force), orange = vent de mer
+     * (onshore) modere, rouge = vent de mer fort. A afficher tel quel partout (icones ET
+     * texte) : ne jamais assombrir ces teintes pour la lisibilite sur fond clair, ca rend
+     * les 3 paliers indistinguables entre eux. Pour du texte/icone de petite taille sur fond
+     * clair, mettre un petit fond sombre derriere (cf. DailyTimelineCard/HourlyForecastRow)
+     * plutot que de changer la couleur.
      */
-    private enum class WindShoreCategory { OFFSHORE, ONSHORE, OTHER }
-
-    private fun windShoreCategoryFor(directionFr: String): WindShoreCategory {
+    fun getSurfWindColor(directionFr: String, speedKmh: Int): Color {
         val dir = directionFr.uppercase().trim()
 
         val isVentDeTerre = dir in listOf("E", "ENE", "ESE", "SE", "NE")
         val isVentDeMer = dir in listOf("O", "W", "ONO", "WNW", "OSO", "WSW", "NO", "NW", "NNO", "NNW", "SO", "SW", "SSO", "SSW", "NNE", "SSE", "S", "N")
 
         return when {
-            isVentDeTerre -> WindShoreCategory.OFFSHORE
-            isVentDeMer -> WindShoreCategory.ONSHORE
-            else -> WindShoreCategory.OTHER
-        }
-    }
-
-    fun getSurfWindColor(directionFr: String, speedKmh: Int): Color {
-        return when (windShoreCategoryFor(directionFr)) {
-            WindShoreCategory.OFFSHORE -> Color(0xFFFDD835)
-            WindShoreCategory.ONSHORE -> if (speedKmh <= 22) Color(0xFFFF9800) else Color(0xFFE53935)
-            WindShoreCategory.OTHER -> Color(0xFFE53935)
-        }
-    }
-
-    /**
-     * Variante de getSurfWindColor foncee pour du texte/icones de petite taille : la
-     * palette ci-dessus est pensee pour de larges surfaces (barres, grosses fleches) sur
-     * fond sombre, et devient a peine lisible en petit sur fond clair (notamment le jaune
-     * "vent de terre"). A utiliser pour tout texte/etiquette de vent affiche sur le theme
-     * clair de l'appli.
-     */
-    fun getSurfWindTextColor(directionFr: String, speedKmh: Int): Color {
-        return when (windShoreCategoryFor(directionFr)) {
-            WindShoreCategory.OFFSHORE -> Color(0xFF8F6300)
-            WindShoreCategory.ONSHORE -> if (speedKmh <= 22) Color(0xFFB35400) else Color(0xFFC62828)
-            WindShoreCategory.OTHER -> Color(0xFFC62828)
+            isVentDeTerre -> Color(0xFFFDD835)
+            isVentDeMer && speedKmh <= 22 -> Color(0xFFFF9800)
+            else -> Color(0xFFE53935)
         }
     }
 
