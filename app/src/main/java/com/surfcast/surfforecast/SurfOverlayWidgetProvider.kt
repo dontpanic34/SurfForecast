@@ -13,6 +13,7 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
@@ -32,10 +33,12 @@ import kotlin.math.sin
 class SurfOverlayWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        Log.d(TAG, "onUpdate: start, appWidgetIds=${appWidgetIds.toList()}")
         val prefs = context.getSharedPreferences("surf_prefs", Context.MODE_PRIVATE)
         val spotName = prefs.getString("fav_0", "Montalivet") ?: "Montalivet"
         val spot = SurfDatabase.findSpotByName(spotName) ?: SurfDatabase.getAllSpots().first()
         val windUnit = prefs.getString("wind_unit", "kmh") ?: "kmh"
+        Log.d(TAG, "onUpdate: spot=$spotName resolved=${spot.name} lat=${spot.latitude} lon=${spot.longitude}")
 
         val repository = SurfRepository()
         val config = ForecastEngineConfig()
@@ -56,8 +59,9 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 // limite, un reseau lent (getHybridForecast + getTides sont enchaines, chacun
                 // avec un connectTimeout/readTimeout de 10s) pourrait depasser cette fenetre
                 // et empecher pendingResult.finish() d'etre appele a temps.
-                withTimeoutOrNull(15_000) {
+                val timedOut = withTimeoutOrNull(15_000) {
                     val forecast = repository.getHybridForecast(spot.latitude, spot.longitude, config).hourly
+                    Log.d(TAG, "onUpdate: forecast fetched, ${forecast.size} points")
                     val today = LocalDate.now()
 
                     val tides = repository.getTides(
@@ -67,12 +71,17 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                         today.plusDays(1).toString()
                     )
                     val todayTide = tides[today]
+                    Log.d(TAG, "onUpdate: tides fetched, todayTide=$todayTide")
 
                     val currentHour = LocalTime.now().hour
 
                     val currentHourModel = forecast.firstOrNull {
                         it.rawTime.toLocalDate() == today && it.rawTime.hour == currentHour
                     } ?: forecast.firstOrNull()
+
+                    if (currentHourModel == null) {
+                        Log.w(TAG, "onUpdate: no currentHourModel found (forecast empty or no matching hour)")
+                    }
 
                     if (currentHourModel != null) {
                         val formattedH = String.format(Locale.US, "%.1fm", currentHourModel.waveHeight)
@@ -105,10 +114,15 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                             todayTide = todayTide
                         )
                         cachedData = data
+                        Log.d(TAG, "onUpdate: rendering widgets with formattedH=$formattedH")
                         renderWidgets(context, appWidgetManager, appWidgetIds, data)
                     }
                 }
-            } catch (_: Exception) {
+                if (timedOut == null) {
+                    Log.w(TAG, "onUpdate: timed out after 15s waiting on network")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "onUpdate: failed with exception", e)
             } finally {
                 pendingResult.finish()
             }
@@ -144,6 +158,7 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_surf_live)
 
             val (ringW, ringH) = ringSizePx(context, appWidgetManager, appWidgetId)
+            Log.d(TAG, "renderWidgets: appWidgetId=$appWidgetId ringSizePx=${ringW}x$ringH")
             val ringBitmap = createTideRingBitmap(
                 widthPx = ringW,
                 heightPx = ringH,
@@ -172,6 +187,7 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
+            Log.d(TAG, "renderWidgets: updateAppWidget called for $appWidgetId")
         }
     }
 
@@ -182,11 +198,12 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
         newOptions: Bundle
     ) {
         super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-        // Le widget est redimensionnable (cercle) : on regenere l'anneau a la nouvelle taille
-        // exacte pour qu'il reste net plutot que de laisser Android l'etirer. On reutilise les
-        // dernieres donnees recuperees (pas de nouvel appel reseau juste pour un redimensionnement,
-        // ce qui serait declenche en rafale pendant un drag de redimensionnement).
+        // Se declenche notamment au premier placement, quand le launcher communique enfin la
+        // taille reelle accordee : on regenere l'anneau a cette taille exacte pour qu'il reste
+        // net. On reutilise les dernieres donnees recuperees plutot que de refaire un appel
+        // reseau ici.
         val data = cachedData
+        Log.d(TAG, "onAppWidgetOptionsChanged: appWidgetId=$appWidgetId hasCachedData=${data != null}")
         if (data != null) {
             renderWidgets(context, appWidgetManager, intArrayOf(appWidgetId), data)
         } else {
@@ -395,6 +412,8 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
+        private const val TAG = "SurfWidget"
+
         @Volatile
         private var cachedData: CachedWidgetData? = null
 
