@@ -47,7 +47,7 @@ fun WeatherDetailScreen(
     windUnit: String,
     onDismiss: () -> Unit
 ) {
-    BackHandler(onClick = onDismiss)
+    BackHandler { onDismiss() }
 
     val today = LocalDate.now()
     // Si les prévisions ne couvrent pas la date du jour (fuseau horaire du spot différent
