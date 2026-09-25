@@ -1,24 +1,8 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
-
-// Cle API Xweather (ex-AerisWeather) pour les calques du radar (precipitation, nuages,
-// temperature, sur tous les jours J0..J+3) : lue depuis local.properties, jamais commitee.
-// Le tableau de bord Xweather affiche une seule cle a copier-coller telle quelle (elle
-// contient deja le format client_id_client_secret attendu par l'URL des tuiles). Vide par
-// defaut : le radar affiche alors un message invitant a la configurer plutot que d'essayer de
-// charger des tuiles.
-val localProperties = Properties().apply {
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { load(it) }
-    }
-}
-val xweatherApiKey: String = localProperties.getProperty("XWEATHER_API_KEY", "")
 
 android {
     namespace = "com.surfcast.surfforecast"
@@ -34,7 +18,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "XWEATHER_API_KEY", "\"$xweatherApiKey\"")
     }
 
     buildTypes {
@@ -50,7 +33,6 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 }
 
@@ -85,9 +67,6 @@ dependencies {
 
     // Coil (affichage des photos du journal de session)
     implementation("io.coil-kt:coil-compose:2.7.0")
-
-    // osmdroid (radar meteo RainViewer, Tache 4)
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

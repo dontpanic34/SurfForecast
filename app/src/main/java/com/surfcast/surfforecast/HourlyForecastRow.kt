@@ -47,9 +47,9 @@ fun HourlyForecastRow(
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
 
-    // Couleur du vent ajustée pour un meilleur contraste en mode clair
-    val rawWindColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyData.windSpeedKmh)
-    val windColor = if (rawWindColor == Color(0xFFFDD835)) Color(0xFFE68A00) else rawWindColor
+    // Palette foncee (vs. getSurfWindColor) : meilleur contraste en petite taille sur
+    // fond clair pour les 3 paliers (jaune/orange/rouge), pas seulement le jaune.
+    val windColor = SurfUnitsHelper.getSurfWindTextColor(dirFr, hourlyData.windSpeedKmh)
     val speedFormatted = SurfUnitsHelper.formatWindValue(hourlyData.windSpeedKmh, windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
 
@@ -77,9 +77,9 @@ fun HourlyForecastRow(
     }
 
     val textShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.28f),
+        color = Color.Black.copy(alpha = 0.35f),
         offset = Offset(0.5f, 1f),
-        blurRadius = 1.5f
+        blurRadius = 2f
     )
 
     Row(
@@ -198,13 +198,13 @@ fun HourlyForecastRow(
             modifier = Modifier.weight(0.9f)
         )
 
-        // Col 5 : Énergie (avec ombre pour lisibilité en mode clair)
+        // Col 5 : Énergie (couleur foncée + ombre pour lisibilité en mode clair)
         Text(
             text = "${hourlyData.energyKj}kJ",
             style = TextStyle(
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFFFB300),
+                color = Color(0xFF8F6300),
                 shadow = textShadow,
                 textAlign = TextAlign.Center
             ),

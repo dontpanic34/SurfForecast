@@ -78,7 +78,6 @@ fun MainScreen(viewModel: SurfViewModel) {
     var showSessionLogDialog by remember { mutableStateOf(false) }
     var showSessionLogEntry by remember { mutableStateOf(false) }
     var showQuiverDialog by remember { mutableStateOf(false) }
-    var showRadarDialog by remember { mutableStateOf(false) }
     var showLiveCam by rememberSaveable { mutableStateOf(false) }
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var directWebcamSpot by remember { mutableStateOf<String?>(null) }
@@ -481,13 +480,6 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             )
                                         }
 
-                                        IconButton(onClick = { showRadarDialog = true }, modifier = Modifier.size(32.dp)) {
-                                            RadarIcon(
-                                                color = onSurfaceColor,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-
                                         IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp)) {
                                             Icon(
                                                 imageVector = Icons.Default.Settings,
@@ -506,15 +498,6 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             onOpenNewEntry = { showSessionLogEntry = true },
                                             onOpenQuiver = { showQuiverDialog = true },
                                             onDismiss = { showSessionLogDialog = false }
-                                        )
-                                    }
-
-                                    if (showRadarDialog) {
-                                        val activeSpot = SurfDatabase.findSpotByName(state.spotName)
-                                        RadarScreen(
-                                            centerLat = activeSpot?.latitude?.takeIf { it != 0.0 } ?: 45.20,
-                                            centerLon = activeSpot?.longitude?.takeIf { it != 0.0 } ?: -1.20,
-                                            onDismiss = { showRadarDialog = false }
                                         )
                                     }
 
@@ -1456,6 +1439,7 @@ fun DailyTideCanvas(
     if (tideInfo == null) return
 
     val density = LocalDensity.current
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val highTextPaint = remember(density) {
         Paint().apply {
             color = AppColors.TideHighDark.toArgb()
@@ -1474,9 +1458,12 @@ fun DailyTideCanvas(
         }
     }
 
-    val coefTextPaint = remember(density) {
+    // Correctif contraste : l'ancien gris-bleu clair (0xFFB0BEC5) etait pense pour fond
+    // sombre et devenait quasi invisible en theme clair. On suit desormais onSurface
+    // (fonce en clair, clair en sombre), comme les autres textes du bloc marees.
+    val coefTextPaint = remember(density, onSurfaceColor) {
         Paint().apply {
-            color = 0xFFB0BEC5.toInt()
+            color = onSurfaceColor.copy(alpha = 0.62f).toArgb()
             textSize = with(density) { 7.5.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
