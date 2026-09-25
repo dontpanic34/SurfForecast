@@ -3,6 +3,7 @@
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -124,7 +125,10 @@ fun SurfCardComponent(
                         text = "${selectedHour.energyKj} kJ",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFB300)
+                        color = Color(0xFFFFB300),
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.34f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
                     )
 
                     Row(
