@@ -22,8 +22,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 sealed class SurfUiState {
@@ -303,6 +305,23 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 dailySunInfo = forecastResult.dailySun,
                 lastUpdatedTime = nowStr
             )
+
+            // Widget d'écran d'accueil : pousse le même instantané que SurfLiveStripOverlay
+            // (heure la plus proche + marée du jour) dès que ces données sont fraîches.
+            val currentHour = LocalTime.now().hour
+            val closestHourModel = forecast
+                .filter { it.rawTime.toLocalDate() == LocalDate.now() }
+                .minByOrNull { abs(it.rawTime.hour - currentHour) }
+                ?: forecast.firstOrNull()
+            if (closestHourModel != null) {
+                SurfOverlayWidgetProvider.pushLiveData(
+                    context = getApplication(),
+                    spotName = spot.name,
+                    hourly = closestHourModel,
+                    tide = tides[LocalDate.now()],
+                    windUnit = windUnit
+                )
+            }
         } catch (e: Exception) {
             if (_uiState.value !is SurfUiState.Success) {
                 _uiState.value = SurfUiState.Error(e.message ?: "Erreur de connexion.")
