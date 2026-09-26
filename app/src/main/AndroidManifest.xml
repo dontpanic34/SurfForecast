@@ -28,7 +28,7 @@
 
         <receiver
             android:name="com.surfcast.surfforecast.SurfOverlayWidgetProvider"
-            android:label="Surf Forecast Live"
+            android:label="Surf Log Live"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -36,6 +36,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/surf_live_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name="com.surfcast.surfforecast.SurfCompactWidgetProvider"
+            android:label="Surf Log"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/surf_compact_widget_info" />
         </receiver>
 
     </application>

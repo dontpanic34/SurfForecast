@@ -3,9 +3,8 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#EB1A1E24"
     android:orientation="horizontal"
-    android:paddingVertical="7dp"
+    android:paddingVertical="4dp"
     android:paddingHorizontal="6dp"
     android:gravity="center_vertical">
 
@@ -21,7 +20,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🌊"
-            android:textSize="11sp" />
+            android:textSize="10sp"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
 
         <TextView
             android:id="@+id/widget_text_swell"
@@ -30,16 +33,20 @@
             android:layout_marginStart="3dp"
             android:text="--m - --s - --°C"
             android:textColor="#FFFFFF"
-            android:textSize="10.5sp"
+            android:textSize="9.5sp"
             android:textStyle="bold"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
     </LinearLayout>
 
     <!-- Séparateur 1 -->
     <ImageView
         android:layout_width="1dp"
-        android:layout_height="16dp"
-        android:background="#33FFFFFF"
+        android:layout_height="13dp"
+        android:background="#40FFFFFF"
         android:layout_marginHorizontal="3dp"
         android:contentDescription="@null" />
 
@@ -54,8 +61,8 @@
         <!-- Marée haute -->
         <ImageView
             android:id="@+id/widget_img_tide_high"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
             android:contentDescription="@null" />
 
         <TextView
@@ -65,15 +72,19 @@
             android:layout_marginStart="2dp"
             android:text="--h-- (--)"
             android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
 
         <!-- Marée basse (espacement géré par layout_marginStart) -->
         <ImageView
             android:id="@+id/widget_img_tide_low"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
             android:layout_marginStart="5dp"
             android:contentDescription="@null" />
 
@@ -84,16 +95,20 @@
             android:layout_marginStart="2dp"
             android:text="--h--"
             android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
     </LinearLayout>
 
     <!-- Séparateur 2 -->
     <ImageView
         android:layout_width="1dp"
-        android:layout_height="16dp"
-        android:background="#33FFFFFF"
+        android:layout_height="13dp"
+        android:background="#40FFFFFF"
         android:layout_marginHorizontal="3dp"
         android:contentDescription="@null" />
 
@@ -108,8 +123,8 @@
 
         <ImageView
             android:id="@+id/widget_img_wind_breeze"
-            android:layout_width="13dp"
-            android:layout_height="13dp"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
             android:contentDescription="@null" />
 
         <TextView
@@ -119,14 +134,18 @@
             android:layout_marginStart="3dp"
             android:text="--"
             android:textColor="#FFD600"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
 
         <ImageView
             android:id="@+id/widget_img_wind_arrow"
-            android:layout_width="11dp"
-            android:layout_height="11dp"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
             android:layout_marginStart="3dp"
             android:contentDescription="@null" />
 
@@ -137,9 +156,13 @@
             android:layout_marginStart="3dp"
             android:text="-- km/h"
             android:textColor="#FFD600"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
     </LinearLayout>
 
 </LinearLayout>

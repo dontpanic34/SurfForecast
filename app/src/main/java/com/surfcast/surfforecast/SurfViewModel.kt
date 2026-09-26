@@ -314,7 +314,7 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 .minByOrNull { abs(it.rawTime.hour - currentHour) }
                 ?: forecast.firstOrNull()
             if (closestHourModel != null) {
-                SurfOverlayWidgetProvider.pushLiveData(
+                WidgetDataCache.push(
                     context = getApplication(),
                     spotName = spot.name,
                     hourly = closestHourModel,

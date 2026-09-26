@@ -12,19 +12,15 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
-import androidx.core.content.edit
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withRotation
 import com.surfcast.surfforecast.ui.theme.AppColors
 import java.util.Locale
 
 /**
- * Le widget n'effectue plus lui-même d'appel réseau (onUpdate() tournant dans un
- * BroadcastReceiver n'a aucune garantie de survivre assez longtemps pour ça, et ça ne
- * marchait jamais de façon fiable). À la place, il se contente de relire le dernier
- * instantané écrit dans les SharedPreferences par SurfViewModel dès que l'appli a des
- * données fraîches pour le spot favori — exactement les mêmes données que celles
- * affichées par SurfLiveStripOverlay dans l'appli.
+ * Bandeau fin sans fond, pensé pour être glissé au-dessus de l'horloge (zone "at a
+ * glance"). Ne fait plus aucun appel réseau : il relit WidgetDataCache, alimenté par
+ * SurfViewModel dès que l'appli a des données fraîches pour le spot favori.
  */
 @Suppress("SpellCheckingInspection")
 class SurfOverlayWidgetProvider : AppWidgetProvider() {
@@ -34,66 +30,17 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        private const val PREFS = "surf_prefs"
 
-        /**
-         * Appelé par SurfViewModel dès qu'un chargement réussi concerne le spot favori
-         * (fav_0) affiché par le widget : on met en cache l'instantané puis on redessine
-         * immédiatement tous les widgets épinglés, sans attendre le prochain onUpdate().
-         */
-        fun pushLiveData(
-            context: Context,
-            spotName: String,
-            hourly: HourlyUiModel,
-            tide: DailyTideInfo?,
-            windUnit: String
-        ) {
-            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            val widgetSpot = prefs.getString("fav_0", "Montalivet") ?: "Montalivet"
-            if (widgetSpot != spotName) return
+        fun renderWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+            val snapshot = WidgetDataCache.read(context) ?: return
 
-            prefs.edit {
-                putFloat("widget_wave_height", hourly.waveHeight.toFloat())
-                putInt("widget_wave_period", hourly.wavePeriod.toInt())
-                putInt("widget_temp", hourly.temperature)
-                putString("widget_wind_dir_fr", SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr))
-                putInt("widget_wind_speed_kmh", hourly.windSpeedKmh)
-                putString("widget_wind_unit", windUnit)
-                putString("widget_tide_high_time", tide?.highTideTime)
-                if (tide?.coefficient != null) putInt("widget_tide_high_coef", tide.coefficient) else remove("widget_tide_high_coef")
-                putString("widget_tide_low_time", tide?.lowTideTime)
-                putBoolean("widget_has_data", true)
-            }
-
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val ids = appWidgetManager.getAppWidgetIds(ComponentName(context, SurfOverlayWidgetProvider::class.java))
-            if (ids.isNotEmpty()) {
-                renderWidgets(context, appWidgetManager, ids)
-            }
-        }
-
-        private fun renderWidgets(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            if (!prefs.getBoolean("widget_has_data", false)) return
-
-            val windUnit = prefs.getString("widget_wind_unit", "kmh") ?: "kmh"
-            val dirFr = prefs.getString("widget_wind_dir_fr", "--") ?: "--"
-            val windSpeedKmh = prefs.getInt("widget_wind_speed_kmh", 0)
-
-            val formattedH = String.format(Locale.US, "%.1fm", prefs.getFloat("widget_wave_height", 0f))
-            val periodSec = prefs.getInt("widget_wave_period", 0)
-            val tempVal = prefs.getInt("widget_temp", 0)
-
-            val highTime = prefs.getString("widget_tide_high_time", null)
-            val highCoef = if (prefs.contains("widget_tide_high_coef")) prefs.getInt("widget_tide_high_coef", 0) else null
-            val lowTime = prefs.getString("widget_tide_low_time", null)
-
-            val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
+            val degrees = SurfUnitsHelper.cardinalToDegrees(snapshot.dirFr)
             val rotationAngle = (degrees + 180f) % 360f
-            val arrowColorInt = SurfUnitsHelper.getSurfWindColor(dirFr, windSpeedKmh).toArgb()
+            val arrowColorInt = SurfUnitsHelper.getSurfWindColor(snapshot.dirFr, snapshot.windSpeedKmh).toArgb()
 
-            val speed = SurfUnitsHelper.formatWindValue(windSpeedKmh, windUnit)
-            val unit = when (windUnit) {
+            val formattedH = String.format(Locale.US, "%.1fm", snapshot.waveHeight)
+            val speed = SurfUnitsHelper.formatWindValue(snapshot.windSpeedKmh, snapshot.windUnit)
+            val unit = when (snapshot.windUnit) {
                 "knots" -> "kts"
                 "bft" -> "bft"
                 else -> "km/h"
@@ -107,20 +54,20 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_surf_live)
 
-                views.setTextViewText(R.id.widget_text_swell, "$formattedH - ${periodSec}s - ${tempVal}°C")
+                views.setTextViewText(R.id.widget_text_swell, "$formattedH - ${snapshot.wavePeriod}s - ${snapshot.temp}°C")
                 views.setImageViewBitmap(R.id.widget_img_tide_high, highTideBitmap)
                 views.setTextViewText(
                     R.id.widget_text_tide_high,
-                    if (highTime != null) "$highTime (${highCoef ?: "-"})" else "--"
+                    if (snapshot.tideHighTime != null) "${snapshot.tideHighTime} (${snapshot.tideHighCoef ?: "-"})" else "--"
                 )
                 views.setTextColor(R.id.widget_text_tide_high, AppColors.TideHighDark.toArgb())
 
                 views.setImageViewBitmap(R.id.widget_img_tide_low, lowTideBitmap)
-                views.setTextViewText(R.id.widget_text_tide_low, lowTime ?: "--")
+                views.setTextViewText(R.id.widget_text_tide_low, snapshot.tideLowTime ?: "--")
                 views.setTextColor(R.id.widget_text_tide_low, AppColors.TideLowDark.toArgb())
 
                 views.setImageViewBitmap(R.id.widget_img_wind_breeze, breezeBitmap)
-                views.setTextViewText(R.id.widget_text_wind_dir, dirFr)
+                views.setTextViewText(R.id.widget_text_wind_dir, snapshot.dirFr)
                 views.setTextColor(R.id.widget_text_wind_dir, arrowColorInt)
 
                 views.setImageViewBitmap(R.id.widget_img_wind_arrow, arrowBitmap)
