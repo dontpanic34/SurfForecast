@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Taille fixe (comme les bulles "Vent"/"Indice UV" de Google Meteo qui ont inspire ce
-    widget, ~150dp), plutot qu'une plage redimensionnable : evite qu'un widget deja pose
-    reste bloque a une taille disproportionnee si l'utilisateur ou le launcher l'etire.
--->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="150dp"
-    android:minHeight="150dp"
-    android:targetCellWidth="3"
-    android:targetCellHeight="3"
+    android:minWidth="200dp"
+    android:minHeight="40dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="1"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/widget_surf_live"
-    android:resizeMode="none"
+    android:resizeMode="horizontal"
     android:widgetCategory="home_screen|keyguard"
     android:description="@string/app_name" />

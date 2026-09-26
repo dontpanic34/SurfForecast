@@ -1,86 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Widget "montre" : cercle qui fait le tour du widget representant la maree
-    (bas = basse mer, haut = pleine mer), infos (houle/vent/temperature) au centre.
-    L'anneau est un bitmap pre-rendu (RemoteViews ne permet pas de Canvas custom),
-    regenere a la taille exacte du widget via onAppWidgetOptionsChanged.
--->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/widget_round_bg">
+    android:layout_height="wrap_content"
+    android:background="#EB1A1E24"
+    android:orientation="horizontal"
+    android:paddingVertical="7dp"
+    android:paddingHorizontal="6dp"
+    android:gravity="center_vertical">
 
-    <ImageView
-        android:id="@+id/widget_img_tide_ring"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitXY"
-        android:contentDescription="@null" />
-
+    <!-- Bloc 1 : Houle & Mer -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:layout_weight="1.0"
+        android:orientation="horizontal"
+        android:gravity="center_vertical|start">
 
         <TextView
-            android:id="@+id/widget_text_wave"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="--m"
+            android:text="🌊"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/widget_text_swell"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
+            android:text="--m - --s - --°C"
             android:textColor="#FFFFFF"
-            android:textSize="21sp"
+            android:textSize="10.5sp"
             android:textStyle="bold"
             android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- Séparateur 1 -->
+    <ImageView
+        android:layout_width="1dp"
+        android:layout_height="16dp"
+        android:background="#33FFFFFF"
+        android:layout_marginHorizontal="3dp"
+        android:contentDescription="@null" />
+
+    <!-- Bloc 2 : Marée avec icônes vaguelette + flèche -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.25"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <!-- Marée haute -->
+        <ImageView
+            android:id="@+id/widget_img_tide_high"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:contentDescription="@null" />
 
         <TextView
-            android:id="@+id/widget_text_wave_sub"
+            android:id="@+id/widget_text_tide_high"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:text="--s · --°C"
-            android:textColor="#B3FFFFFF"
+            android:layout_marginStart="2dp"
+            android:text="--h-- (--)"
+            android:textColor="#FFFFFF"
             android:textSize="10sp"
             android:textStyle="bold"
             android:singleLine="true" />
 
-        <LinearLayout
+        <!-- Marée basse (espacement géré par layout_marginStart) -->
+        <ImageView
+            android:id="@+id/widget_img_tide_low"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginStart="5dp"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/widget_text_tide_low"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <ImageView
-                android:id="@+id/widget_img_wind_arrow"
-                android:layout_width="11dp"
-                android:layout_height="11dp"
-                android:contentDescription="@null" />
-
-            <TextView
-                android:id="@+id/widget_text_wind_dir"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:text="--"
-                android:textColor="#FFD600"
-                android:textSize="10.5sp"
-                android:textStyle="bold"
-                android:singleLine="true" />
-
-            <TextView
-                android:id="@+id/widget_text_wind_speed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:text="-- km/h"
-                android:textColor="#FFD600"
-                android:textSize="10.5sp"
-                android:textStyle="bold"
-                android:singleLine="true" />
-        </LinearLayout>
+            android:layout_marginStart="2dp"
+            android:text="--h--"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:singleLine="true" />
     </LinearLayout>
 
-</FrameLayout>
+    <!-- Séparateur 2 -->
+    <ImageView
+        android:layout_width="1dp"
+        android:layout_height="16dp"
+        android:background="#33FFFFFF"
+        android:layout_marginHorizontal="3dp"
+        android:contentDescription="@null" />
+
+    <!-- Bloc 3 : Vent aligné à gauche vers le séparateur -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.15"
+        android:orientation="horizontal"
+        android:gravity="center_vertical|start"
+        android:paddingStart="2dp">
+
+        <ImageView
+            android:id="@+id/widget_img_wind_breeze"
+            android:layout_width="13dp"
+            android:layout_height="13dp"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/widget_text_wind_dir"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
+            android:text="--"
+            android:textColor="#FFD600"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:singleLine="true" />
+
+        <ImageView
+            android:id="@+id/widget_img_wind_arrow"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:layout_marginStart="3dp"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/widget_text_wind_speed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
+            android:text="-- km/h"
+            android:textColor="#FFD600"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:singleLine="true" />
+    </LinearLayout>
+
+</LinearLayout>
