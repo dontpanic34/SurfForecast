@@ -11,10 +11,11 @@ import java.util.Locale
 
 /**
  * Bandeau fin sans fond, pensé pour être glissé au-dessus de l'horloge (zone "at a
- * glance"). Deux lignes lisibles plutôt qu'une seule phrase trop longue pour tenir à
+ * glance"). Trois lignes lisibles plutôt qu'une seule phrase trop longue pour tenir à
  * l'écran :
  *   Marée basse 11h15 (92)
- *   🌊 1.5m en hausse · 11s · 17°C · SE 7km/h (vire Sud à 11:00)
+ *   🌊 1.5m en hausse · 11s · 17°C
+ *   SE 7km/h (vire Sud à 11:00)
  * La rotation du vent donne l'heure exacte du changement de secteur (premier moment
  * dans les 12h à venir où il change vraiment de secteur), pas juste "de/vers". Les
  * mentions de tendance ("en hausse"/"en baisse", "forcit"/"tombe") ne s'affichent que
@@ -69,12 +70,14 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 "Marée --"
             }
 
-            val waveWindLine = "🌊 $formattedH$waveTrendSuffix · ${snapshot.wavePeriod}s · ${snapshot.temp}°C · ${snapshot.dirFr} $speed $unit$windSuffix"
+            val waveLine = "🌊 $formattedH$waveTrendSuffix · ${snapshot.wavePeriod}s · ${snapshot.temp}°C"
+            val windLine = "${snapshot.dirFr} $speed $unit$windSuffix"
 
             for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_surf_live)
                 views.setTextViewText(R.id.widget_text_tide, tideLine)
-                views.setTextViewText(R.id.widget_text_wave_wind, waveWindLine)
+                views.setTextViewText(R.id.widget_text_wave, waveLine)
+                views.setTextViewText(R.id.widget_text_wind, windLine)
 
                 val clickIntent = Intent(context, MainActivity::class.java)
                 val pendingIntent = PendingIntent.getActivity(
