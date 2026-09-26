@@ -11,12 +11,14 @@ import java.util.Locale
 
 /**
  * Bandeau fin sans fond, pensé pour être glissé au-dessus de l'horloge (zone "at a
- * glance") : une seule phrase lisible ("1.5m↗ · 11s · 17°C · ESE 7km/h (forcit) ·
- * Marée basse 11h15") plutôt que des blocs séparés avec de petites icônes. Tout en
- * blanc (pas de code couleur vent/marée ici) : sur une photo de fond d'écran
- * quelconque, des teintes claires comme le jaune ou le vert deviennent illisibles. Ne
- * fait plus aucun appel réseau : il relit WidgetDataCache, alimenté par SurfViewModel
- * dès que l'appli a des données fraîches pour le spot favori.
+ * glance") : une seule phrase lisible ("1.5m en hausse · 11s · 17°C · ESE 7km/h (forcit) ·
+ * Marée basse 11h15 (92)") plutôt que des blocs séparés avec de petites icônes. Les
+ * mentions de tendance ("en hausse"/"en baisse", "forcit"/"tombe") ne s'affichent que
+ * s'il y a un vrai changement à venir sur les prochaines heures ; rien n'est écrit si
+ * ça reste stable. Tout en blanc (pas de code couleur vent/marée ici) : sur une photo
+ * de fond d'écran quelconque, des teintes claires comme le jaune ou le vert deviennent
+ * illisibles. Ne fait plus aucun appel réseau : il relit WidgetDataCache, alimenté par
+ * SurfViewModel dès que l'appli a des données fraîches pour le spot favori.
  */
 @Suppress("SpellCheckingInspection")
 class SurfOverlayWidgetProvider : AppWidgetProvider() {
@@ -38,10 +40,10 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 else -> "km/h"
             }
 
-            val waveArrow = when (snapshot.waveTrend) {
-                Trend.RISING -> "↗"
-                Trend.FALLING -> "↘"
-                Trend.STABLE -> "→"
+            val waveTrendSuffix = when (snapshot.waveTrend) {
+                Trend.RISING -> " en hausse"
+                Trend.FALLING -> " en baisse"
+                Trend.STABLE -> ""
             }
 
             val windClauses = mutableListOf<String>()
@@ -56,17 +58,13 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             val windSuffix = if (windClauses.isNotEmpty()) " (${windClauses.joinToString(", ")})" else ""
 
             val sentenceBuilder = StringBuilder()
-            sentenceBuilder.append("$formattedH$waveArrow · ${snapshot.wavePeriod}s · ${snapshot.temp}°C")
+            sentenceBuilder.append("$formattedH$waveTrendSuffix · ${snapshot.wavePeriod}s · ${snapshot.temp}°C")
             sentenceBuilder.append("  ·  ")
             sentenceBuilder.append("${snapshot.dirFr} $speed $unit$windSuffix")
 
             if (snapshot.nextTideTime != null) {
-                val isHigh = snapshot.nextTideIsHigh == true
-                val tideLabel = if (isHigh) "Marée haute" else "Marée basse"
-                // Le coefficient de marée fourni par l'API n'est renseigné que pour la
-                // pleine mer (cf SurfRepository.getTides) : on ne l'affiche donc que là,
-                // pour ne pas laisser croire qu'il décrit spécifiquement la basse mer.
-                val coefSuffix = if (isHigh && snapshot.nextTideCoef != null) " (${snapshot.nextTideCoef})" else ""
+                val tideLabel = if (snapshot.nextTideIsHigh == true) "Marée haute" else "Marée basse"
+                val coefSuffix = if (snapshot.nextTideCoef != null) " (${snapshot.nextTideCoef})" else ""
                 sentenceBuilder.append("  ·  ")
                 sentenceBuilder.append("$tideLabel ${snapshot.nextTideTime}$coefSuffix")
             }

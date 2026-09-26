@@ -68,23 +68,31 @@ object WidgetDataCache {
         val prevHour = forecast.getOrNull(fullIdx - 1)
         val nextHour = forecast.getOrNull(fullIdx + 1)
 
-        // Tendance de la houle : hauteur de l'heure suivante comparée à l'heure en cours.
-        val waveTrend = when {
-            nextHour != null && nextHour.waveHeight - hourly.waveHeight >= 0.1 -> Trend.RISING
-            nextHour != null && nextHour.waveHeight - hourly.waveHeight <= -0.1 -> Trend.FALLING
-            else -> Trend.STABLE
+        // Tendance de la houle et du vent : on regarde la moyenne des 3 prochaines heures
+        // (pas juste l'heure suivante) pour ne signaler qu'un vrai changement à venir, et
+        // rester muet si ça reste stable. Seuils volontairement significatifs.
+        val aheadHours = (1..3).mapNotNull { forecast.getOrNull(fullIdx + it) }
+
+        val waveTrend = if (aheadHours.isEmpty()) {
+            Trend.STABLE
+        } else {
+            val diff = aheadHours.map { it.waveHeight }.average() - hourly.waveHeight
+            when {
+                diff >= 0.2 -> Trend.RISING
+                diff <= -0.2 -> Trend.FALLING
+                else -> Trend.STABLE
+            }
         }
 
-        // Tendance du vent : on compare la vitesse une heure avant et une heure après
-        // l'heure actuelle pour lisser le bruit d'une comparaison à l'heure suivante seule.
-        // Seuil volontairement élevé (8 km/h) pour ne signaler "forcit"/"tombe" que sur un
-        // vrai changement, pas une petite variation horaire.
-        val prevSpeed = prevHour?.windSpeedKmh ?: hourly.windSpeedKmh
-        val nextSpeed = nextHour?.windSpeedKmh ?: hourly.windSpeedKmh
-        val windSpeedTrend = when {
-            nextSpeed - prevSpeed >= 8 -> Trend.RISING
-            nextSpeed - prevSpeed <= -8 -> Trend.FALLING
-            else -> Trend.STABLE
+        val windSpeedTrend = if (aheadHours.isEmpty()) {
+            Trend.STABLE
+        } else {
+            val diff = aheadHours.map { it.windSpeedKmh }.average() - hourly.windSpeedKmh
+            when {
+                diff >= 8 -> Trend.RISING
+                diff <= -8 -> Trend.FALLING
+                else -> Trend.STABLE
+            }
         }
 
         // Rotation du vent : direction (par secteur de 45°) une heure avant vs une heure
