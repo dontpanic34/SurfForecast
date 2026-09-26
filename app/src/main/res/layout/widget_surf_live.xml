@@ -6,19 +6,41 @@
     android:paddingVertical="4dp"
     android:paddingHorizontal="6dp">
 
-    <TextView
-        android:id="@+id/widget_text_sentence"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="-- · -- · --"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:singleLine="true"
-        android:ellipsize="end"
-        android:shadowColor="#CC000000"
-        android:shadowDx="0"
-        android:shadowDy="1"
-        android:shadowRadius="3" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_text_tide"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Marée --"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
+
+        <TextView
+            android:id="@+id/widget_text_wave_wind"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🌊 -- · -- · --"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
+
+    </LinearLayout>
 
 </FrameLayout>
