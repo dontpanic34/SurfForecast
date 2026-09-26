@@ -49,7 +49,7 @@ object WidgetDataCache {
         context: Context,
         spotName: String,
         forecast: List<HourlyUiModel>,
-        tides: Map<LocalDate, DailyTideInfo>,
+        allTideExtrema: Map<LocalDate, List<MareeExtremum>>,
         windUnit: String
     ) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -102,21 +102,17 @@ object WidgetDataCache {
             .firstOrNull { bucket8(it.windDirectionStr) != currentBucket }
 
         // Prochaine marée (haute ou basse, quel que soit l'ordre) à venir par rapport à
-        // maintenant, en regardant aujourd'hui et demain au besoin.
+        // maintenant — sur TOUTES les marées du jour (typiquement 4 : 2 PM + 2 BM), pas
+        // seulement celles de jour comme dans le reste de l'appli : le widget doit donner
+        // l'heure réelle de la prochaine marée, même si elle a lieu de nuit.
         data class Candidate(val isHigh: Boolean, val time: String, val coef: Int?, val at: LocalDateTime)
 
         fun candidatesFor(date: LocalDate): List<Candidate> {
-            val info = tides[date] ?: return emptyList()
-            return listOfNotNull(
-                info.highTideTime?.let { t ->
-                    runCatching { LocalDateTime.of(date, LocalTime.parse(t, TIME_FMT)) }.getOrNull()
-                        ?.let { Candidate(true, t, info.coefficient, it) }
-                },
-                info.lowTideTime?.let { t ->
-                    runCatching { LocalDateTime.of(date, LocalTime.parse(t, TIME_FMT)) }.getOrNull()
-                        ?.let { Candidate(false, t, info.coefficient, it) }
-                }
-            )
+            val extrema = allTideExtrema[date] ?: return emptyList()
+            return extrema.mapNotNull { e ->
+                runCatching { LocalDateTime.of(date, LocalTime.parse(e.time, TIME_FMT)) }.getOrNull()
+                    ?.let { Candidate(e.type == "PM", e.time, e.coef, it) }
+            }
         }
 
         val nextTide = (candidatesFor(today) + candidatesFor(today.plusDays(1)))
@@ -183,11 +179,6 @@ object WidgetDataCache {
         val slimIds = manager.getAppWidgetIds(ComponentName(context, SurfOverlayWidgetProvider::class.java))
         if (slimIds.isNotEmpty()) {
             SurfOverlayWidgetProvider.renderWidgets(context, manager, slimIds)
-        }
-
-        val compactIds = manager.getAppWidgetIds(ComponentName(context, SurfCompactWidgetProvider::class.java))
-        if (compactIds.isNotEmpty()) {
-            SurfCompactWidgetProvider.renderWidgets(context, manager, compactIds)
         }
     }
 }

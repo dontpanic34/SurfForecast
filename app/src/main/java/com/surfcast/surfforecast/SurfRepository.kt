@@ -335,12 +335,25 @@ class SurfRepository {
         )
     }
 
+    /**
+     * Marées du jour : dailyByDate n'en garde qu'une haute + une basse par jour, dans une
+     * plage horaire "de jour" (pensé pour le surf) — c'est ce qu'affiche le reste de
+     * l'appli. rawByDate garde TOUTES les marées du jour (typiquement 4 : 2 PM + 2 BM),
+     * sans filtrage horaire : c'est ce dont le widget a besoin pour connaître la VRAIE
+     * prochaine marée à venir, même si elle a lieu de nuit. Les deux viennent du même
+     * appel réseau pour ne pas le dupliquer.
+     */
+    data class TidesBundle(
+        val dailyByDate: Map<LocalDate, DailyTideInfo>,
+        val rawByDate: Map<LocalDate, List<MareeExtremum>>
+    )
+
     suspend fun getTides(
         lat: Double,
         lon: Double,
         fromDate: String,
         toDate: String
-    ): Map<LocalDate, DailyTideInfo> = withContext(Dispatchers.IO) {
+    ): TidesBundle = withContext(Dispatchers.IO) {
         try {
             val sitesRes = RetrofitClient.apiService.getMareeSites()
             val closest = sitesRes.sites?.minByOrNull { site ->
@@ -357,10 +370,13 @@ class SurfRepository {
                 key = apiMareeToken
             )
 
-            val map = mutableMapOf<LocalDate, DailyTideInfo>()
+            val dailyMap = mutableMapOf<LocalDate, DailyTideInfo>()
+            val rawMap = mutableMapOf<LocalDate, List<MareeExtremum>>()
+
             extremaRes.data?.forEach { dayData ->
                 val parsedDate = LocalDate.parse(dayData.date)
                 val extrema = dayData.extrema ?: emptyList()
+                rawMap[parsedDate] = extrema
 
                 val dayPm = extrema.firstOrNull { it.type == "PM" && it.time >= "06:00" && it.time <= "21:30" }
                     ?: extrema.firstOrNull { it.type == "PM" }
@@ -368,15 +384,15 @@ class SurfRepository {
                     ?: extrema.firstOrNull { it.type == "BM" }
                 val coef = dayPm?.coef ?: extrema.firstNotNullOfOrNull { it.coef }
 
-                map[parsedDate] = DailyTideInfo(
+                dailyMap[parsedDate] = DailyTideInfo(
                     highTideTime = dayPm?.time,
                     lowTideTime = dayBm?.time,
                     coefficient = coef
                 )
             }
-            map
+            TidesBundle(dailyMap, rawMap)
         } catch (e: Exception) {
-            emptyMap()
+            TidesBundle(emptyMap(), emptyMap())
         }
     }
 }

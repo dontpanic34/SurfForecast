@@ -488,18 +488,7 @@ fun SurfPreferencesDialog(
                                 shape = pillShape,
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
                             ) {
-                                Text(text = "Épingler le bandeau (glissable au-dessus de l'heure)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                            }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            OutlinedButton(
-                                onClick = { SurfCompactWidgetProvider.pinWidget(context) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = pillShape,
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
-                            ) {
-                                Text(text = "Épingler la bulle compacte 2×2", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "Épingler le Widget d'accueil", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }

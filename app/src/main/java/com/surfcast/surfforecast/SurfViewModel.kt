@@ -291,7 +291,8 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
             val fromDate = grouped.keys.minOrNull()?.toString() ?: LocalDate.now().toString()
             val toDate = grouped.keys.maxOrNull()?.toString() ?: LocalDate.now().plusDays(7).toString()
-            val tides = repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
+            val tidesBundle = repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
+            val tides = tidesBundle.dailyByDate
 
             val nowStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm", Locale.FRANCE))
 
@@ -311,7 +312,7 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 context = getApplication(),
                 spotName = spot.name,
                 forecast = forecast,
-                tides = tides,
+                allTideExtrema = tidesBundle.rawByDate,
                 windUnit = windUnit
             )
         } catch (e: Exception) {
