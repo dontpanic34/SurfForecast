@@ -12,10 +12,10 @@ import java.util.Locale
 /**
  * Bandeau fin sans fond, pensé pour être glissé au-dessus de l'horloge (zone "at a
  * glance"). Trois lignes lisibles plutôt qu'une seule phrase trop longue pour tenir à
- * l'écran :
- *   Marée basse 11h15 (92)
+ * l'écran, chacune commençant par son icône :
+ *   🌙 Marée basse 11h15 (92)
  *   🌊 1.5m en hausse · 11s · 17°C
- *   SE 7km/h (vire Sud à 11:00)
+ *   💨 SE 7km/h (vire Sud à 11:00)
  * La rotation du vent donne l'heure exacte du changement de secteur (premier moment
  * dans les 12h à venir où il change vraiment de secteur), pas juste "de/vers". Les
  * mentions de tendance ("en hausse"/"en baisse", "forcit"/"tombe") ne s'affichent que
@@ -65,13 +65,13 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             val tideLine = if (snapshot.nextTideTime != null) {
                 val tideLabel = if (snapshot.nextTideIsHigh == true) "Marée haute" else "Marée basse"
                 val coefSuffix = if (snapshot.nextTideCoef != null) " (${snapshot.nextTideCoef})" else ""
-                "$tideLabel ${snapshot.nextTideTime}$coefSuffix"
+                "🌙 $tideLabel ${snapshot.nextTideTime}$coefSuffix"
             } else {
-                "Marée --"
+                "🌙 Marée --"
             }
 
             val waveLine = "🌊 $formattedH$waveTrendSuffix · ${snapshot.wavePeriod}s · ${snapshot.temp}°C"
-            val windLine = "${snapshot.dirFr} $speed $unit$windSuffix"
+            val windLine = "💨 ${snapshot.dirFr} $speed $unit$windSuffix"
 
             for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_surf_live)
