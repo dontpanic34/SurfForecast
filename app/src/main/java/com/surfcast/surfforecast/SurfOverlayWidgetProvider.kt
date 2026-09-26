@@ -41,16 +41,23 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 "bft" -> "bft"
                 else -> "km/h"
             }
-            val trendArrow = when (snapshot.windTrend) {
-                WindTrend.RISING -> " ↗"
-                WindTrend.FALLING -> " ↘"
-                WindTrend.STABLE -> " →"
+
+            fun trendArrow(trend: Trend) = when (trend) {
+                Trend.RISING -> "↗"
+                Trend.FALLING -> "↘"
+                Trend.STABLE -> "→"
+            }
+
+            val windRotationSuffix = if (snapshot.windDirFromBucket != null && snapshot.windDirToBucket != null) {
+                " (${snapshot.windDirFromBucket} vire ${snapshot.windDirToBucket})"
+            } else {
+                ""
             }
 
             val sentence = SpannableStringBuilder().apply {
-                append("$formattedH · ${snapshot.wavePeriod}s · ${snapshot.temp}°C")
+                append("$formattedH${trendArrow(snapshot.waveTrend)} · ${snapshot.wavePeriod}s · ${snapshot.temp}°C")
                 append("  ·  ")
-                appendColored("${snapshot.dirFr} $speed $unit$trendArrow", windColorInt)
+                appendColored("${snapshot.dirFr} $speed $unit ${trendArrow(snapshot.windSpeedTrend)}$windRotationSuffix", windColorInt)
 
                 if (snapshot.nextTideTime != null) {
                     append("  ·  ")
