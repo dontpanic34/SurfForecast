@@ -21,8 +21,8 @@ data class WidgetSnapshot(
     val windSpeedKmh: Int,
     val windUnit: String,
     val windSpeedTrend: Trend,
-    val windDirFromBucket: String?,
-    val windDirToBucket: String?,
+    val windRotationToBucket: String?,
+    val windRotationTime: String?,
     val nextTideIsHigh: Boolean?,
     val nextTideTime: String?,
     val nextTideCoef: Int?
@@ -65,8 +65,6 @@ object WidgetDataCache {
         val hourly = closestIdx?.let { todayHours[it] } ?: forecast.firstOrNull() ?: return
 
         val fullIdx = forecast.indexOfFirst { it.rawTime == hourly.rawTime }
-        val prevHour = forecast.getOrNull(fullIdx - 1)
-        val nextHour = forecast.getOrNull(fullIdx + 1)
 
         // Tendance de la houle et du vent : on regarde la moyenne des 3 prochaines heures
         // (pas juste l'heure suivante) pour ne signaler qu'un vrai changement à venir, et
@@ -95,12 +93,13 @@ object WidgetDataCache {
             }
         }
 
-        // Rotation du vent : direction (par secteur de 45°) une heure avant vs une heure
-        // après, pour ne signaler que les vrais changements de secteur (pas le bruit entre
-        // deux points de rose des vents voisins).
-        val dirFromBucket = bucket8(prevHour?.windDirectionStr ?: hourly.windDirectionStr)
-        val dirToBucket = bucket8(nextHour?.windDirectionStr ?: hourly.windDirectionStr)
-        val isRotating = dirFromBucket != dirToBucket
+        // Rotation du vent : on cherche, dans les 12 prochaines heures, le premier moment où
+        // le vent change vraiment de secteur (par tranche de 45°, pour ignorer le bruit entre
+        // deux points de rose des vents voisins) — et on retient l'heure exacte de ce moment.
+        val currentBucket = bucket8(hourly.windDirectionStr)
+        val rotationHour = (1..12)
+            .mapNotNull { forecast.getOrNull(fullIdx + it) }
+            .firstOrNull { bucket8(it.windDirectionStr) != currentBucket }
 
         // Prochaine marée (haute ou basse, quel que soit l'ordre) à venir par rapport à
         // maintenant, en regardant aujourd'hui et demain au besoin.
@@ -133,12 +132,12 @@ object WidgetDataCache {
             putInt("widget_wind_speed_kmh", hourly.windSpeedKmh)
             putString("widget_wind_unit", windUnit)
             putString("widget_wind_speed_trend", windSpeedTrend.name)
-            if (isRotating) {
-                putString("widget_wind_dir_from", dirFromBucket)
-                putString("widget_wind_dir_to", dirToBucket)
+            if (rotationHour != null) {
+                putString("widget_wind_rotation_to", bucket8(rotationHour.windDirectionStr))
+                putString("widget_wind_rotation_time", rotationHour.rawTime.format(TIME_FMT))
             } else {
-                remove("widget_wind_dir_from")
-                remove("widget_wind_dir_to")
+                remove("widget_wind_rotation_to")
+                remove("widget_wind_rotation_time")
             }
             if (nextTide != null) {
                 putBoolean("widget_next_tide_is_high", nextTide.isHigh)
@@ -170,8 +169,8 @@ object WidgetDataCache {
             windSpeedKmh = prefs.getInt("widget_wind_speed_kmh", 0),
             windUnit = prefs.getString("widget_wind_unit", "kmh") ?: "kmh",
             windSpeedTrend = trendOf("widget_wind_speed_trend"),
-            windDirFromBucket = prefs.getString("widget_wind_dir_from", null),
-            windDirToBucket = prefs.getString("widget_wind_dir_to", null),
+            windRotationToBucket = prefs.getString("widget_wind_rotation_to", null),
+            windRotationTime = prefs.getString("widget_wind_rotation_time", null),
             nextTideIsHigh = if (prefs.contains("widget_next_tide_is_high")) prefs.getBoolean("widget_next_tide_is_high", true) else null,
             nextTideTime = prefs.getString("widget_next_tide_time", null),
             nextTideCoef = if (prefs.contains("widget_next_tide_coef")) prefs.getInt("widget_next_tide_coef", 0) else null

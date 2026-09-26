@@ -11,8 +11,11 @@ import java.util.Locale
 
 /**
  * Bandeau fin sans fond, pensé pour être glissé au-dessus de l'horloge (zone "at a
- * glance") : une seule phrase lisible ("1.5m en hausse · 11s · 17°C · ESE 7km/h (forcit) ·
- * Marée basse 11h15 (92)") plutôt que des blocs séparés avec de petites icônes. Les
+ * glance") : une seule phrase lisible ("1.5m en hausse · 11s · 17°C · ESE 7km/h (forcit,
+ * vire Sud à 14:00) · Marée basse 11h15 (92)") plutôt que des blocs séparés avec de
+ * petites icônes. La rotation du vent donne l'heure exacte du changement de secteur
+ * (premier moment dans les 12h à venir où il change vraiment de secteur), pas juste
+ * "de/vers". Les
  * mentions de tendance ("en hausse"/"en baisse", "forcit"/"tombe") ne s'affichent que
  * s'il y a un vrai changement à venir sur les prochaines heures ; rien n'est écrit si
  * ça reste stable. Tout en blanc (pas de code couleur vent/marée ici) : sur une photo
@@ -52,8 +55,8 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 Trend.FALLING -> windClauses.add("tombe")
                 Trend.STABLE -> {}
             }
-            if (snapshot.windDirFromBucket != null && snapshot.windDirToBucket != null) {
-                windClauses.add("${snapshot.windDirFromBucket} vire ${snapshot.windDirToBucket}")
+            if (snapshot.windRotationToBucket != null && snapshot.windRotationTime != null) {
+                windClauses.add("vire ${snapshot.windRotationToBucket} à ${snapshot.windRotationTime}")
             }
             val windSuffix = if (windClauses.isNotEmpty()) " (${windClauses.joinToString(", ")})" else ""
 
