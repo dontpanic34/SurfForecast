@@ -109,9 +109,14 @@ object WidgetDataCache {
 
         fun candidatesFor(date: LocalDate): List<Candidate> {
             val extrema = allTideExtrema[date] ?: return emptyList()
+            // L'API ne renseigne le coefficient que sur les entrées PM (pleine mer) ; une
+            // entrée BM (basse mer) arrive avec coef=null. On retombe sur le coefficient
+            // du jour (celui de la PM, ou à défaut n'importe quelle entrée qui en a un)
+            // pour ne pas perdre l'info quand la prochaine marée est une basse mer.
+            val dayCoef = extrema.firstOrNull { it.type == "PM" }?.coef ?: extrema.firstNotNullOfOrNull { it.coef }
             return extrema.mapNotNull { e ->
                 runCatching { LocalDateTime.of(date, LocalTime.parse(e.time, TIME_FMT)) }.getOrNull()
-                    ?.let { Candidate(e.type == "PM", e.time, e.coef, it) }
+                    ?.let { Candidate(e.type == "PM", e.time, e.coef ?: dayCoef, it) }
             }
         }
 
