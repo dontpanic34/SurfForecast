@@ -77,11 +77,13 @@ object WidgetDataCache {
 
         // Tendance du vent : on compare la vitesse une heure avant et une heure après
         // l'heure actuelle pour lisser le bruit d'une comparaison à l'heure suivante seule.
+        // Seuil volontairement élevé (8 km/h) pour ne signaler "forcit"/"tombe" que sur un
+        // vrai changement, pas une petite variation horaire.
         val prevSpeed = prevHour?.windSpeedKmh ?: hourly.windSpeedKmh
         val nextSpeed = nextHour?.windSpeedKmh ?: hourly.windSpeedKmh
         val windSpeedTrend = when {
-            nextSpeed - prevSpeed >= 3 -> Trend.RISING
-            nextSpeed - prevSpeed <= -3 -> Trend.FALLING
+            nextSpeed - prevSpeed >= 8 -> Trend.RISING
+            nextSpeed - prevSpeed <= -8 -> Trend.FALLING
             else -> Trend.STABLE
         }
 
