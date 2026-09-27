@@ -1,5 +1,7 @@
 package com.surfcast.surfforecast
 
+import android.content.SharedPreferences
+
 enum class WeatherModel(
     val apiParam: String,
     val displayName: String,
@@ -51,4 +53,21 @@ data class ForecastEngineConfig(
     val shortTermWave: WaveModel = WaveModel.MFWAM,
     val longTermWeather: WeatherModel = WeatherModel.ECMWF_IFS,
     val longTermWave: WaveModel = WaveModel.ECMWF_WAM
+)
+
+private inline fun <reified T : Enum<T>> safeEnumValueOf(name: String?, default: T): T =
+    name?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: default
+
+/**
+ * Reconstruit le ForecastEngineConfig persisté dans les préférences, partagé entre
+ * SurfViewModel (au chargement de l'appli) et WidgetRefreshWorker (rafraîchissement en
+ * arrière-plan) pour ne pas dupliquer cette lecture ni risquer qu'elle diverge entre les
+ * deux. Une valeur de préférence corrompue ou obsolète retombe sur la valeur par défaut
+ * au lieu de faire planter l'appelant.
+ */
+fun loadEngineConfigFromPrefs(prefs: SharedPreferences): ForecastEngineConfig = ForecastEngineConfig(
+    shortTermWeather = safeEnumValueOf(prefs.getString("short_weather", null), WeatherModel.AROME),
+    shortTermWave = safeEnumValueOf(prefs.getString("short_wave", null), WaveModel.MFWAM),
+    longTermWeather = safeEnumValueOf(prefs.getString("long_weather", null), WeatherModel.ECMWF_IFS),
+    longTermWave = safeEnumValueOf(prefs.getString("long_wave", null), WaveModel.MFWAM)
 )

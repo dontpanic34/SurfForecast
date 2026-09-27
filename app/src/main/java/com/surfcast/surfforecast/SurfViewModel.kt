@@ -143,14 +143,7 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
     var collapsedCards = mutableStateMapOf<String, Boolean>()
         private set
 
-    var engineConfig by mutableStateOf(
-        ForecastEngineConfig(
-            shortTermWeather = WeatherModel.valueOf(prefs.getString("short_weather", WeatherModel.AROME.name) ?: WeatherModel.AROME.name),
-            shortTermWave = WaveModel.valueOf(prefs.getString("short_wave", WaveModel.MFWAM.name) ?: WaveModel.MFWAM.name),
-            longTermWeather = WeatherModel.valueOf(prefs.getString("long_weather", WeatherModel.ECMWF_IFS.name) ?: WeatherModel.ECMWF_IFS.name),
-            longTermWave = WaveModel.valueOf(prefs.getString("long_wave", WaveModel.MFWAM.name) ?: WaveModel.MFWAM.name)
-        )
-    )
+    var engineConfig by mutableStateOf(loadEngineConfigFromPrefs(prefs))
         private set
 
     init {

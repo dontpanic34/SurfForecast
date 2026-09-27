@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        WidgetRefreshWorker.schedule(applicationContext)
         setContent {
             val themeMode = viewModel.themeMode
 
