@@ -45,12 +45,15 @@ data class WidgetSnapshot(
 object WidgetDataCache {
     private const val PREFS = "surf_prefs"
     private val TIME_FMT = DateTimeFormatter.ofPattern("HH:mm")
-    private val COMPASS_8 = listOf("Nord", "Nord-Est", "Est", "Sud-Est", "Sud", "Sud-Ouest", "Ouest", "Nord-Ouest")
+    // Secteurs de 90° (pas 45°) : un simple SSE -> SE reste un vent globalement "de sud",
+    // pas un vrai changement de direction. Seul un vrai virement (typiquement Est -> Ouest)
+    // doit déclencher la mention "vire ... à ...".
+    private val COMPASS_4 = listOf("Nord", "Est", "Sud", "Ouest")
 
-    private fun bucket8(dirRaw: String): String {
+    private fun bucket4(dirRaw: String): String {
         val deg = SurfUnitsHelper.cardinalToDegrees(SurfUnitsHelper.formatCardinalFr(dirRaw))
-        val idx = ((deg + 22.5f) / 45f).toInt() % 8
-        return COMPASS_8[idx]
+        val idx = ((deg + 45f) / 90f).toInt() % 4
+        return COMPASS_4[idx]
     }
 
     /**
@@ -120,12 +123,12 @@ object WidgetDataCache {
         val (windSpeedTrend, _) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 8.0) { it.windSpeedKmh.toDouble() }
 
         // Rotation du vent : on cherche, dans les 12 prochaines heures, le premier moment où
-        // le vent change vraiment de secteur (par tranche de 45°, pour ignorer le bruit entre
-        // deux points de rose des vents voisins) — et on retient l'heure exacte de ce moment.
-        val currentBucket = bucket8(hourly.windDirectionStr)
+        // le vent change vraiment de secteur (par quart de rose des vents, 90°, pour ignorer
+        // les petits décalages du type SSE -> SE) — et on retient l'heure exacte de ce moment.
+        val currentBucket = bucket4(hourly.windDirectionStr)
         val rotationHour = (1..12)
             .mapNotNull { forecast.getOrNull(fullIdx + it) }
-            .firstOrNull { bucket8(it.windDirectionStr) != currentBucket }
+            .firstOrNull { bucket4(it.windDirectionStr) != currentBucket }
 
         // Prochaine marée (haute ou basse, quel que soit l'ordre) à venir par rapport à
         // maintenant — sur TOUTES les marées du jour (typiquement 4 : 2 PM + 2 BM), pas
@@ -175,7 +178,7 @@ object WidgetDataCache {
             putString("widget_wind_unit", windUnit)
             putString("widget_wind_speed_trend", windSpeedTrend.name)
             if (rotationHour != null) {
-                putString("widget_wind_rotation_to", bucket8(rotationHour.windDirectionStr))
+                putString("widget_wind_rotation_to", bucket4(rotationHour.windDirectionStr))
                 putString("widget_wind_rotation_time", rotationHour.rawTime.format(TIME_FMT))
                 putInt("widget_wind_rotation_speed_kmh", rotationHour.windSpeedKmh)
             } else {
