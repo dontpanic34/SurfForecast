@@ -289,7 +289,7 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
             val nowStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm", Locale.FRANCE))
 
-            _uiState.value = SurfUiState.Success(
+            val successState = SurfUiState.Success(
                 spotName = spot.name,
                 hourlyForecast = forecast,
                 dailySummaries = summaries,
@@ -297,6 +297,11 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 dailySunInfo = forecastResult.dailySun,
                 lastUpdatedTime = nowStr
             )
+            _uiState.value = successState
+            // Ne doit jamais faire échouer le chargement (ex: JSONException sur une
+            // valeur NaN/Infinity) : une erreur ici ne doit ni repasser en état Erreur
+            // ni empêcher le push vers le widget juste en dessous.
+            runCatching { ForecastCacheStore.save(getApplication(), successState) }
 
             // Widget d'écran d'accueil : pousse le même instantané que SurfLiveStripOverlay
             // dès que ces données sont fraîches (heure la plus proche, tendance du vent,
@@ -310,7 +315,14 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
             )
         } catch (e: Exception) {
             if (_uiState.value !is SurfUiState.Success) {
-                _uiState.value = SurfUiState.Error(e.message ?: "Erreur de connexion.")
+                // Pas de réseau au tout premier chargement (rien encore en mémoire) :
+                // on retombe sur la dernière page connue, mais seulement si elle
+                // correspond bien au spot demandé (le cache n'est pas gardé par spot,
+                // et loadSpotInternal sert aussi bien le favori actif que previewSpot()).
+                val cached = ForecastCacheStore.load(getApplication())?.takeIf { it.spotName == spot.name }
+                _uiState.value = cached?.copy(
+                    popupError = "Hors connexion : dernières données du ${cached.lastUpdatedTime} affichées."
+                ) ?: SurfUiState.Error(e.message ?: "Erreur de connexion.")
             }
         }
     }
