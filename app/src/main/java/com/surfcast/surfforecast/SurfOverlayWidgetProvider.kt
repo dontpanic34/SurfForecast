@@ -13,12 +13,12 @@ import java.util.Locale
  * Bandeau fin sans fond, pensé pour être glissé au-dessus de l'horloge (zone "at a
  * glance"). Trois lignes lisibles plutôt qu'une seule phrase trop longue pour tenir à
  * l'écran, chacune commençant par son icône :
- *   🌙 Marée basse 11h15 (92) · 17°C
+ *   🌙 Marée basse 11h15 (92) · 17°C          ↻ 14:32
  *   🌊 1.5m en hausse · 11s
  *   💨 SE 7km/h (vire Sud à 11:00)
- *                        ↻ 14:32
- * La dernière ligne (heure de la dernière mise à jour réussie du widget, petite et
- * discrète) permet de repérer d'un coup d'œil des données devenues périmées.
+ * L'heure de dernière mise à jour réussie du widget est nichée à droite de la ligne
+ * marée, en petit et à faible opacité (semi-camouflée), pour repérer d'un coup d'œil
+ * des données devenues périmées sans polluer la lecture du reste.
  * La rotation du vent donne l'heure exacte du changement de secteur (premier moment
  * dans les 12h à venir où il change vraiment de secteur), pas juste "de/vers". Les
  * mentions de tendance ("en hausse"/"en baisse", "forcit"/"tombe") ne s'affichent que
