@@ -125,10 +125,13 @@ object WidgetDataCache {
         // Rotation du vent : on cherche, dans les 12 prochaines heures, le premier moment où
         // le vent change vraiment de secteur (par quart de rose des vents, 90°, pour ignorer
         // les petits décalages du type SSE -> SE) — et on retient l'heure exacte de ce moment.
+        // Ignoré si le vent reste trop faible (< 10 km/h avant ET après) pour que la
+        // direction ait un vrai impact : une rotation 3 -> 5 km/h ne change rien en pratique.
         val currentBucket = bucket4(hourly.windDirectionStr)
         val rotationHour = (1..12)
             .mapNotNull { forecast.getOrNull(fullIdx + it) }
             .firstOrNull { bucket4(it.windDirectionStr) != currentBucket }
+            ?.takeIf { hourly.windSpeedKmh >= 10 || it.windSpeedKmh >= 10 }
 
         // Prochaine marée (haute ou basse, quel que soit l'ordre) à venir par rapport à
         // maintenant — sur TOUTES les marées du jour (typiquement 4 : 2 PM + 2 BM), pas
