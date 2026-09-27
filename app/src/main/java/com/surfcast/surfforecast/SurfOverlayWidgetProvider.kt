@@ -15,7 +15,7 @@ import java.util.Locale
  * l'écran, chacune commençant par son icône :
  *   🌙 Marée basse 11h15 (92) · 17°C          ↻ 14:32
  *   🌊 1.5m en hausse · 11s
- *   💨 SE 7km/h (vire Sud à 11:00)
+ *   💨 SE 7km/h (vire Sud 12km/h à 11:00)
  * L'heure de dernière mise à jour réussie du widget est nichée à droite de la ligne
  * marée, en petit et à faible opacité (semi-camouflée), pour repérer d'un coup d'œil
  * des données devenues périmées sans polluer la lecture du reste.
@@ -61,7 +61,14 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 Trend.STABLE -> {}
             }
             if (snapshot.windRotationToBucket != null && snapshot.windRotationTime != null) {
-                windClauses.add("vire ${snapshot.windRotationToBucket} à ${snapshot.windRotationTime}")
+                val rotationClause = buildString {
+                    append("vire ${snapshot.windRotationToBucket}")
+                    if (snapshot.windRotationSpeedKmh != null) {
+                        append(" ${SurfUnitsHelper.formatWindValue(snapshot.windRotationSpeedKmh, snapshot.windUnit)}$unit")
+                    }
+                    append(" à ${snapshot.windRotationTime}")
+                }
+                windClauses.add(rotationClause)
             }
             val windSuffix = if (windClauses.isNotEmpty()) " (${windClauses.joinToString(", ")})" else ""
 

@@ -23,6 +23,7 @@ data class WidgetSnapshot(
     val windSpeedTrend: Trend,
     val windRotationToBucket: String?,
     val windRotationTime: String?,
+    val windRotationSpeedKmh: Int?,
     val nextTideIsHigh: Boolean?,
     val nextTideTime: String?,
     val nextTideCoef: Int?,
@@ -137,9 +138,11 @@ object WidgetDataCache {
             if (rotationHour != null) {
                 putString("widget_wind_rotation_to", bucket8(rotationHour.windDirectionStr))
                 putString("widget_wind_rotation_time", rotationHour.rawTime.format(TIME_FMT))
+                putInt("widget_wind_rotation_speed_kmh", rotationHour.windSpeedKmh)
             } else {
                 remove("widget_wind_rotation_to")
                 remove("widget_wind_rotation_time")
+                remove("widget_wind_rotation_speed_kmh")
             }
             if (nextTide != null) {
                 putBoolean("widget_next_tide_is_high", nextTide.isHigh)
@@ -174,6 +177,7 @@ object WidgetDataCache {
             windSpeedTrend = trendOf("widget_wind_speed_trend"),
             windRotationToBucket = prefs.getString("widget_wind_rotation_to", null),
             windRotationTime = prefs.getString("widget_wind_rotation_time", null),
+            windRotationSpeedKmh = if (prefs.contains("widget_wind_rotation_speed_kmh")) prefs.getInt("widget_wind_rotation_speed_kmh", 0) else null,
             nextTideIsHigh = if (prefs.contains("widget_next_tide_is_high")) prefs.getBoolean("widget_next_tide_is_high", true) else null,
             nextTideTime = prefs.getString("widget_next_tide_time", null),
             nextTideCoef = if (prefs.contains("widget_next_tide_coef")) prefs.getInt("widget_next_tide_coef", 0) else null,
