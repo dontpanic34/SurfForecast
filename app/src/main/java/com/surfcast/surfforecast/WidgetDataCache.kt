@@ -25,7 +25,8 @@ data class WidgetSnapshot(
     val windRotationTime: String?,
     val nextTideIsHigh: Boolean?,
     val nextTideTime: String?,
-    val nextTideCoef: Int?
+    val nextTideCoef: Int?,
+    val lastUpdateTime: String
 )
 
 /**
@@ -149,6 +150,7 @@ object WidgetDataCache {
                 remove("widget_next_tide_time")
                 remove("widget_next_tide_coef")
             }
+            putString("widget_last_update", now.format(TIME_FMT))
             putBoolean("widget_has_data", true)
         }
 
@@ -174,7 +176,8 @@ object WidgetDataCache {
             windRotationTime = prefs.getString("widget_wind_rotation_time", null),
             nextTideIsHigh = if (prefs.contains("widget_next_tide_is_high")) prefs.getBoolean("widget_next_tide_is_high", true) else null,
             nextTideTime = prefs.getString("widget_next_tide_time", null),
-            nextTideCoef = if (prefs.contains("widget_next_tide_coef")) prefs.getInt("widget_next_tide_coef", 0) else null
+            nextTideCoef = if (prefs.contains("widget_next_tide_coef")) prefs.getInt("widget_next_tide_coef", 0) else null,
+            lastUpdateTime = prefs.getString("widget_last_update", "--:--") ?: "--:--"
         )
     }
 

@@ -16,6 +16,9 @@ import java.util.Locale
  *   🌙 Marée basse 11h15 (92) · 17°C
  *   🌊 1.5m en hausse · 11s
  *   💨 SE 7km/h (vire Sud à 11:00)
+ *                        ↻ 14:32
+ * La dernière ligne (heure de la dernière mise à jour réussie du widget, petite et
+ * discrète) permet de repérer d'un coup d'œil des données devenues périmées.
  * La rotation du vent donne l'heure exacte du changement de secteur (premier moment
  * dans les 12h à venir où il change vraiment de secteur), pas juste "de/vers". Les
  * mentions de tendance ("en hausse"/"en baisse", "forcit"/"tombe") ne s'affichent que
@@ -72,12 +75,14 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
 
             val waveLine = "🌊 $formattedH$waveTrendSuffix · ${snapshot.wavePeriod}s"
             val windLine = "💨 ${snapshot.dirFr} $speed $unit$windSuffix"
+            val updatedLine = "↻ ${snapshot.lastUpdateTime}"
 
             for (appWidgetId in appWidgetIds) {
                 val views = RemoteViews(context.packageName, R.layout.widget_surf_live)
                 views.setTextViewText(R.id.widget_text_tide, tideLine)
                 views.setTextViewText(R.id.widget_text_wave, waveLine)
                 views.setTextViewText(R.id.widget_text_wind, windLine)
+                views.setTextViewText(R.id.widget_text_updated, updatedLine)
 
                 val clickIntent = Intent(context, MainActivity::class.java)
                 val pendingIntent = PendingIntent.getActivity(
