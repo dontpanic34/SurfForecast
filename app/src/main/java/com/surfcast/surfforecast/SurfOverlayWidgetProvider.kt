@@ -14,14 +14,17 @@ import java.util.Locale
  * glance"). Trois lignes lisibles plutôt qu'une seule phrase trop longue pour tenir à
  * l'écran, chacune commençant par son icône :
  *   🌙 Marée basse 11h15 (92) · 17°C          ↻ 14:32
- *   🌊 1.5m en hausse à 15:00 · 11s
+ *   🌊 1.5m · 11s (↗1.7m à 15:00, ↘9s à 15:00)
  *   💨 SE 7km/h (vire Sud 12km/h à 11:00)
  * L'heure de dernière mise à jour réussie du widget est nichée à droite de la ligne
  * marée, en petit et à faible opacité (semi-camouflée), pour repérer d'un coup d'œil
  * des données devenues périmées sans polluer la lecture du reste.
  * La rotation du vent donne l'heure exacte du changement de secteur (premier moment
- * dans les 12h à venir où il change vraiment de secteur), pas juste "de/vers". Les
- * mentions de tendance ("en hausse"/"en baisse", "forcit"/"tombe") ne s'affichent que
+ * dans les 12h à venir où il change vraiment de secteur), pas juste "de/vers". La ligne
+ * houle garde toujours "hauteur · période" d'abord, en clair ; une parenthèse liste
+ * ensuite ce qui va vraiment changer (hauteur et/ou période, chacune avec sa propre
+ * heure si elles ne basculent pas en même temps) — ↗/↘ + la future valeur + l'heure.
+ * Les mentions de tendance ("forcit"/"tombe" pour le vent) ne s'affichent que
  * s'il y a un vrai changement à venir sur les prochaines heures ; rien n'est écrit si
  * ça reste stable. Tout en blanc (pas de code couleur vent/marée ici) : sur une photo
  * de fond d'écran quelconque, des teintes claires comme le jaune ou le vert deviennent
@@ -48,11 +51,17 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 else -> "km/h"
             }
 
-            val waveTrendSuffix = when (snapshot.waveTrend) {
-                Trend.RISING -> " en hausse" + (snapshot.waveChangeTime?.let { " à $it" } ?: "")
-                Trend.FALLING -> " en baisse" + (snapshot.waveChangeTime?.let { " à $it" } ?: "")
-                Trend.STABLE -> ""
+            val waveClauses = mutableListOf<String>()
+            if (snapshot.waveTrend != Trend.STABLE && snapshot.waveChangeTime != null && snapshot.waveChangeHeight != null) {
+                val arrow = if (snapshot.waveTrend == Trend.RISING) "↗" else "↘"
+                val futureH = String.format(Locale.US, "%.1fm", snapshot.waveChangeHeight)
+                waveClauses.add("$arrow$futureH à ${snapshot.waveChangeTime}")
             }
+            if (snapshot.periodTrend != Trend.STABLE && snapshot.periodChangeTime != null && snapshot.periodChangeValue != null) {
+                val arrow = if (snapshot.periodTrend == Trend.RISING) "↗" else "↘"
+                waveClauses.add("$arrow${snapshot.periodChangeValue}s à ${snapshot.periodChangeTime}")
+            }
+            val waveSuffix = if (waveClauses.isNotEmpty()) " (${waveClauses.joinToString(", ")})" else ""
 
             val windClauses = mutableListOf<String>()
             when (snapshot.windSpeedTrend) {
@@ -80,7 +89,7 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 "🌙 Marée -- · ${snapshot.temp}°C"
             }
 
-            val waveLine = "🌊 $formattedH$waveTrendSuffix · ${snapshot.wavePeriod}s"
+            val waveLine = "🌊 $formattedH · ${snapshot.wavePeriod}s$waveSuffix"
             val windLine = "💨 ${snapshot.dirFr} $speed $unit$windSuffix"
             val updatedLine = "↻ ${snapshot.lastUpdateTime}"
 

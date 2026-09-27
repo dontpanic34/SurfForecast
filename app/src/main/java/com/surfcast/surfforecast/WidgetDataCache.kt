@@ -9,6 +9,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 enum class Trend { RISING, FALLING, STABLE }
 
@@ -16,7 +17,11 @@ data class WidgetSnapshot(
     val waveHeight: Float,
     val waveTrend: Trend,
     val waveChangeTime: String?,
+    val waveChangeHeight: Float?,
     val wavePeriod: Int,
+    val periodTrend: Trend,
+    val periodChangeTime: String?,
+    val periodChangeValue: Int?,
     val temp: Int,
     val dirFr: String,
     val windSpeedKmh: Int,
@@ -48,6 +53,46 @@ object WidgetDataCache {
         return COMPASS_8[idx]
     }
 
+    /**
+     * Tendance d'une métrique (houle, période, vitesse du vent...) sur la moyenne des 3
+     * prochaines heures (pas juste l'heure suivante, pour ne signaler qu'un vrai
+     * changement), puis recherche dans les 12 prochaines heures du premier moment où elle
+     * franchit vraiment ce seuil dans le sens de la tendance — pour donner une heure et
+     * une valeur précises plutôt qu'un simple mot.
+     */
+    private fun trendAndChangeHour(
+        hourly: HourlyUiModel,
+        aheadHours: List<HourlyUiModel>,
+        forecast: List<HourlyUiModel>,
+        fullIdx: Int,
+        threshold: Double,
+        selector: (HourlyUiModel) -> Double
+    ): Pair<Trend, HourlyUiModel?> {
+        val current = selector(hourly)
+        val trend = if (aheadHours.isEmpty()) {
+            Trend.STABLE
+        } else {
+            val diff = aheadHours.map(selector).average() - current
+            when {
+                diff >= threshold -> Trend.RISING
+                diff <= -threshold -> Trend.FALLING
+                else -> Trend.STABLE
+            }
+        }
+
+        val changeHour = if (trend == Trend.STABLE) {
+            null
+        } else {
+            (1..12).mapNotNull { forecast.getOrNull(fullIdx + it) }
+                .firstOrNull { h ->
+                    val diff = selector(h) - current
+                    if (trend == Trend.RISING) diff >= threshold else diff <= -threshold
+                }
+        }
+
+        return trend to changeHour
+    }
+
     fun push(
         context: Context,
         spotName: String,
@@ -68,46 +113,11 @@ object WidgetDataCache {
         val hourly = closestIdx?.let { todayHours[it] } ?: forecast.firstOrNull() ?: return
 
         val fullIdx = forecast.indexOfFirst { it.rawTime == hourly.rawTime }
-
-        // Tendance de la houle et du vent : on regarde la moyenne des 3 prochaines heures
-        // (pas juste l'heure suivante) pour ne signaler qu'un vrai changement à venir, et
-        // rester muet si ça reste stable. Seuils volontairement significatifs.
         val aheadHours = (1..3).mapNotNull { forecast.getOrNull(fullIdx + it) }
 
-        val waveTrend = if (aheadHours.isEmpty()) {
-            Trend.STABLE
-        } else {
-            val diff = aheadHours.map { it.waveHeight }.average() - hourly.waveHeight
-            when {
-                diff >= 0.2 -> Trend.RISING
-                diff <= -0.2 -> Trend.FALLING
-                else -> Trend.STABLE
-            }
-        }
-
-        // Comme pour la rotation du vent : si la houle change vraiment, on cherche dans
-        // les 12 prochaines heures le premier moment où elle franchit le seuil (0.2m) dans
-        // le sens de la tendance, pour donner une heure précise plutôt qu'un simple mot.
-        val waveChangeHour = if (waveTrend == Trend.STABLE) {
-            null
-        } else {
-            (1..12).mapNotNull { forecast.getOrNull(fullIdx + it) }
-                .firstOrNull { h ->
-                    val diff = h.waveHeight - hourly.waveHeight
-                    if (waveTrend == Trend.RISING) diff >= 0.2 else diff <= -0.2
-                }
-        }
-
-        val windSpeedTrend = if (aheadHours.isEmpty()) {
-            Trend.STABLE
-        } else {
-            val diff = aheadHours.map { it.windSpeedKmh }.average() - hourly.windSpeedKmh
-            when {
-                diff >= 8 -> Trend.RISING
-                diff <= -8 -> Trend.FALLING
-                else -> Trend.STABLE
-            }
-        }
+        val (waveTrend, waveChangeHour) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 0.2) { it.waveHeight }
+        val (periodTrend, periodChangeHour) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 1.5) { it.wavePeriod }
+        val (windSpeedTrend, _) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 8.0) { it.windSpeedKmh.toDouble() }
 
         // Rotation du vent : on cherche, dans les 12 prochaines heures, le premier moment où
         // le vent change vraiment de secteur (par tranche de 45°, pour ignorer le bruit entre
@@ -145,10 +155,20 @@ object WidgetDataCache {
             putString("widget_wave_trend", waveTrend.name)
             if (waveChangeHour != null) {
                 putString("widget_wave_change_time", waveChangeHour.rawTime.format(TIME_FMT))
+                putFloat("widget_wave_change_height", waveChangeHour.waveHeight.toFloat())
             } else {
                 remove("widget_wave_change_time")
+                remove("widget_wave_change_height")
             }
-            putInt("widget_wave_period", hourly.wavePeriod.toInt())
+            putInt("widget_wave_period", hourly.wavePeriod.roundToInt())
+            putString("widget_period_trend", periodTrend.name)
+            if (periodChangeHour != null) {
+                putString("widget_period_change_time", periodChangeHour.rawTime.format(TIME_FMT))
+                putInt("widget_period_change_value", periodChangeHour.wavePeriod.roundToInt())
+            } else {
+                remove("widget_period_change_time")
+                remove("widget_period_change_value")
+            }
             putInt("widget_temp", hourly.temperature)
             putString("widget_wind_dir_fr", SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr))
             putInt("widget_wind_speed_kmh", hourly.windSpeedKmh)
@@ -189,7 +209,11 @@ object WidgetDataCache {
             waveHeight = prefs.getFloat("widget_wave_height", 0f),
             waveTrend = trendOf("widget_wave_trend"),
             waveChangeTime = prefs.getString("widget_wave_change_time", null),
+            waveChangeHeight = if (prefs.contains("widget_wave_change_height")) prefs.getFloat("widget_wave_change_height", 0f) else null,
             wavePeriod = prefs.getInt("widget_wave_period", 0),
+            periodTrend = trendOf("widget_period_trend"),
+            periodChangeTime = prefs.getString("widget_period_change_time", null),
+            periodChangeValue = if (prefs.contains("widget_period_change_value")) prefs.getInt("widget_period_change_value", 0) else null,
             temp = prefs.getInt("widget_temp", 0),
             dirFr = prefs.getString("widget_wind_dir_fr", "--") ?: "--",
             windSpeedKmh = prefs.getInt("widget_wind_speed_kmh", 0),
