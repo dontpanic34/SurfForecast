@@ -15,6 +15,7 @@ enum class Trend { RISING, FALLING, STABLE }
 data class WidgetSnapshot(
     val waveHeight: Float,
     val waveTrend: Trend,
+    val waveChangeTime: String?,
     val wavePeriod: Int,
     val temp: Int,
     val dirFr: String,
@@ -84,6 +85,19 @@ object WidgetDataCache {
             }
         }
 
+        // Comme pour la rotation du vent : si la houle change vraiment, on cherche dans
+        // les 12 prochaines heures le premier moment où elle franchit le seuil (0.2m) dans
+        // le sens de la tendance, pour donner une heure précise plutôt qu'un simple mot.
+        val waveChangeHour = if (waveTrend == Trend.STABLE) {
+            null
+        } else {
+            (1..12).mapNotNull { forecast.getOrNull(fullIdx + it) }
+                .firstOrNull { h ->
+                    val diff = h.waveHeight - hourly.waveHeight
+                    if (waveTrend == Trend.RISING) diff >= 0.2 else diff <= -0.2
+                }
+        }
+
         val windSpeedTrend = if (aheadHours.isEmpty()) {
             Trend.STABLE
         } else {
@@ -129,6 +143,11 @@ object WidgetDataCache {
         prefs.edit {
             putFloat("widget_wave_height", hourly.waveHeight.toFloat())
             putString("widget_wave_trend", waveTrend.name)
+            if (waveChangeHour != null) {
+                putString("widget_wave_change_time", waveChangeHour.rawTime.format(TIME_FMT))
+            } else {
+                remove("widget_wave_change_time")
+            }
             putInt("widget_wave_period", hourly.wavePeriod.toInt())
             putInt("widget_temp", hourly.temperature)
             putString("widget_wind_dir_fr", SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr))
@@ -169,6 +188,7 @@ object WidgetDataCache {
         return WidgetSnapshot(
             waveHeight = prefs.getFloat("widget_wave_height", 0f),
             waveTrend = trendOf("widget_wave_trend"),
+            waveChangeTime = prefs.getString("widget_wave_change_time", null),
             wavePeriod = prefs.getInt("widget_wave_period", 0),
             temp = prefs.getInt("widget_temp", 0),
             dirFr = prefs.getString("widget_wind_dir_fr", "--") ?: "--",

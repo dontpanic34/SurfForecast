@@ -14,7 +14,7 @@ import java.util.Locale
  * glance"). Trois lignes lisibles plutôt qu'une seule phrase trop longue pour tenir à
  * l'écran, chacune commençant par son icône :
  *   🌙 Marée basse 11h15 (92) · 17°C          ↻ 14:32
- *   🌊 1.5m en hausse · 11s
+ *   🌊 1.5m en hausse à 15:00 · 11s
  *   💨 SE 7km/h (vire Sud 12km/h à 11:00)
  * L'heure de dernière mise à jour réussie du widget est nichée à droite de la ligne
  * marée, en petit et à faible opacité (semi-camouflée), pour repérer d'un coup d'œil
@@ -49,8 +49,8 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             }
 
             val waveTrendSuffix = when (snapshot.waveTrend) {
-                Trend.RISING -> " en hausse"
-                Trend.FALLING -> " en baisse"
+                Trend.RISING -> " en hausse" + (snapshot.waveChangeTime?.let { " à $it" } ?: "")
+                Trend.FALLING -> " en baisse" + (snapshot.waveChangeTime?.let { " à $it" } ?: "")
                 Trend.STABLE -> ""
             }
 
