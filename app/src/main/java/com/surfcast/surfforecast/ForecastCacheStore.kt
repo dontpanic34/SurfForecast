@@ -33,6 +33,9 @@ object ForecastCacheStore {
                     put("waveHeight", h.waveHeight)
                     put("wavePeriod", h.wavePeriod)
                     put("waveDirection", h.waveDirection.toDouble())
+                    put("windWaveHeight", h.windWaveHeight)
+                    put("windWavePeriod", h.windWavePeriod)
+                    put("windWaveDirection", h.windWaveDirection.toDouble())
                     put("energyKj", h.energyKj)
                     put("windSpeedKmh", h.windSpeedKmh)
                     put("windDirectionStr", h.windDirectionStr)
@@ -101,6 +104,9 @@ object ForecastCacheStore {
                     waveHeight = o.getDouble("waveHeight"),
                     wavePeriod = o.getDouble("wavePeriod"),
                     waveDirection = o.getDouble("waveDirection").toFloat(),
+                    windWaveHeight = o.optDouble("windWaveHeight", 0.0),
+                    windWavePeriod = o.optDouble("windWavePeriod", 0.0),
+                    windWaveDirection = o.optDouble("windWaveDirection", 0.0).toFloat(),
                     energyKj = o.getInt("energyKj"),
                     windSpeedKmh = o.getInt("windSpeedKmh"),
                     windDirectionStr = o.getString("windDirectionStr"),

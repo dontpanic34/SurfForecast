@@ -42,6 +42,8 @@ fun SurfPreferencesDialog(
     onToggleSurfCard: (Boolean) -> Unit,
     showWindCard: Boolean,
     onToggleWindCard: (Boolean) -> Unit,
+    showWindSeaCard: Boolean,
+    onToggleWindSeaCard: (Boolean) -> Unit,
     showWeatherCard: Boolean,
     onToggleWeatherCard: (Boolean) -> Unit,
     showHourlyCard: Boolean,
@@ -402,6 +404,7 @@ fun SurfPreferencesDialog(
                                 CardVisibilityRow("Déroulé de la journée", showDailyTimelineCard, onToggleDailyTimelineCard, colors)
                                 CardVisibilityRow("Vagues & Houle", showSurfCard, onToggleSurfCard, colors)
                                 CardVisibilityRow("Vent", showWindCard, onToggleWindCard, colors)
+                                CardVisibilityRow("Mer de vent", showWindSeaCard, onToggleWindSeaCard, colors)
                                 CardVisibilityRow("Météo", showWeatherCard, onToggleWeatherCard, colors)
                                 CardVisibilityRow("Prévision heure par heure", showHourlyCard, onToggleHourlyCard, colors)
                             }

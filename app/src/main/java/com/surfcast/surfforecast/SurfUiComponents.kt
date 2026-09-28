@@ -21,6 +21,11 @@ data class HourlyUiModel(
     val waveHeight: Double,
     val wavePeriod: Double,
     val waveDirection: Float,
+    // Mer de vent (clapot) : vagues courtes generees localement par le vent, distinctes
+    // de la houle ci-dessus. 0 = pas de clapot (valeur legitime, pas une donnee manquante).
+    val windWaveHeight: Double = 0.0,
+    val windWavePeriod: Double = 0.0,
+    val windWaveDirection: Float = 0f,
     val energyKj: Int,
     val windSpeedKmh: Int,
     val windDirectionStr: String,

@@ -136,7 +136,10 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
     var showHourlyCard by mutableStateOf(prefs.getBoolean("show_hourly_card", true))
         private set
 
-    var cardsOrder = mutableStateListOf("weekly", "dailyTimeline", "surf", "wind", "weather", "hourly")
+    var showWindSeaCard by mutableStateOf(prefs.getBoolean("show_wind_sea_card", true))
+        private set
+
+    var cardsOrder = mutableStateListOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
         private set
 
     // Tâche 2 : état réduit ("collapsed") de chaque encart, clé = cardKey ("surf", "wind", ...)
@@ -166,7 +169,7 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
             val sanitized = savedOrder.split(",")
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
-            val defaults = listOf("weekly", "dailyTimeline", "surf", "wind", "weather", "hourly")
+            val defaults = listOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
             // On complète avec les nouvelles cles (weekly/dailyTimeline) si l'ordre sauvegarde
             // vient d'une version anterieure de l'app qui ne les connaissait pas encore.
             val merged = sanitized + defaults.filter { it !in sanitized }
@@ -375,6 +378,11 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleWeatherCard(show: Boolean) {
         showWeatherCard = show
         prefs.edit { putBoolean("show_weather_card", show) }
+    }
+
+    fun toggleWindSeaCard(show: Boolean) {
+        showWindSeaCard = show
+        prefs.edit { putBoolean("show_wind_sea_card", show) }
     }
 
     fun addQuiverBoard(model: String, family: String, lengthLitrage: String, finSetup: String) {

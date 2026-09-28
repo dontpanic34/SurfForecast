@@ -135,6 +135,8 @@ fun MainScreen(viewModel: SurfViewModel) {
             onToggleSurfCard = { viewModel.toggleSurfCard(it) },
             showWindCard = viewModel.showWindCard,
             onToggleWindCard = { viewModel.toggleWindCard(it) },
+            showWindSeaCard = viewModel.showWindSeaCard,
+            onToggleWindSeaCard = { viewModel.toggleWindSeaCard(it) },
             showWeatherCard = viewModel.showWeatherCard,
             onToggleWeatherCard = { viewModel.toggleWeatherCard(it) },
             showHourlyCard = viewModel.showHourlyCard,
@@ -785,6 +787,7 @@ fun DynamicCardsSection(
             "dailyTimeline" -> viewModel.showDailyTimelineCard
             "surf" -> viewModel.showSurfCard
             "wind" -> viewModel.showWindCard
+            "windSea" -> viewModel.showWindSeaCard
             "weather" -> viewModel.showWeatherCard
             "hourly" -> viewModel.showHourlyCard
             else -> true
@@ -919,6 +922,20 @@ fun DynamicCardsSection(
                                     selectedHour = hourly,
                                     allHoursOfDay = hoursForSelectedDay,
                                     windUnit = viewModel.windUnit,
+                                    onHourSelected = { selectedHourlyItem = it },
+                                    isCollapsed = isCollapsed,
+                                    onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                    dragHandleModifier = dragMod,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                        "windSea" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            selectedHourlyItem?.let { hourly ->
+                                WindSeaCardComponent(
+                                    selectedHour = hourly,
+                                    allHoursOfDay = hoursForSelectedDay,
                                     onHourSelected = { selectedHourlyItem = it },
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },

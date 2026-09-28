@@ -71,7 +71,14 @@ class SurfRepository {
         val times: List<LocalDateTime>,
         val waveHeights: List<Double>,
         val wavePeriods: List<Double>,
-        val waveDirections: List<Float>
+        val waveDirections: List<Float>,
+        // Mer de vent (clapot) : vagues courtes generees localement par le vent, distinctes
+        // de la houle (swell) ci-dessus qui vient d'une tempete au large. Pas de fallback
+        // sur le total combine ici (contrairement a la houle) : 0 est une valeur legitime
+        // (pas de clapot du tout), pas une absence de donnee a masquer.
+        val windWaveHeights: List<Double> = emptyList(),
+        val windWavePeriods: List<Double> = emptyList(),
+        val windWaveDirections: List<Float> = emptyList()
     )
 
     private data class RawWeatherHourly(
@@ -94,7 +101,7 @@ class SurfRepository {
     ): RawMarineHourly {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
                 "latitude=$lat&longitude=$lon" +
-                "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wind_wave_peak_period" +
+                "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period" +
                 "&models=${waveModel.apiParam}" +
                 "&forecast_days=$days" +
                 "&timezone=auto"
@@ -110,6 +117,8 @@ class SurfRepository {
         val swellPeakArr = hourly.optJSONArray("swell_wave_peak_period")
         val windPeakArr = hourly.optJSONArray("wind_wave_peak_period")
         val swellDArr = hourly.optJSONArray("swell_wave_direction")
+        val windWaveHArr = hourly.optJSONArray("wind_wave_height")
+        val windWaveDArr = hourly.optJSONArray("wind_wave_direction")
 
         val waveHeightArr = hourly.getJSONArray("wave_height")
         val wavePeriodArr = hourly.getJSONArray("wave_period")
@@ -119,6 +128,9 @@ class SurfRepository {
         val waveHeights = mutableListOf<Double>()
         val wavePeriods = mutableListOf<Double>()
         val waveDirs = mutableListOf<Float>()
+        val windWaveHeights = mutableListOf<Double>()
+        val windWavePeriods = mutableListOf<Double>()
+        val windWaveDirs = mutableListOf<Float>()
 
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
 
@@ -149,9 +161,15 @@ class SurfRepository {
             waveHeights.add(finalH)
             wavePeriods.add(finalP)
             waveDirs.add(finalD)
+
+            val windWaveH = if (windWaveHArr != null && !windWaveHArr.isNull(i)) windWaveHArr.getDouble(i) else 0.0
+            val windWaveD = if (windWaveDArr != null && !windWaveDArr.isNull(i)) windWaveDArr.getDouble(i).toFloat() else 0f
+            windWaveHeights.add(windWaveH)
+            windWavePeriods.add(if (!windPeak.isNaN()) windPeak else 0.0)
+            windWaveDirs.add(windWaveD)
         }
 
-        return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs)
+        return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs)
     }
 
     private suspend fun fetchWeatherBlock(
@@ -299,6 +317,9 @@ class SurfRepository {
             val h = mData.waveHeights[mIndex]
             val p = mData.wavePeriods[mIndex]
             val dirFloat = mData.waveDirections[mIndex]
+            val windWaveH = mData.windWaveHeights.getOrElse(mIndex) { 0.0 }
+            val windWaveP = mData.windWavePeriods.getOrElse(mIndex) { 0.0 }
+            val windWaveDir = mData.windWaveDirections.getOrElse(mIndex) { 0f }
             val windKmh = wData.windSpeeds.getOrElse(wIndex) { 10.0 }.roundToInt()
             val windDirDeg = wData.windDirections.getOrElse(wIndex) { 0.0 }
 
@@ -309,6 +330,9 @@ class SurfRepository {
                     waveHeight = h,
                     wavePeriod = p,
                     waveDirection = dirFloat,
+                    windWaveHeight = windWaveH,
+                    windWavePeriod = windWaveP,
+                    windWaveDirection = windWaveDir,
                     energyKj = calculateWaveEnergyReal(h, p),
                     windSpeedKmh = windKmh,
                     windDirectionStr = getCardinalDirection(windDirDeg),
