@@ -42,9 +42,12 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
+      - name: Rename APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/surflog.apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: surf-log-debug-${{ github.run_number }}
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/surflog.apk
           retention-days: 30
