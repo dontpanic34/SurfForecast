@@ -1,0 +1,72 @@
+name: Build KMP shared module (Android + iOS)
+
+on:
+  push:
+    branches:
+      - ios-kmp-migration
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  android-and-shared-jvm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Accept Android SDK licenses
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMANAGER=$(find "$SDK_ROOT" -maxdepth 4 -type f -name sdkmanager 2>/dev/null | head -1)
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null || true
+          else
+            echo "sdkmanager not found under $SDK_ROOT, skipping (licenses are likely already accepted on this image)"
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build shared module (Android target)
+        run: ./gradlew :shared:assembleDebug --stacktrace
+
+      - name: Run shared module unit tests (JVM/Android)
+        run: ./gradlew :shared:testDebugUnitTest --stacktrace
+
+      - name: Build existing Android app (regression check)
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+  shared-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build shared framework for iOS Simulator (arm64)
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+
+      - name: Run shared module tests on iOS Simulator
+        run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace

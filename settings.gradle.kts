@@ -18,4 +18,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "SurfForecast"
 include(":app")
+include(":shared")
  
