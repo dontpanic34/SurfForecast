@@ -15,12 +15,12 @@ import java.util.Locale
  * l'écran, chacune commençant par son icône :
  *   🌙 Marée basse 11h15 (92) · 17°C          ↻ 14:32
  *   🌊 1.5m · 11s (↗1.7m à 15:00, ↘9s à 15:00)
- *   💨 SE 7km/h (vire Sud 12km/h à 11:00)
+ *   💨 SE 7km/h (vire SSO 12km/h à 11:00)
  * L'heure de dernière mise à jour réussie du widget est nichée à droite de la ligne
  * marée, en petit et à faible opacité (semi-camouflée), pour repérer d'un coup d'œil
  * des données devenues périmées sans polluer la lecture du reste.
- * La rotation du vent donne l'heure exacte du changement de secteur (premier moment
- * dans les 12h à venir où il change vraiment de secteur), pas juste "de/vers". La ligne
+ * La rotation du vent donne l'heure exacte du changement de direction (premier moment
+ * dans les 12h à venir où l'écart angulaire réel dépasse 45°), pas juste "de/vers". La ligne
  * houle garde toujours "hauteur · période" d'abord, en clair ; une parenthèse liste
  * ensuite ce qui va vraiment changer (hauteur et/ou période, chacune avec sa propre
  * heure si elles ne basculent pas en même temps) — ↗/↘ + la future valeur + l'heure.
@@ -69,9 +69,9 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                 Trend.FALLING -> windClauses.add("tombe")
                 Trend.STABLE -> {}
             }
-            if (snapshot.windRotationToBucket != null && snapshot.windRotationTime != null) {
+            if (snapshot.windRotationToDir != null && snapshot.windRotationTime != null) {
                 val rotationClause = buildString {
-                    append("vire ${snapshot.windRotationToBucket}")
+                    append("vire ${snapshot.windRotationToDir}")
                     if (snapshot.windRotationSpeedKmh != null) {
                         append(" ${SurfUnitsHelper.formatWindValue(snapshot.windRotationSpeedKmh, snapshot.windUnit)}$unit")
                     }

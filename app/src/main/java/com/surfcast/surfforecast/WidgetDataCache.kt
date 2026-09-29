@@ -27,7 +27,7 @@ data class WidgetSnapshot(
     val windSpeedKmh: Int,
     val windUnit: String,
     val windSpeedTrend: Trend,
-    val windRotationToBucket: String?,
+    val windRotationToDir: String?,
     val windRotationTime: String?,
     val windRotationSpeedKmh: Int?,
     val nextTideIsHigh: Boolean?,
@@ -45,15 +45,18 @@ data class WidgetSnapshot(
 object WidgetDataCache {
     private const val PREFS = "surf_prefs"
     private val TIME_FMT = DateTimeFormatter.ofPattern("HH:mm")
-    // Secteurs de 90° (pas 45°) : un simple SSE -> SE reste un vent globalement "de sud",
-    // pas un vrai changement de direction. Seul un vrai virement (typiquement Est -> Ouest)
-    // doit déclencher la mention "vire ... à ...".
-    private val COMPASS_4 = listOf("Nord", "Est", "Sud", "Ouest")
+    // Ecart angulaire reel entre deux directions (0-180°), plutot qu'un decoupage en
+    // quartiers fixes : un decoupage par quartier range SSE et SSO dans le meme bloc
+    // "Sud" alors qu'ils sont a 45° l'un de l'autre (de part et d'autre du sud), donc
+    // un virement SSO -> SSE passait inapercu. Seul un ecart reel >= ROTATION_THRESHOLD_DEG
+    // doit declencher la mention "vire ... à ...".
+    private const val ROTATION_THRESHOLD_DEG = 45f
 
-    private fun bucket4(dirRaw: String): String {
-        val deg = SurfUnitsHelper.cardinalToDegrees(SurfUnitsHelper.formatCardinalFr(dirRaw))
-        val idx = ((deg + 45f) / 90f).toInt() % 4
-        return COMPASS_4[idx]
+    private fun degreesOf(dirRaw: String): Float = SurfUnitsHelper.cardinalToDegrees(dirRaw)
+
+    private fun angularDiff(a: Float, b: Float): Float {
+        val diff = abs(a - b) % 360f
+        return if (diff > 180f) 360f - diff else diff
     }
 
     /**
@@ -120,17 +123,17 @@ object WidgetDataCache {
 
         val (waveTrend, waveChangeHour) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 0.2) { it.waveHeight }
         val (periodTrend, periodChangeHour) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 1.5) { it.wavePeriod }
-        val (windSpeedTrend, _) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 8.0) { it.windSpeedKmh.toDouble() }
+        val (windSpeedTrend, _) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 4.0) { it.windSpeedKmh.toDouble() }
 
         // Rotation du vent : on cherche, dans les 12 prochaines heures, le premier moment où
-        // le vent change vraiment de secteur (par quart de rose des vents, 90°, pour ignorer
-        // les petits décalages du type SSE -> SE) — et on retient l'heure exacte de ce moment.
+        // le vent s'est vraiment écarté de sa direction actuelle (écart angulaire réel, pas
+        // un simple changement de quartier) — et on retient l'heure exacte de ce moment.
         // Ignoré si le vent reste trop faible (< 10 km/h avant ET après) pour que la
         // direction ait un vrai impact : une rotation 3 -> 5 km/h ne change rien en pratique.
-        val currentBucket = bucket4(hourly.windDirectionStr)
+        val currentDeg = degreesOf(hourly.windDirectionStr)
         val rotationHour = (1..12)
             .mapNotNull { forecast.getOrNull(fullIdx + it) }
-            .firstOrNull { bucket4(it.windDirectionStr) != currentBucket }
+            .firstOrNull { angularDiff(degreesOf(it.windDirectionStr), currentDeg) >= ROTATION_THRESHOLD_DEG }
             ?.takeIf { hourly.windSpeedKmh >= 10 || it.windSpeedKmh >= 10 }
 
         // Prochaine marée (haute ou basse, quel que soit l'ordre) à venir par rapport à
@@ -181,7 +184,7 @@ object WidgetDataCache {
             putString("widget_wind_unit", windUnit)
             putString("widget_wind_speed_trend", windSpeedTrend.name)
             if (rotationHour != null) {
-                putString("widget_wind_rotation_to", bucket4(rotationHour.windDirectionStr))
+                putString("widget_wind_rotation_to", SurfUnitsHelper.formatCardinalFr(rotationHour.windDirectionStr))
                 putString("widget_wind_rotation_time", rotationHour.rawTime.format(TIME_FMT))
                 putInt("widget_wind_rotation_speed_kmh", rotationHour.windSpeedKmh)
             } else {
@@ -225,7 +228,7 @@ object WidgetDataCache {
             windSpeedKmh = prefs.getInt("widget_wind_speed_kmh", 0),
             windUnit = prefs.getString("widget_wind_unit", "kmh") ?: "kmh",
             windSpeedTrend = trendOf("widget_wind_speed_trend"),
-            windRotationToBucket = prefs.getString("widget_wind_rotation_to", null),
+            windRotationToDir = prefs.getString("widget_wind_rotation_to", null),
             windRotationTime = prefs.getString("widget_wind_rotation_time", null),
             windRotationSpeedKmh = if (prefs.contains("widget_wind_rotation_speed_kmh")) prefs.getInt("widget_wind_rotation_speed_kmh", 0) else null,
             nextTideIsHigh = if (prefs.contains("widget_next_tide_is_high")) prefs.getBoolean("widget_next_tide_is_high", true) else null,
