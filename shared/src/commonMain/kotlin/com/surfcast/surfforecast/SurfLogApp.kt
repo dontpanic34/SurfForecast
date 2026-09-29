@@ -1,12 +1,14 @@
 package com.surfcast.surfforecast
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,7 +25,7 @@ import com.surfcast.surfforecast.ui.theme.SurfForecastTheme
 
 /**
  * Écran temporaire de l'étape 1 de la migration Compose Multiplatform : valide la chaîne
- * complète (données partagées + encart Houle identique à Android) sur iOS. Sera remplacé
+ * complète (données partagées + encarts Houle, Vent, Mer de vent, Météo identiques à Android) sur iOS. Sera remplacé
  * par MainScreen une fois celui-ci déplacé dans le module partagé.
  */
 @Composable
@@ -60,13 +62,33 @@ fun SurfLogApp() {
             when {
                 error != null -> Text(error ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.Center))
                 currentHours == null || currentSelected == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                else -> Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                else -> Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(spot.name, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
                     SurfCardComponent(
                         selectedHour = currentSelected,
                         allHoursOfDay = currentHours,
-                        onHourSelected = { selected = it },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        onHourSelected = { selected = it }
+                    )
+                    WindCardComponent(
+                        selectedHour = currentSelected,
+                        allHoursOfDay = currentHours,
+                        windUnit = "kmh",
+                        onHourSelected = { selected = it }
+                    )
+                    WindSeaCardComponent(
+                        selectedHour = currentSelected,
+                        allHoursOfDay = currentHours,
+                        onHourSelected = { selected = it }
+                    )
+                    WeatherCardComponent(
+                        selectedHour = currentSelected,
+                        allHoursOfDay = currentHours,
+                        onHourSelected = { selected = it }
                     )
                 }
             }

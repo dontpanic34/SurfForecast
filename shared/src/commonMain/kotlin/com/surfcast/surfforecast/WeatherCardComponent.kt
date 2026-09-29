@@ -17,17 +17,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 
 @Composable
-fun SurfCardComponent(
+fun WeatherCardComponent(
     selectedHour: HourlyUiModel,
     allHoursOfDay: List<HourlyUiModel>,
     onHourSelected: (HourlyUiModel) -> Unit,
@@ -40,15 +37,11 @@ fun SurfCardComponent(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val maxWave = (allHoursOfDay.maxOfOrNull { it.waveHeight } ?: 1.5).coerceAtLeast(2.0)
+    val maxTemp = (allHoursOfDay.maxOfOrNull { it.temperature.toDouble() } ?: 25.0).coerceAtLeast(30.0)
 
     // Remplace le Paint Android (non multiplateforme) : même taille, même graisse.
     val textMeasurer = rememberTextMeasurer()
     val timeTextPaint = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-
-    val swellDeg = selectedHour.waveDirection.roundToInt()
-    val swellRotationAngle = (selectedHour.waveDirection + 180f) % 360f
 
     Card(
         modifier = modifier
@@ -72,9 +65,9 @@ fun SurfCardComponent(
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             CardControlsRow(
-                title = "Houle",
+                title = "Météo",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier
@@ -88,67 +81,18 @@ fun SurfCardComponent(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "${formatDecimal(selectedHour.waveHeight, 1)}m",
+                        text = SurfUnitsHelper.resolveRealWeatherEmoji(selectedHour),
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = "${selectedHour.temperature}°C",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = onSurfaceColor
                     )
-                    Text(
-                        text = "${selectedHour.wavePeriod.roundToInt()}s",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = primaryColor
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "${selectedHour.energyKj} kJ",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF8F6300)
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Canvas(modifier = Modifier.size(13.dp)) {
-                            val w = size.width
-                            val h = size.height
-                            rotate(swellRotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                                val path = Path().apply {
-                                    moveTo(w * 0.5f, 0.5.dp.toPx())
-                                    lineTo(w * 0.95f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.48f)
-                                    lineTo(w * 0.05f, h * 0.48f)
-                                    close()
-                                }
-                                drawPath(path = path, color = Color(0xFF29B6F6))
-                                drawPath(
-                                    path = path,
-                                    color = onSurfaceColor.copy(alpha = 0.5f),
-                                    style = Stroke(width = 0.8.dp.toPx())
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "$swellDeg°",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = onSurfaceColor
-                        )
-                    }
                 }
             }
 
@@ -170,7 +114,7 @@ fun SurfCardComponent(
                     allHoursOfDay.forEach { hourly ->
                         val isSelected = hourly.rawTime == selectedHour.rawTime
                         val isCurrentHour = isToday && hourly.rawTime.hour == currentHourNow
-                        val heightRatio = (hourly.waveHeight / maxWave).toFloat().coerceIn(0.15f, 1f)
+                        val heightRatio = (hourly.temperature.toFloat() / maxTemp.toFloat()).coerceIn(0.15f, 1f)
 
                         Box(
                             modifier = Modifier
@@ -185,9 +129,9 @@ fun SurfCardComponent(
                             ) {
                                 val brush = Brush.verticalGradient(
                                     colors = if (isSelected) {
-                                        listOf(primaryColor, primaryColor.copy(alpha = 0.85f))
+                                        listOf(Color(0xFF26A69A), Color(0xFF00897B))
                                     } else {
-                                        listOf(primaryColor.copy(alpha = 0.5f), primaryColor.copy(alpha = 0.2f))
+                                        listOf(Color(0xFF26A69A).copy(alpha = 0.5f), Color(0xFF00897B).copy(alpha = 0.2f))
                                     }
                                 )
                                 drawRoundRect(
@@ -224,10 +168,11 @@ fun SurfCardComponent(
                             strokeWidth = 1.8f
                         )
 
+                        val currentBarHeight = size.height * (1f - (selectedHour.temperature.toFloat() / maxTemp.toFloat()).coerceIn(0.15f, 1f))
                         drawCircle(
                             color = onSurfaceColor,
                             radius = 3.2f,
-                            center = Offset(indicatorX, size.height * (1f - (selectedHour.waveHeight / maxWave).toFloat().coerceIn(0.15f, 1f)))
+                            center = Offset(indicatorX, currentBarHeight)
                         )
 
                         val timeStr = selectedHour.rawTime.formatHHmm()

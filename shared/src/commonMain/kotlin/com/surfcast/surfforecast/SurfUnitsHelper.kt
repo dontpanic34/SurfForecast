@@ -1,11 +1,9 @@
 package com.surfcast.surfforecast
 
+import androidx.compose.ui.graphics.Color
 import kotlin.math.roundToInt
 
-/**
- * Portage de SurfUnitsHelper (app/) sans getSurfWindColor, qui dépend de la couleur
- * Compose : elle rejoindra ce fichier avec le passage de l'UI en Compose Multiplatform.
- */
+// Portage 1:1 de SurfUnitsHelper (app/).
 object SurfUnitsHelper {
 
     fun formatWindValue(speedKmh: Double, unit: String): String {
@@ -71,6 +69,24 @@ object SurfUnitsHelper {
             "NW", "NO" -> 315f
             "NNW", "NNO" -> 337.5f
             else -> 0f
+        }
+    }
+
+    /**
+     * Code couleur vent officiel de l'appli : jaune = vent de terre (offshore, favorable),
+     * orange = vent de mer modéré, rouge = vent de mer fort. À afficher tel quel partout :
+     * ne jamais assombrir ces teintes (les 3 paliers deviendraient indistinguables).
+     */
+    fun getSurfWindColor(directionFr: String, speedKmh: Int): Color {
+        val dir = directionFr.uppercase().trim()
+
+        val isVentDeTerre = dir in listOf("E", "ENE", "ESE", "SE", "NE")
+        val isVentDeMer = dir in listOf("O", "W", "ONO", "WNW", "OSO", "WSW", "NO", "NW", "NNO", "NNW", "SO", "SW", "SSO", "SSW", "NNE", "SSE", "S", "N")
+
+        return when {
+            isVentDeTerre -> Color(0xFFFDD835)
+            isVentDeMer && speedKmh <= 22 -> Color(0xFFFF9800)
+            else -> Color(0xFFE53935)
         }
     }
 
