@@ -16,16 +16,36 @@ exactement comme avant.
   **Ktor** (multiplateforme) + **kotlinx.serialization** dans `:shared`.
 - Dates : `java.time.*` (JVM only) remplacé par **kotlinx-datetime** dans `:shared`.
 
-## Fait cette nuit
+## Fait cette nuit (vérifié en CI)
 
-- Squelette Gradle KMP (`:shared` module, version catalog, CI dédiée
-  `.github/workflows/build-kmp.yml` qui build Android+iOS sur push vers cette branche).
-- Slice minimal fonctionnel dans `:shared` : `SharedForecastService` — récupère houle
-  (Open-Meteo Marine) + météo/vent (Open-Meteo Forecast) pour un point GPS donné et les
-  fusionne en `List<HourlyForecastPoint>`. Testé (`SharedForecastServiceTest`, mock Ktor).
+- Squelette Gradle KMP (`:shared`, plugin `com.android.kotlin.multiplatform.library`
+  imposé par AGP 9) et CI dédiée `.github/workflows/build-kmp.yml`, déclenchée uniquement
+  sur cette branche.
+- Slice minimal dans `:shared` : `SharedForecastService` récupère houle (Open-Meteo
+  Marine) + météo/vent (Open-Meteo Forecast) pour un point GPS et les fusionne en
+  `List<HourlyForecastPoint>`. Test unitaire (mock Ktor) **exécuté sur Android et sur le
+  simulateur iOS**.
+- App iOS SwiftUI minimale (`iosApp/`, projet généré par XcodeGen) : liste les 24
+  prochaines heures pour Montalivet (houle, période, vent, température) via le module
+  partagé. **Build simulateur vert en CI**, non signé.
+- L'app Android existante (`:app`) continue de builder dans cette nouvelle structure.
 - **Ce slice est volontairement simplifié** : un seul modèle Open-Meteo (pas encore le
   choix court terme/long terme AROME/ECMWF/MFWAM de `SurfRepository.getHybridForecast()`
-  côté Android), pas encore les marées (api-maree.fr).
+  côté Android), pas encore les marées (api-maree.fr), spot codé en dur.
+
+## Voir l'app iOS sans Mac
+
+Chaque run de `build-kmp.yml` lance l'app dans un simulateur et publie une capture
+d'écran en artifact (`ios-screenshot-<n°>`) : page du run GitHub Actions → section
+"Artifacts" → télécharger. Étape non bloquante (un souci de simulateur n'échoue pas le
+build).
+
+## Ouvrir le projet sur un Mac (si un jour tu en as un sous la main)
+
+```
+./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
+cd iosApp && brew install xcodegen && xcodegen generate && open SurfLog.xcodeproj
+```
 
 ## Explicitement hors scope pour l'instant
 
@@ -34,19 +54,18 @@ exactement comme avant.
 - Widgets iOS (WidgetKit — architecture totalement différente d'Android AppWidget,
   chantier séparé).
 - Journal de session (Room + photos) — reste Android-only pour l'instant.
-- Toute l'UI SwiftUI (aucun écran iOS n'existe encore à ce stade).
+- L'UI iOS au-delà de la liste horaire minimale (semaine, encarts houle/vent/marée,
+  préférences, favoris...).
 - Signature, TestFlight, App Store : **nécessite un compte Apple Developer (99$/an)
   que seul l'utilisateur peut créer** — rien de possible ici tant que ce n'est pas fait.
 
 ## Prochaines étapes (par ordre logique)
 
-1. Vérifier que `build-kmp.yml` passe au vert sur les deux jobs (Android + iOS).
-2. Porter les marées et le scoring dans `:shared`, puis la fusion multi-modèles complète.
-3. Faire consommer `:shared` par `:app` (Android) à la place du code dupliqué actuel,
+1. Porter les marées et le scoring dans `:shared`, puis la fusion multi-modèles complète.
+2. Faire consommer `:shared` par `:app` (Android) à la place du code dupliqué actuel,
    une fois la parité de comportement vérifiée — pour ne garder qu'une seule source de
    vérité pour la logique.
-4. Scaffolder un projet Xcode/SwiftUI consommant `SharedCore.framework`, avec un
-   premier écran (conditions actuelles du spot favori).
-5. Construire les écrans SwiftUI restants (semaine, houle, vent, marée, mer de vent...).
-6. Quand prêt à distribuer : créer le compte Apple Developer, configurer signing et
-   TestFlight.
+3. Construire les écrans SwiftUI restants (semaine, houle, vent, marée, mer de vent,
+   choix du spot...).
+4. Quand prêt à distribuer : créer le compte Apple Developer, configurer signing et
+   TestFlight (build appareil : il faudra aussi générer le framework `iosArm64`).
