@@ -67,3 +67,23 @@ jobs:
 
       - name: Run shared module tests on iOS Simulator
         run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: iosApp
+        run: xcodegen generate
+
+      - name: Build iOS app for Simulator (unsigned)
+        working-directory: iosApp
+        run: |
+          xcodebuild \
+            -project SurfLog.xcodeproj \
+            -target SurfLog \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            build

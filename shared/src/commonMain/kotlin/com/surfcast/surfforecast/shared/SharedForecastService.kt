@@ -8,9 +8,9 @@ import kotlinx.datetime.LocalDateTime
  * pas encore la fusion court-terme/long-terme d'AROME/ECMWF/MFWAM que fait
  * SurfRepository.getHybridForecast() cote Android — a porter dans une etape suivante.
  */
-class SharedForecastService(
-    private val api: OpenMeteoApi = OpenMeteoApi()
-) {
+class SharedForecastService(private val api: OpenMeteoApi) {
+    constructor() : this(OpenMeteoApi())
+
     suspend fun getForecast(spot: SpotCoordinates): List<HourlyForecastPoint> {
         val marine = api.getMarine(spot.latitude, spot.longitude)
         val weather = api.getWeather(spot.latitude, spot.longitude)

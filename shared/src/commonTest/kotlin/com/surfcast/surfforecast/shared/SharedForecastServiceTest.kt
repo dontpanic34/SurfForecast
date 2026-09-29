@@ -49,5 +49,6 @@ class SharedForecastServiceTest {
         assertEquals(1.2, result[0].waveHeight)
         assertEquals(12.0, result[0].windSpeedKmh)
         assertEquals(2, result[1].weatherCode)
+        assertEquals("01/01 11h", result[1].timeLabel)
     }
 }

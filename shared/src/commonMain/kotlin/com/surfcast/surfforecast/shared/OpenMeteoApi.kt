@@ -15,13 +15,16 @@ import kotlinx.serialization.json.Json
  * modèle par défaut Open-Meteo) — pas encore le choix de modèle AROME/ECMWF/MFWAM
  * ni les marées (api-maree.fr), qui restent à porter depuis SurfRepository.kt.
  */
-class OpenMeteoApi(
-    private val httpClient: HttpClient = HttpClient {
-        install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+class OpenMeteoApi(private val httpClient: HttpClient) {
+    // Swift ne voit pas les valeurs par défaut Kotlin : constructeur explicite sans argument.
+    constructor() : this(
+        HttpClient {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
         }
-    }
-) {
+    )
+
     suspend fun getMarine(lat: Double, lon: Double): MarineResponse =
         httpClient.get("https://marine-api.open-meteo.com/v1/marine") {
             parameter("latitude", lat)

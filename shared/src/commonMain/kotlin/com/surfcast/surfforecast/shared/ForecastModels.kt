@@ -17,7 +17,13 @@ data class HourlyForecastPoint(
     val windDirectionDeg: Double,
     val temperature: Double,
     val weatherCode: Int
-)
+) {
+    // Libellé prêt à afficher côté Swift, qui manipule mal les types kotlinx-datetime.
+    val timeLabel: String
+        get() = "${time.dayOfMonth.pad()}/${time.monthNumber.pad()} ${time.hour.pad()}h"
+}
+
+private fun Int.pad(): String = toString().padStart(2, '0')
 
 data class SpotCoordinates(
     val latitude: Double,
