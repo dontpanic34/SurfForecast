@@ -38,11 +38,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build shared module (Android target)
-        run: ./gradlew :shared:assembleDebug --stacktrace
-
-      - name: Run shared module unit tests (JVM/Android)
-        run: ./gradlew :shared:testDebugUnitTest --stacktrace
+      - name: Build + test shared module (Android host tests)
+        run: ./gradlew :shared:testAndroidHostTest --stacktrace
 
       - name: Build existing Android app (regression check)
         run: ./gradlew :app:assembleDebug --stacktrace
