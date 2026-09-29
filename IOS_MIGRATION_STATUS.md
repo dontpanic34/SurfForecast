@@ -28,10 +28,14 @@ exactement comme avant.
 - App iOS SwiftUI minimale (`iosApp/`, projet généré par XcodeGen) : liste les 24
   prochaines heures pour Montalivet (houle, période, vent, température) via le module
   partagé. **Build simulateur vert en CI**, non signé.
+- Marées portées dans `:shared` (`SharedTideService`, api-maree.fr) avec la même
+  logique que `SurfRepository.getTides()` : site le plus proche, PM/BM "de jour",
+  repli du coefficient. Testé (site choisi, marées de jour, coef, erreur réseau).
+  Affichées en tête de la liste iOS.
 - L'app Android existante (`:app`) continue de builder dans cette nouvelle structure.
 - **Ce slice est volontairement simplifié** : un seul modèle Open-Meteo (pas encore le
   choix court terme/long terme AROME/ECMWF/MFWAM de `SurfRepository.getHybridForecast()`
-  côté Android), pas encore les marées (api-maree.fr), spot codé en dur.
+  côté Android), spot codé en dur (Montalivet).
 
 ## Voir l'app iOS sans Mac
 
@@ -61,7 +65,7 @@ cd iosApp && brew install xcodegen && xcodegen generate && open SurfLog.xcodepro
 
 ## Prochaines étapes (par ordre logique)
 
-1. Porter les marées et le scoring dans `:shared`, puis la fusion multi-modèles complète.
+1. Porter le scoring dans `:shared`, puis la fusion multi-modèles complète.
 2. Faire consommer `:shared` par `:app` (Android) à la place du code dupliqué actuel,
    une fois la parité de comportement vérifiée — pour ne garder qu'une seule source de
    vérité pour la logique.
