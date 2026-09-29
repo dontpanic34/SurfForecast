@@ -10,12 +10,16 @@ targets:
     type: application
     platform: iOS
     sources: [SurfLog]
+    info:
+      path: SurfLog/Info.plist
+      properties:
+        CFBundleDisplayName: Surf Log
+        UILaunchScreen: {}
+        # Requis par Compose Multiplatform (sinon plantage au lancement) : autorise 120 Hz.
+        CADisableMinimumFrameDurationOnPhone: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.surfcast.surflog
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Surf Log
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
