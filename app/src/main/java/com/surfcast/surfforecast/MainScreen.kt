@@ -1143,7 +1143,7 @@ fun WeeklyForecastCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(96.dp)
+                    .height(132.dp)
             ) {
                 ContinuousWaveCanvas(
                     allHourlyData = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) },
@@ -1274,7 +1274,7 @@ fun ContinuousWaveCanvas(
     val heightTextPaint = remember(density, tideColorInt) {
         Paint().apply {
             color = tideColorInt
-            textSize = with(density) { 8.5.sp.toPx() }
+            textSize = with(density) { 11.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -1285,7 +1285,7 @@ fun ContinuousWaveCanvas(
     val periodTextPaint = remember(density, onSurfaceColor) {
         Paint().apply {
             color = onSurfaceColor.copy(alpha = 0.55f).toArgb()
-            textSize = with(density) { 8.sp.toPx() }
+            textSize = with(density) { 10.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -1294,7 +1294,7 @@ fun ContinuousWaveCanvas(
     val feelsTextPaint = remember(density) {
         Paint().apply {
             color = AppColors.WindAccent.toArgb()
-            textSize = with(density) { 7.5.sp.toPx() }
+            textSize = with(density) { 8.5.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -1303,7 +1303,7 @@ fun ContinuousWaveCanvas(
     val waterTextPaint = remember(density, tideColorInt) {
         Paint().apply {
             color = tideColorInt
-            textSize = with(density) { 7.5.sp.toPx() }
+            textSize = with(density) { 8.5.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -1375,17 +1375,17 @@ fun ContinuousWaveCanvas(
             }
         }
 
-        drawPath(path = strokePath, color = tideLineColor, style = Stroke(width = 2.dp.toPx()))
+        drawPath(path = strokePath, color = tideLineColor, style = Stroke(width = 2.5.dp.toPx()))
 
         for (i in 0 until daysCount) {
             val colLeft = i * dayWidth + 3.dp.toPx()
             val feels = dailyFeelsLike.getOrNull(i) ?: 20
             val water = dailyWaterTemps.getOrNull(i) ?: 18
 
-            val thX = colLeft + 2.dp.toPx()
-            val thTop = padY + 1.2.dp.toPx()
-            val thBottom = padY + 7.dp.toPx()
-            val tubeW = 2.2.dp.toPx()
+            val thX = colLeft + 2.5.dp.toPx()
+            val thTop = padY + 1.5.dp.toPx()
+            val thBottom = padY + 8.7.dp.toPx()
+            val tubeW = 2.7.dp.toPx()
 
             drawRoundRect(
                 color = AppColors.WindAccent.copy(alpha = 0.35f),
@@ -1402,28 +1402,28 @@ fun ContinuousWaveCanvas(
             )
             drawCircle(
                 color = AppColors.WindAccent,
-                radius = 1.9.dp.toPx(),
-                center = Offset(thX, thBottom + 1.dp.toPx())
+                radius = 2.4.dp.toPx(),
+                center = Offset(thX, thBottom + 1.2.dp.toPx())
             )
 
             drawContext.canvas.nativeCanvas.drawText(
                 "$feels°",
-                colLeft + 7.5.dp.toPx(),
-                padY + 7.5.dp.toPx(),
+                colLeft + 9.dp.toPx(),
+                padY + 9.3.dp.toPx(),
                 feelsTextPaint
             )
 
-            val dropCenterX = colLeft + 2.dp.toPx()
-            val dropTop = padY + 12.dp.toPx()
-            val dropBottom = padY + 18.2.dp.toPx()
-            val dropW = 2.3.dp.toPx()
+            val dropCenterX = colLeft + 2.5.dp.toPx()
+            val dropTop = padY + 15.dp.toPx()
+            val dropBottom = padY + 22.7.dp.toPx()
+            val dropW = 2.9.dp.toPx()
 
             val dropPath = Path().apply {
                 moveTo(dropCenterX, dropTop)
                 cubicTo(
-                    dropCenterX + dropW * 0.3f, dropTop + 1.8.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 2.8.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 1.4.dp.toPx()
+                    dropCenterX + dropW * 0.3f, dropTop + 2.24.dp.toPx(),
+                    dropCenterX + dropW, dropBottom - 3.48.dp.toPx(),
+                    dropCenterX + dropW, dropBottom - 1.74.dp.toPx()
                 )
                 quadraticBezierTo(
                     dropCenterX + dropW, dropBottom,
@@ -1431,11 +1431,11 @@ fun ContinuousWaveCanvas(
                 )
                 quadraticBezierTo(
                     dropCenterX - dropW, dropBottom,
-                    dropCenterX - dropW, dropBottom - 1.4.dp.toPx()
+                    dropCenterX - dropW, dropBottom - 1.74.dp.toPx()
                 )
                 cubicTo(
-                    dropCenterX - dropW, dropBottom - 2.8.dp.toPx(),
-                    dropCenterX - dropW * 0.3f, dropTop + 1.8.dp.toPx(),
+                    dropCenterX - dropW, dropBottom - 3.48.dp.toPx(),
+                    dropCenterX - dropW * 0.3f, dropTop + 2.24.dp.toPx(),
                     dropCenterX, dropTop
                 )
                 close()
@@ -1446,8 +1446,8 @@ fun ContinuousWaveCanvas(
 
             drawContext.canvas.nativeCanvas.drawText(
                 "$water°",
-                colLeft + 7.5.dp.toPx(),
-                padY + 17.5.dp.toPx(),
+                colLeft + 9.dp.toPx(),
+                padY + 21.9.dp.toPx(),
                 waterTextPaint
             )
         }
@@ -1459,11 +1459,11 @@ fun ContinuousWaveCanvas(
 
             val hText = String.format(Locale.US, "%.1fm", waveHeight)
             val hTextW = heightTextPaint.measureText(hText)
-            val textY = (closestPoint.y - 4.dp.toPx()).coerceAtLeast(padY + 7.dp.toPx())
+            val textY = (closestPoint.y - 5.dp.toPx()).coerceAtLeast(padY + 26.dp.toPx())
 
             if (i == selectedIndex) {
-                drawCircle(color = Color.White, radius = 3.5.dp.toPx(), center = closestPoint)
-                drawCircle(color = tideLineColor, radius = 2.2.dp.toPx(), center = closestPoint)
+                drawCircle(color = Color.White, radius = 4.4.dp.toPx(), center = closestPoint)
+                drawCircle(color = tideLineColor, radius = 2.8.dp.toPx(), center = closestPoint)
             }
 
             drawContext.canvas.nativeCanvas.drawText(hText, targetX - hTextW / 2f, textY, heightTextPaint)
@@ -1475,7 +1475,7 @@ fun ContinuousWaveCanvas(
 
             val pText = "${period}s"
             val pTextW = periodTextPaint.measureText(pText)
-            val pY = baseY - 2.dp.toPx()
+            val pY = baseY - 3.dp.toPx()
 
             drawContext.canvas.nativeCanvas.drawText(pText, targetX - pTextW / 2f, pY, periodTextPaint)
         }
