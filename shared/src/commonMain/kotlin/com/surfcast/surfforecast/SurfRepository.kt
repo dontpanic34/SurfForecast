@@ -12,7 +12,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -20,6 +19,8 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -260,6 +261,7 @@ class SurfRepository(private val httpClient: HttpClient) {
      * `today` est injectable pour les tests ; par défaut, la date du jour du téléphone
      * (comme LocalDate.now() côté Android).
      */
+    @OptIn(ExperimentalTime::class)
     suspend fun getHybridForecast(
         lat: Double,
         lon: Double,
