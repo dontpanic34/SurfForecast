@@ -44,6 +44,8 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.plus
 
 internal fun daylightHoursFor(
     date: LocalDate,
@@ -113,7 +115,7 @@ fun WeeklyForecastCard(
                     val dayNum = date.dayOfMonth.toString()
                     val dayLabel = when {
                         date == today || index == 0 -> "Auj. $dayNum"
-                        date == today.plusDays(1) || index == 1 -> "Dem. $dayNum"
+                        date == today.plus(1, DateTimeUnit.DAY) || index == 1 -> "Dem. $dayNum"
                         else -> {
                             val dayName = frenchShortDayName(date)
                                 .replace(".", "")
