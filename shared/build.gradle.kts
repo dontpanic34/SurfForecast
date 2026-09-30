@@ -13,6 +13,11 @@ kotlin {
         minSdk = 26
 
         withHostTestBuilder {}
+
+        // Ressources Compose Multiplatform (police Inter, logo) empaquetées dans l'AAR.
+        androidResources {
+            enable = true
+        }
     }
 
     // Pas d'iosX64 (simulateur sur Mac Intel) : Compose Multiplatform 1.12 ne le publie plus.
@@ -38,6 +43,7 @@ kotlin {
             implementation(libs.compose.mp.foundation)
             implementation(libs.compose.mp.material3)
             implementation(libs.compose.mp.ui)
+            implementation(libs.compose.mp.resources)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -51,4 +57,9 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
     }
+}
+
+compose.resources {
+    packageOfResClass = "com.surfcast.surfforecast.resources"
+    publicResClass = false
 }

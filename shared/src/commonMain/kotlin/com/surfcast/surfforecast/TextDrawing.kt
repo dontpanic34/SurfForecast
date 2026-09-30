@@ -39,3 +39,14 @@ fun frenchShortDayName(date: LocalDate): String = when (date.dayOfWeek) {
     DayOfWeek.SATURDAY -> "sam."
     DayOfWeek.SUNDAY -> "dim."
 }
+
+/** Comme DateTimeFormatter.ofPattern("EEEE", Locale.FRANCE) : "lundi", "mardi"... */
+fun frenchDayName(date: LocalDate): String = when (date.dayOfWeek) {
+    DayOfWeek.MONDAY -> "lundi"
+    DayOfWeek.TUESDAY -> "mardi"
+    DayOfWeek.WEDNESDAY -> "mercredi"
+    DayOfWeek.THURSDAY -> "jeudi"
+    DayOfWeek.FRIDAY -> "vendredi"
+    DayOfWeek.SATURDAY -> "samedi"
+    DayOfWeek.SUNDAY -> "dimanche"
+}

@@ -1,0 +1,909 @@
+@file:Suppress("SpellCheckingInspection")
+package com.surfcast.surfforecast
+
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import com.surfcast.surfforecast.ui.theme.AppColors
+import kotlinx.datetime.LocalDate
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+@Composable
+fun MainScreen(
+    viewModel: SurfController,
+    // Épinglage du widget d'accueil (Android seulement) : null = bouton masqué.
+    onPinWidget: (() -> Unit)? = null
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showSpotDialog by remember { mutableStateOf(false) }
+    var showPreferencesDialog by remember { mutableStateOf(false) }
+    // Journal de sessions (Room côté Android) : pas encore porté dans le module partagé.
+    var showSessionLogDialog by remember { mutableStateOf(false) }
+    var showWeatherDetail by remember { mutableStateOf(false) }
+    var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
+    // Le lecteur webcam intégré (WebView côté Android) n'est pas encore porté : on ouvre
+    // la page de la webcam dans le navigateur, sur Android comme sur iOS.
+    val uriHandler = LocalUriHandler.current
+    fun openLiveCam(spotName: String) {
+        SurfWebcamHelper.getCamerasForSpot(spotName).cameras.firstOrNull()?.let { uriHandler.openUri(it.pageUrl) }
+    }
+
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    val popupError = (uiState as? SurfUiState.Success)?.popupError
+    if (popupError != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissPopupError() },
+            title = { Text(text = "Attention", fontWeight = FontWeight.Bold) },
+            text = { Text(text = popupError) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissPopupError() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showSpotDialog) {
+        SpotSelectionDialog(
+            currentFavorites = viewModel.favoriteSpots,
+            onDismiss = { showSpotDialog = false },
+            onSpotSelected = { newSpot -> viewModel.updateActiveSpotFavorite(newSpot) },
+            onAssignToSlot = { spotName, slotIndex -> viewModel.assignSpotToFavoriteSlot(spotName, slotIndex) },
+            onRemoveFromSlot = { slotIndex -> viewModel.removeFavoriteSlot(slotIndex) },
+            onOpenLiveCam = { spotWithCam -> openLiveCam(spotWithCam) }
+        )
+    }
+
+    if (showPreferencesDialog) {
+        SurfPreferencesDialog(
+            windUnit = viewModel.windUnit,
+            onWindUnitSelected = { newUnit -> viewModel.changeWindUnit(newUnit) },
+            showLiveOverlay = viewModel.showLiveOverlay,
+            onToggleLiveOverlay = { viewModel.toggleLiveOverlay(it) },
+            showWeeklyCard = viewModel.showWeeklyCard,
+            onToggleWeeklyCard = { viewModel.toggleWeeklyCard(it) },
+            weeklyDensity = viewModel.weeklyDensity,
+            onWeeklyDensityChanged = { viewModel.changeWeeklyDensity(it) },
+            weeklyWindMode = viewModel.weeklyWindMode,
+            onWeeklyWindModeChanged = { viewModel.changeWeeklyWindMode(it) },
+            showDailyTimelineCard = viewModel.showDailyTimelineCard,
+            onToggleDailyTimelineCard = { viewModel.toggleDailyTimelineCard(it) },
+            showSurfCard = viewModel.showSurfCard,
+            onToggleSurfCard = { viewModel.toggleSurfCard(it) },
+            showWindCard = viewModel.showWindCard,
+            onToggleWindCard = { viewModel.toggleWindCard(it) },
+            showWindSeaCard = viewModel.showWindSeaCard,
+            onToggleWindSeaCard = { viewModel.toggleWindSeaCard(it) },
+            showWeatherCard = viewModel.showWeatherCard,
+            onToggleWeatherCard = { viewModel.toggleWeatherCard(it) },
+            showHourlyCard = viewModel.showHourlyCard,
+            onToggleHourlyCard = { viewModel.toggleHourlyCard(it) },
+            surferLevel = viewModel.surferLevel,
+            onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
+            engineConfig = viewModel.engineConfig,
+            onEngineConfigChanged = { viewModel.updateEngineConfig(it) },
+            onViewLogs = { },
+            onDismiss = { showPreferencesDialog = false },
+            onPinWidget = onPinWidget
+        )
+    }
+
+    if (showWebcamDirectoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showWebcamDirectoryDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    WebcamIcon(tint = AppColors.WindMid, size = 20.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Webcams Disponibles", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                    SurfWebcamHelper.allSpotsWithCameras.forEach { spotEntry ->
+                        item {
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Text(
+                                    text = spotEntry.spotDisplayName,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                spotEntry.cameras.forEach { cam ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 2.dp)
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable {
+                                                showWebcamDirectoryDialog = false
+                                                uriHandler.openUri(cam.pageUrl)
+                                            },
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            WebcamIcon(tint = onSurfaceColor, size = 15.dp)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(text = cam.camName, fontSize = 12.sp, color = onSurfaceColor)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showWebcamDirectoryDialog = false }) {
+                    Text("Fermer")
+                }
+            }
+        )
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = backgroundColor
+    ) {
+        val isLoading = uiState is SurfUiState.Loading
+        Crossfade(
+            targetState = isLoading,
+            animationSpec = tween(durationMillis = 450),
+            label = "splash_to_main"
+        ) { loading ->
+            if (loading) {
+                SplashScreen()
+            } else {
+        when (val state = uiState) {
+            is SurfUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = primaryColor)
+                }
+            }
+            is SurfUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                }
+            }
+            is SurfUiState.Success -> {
+                val groupedByDate = state.hourlyForecast.groupBy { it.rawTime.date }
+                val availableDates = groupedByDate.keys.toList()
+
+                if (selectedDate == null && availableDates.isNotEmpty()) {
+                    selectedDate = availableDates.first()
+                }
+
+                val currentTideInfo = state.dailyTides[nowLocalDateTime().date] ?: state.dailyTides.values.firstOrNull()
+
+                // Point 3 : angle de houle ideal du spot actif (peut etre null si pas encore renseigne)
+                // et meilleur creneau du jour selectionne, pour le bandeau "Statut Flash".
+                val idealSwellDirection = SurfDatabase.findSpotByName(state.spotName)?.idealSwellDirection
+                val bestSlot = selectedDate?.let { date ->
+                    findBestSlot(
+                        dailyHours = daylightHoursFor(date, groupedByDate, state.dailySunInfo),
+                        idealSwellDirection = idealSwellDirection,
+                        surferLevel = viewModel.surferLevel,
+                        dailyTide = state.dailyTides[date]
+                    )
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    run {
+                        val selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0)
+                        val fixedMaxScale = 4.0f
+
+                        val dailyPeriods = availableDates.map { date ->
+                            val dailyData = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
+                            dailyData.maxByOrNull { it.waveHeight }?.wavePeriod?.roundToInt() ?: 10
+                        }
+
+                        val dailyHeights = availableDates.map { date ->
+                            val dailyData = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
+                            dailyData.maxByOrNull { it.waveHeight }?.waveHeight ?: 0.0
+                        }
+
+                        val dailyFeelsLike = availableDates.map { date ->
+                            state.dailySummaries[date]?.avgFeelsLike ?: 20
+                        }
+
+                        val dailyWaterTemps = availableDates.map { date ->
+                            state.dailySummaries[date]?.avgWaterTemp ?: 18
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .systemBarsPadding()
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = surfaceColor
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = state.spotName,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = onSurfaceColor,
+                                            maxLines = 1,
+                                            modifier = Modifier.padding(end = 6.dp)
+                                        )
+                                        val spotHasCam = SurfWebcamHelper.hasCamera(state.spotName)
+                                        IconButton(
+                                            onClick = {
+                                                if (spotHasCam) openLiveCam(state.spotName)
+                                            },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            WebcamIcon(
+                                                tint = if (spotHasCam) AppColors.WindMid else onSurfaceColor.copy(alpha = 0.3f),
+                                                size = 15.dp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        NearbySpotsRow(
+                                            currentSpotName = state.spotName,
+                                            onSelectSpot = { spotName -> viewModel.previewSpot(spotName) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+
+                                    // Point 3 : "Statut Flash" - meilleur creneau du jour selectionne.
+                                    if (bestSlot != null) {
+                                        val flashColor = when (scoreToColorCategory(bestSlot.averageScore)) {
+                                            "red" -> AppColors.WindHigh
+                                            "orange" -> AppColors.WindMid
+                                            else -> AppColors.TideLow
+                                        }
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 10.dp, vertical = 2.dp)
+                                                .padding(bottom = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Canvas(modifier = Modifier.size(6.dp)) {
+                                                drawCircle(color = flashColor, radius = size.minDimension / 2f)
+                                            }
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Column {
+                                                Text(
+                                                    text = "Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (score ${bestSlot.averageScore})",
+                                                    fontSize = 10.5.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = onSurfaceColor.copy(alpha = 0.75f),
+                                                    maxLines = 1
+                                                )
+                                                Text(
+                                                    text = bestSlot.recap,
+                                                    fontSize = 9.5.sp,
+                                                    color = onSurfaceColor.copy(alpha = 0.55f),
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                }
+                            }
+
+                            run {
+                                val activeDayHours = groupedByDate[selectedDate ?: nowLocalDateTime().date] ?: state.hourlyForecast
+                                val currentHourNow = nowLocalDateTime().hour
+                                val closestHourModel = activeDayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) } ?: activeDayHours.firstOrNull()
+
+                                if (viewModel.showLiveOverlay && closestHourModel != null) {
+                                    SurfLiveStripOverlay(
+                                        hourlyModel = closestHourModel,
+                                        tideInfo = currentTideInfo,
+                                        windUnit = viewModel.windUnit,
+                                        onOpenCam = { openLiveCam(state.spotName) },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            LazyColumn(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 6.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                item {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        FavoritesHeaderRow(
+                                            favoriteSpots = viewModel.favoriteSpots.take(3),
+                                            activeFavoriteIndex = viewModel.activeFavoriteIndex,
+                                            onSelectFavorite = { index -> viewModel.selectFavoriteIndex(index) },
+                                            onOpenSpotDialog = { showSpotDialog = true },
+                                            surfaceColor = surfaceColor,
+                                            onSurfaceColor = onSurfaceColor,
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        val systemDark = isSystemInDarkTheme()
+                                        val isDarkActive = when (viewModel.themeMode) {
+                                            "light" -> false
+                                            "dark" -> true
+                                            else -> systemDark
+                                        }
+
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.changeThemeMode(if (isDarkActive) "light" else "dark")
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            ThemeToggleIcon(
+                                                isDarkActive = isDarkActive,
+                                                backgroundColor = backgroundColor,
+                                                iconColor = onSurfaceColor,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+
+                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp)) {
+                                            JournalIcon(
+                                                color = onSurfaceColor,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+
+                                        IconButton(onClick = { showWeatherDetail = true }, modifier = Modifier.size(32.dp)) {
+                                            Text(text = "🌤️", fontSize = 18.sp)
+                                        }
+
+                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp)) {
+                                            Icon(
+                                                imageVector = SurfIcons.Settings,
+                                                contentDescription = "Paramètres",
+                                                tint = onSurfaceColor,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    }
+
+                                    if (showSessionLogDialog) {
+                                        AlertDialog(
+                                            onDismissRequest = { showSessionLogDialog = false },
+                                            title = { Text(text = "Journal de sessions", fontWeight = FontWeight.Bold) },
+                                            text = { Text(text = "Le journal de sessions arrive bientôt sur cette version de l'app.") },
+                                            confirmButton = {
+                                                TextButton(onClick = { showSessionLogDialog = false }) {
+                                                    Text("OK")
+                                                }
+                                            }
+                                        )
+                                    }
+
+                                    if (showWeatherDetail) {
+                                        WeatherDetailScreen(
+                                            spotName = state.spotName,
+                                            groupedByDate = groupedByDate,
+                                            availableDates = availableDates,
+                                            windUnit = viewModel.windUnit,
+                                            onDismiss = { showWeatherDetail = false }
+                                        )
+                                    }
+
+                                    if (state.lastUpdatedTime.isNotEmpty()) {
+                                        Text(
+                                            text = "Mis à jour à ${state.lastUpdatedTime}",
+                                            fontSize = 9.sp,
+                                            color = onSurfaceColor.copy(alpha = 0.5f),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                }
+
+                                selectedDate?.let { date ->
+                                    val hoursForSelectedDay = groupedByDate[date] ?: emptyList()
+                                    val dailyTide = state.dailyTides[date]
+
+                                    item {
+                                        DynamicCardsSection(
+                                            hoursForSelectedDay = hoursForSelectedDay,
+                                            dailyTideInfo = dailyTide,
+                                            isToday = (date == nowLocalDateTime().date),
+                                            viewModel = viewModel,
+                                            availableDates = availableDates,
+                                            groupedByDate = groupedByDate,
+                                            selectedDate = selectedDate,
+                                            onSelectDate = { newDate -> selectedDate = newDate },
+                                            dailyTides = state.dailyTides,
+                                            dailySunInfo = state.dailySunInfo,
+                                            dailyPeriods = dailyPeriods,
+                                            dailyHeights = dailyHeights,
+                                            dailyFeelsLike = dailyFeelsLike,
+                                            dailyWaterTemps = dailyWaterTemps,
+                                            fixedMaxScale = fixedMaxScale,
+                                            selectedIndex = selectedIndex,
+                                            primaryColor = primaryColor,
+                                            surfaceColor = surfaceColor,
+                                            onSurfaceColor = onSurfaceColor,
+                                            idealSwellDirection = idealSwellDirection,
+                                            surferLevel = viewModel.surferLevel
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+            }
+        }
+    }
+}
+
+@Composable
+fun ThemeToggleIcon(
+    isDarkActive: Boolean,
+    backgroundColor: Color,
+    iconColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val center = Offset(w / 2f, h / 2f)
+
+        if (isDarkActive) {
+            val mainRadius = w * 0.36f
+            drawCircle(color = iconColor, radius = mainRadius, center = center)
+
+            val cutoutRadius = w * 0.30f
+            val cutoutCenter = Offset(center.x + w * 0.16f, center.y - h * 0.12f)
+            drawCircle(color = backgroundColor, radius = cutoutRadius, center = cutoutCenter)
+        } else {
+            val sunRadius = w * 0.22f
+            drawCircle(color = iconColor, radius = sunRadius, center = center)
+
+            val rayStart = w * 0.32f
+            val rayLength = w * 0.16f
+            for (i in 0 until 8) {
+                val angle = (i * 45f) * (PI.toFloat() / 180f)
+                val dx = cos(angle)
+                val dy = sin(angle)
+                val start = Offset(center.x + dx * rayStart, center.y + dy * rayStart)
+                val end = Offset(center.x + dx * (rayStart + rayLength), center.y + dy * (rayStart + rayLength))
+                drawLine(
+                    color = iconColor,
+                    start = start,
+                    end = end,
+                    strokeWidth = 1.4.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WebcamIcon(tint: Color, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(w * 0.08f, h * 0.22f),
+            size = Size(w * 0.58f, h * 0.56f),
+            cornerRadius = CornerRadius(w * 0.1f, w * 0.1f)
+        )
+
+        val lensPath = Path().apply {
+            moveTo(w * 0.66f, h * 0.36f)
+            lineTo(w * 0.92f, h * 0.24f)
+            lineTo(w * 0.92f, h * 0.76f)
+            lineTo(w * 0.66f, h * 0.64f)
+            close()
+        }
+        drawPath(lensPath, color = tint)
+
+        drawCircle(
+            color = Color.Red,
+            radius = w * 0.075f,
+            center = Offset(w * 0.25f, h * 0.40f)
+        )
+    }
+}
+
+@Composable
+fun FavoritesHeaderRow(
+    favoriteSpots: List<String?>,
+    activeFavoriteIndex: Int,
+    onSelectFavorite: (Int) -> Unit,
+    onOpenSpotDialog: () -> Unit,
+    surfaceColor: Color,
+    onSurfaceColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val activeFavorites = favoriteSpots.mapIndexed { index, name -> index to name }.filter { it.second != null }
+
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        activeFavorites.forEach { (index, spotName) ->
+            val isSelected = activeFavoriteIndex == index
+            Surface(
+                modifier = Modifier.clickable { onSelectFavorite(index) },
+                color = if (isSelected) MaterialTheme.colorScheme.primary else surfaceColor,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = spotName ?: "",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else onSurfaceColor,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                )
+            }
+        }
+
+        Surface(
+            modifier = Modifier.clickable { onOpenSpotDialog() },
+            color = surfaceColor,
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                text = "...",
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun DynamicCardsSection(
+    hoursForSelectedDay: List<HourlyUiModel>,
+    dailyTideInfo: DailyTideInfo?,
+    isToday: Boolean,
+    viewModel: SurfController,
+    availableDates: List<LocalDate>,
+    groupedByDate: Map<LocalDate, List<HourlyUiModel>>,
+    selectedDate: LocalDate?,
+    onSelectDate: (LocalDate) -> Unit,
+    dailyTides: Map<LocalDate, DailyTideInfo>,
+    dailySunInfo: Map<LocalDate, DailySunInfo>,
+    dailyPeriods: List<Int>,
+    dailyHeights: List<Double>,
+    dailyFeelsLike: List<Int>,
+    dailyWaterTemps: List<Int>,
+    fixedMaxScale: Float,
+    selectedIndex: Int,
+    primaryColor: Color,
+    surfaceColor: Color,
+    onSurfaceColor: Color,
+    idealSwellDirection: Int?,
+    surferLevel: String
+) {
+    val initialSelectedHour = remember(hoursForSelectedDay, isToday) {
+        if (isToday) {
+            val currentHour = nowLocalDateTime().hour
+            hoursForSelectedDay.minByOrNull { abs(it.rawTime.hour - currentHour) } ?: hoursForSelectedDay.firstOrNull()
+        } else {
+            hoursForSelectedDay.firstOrNull()
+        }
+    }
+
+    var selectedHourlyItem by remember(hoursForSelectedDay, isToday) { mutableStateOf(initialSelectedHour) }
+
+    var draggedKey by remember { mutableStateOf<String?>(null) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    val itemHeights = remember { mutableStateMapOf<String, Int>() }
+
+    fun renderableCardKeys(): List<String> = viewModel.cardsOrder.filter { key ->
+        when (key) {
+            "weekly" -> viewModel.showWeeklyCard
+            "dailyTimeline" -> viewModel.showDailyTimelineCard
+            "surf" -> viewModel.showSurfCard
+            "wind" -> viewModel.showWindCard
+            "windSea" -> viewModel.showWindSeaCard
+            "weather" -> viewModel.showWeatherCard
+            "hourly" -> viewModel.showHourlyCard
+            else -> true
+        }
+    }
+
+    fun dragModifierFor(cardKey: String): Modifier = Modifier.pointerInput(cardKey) {
+        detectDragGesturesAfterLongPress(
+            onDragStart = {
+                draggedKey = cardKey
+                dragOffsetY = 0f
+            },
+            onDragEnd = {
+                draggedKey = null
+                dragOffsetY = 0f
+            },
+            onDragCancel = {
+                draggedKey = null
+                dragOffsetY = 0f
+            },
+            onDrag = { change, dragAmount ->
+                change.consume()
+                dragOffsetY += dragAmount.y
+
+                val orderedKeys = renderableCardKeys()
+                val currentIndex = orderedKeys.indexOf(cardKey)
+
+                if (currentIndex != -1) {
+                    if (dragOffsetY > 0f && currentIndex < orderedKeys.size - 1) {
+                        val nextKey = orderedKeys[currentIndex + 1]
+                        val nextHeight = (itemHeights[nextKey] ?: itemHeights[cardKey] ?: 0).toFloat()
+                        if (nextHeight > 0f && dragOffsetY > nextHeight / 2f) {
+                            viewModel.moveCardDown(cardKey)
+                            dragOffsetY -= nextHeight
+                        }
+                    } else if (dragOffsetY < 0f && currentIndex > 0) {
+                        val prevKey = orderedKeys[currentIndex - 1]
+                        val prevHeight = (itemHeights[prevKey] ?: itemHeights[cardKey] ?: 0).toFloat()
+                        if (prevHeight > 0f && -dragOffsetY > prevHeight / 2f) {
+                            viewModel.moveCardUp(cardKey)
+                            dragOffsetY += prevHeight
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    val orderedKeys = renderableCardKeys()
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        orderedKeys.forEach { cardKey ->
+            val isCollapsed = viewModel.isCardCollapsed(cardKey)
+            val isDragging = draggedKey == cardKey
+            val dragMod = dragModifierFor(cardKey)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .offset { IntOffset(0, (if (isDragging) dragOffsetY else 0f).roundToInt()) }
+                    .then(if (isDragging) Modifier.shadow(6.dp) else Modifier)
+                    .onGloballyPositioned { coordinates ->
+                        itemHeights[cardKey] = coordinates.size.height
+                    }
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    when (cardKey) {
+                        "weekly" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            WeeklyForecastCard(
+                                availableDates = availableDates,
+                                groupedByDate = groupedByDate,
+                                selectedDate = selectedDate,
+                                onSelectDate = onSelectDate,
+                                dailyTides = dailyTides,
+                                dailyPeriods = dailyPeriods,
+                                dailyHeights = dailyHeights,
+                                dailyFeelsLike = dailyFeelsLike,
+                                dailyWaterTemps = dailyWaterTemps,
+                                dailySunInfo = dailySunInfo,
+                                fixedMaxScale = fixedMaxScale,
+                                selectedIndex = selectedIndex,
+                                windUnit = viewModel.windUnit,
+                                weeklyDensity = viewModel.weeklyDensity,
+                                weeklyWindMode = viewModel.weeklyWindMode,
+                                primaryColor = primaryColor,
+                                surfaceColor = surfaceColor,
+                                onSurfaceColor = onSurfaceColor,
+                                isCollapsed = isCollapsed,
+                                onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                dragHandleModifier = dragMod,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        "dailyTimeline" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            DailyTimelineCard(
+                                selectedDate = selectedDate ?: availableDates.firstOrNull() ?: nowLocalDateTime().date,
+                                groupedByDate = groupedByDate,
+                                dailySunInfo = dailySunInfo,
+                                dailyTides = dailyTides,
+                                windUnit = viewModel.windUnit,
+                                idealSwellDirection = idealSwellDirection,
+                                surferLevel = surferLevel,
+                                selectedHour = selectedHourlyItem,
+                                onHourSelected = { selectedHourlyItem = it },
+                                isCollapsed = isCollapsed,
+                                onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                dragHandleModifier = dragMod,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        "surf" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            selectedHourlyItem?.let { hourly ->
+                                SurfCardComponent(
+                                    selectedHour = hourly,
+                                    allHoursOfDay = hoursForSelectedDay,
+                                    onHourSelected = { selectedHourlyItem = it },
+                                    isCollapsed = isCollapsed,
+                                    onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                    dragHandleModifier = dragMod,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                        "wind" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            selectedHourlyItem?.let { hourly ->
+                                WindCardComponent(
+                                    selectedHour = hourly,
+                                    allHoursOfDay = hoursForSelectedDay,
+                                    windUnit = viewModel.windUnit,
+                                    onHourSelected = { selectedHourlyItem = it },
+                                    isCollapsed = isCollapsed,
+                                    onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                    dragHandleModifier = dragMod,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                        "windSea" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            selectedHourlyItem?.let { hourly ->
+                                WindSeaCardComponent(
+                                    selectedHour = hourly,
+                                    allHoursOfDay = hoursForSelectedDay,
+                                    onHourSelected = { selectedHourlyItem = it },
+                                    isCollapsed = isCollapsed,
+                                    onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                    dragHandleModifier = dragMod,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                        "weather" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            selectedHourlyItem?.let { hourly ->
+                                WeatherCardComponent(
+                                    selectedHour = hourly,
+                                    allHoursOfDay = hoursForSelectedDay,
+                                    onHourSelected = { selectedHourlyItem = it },
+                                    isCollapsed = isCollapsed,
+                                    onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                    dragHandleModifier = dragMod,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                        "hourly" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                shape = RoundedCornerShape(10.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)) {
+                                    CardControlsRow(
+                                        title = "Prévision heure par heure",
+                                        isCollapsed = isCollapsed,
+                                        onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                        dragHandleModifier = dragMod,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                                    )
+
+                                    if (!isCollapsed) {
+                                        hoursForSelectedDay.forEach { hourlyData ->
+                                            val isCurrentOrSelected = hourlyData.rawTime == selectedHourlyItem?.rawTime
+
+                                            HourlyForecastRow(
+                                                hourlyData = hourlyData,
+                                                windUnit = viewModel.windUnit,
+                                                modifier = Modifier.clickable {
+                                                    selectedHourlyItem = hourlyData
+                                                },
+                                                dailyTideInfo = dailyTideInfo,
+                                                isSelected = isCurrentOrSelected
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+    }
+}
+
+@Composable
+fun JournalIcon(
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val stroke = Stroke(width = w * 0.09f)
+        drawRoundRect(
+            color = color,
+            size = Size(w * 0.8f, h * 0.9f),
+            topLeft = Offset(w * 0.1f, h * 0.05f),
+            cornerRadius = CornerRadius(w * 0.08f),
+            style = stroke
+        )
+        val lineY = listOf(0.38f, 0.55f, 0.72f)
+        lineY.forEach { fraction ->
+            drawLine(
+                color = color,
+                start = Offset(w * 0.28f, h * fraction),
+                end = Offset(w * 0.72f, h * fraction),
+                strokeWidth = w * 0.06f
+            )
+        }
+    }
+}

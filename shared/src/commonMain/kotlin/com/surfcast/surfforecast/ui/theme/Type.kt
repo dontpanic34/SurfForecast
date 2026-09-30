@@ -1,22 +1,35 @@
 package com.surfcast.surfforecast.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.surfcast.surfforecast.resources.Res
+import com.surfcast.surfforecast.resources.inter_medium
+import com.surfcast.surfforecast.resources.inter_regular
+import com.surfcast.surfforecast.resources.inter_semibold
+import org.jetbrains.compose.resources.Font
 
-// TODO(parité) : la police Inter (res/font côté Android) sera embarquée via les ressources
-// Compose Multiplatform ; en attendant, police système avec les mêmes tailles/graisses.
-val InterFontFamily: FontFamily = FontFamily.Default
+// Même police Inter que res/font côté Android, embarquée via les ressources Compose
+// Multiplatform (qui ne se chargent que depuis une fonction @Composable).
+val InterFontFamily: FontFamily
+    @Composable get() = FontFamily(
+        Font(Res.font.inter_regular, FontWeight.Normal),
+        Font(Res.font.inter_medium, FontWeight.Medium),
+        Font(Res.font.inter_semibold, FontWeight.Bold)
+    )
 
-val NumericTextStyle = TextStyle(
+val NumericTextStyle: TextStyle
+    @Composable get() = TextStyle(
     fontFamily = InterFontFamily,
     fontWeight = FontWeight.Bold,
     fontFeatureSettings = "tnum"
 )
 
-val AppTypography = Typography(
+val AppTypography: Typography
+    @Composable get() = Typography(
     bodyLarge = TextStyle(
         fontFamily = InterFontFamily,
         fontWeight = FontWeight.Normal,
