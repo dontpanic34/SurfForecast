@@ -22,28 +22,41 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.surfcast.surfforecast.ui.theme.SurfForecastTheme
+import kotlinx.coroutines.CancellationException
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 
 /**
- * Écran temporaire de l'étape 1 de la migration Compose Multiplatform : valide la chaîne
- * complète (données partagées + encarts Houle, Vent, Mer de vent, Météo identiques à Android) sur iOS. Sera remplacé
- * par MainScreen une fois celui-ci déplacé dans le module partagé.
+ * Écran temporaire de la migration Compose Multiplatform : affiche sur iOS les écrans déjà
+ * portés depuis Android (déroulé de la journée, encarts, liste horaire), avec les vraies
+ * données. Sera remplacé par MainScreen une fois celui-ci déplacé dans le module partagé.
  */
 @Composable
 fun SurfLogApp() {
     val spot = remember { SurfDatabase.findSpotByName("Montalivet") ?: SurfDatabase.getAllSpots().first() }
-    var hours by remember { mutableStateOf<List<HourlyUiModel>?>(null) }
+    var forecast by remember { mutableStateOf<HybridForecastResult?>(null) }
+    var tides by remember { mutableStateOf<Map<LocalDate, DailyTideInfo>>(emptyMap()) }
     var selected by remember { mutableStateOf<HourlyUiModel?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var timelineCollapsed by remember { mutableStateOf(false) }
 
     LaunchedEffect(spot) {
         try {
+            val repository = SurfRepository()
+            val result = repository.getHybridForecast(spot.latitude, spot.longitude, ForecastEngineConfig())
             val today = nowLocalDateTime().date
-            val forecast = SurfRepository().getHybridForecast(spot.latitude, spot.longitude, ForecastEngineConfig())
-            val todayHours = forecast.hourly.filter { it.rawTime.date == today && it.rawTime.hour in 7..21 }
-            hours = todayHours
-            val nowHour = nowLocalDateTime().hour
-            selected = todayHours.minByOrNull { kotlin.math.abs(it.rawTime.hour - nowHour) }
-        } catch (e: kotlinx.coroutines.CancellationException) {
+            tides = repository.getTides(
+                spot.latitude,
+                spot.longitude,
+                today.toString(),
+                today.plus(7, DateTimeUnit.DAY).toString()
+            ).dailyByDate
+            val now = nowLocalDateTime()
+            selected = result.hourly.firstOrNull { it.rawTime.date == now.date && it.rawTime.hour == now.hour }
+                ?: result.hourly.firstOrNull()
+            forecast = result
+        } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             error = e.message ?: "Erreur de connexion."
@@ -57,39 +70,65 @@ fun SurfLogApp() {
                 .background(MaterialTheme.colorScheme.background)
                 .safeDrawingPadding()
         ) {
-            val currentHours = hours
+            val currentForecast = forecast
             val currentSelected = selected
             when {
                 error != null -> Text(error ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.Center))
-                currentHours == null || currentSelected == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                else -> Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(spot.name, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-                    SurfCardComponent(
-                        selectedHour = currentSelected,
-                        allHoursOfDay = currentHours,
-                        onHourSelected = { selected = it }
-                    )
-                    WindCardComponent(
-                        selectedHour = currentSelected,
-                        allHoursOfDay = currentHours,
-                        windUnit = "kmh",
-                        onHourSelected = { selected = it }
-                    )
-                    WindSeaCardComponent(
-                        selectedHour = currentSelected,
-                        allHoursOfDay = currentHours,
-                        onHourSelected = { selected = it }
-                    )
-                    WeatherCardComponent(
-                        selectedHour = currentSelected,
-                        allHoursOfDay = currentHours,
-                        onHourSelected = { selected = it }
-                    )
+                currentForecast == null || currentSelected == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                else -> {
+                    val selectedDate = currentSelected.rawTime.date
+                    val groupedByDate = currentForecast.hourly.groupBy { it.rawTime.date }
+                    val hoursOfDay = groupedByDate[selectedDate].orEmpty()
+                    Column(
+                        modifier = Modifier
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(spot.name, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+                        DailyTimelineCard(
+                            selectedDate = selectedDate,
+                            groupedByDate = groupedByDate,
+                            dailySunInfo = currentForecast.dailySun,
+                            dailyTides = tides,
+                            windUnit = "kmh",
+                            idealSwellDirection = spot.idealSwellDirection,
+                            surferLevel = "intermediate",
+                            selectedHour = currentSelected,
+                            onHourSelected = { selected = it },
+                            isCollapsed = timelineCollapsed,
+                            onToggleCollapse = { timelineCollapsed = !timelineCollapsed }
+                        )
+                        SurfCardComponent(
+                            selectedHour = currentSelected,
+                            allHoursOfDay = hoursOfDay,
+                            onHourSelected = { selected = it }
+                        )
+                        WindCardComponent(
+                            selectedHour = currentSelected,
+                            allHoursOfDay = hoursOfDay,
+                            windUnit = "kmh",
+                            onHourSelected = { selected = it }
+                        )
+                        WindSeaCardComponent(
+                            selectedHour = currentSelected,
+                            allHoursOfDay = hoursOfDay,
+                            onHourSelected = { selected = it }
+                        )
+                        WeatherCardComponent(
+                            selectedHour = currentSelected,
+                            allHoursOfDay = hoursOfDay,
+                            onHourSelected = { selected = it }
+                        )
+                        hoursOfDay.forEach { hourly ->
+                            HourlyForecastRow(
+                                hourlyData = hourly,
+                                windUnit = "kmh",
+                                dailyTideInfo = tides[selectedDate],
+                                isSelected = hourly.rawTime == currentSelected.rawTime
+                            )
+                        }
+                    }
                 }
             }
         }
