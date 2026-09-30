@@ -59,10 +59,12 @@ fun SurfPreferencesDialog(
     val colors = MaterialTheme.colorScheme
     val pillShape = RoundedCornerShape(50)
 
-    var shortTermWind by remember { mutableStateOf("AROME") }
-    var shortTermWave by remember { mutableStateOf("MF-WAM") }
-    var longTermWind by remember { mutableStateOf("ECMWF") }
-    var longTermWave by remember { mutableStateOf("ECMWF Wave") }
+    // Brouillon des combos de prevision, initialise depuis la config reellement active
+    // (et non plus des valeurs en dur) et applique seulement sur "Enregistrer et fermer".
+    var shortTermWind by remember { mutableStateOf(weatherModelLabel(engineConfig.shortTermWeather)) }
+    var shortTermWave by remember { mutableStateOf(waveModelLabel(engineConfig.shortTermWave)) }
+    var longTermWind by remember { mutableStateOf(weatherModelLabel(engineConfig.longTermWeather)) }
+    var longTermWave by remember { mutableStateOf(waveModelLabel(engineConfig.longTermWave)) }
 
     var showModelsInfo by remember { mutableStateOf(false) }
     var infoTab by remember { mutableStateOf("France") }
@@ -651,7 +653,17 @@ fun SurfPreferencesDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Button(
-                    onClick = onDismiss,
+                    onClick = {
+                        val newConfig = ForecastEngineConfig(
+                            shortTermWeather = weatherModelFromLabel(shortTermWind),
+                            shortTermWave = waveModelFromLabel(shortTermWave),
+                            longTermWeather = weatherModelFromLabel(longTermWind),
+                            longTermWave = waveModelFromLabel(longTermWave)
+                        )
+                        // updateEngineConfig recharge les previsions : seulement si ca a change.
+                        if (newConfig != engineConfig) onEngineConfigChanged(newConfig)
+                        onDismiss()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = pillShape,
                     colors = ButtonDefaults.buttonColors(containerColor = AppColors.WindMid)
@@ -694,3 +706,24 @@ fun ModelDescItem(name: String, desc: String) {
         Text(text = desc, fontSize = 11.5.sp, color = colors.onSurfaceVariant, lineHeight = 15.sp, modifier = Modifier.padding(start = 10.dp))
     }
 }
+
+// Libelles des pilules "Combos de prevision" <-> modeles reellement appeles.
+private fun weatherModelLabel(model: WeatherModel): String = when (model) {
+    WeatherModel.AROME -> "AROME"
+    WeatherModel.ARPEGE -> "ARPEGE"
+    WeatherModel.ECMWF_IFS -> "ECMWF"
+}
+
+private fun weatherModelFromLabel(label: String): WeatherModel = when (label) {
+    "ARPEGE" -> WeatherModel.ARPEGE
+    "ECMWF" -> WeatherModel.ECMWF_IFS
+    else -> WeatherModel.AROME
+}
+
+private fun waveModelLabel(model: WaveModel): String = when (model) {
+    WaveModel.MFWAM -> "MF-WAM"
+    WaveModel.ECMWF_WAM -> "ECMWF Wave"
+}
+
+private fun waveModelFromLabel(label: String): WaveModel =
+    if (label == "ECMWF Wave") WaveModel.ECMWF_WAM else WaveModel.MFWAM
