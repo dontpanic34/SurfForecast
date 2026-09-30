@@ -28,9 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.number
+import kotlinx.datetime.plus
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -131,7 +133,7 @@ fun WeatherDetailScreen(
                 val isTodaySelected = effectiveSelectedDate == referenceDate
                 val hourlyStripItems = if (isTodaySelected) {
                     (todayHours.filter { it.rawTime.hour >= currentHourModel.rawTime.hour } +
-                        groupedByDate[referenceDate.plusDays(1)].orEmpty()).take(24)
+                        groupedByDate[referenceDate.plus(1, DateTimeUnit.DAY)].orEmpty()).take(24)
                 } else {
                     selectedDayHours
                 }
@@ -374,7 +376,7 @@ private fun DailyStripCard(
                         .toFloat() / hours.size * 100).roundToInt()
                     val dayLabel = when (date) {
                         today -> "Auj."
-                        today.plusDays(1) -> "Dem."
+                        today.plus(1, DateTimeUnit.DAY) -> "Dem."
                         else -> frenchShortDayName(date).replace(".", "").replaceFirstChar { it.uppercase() } + "."
                     }
                     val isSelected = date == selectedDate
