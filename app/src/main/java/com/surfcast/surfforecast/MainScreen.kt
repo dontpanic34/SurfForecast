@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -102,6 +103,11 @@ fun MainScreen(viewModel: SurfViewModel) {
         }
     }
     val today = LocalDate.now()
+
+    val context = LocalContext.current
+    val appVersion = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
+    }
 
     val backgroundColor = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
@@ -611,9 +617,11 @@ fun MainScreen(viewModel: SurfViewModel) {
                                         )
                                     }
 
-                                    if (state.lastUpdatedTime.isNotEmpty()) {
+                                    run {
+                                        // Version installee (= n° du build GitHub, ex: surf-log-debug-27 -> 1.0.27).
+                                        val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime} · " else ""
                                         Text(
-                                            text = "Mis à jour à ${state.lastUpdatedTime}",
+                                            text = "${updated}v$appVersion",
                                             fontSize = 9.sp,
                                             color = onSurfaceColor.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
