@@ -149,6 +149,11 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
     var engineConfig by mutableStateOf(loadEngineConfigFromPrefs(prefs))
         private set
 
+    // Dernier spot charge avec succes (favori actif ou spot consulte via "Spots proches")
+    // et quand : sert a recharger ce meme spot quand l'appli revient au premier plan.
+    private var lastLoadedSpot: SurfSpotItem? = null
+    private var lastLoadedAtMillis = 0L
+
     init {
         loadPreferences()
         loadActiveSpot(initialLoad = true)
@@ -244,6 +249,22 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         loadActiveSpot(initialLoad = false)
     }
 
+    /**
+     * Appele a chaque retour de l'appli au premier plan : recharge les previsions si elles
+     * datent de plus de 15 min, pour ne plus afficher un "maintenant" vieux de plusieurs
+     * heures (ex: le vent de 9h encore affiche a 10h passees).
+     */
+    fun onAppResumed() {
+        if (isRefreshing || lastLoadedAtMillis == 0L) return
+        if (System.currentTimeMillis() - lastLoadedAtMillis < RESUME_REFRESH_AFTER_MS) return
+        val spot = lastLoadedSpot ?: return
+        viewModelScope.launch {
+            isRefreshing = true
+            loadSpotInternal(spot)
+            isRefreshing = false
+        }
+    }
+
     fun toggleLiveOverlay(show: Boolean) {
         showLiveOverlay = show
         prefs.edit { putBoolean("show_live_overlay", show) }
@@ -301,6 +322,10 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 lastUpdatedTime = nowStr
             )
             _uiState.value = successState
+            lastLoadedSpot = spot
+            lastLoadedAtMillis = System.currentTimeMillis()
+            // Journal des previsions (gardees 2 jours) : ne doit jamais faire echouer le chargement.
+            runCatching { ForecastHistoryStore.record(getApplication(), spot.name, engineConfig, forecast) }
             // Ne doit jamais faire échouer le chargement (ex: JSONException sur une
             // valeur NaN/Infinity) : une erreur ici ne doit ni repasser en état Erreur
             // ni empêcher le push vers le widget juste en dessous.
@@ -493,10 +518,17 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun loadForecastHistory(): List<ForecastHistoryStore.Snapshot> =
+        runCatching { ForecastHistoryStore.load(getApplication()) }.getOrDefault(emptyList())
+
     fun dismissPopupError() {
         val current = _uiState.value
         if (current is SurfUiState.Success) {
             _uiState.value = current.copy(popupError = null)
         }
+    }
+
+    private companion object {
+        const val RESUME_REFRESH_AFTER_MS = 15 * 60 * 1000L
     }
 }

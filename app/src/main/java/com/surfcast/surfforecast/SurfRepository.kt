@@ -16,6 +16,11 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.PI
 import kotlin.math.roundToInt
 
+private const val AROME_HD_MODEL = "meteofrance_arome_france_hd"
+
+/** Source du vent quand aucun modele n'a de valeur pour cette heure (vent affiche : 0). */
+const val WIND_SOURCE_MISSING = "manquant"
+
 class SurfRepository {
 
     private val apiMareeToken = "0093ca14ffeffadcf739be7cc77f4738"
@@ -150,9 +155,10 @@ class SurfRepository {
             val finalH = if (!swellH.isNaN() && swellH > 0.0) swellH else totalH
             // Periode de PIC (celle du train de houle le plus energetique, comme
             // affichee par les outils surf classiques) plutot que la periode moyenne.
+            // Jamais la periode de la mer de vent (clapot, 4-8 s) : associee a la hauteur
+            // de houle, elle affichait des "0.9m - 8s" qui ne correspondaient a rien.
             val finalP = when {
                 !swellPeak.isNaN() && swellPeak > 0.0 -> swellPeak
-                !windPeak.isNaN() && windPeak > 0.0 -> windPeak
                 !swellP.isNaN() && swellP > 0.0 -> swellP
                 else -> totalP
             }
@@ -231,8 +237,10 @@ class SurfRepository {
             val temp = if (i < tempArr.length() && !tempArr.isNull(i)) tempArr.getDouble(i) else 20.0
             temps.add(temp)
             codes.add(if (i < codeArr.length() && !codeArr.isNull(i)) codeArr.getInt(i) else 0)
-            windSpeeds.add(if (i < windSpeedArr.length() && !windSpeedArr.isNull(i)) windSpeedArr.getDouble(i) else 10.0)
-            windDirs.add(if (i < windDirArr.length() && !windDirArr.isNull(i)) windDirArr.getDouble(i) else 0.0)
+            // NaN = pas de valeur pour cette heure : c'est la fusion qui choisira un autre
+            // modele, au lieu d'inventer un vent (ancien defaut : 10 km/h de Nord).
+            windSpeeds.add(if (i < windSpeedArr.length() && !windSpeedArr.isNull(i)) windSpeedArr.getDouble(i) else Double.NaN)
+            windDirs.add(if (i < windDirArr.length() && !windDirArr.isNull(i)) windDirArr.getDouble(i) else Double.NaN)
             clouds.add(if (i < cloudArr.length() && !cloudArr.isNull(i)) cloudArr.getInt(i) else 0)
             // Repli sur la temperature de l'air si le ressenti n'est pas dispo pour cette
             // heure (plutot que 20.0 par defaut, qui n'a pas de sens comme "ressenti").
@@ -264,6 +272,37 @@ class SurfRepository {
         return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, clouds, apparentTemps, sunriseByDate, sunsetByDate)
     }
 
+    /**
+     * Vent AROME HD (maille ~1.3 km au lieu de 2.5 km pour AROME "standard"), plus fin
+     * pres des cotes. Ne demande que le vent : ce modele ne fournit pas toutes les autres
+     * variables (nebulosite, code meteo...). Heures absentes -> non incluses dans la map.
+     * Un echec (modele indisponible, reseau) ne doit jamais faire echouer la prevision :
+     * on retombe simplement sur AROME standard.
+     */
+    private suspend fun fetchAromeHdWind(lat: Double, lon: Double): Map<LocalDateTime, Pair<Double, Double>> =
+        runCatching {
+            val url = "https://api.open-meteo.com/v1/forecast?" +
+                    "latitude=$lat&longitude=$lon" +
+                    "&hourly=wind_speed_10m,wind_direction_10m" +
+                    "&models=$AROME_HD_MODEL" +
+                    "&forecast_days=2" +
+                    "&timezone=auto"
+            val hourly = JSONObject(httpGet(url)).getJSONObject("hourly")
+            fun arr(base: String): JSONArray? =
+                hourly.optJSONArray(base) ?: hourly.optJSONArray("${base}_$AROME_HD_MODEL")
+            val timeArr = hourly.getJSONArray("time")
+            val speedArr = arr("wind_speed_10m") ?: return@runCatching emptyMap()
+            val dirArr = arr("wind_direction_10m") ?: return@runCatching emptyMap()
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+            buildMap {
+                for (i in 0 until timeArr.length()) {
+                    if (i >= speedArr.length() || i >= dirArr.length()) break
+                    if (speedArr.isNull(i) || dirArr.isNull(i)) continue
+                    put(LocalDateTime.parse(timeArr.getString(i), formatter), speedArr.getDouble(i) to dirArr.getDouble(i))
+                }
+            }
+        }.getOrDefault(emptyMap())
+
     suspend fun getHybridForecast(
         lat: Double,
         lon: Double,
@@ -280,6 +319,9 @@ class SurfRepository {
         val shortMarineDeferred = async { fetchMarineBlock(lat, lon, config.shortTermWave, 2) }
         val longMarineDeferred = async { fetchMarineBlock(lat, lon, config.longTermWave, 7) }
         val shortWeatherDeferred = async { fetchWeatherBlock(lat, lon, config.shortTermWeather, 2) }
+        val aromeHdWindDeferred = async {
+            if (config.shortTermWeather == WeatherModel.AROME) fetchAromeHdWind(lat, lon) else emptyMap()
+        }
         // Le lever/coucher du soleil est une donnee purement astronomique (independante
         // du modele meteo) : on ne la demande qu'une fois, sur l'appel long terme qui
         // couvre deja les 7 jours.
@@ -291,6 +333,7 @@ class SurfRepository {
         val longMarine = longMarineDeferred.await()
         val shortWeather = shortWeatherDeferred.await()
         val longWeather = longWeatherDeferred.await()
+        val aromeHdWind = aromeHdWindDeferred.await()
 
         val marineMapShort = shortMarine.times.indices.associate { i -> shortMarine.times[i] to i }
         val weatherMapShort = shortWeather.times.indices.associate { i -> shortWeather.times[i] to i }
@@ -320,8 +363,23 @@ class SurfRepository {
             val windWaveH = mData.windWaveHeights.getOrElse(mIndex) { 0.0 }
             val windWaveP = mData.windWavePeriods.getOrElse(mIndex) { 0.0 }
             val windWaveDir = mData.windWaveDirections.getOrElse(mIndex) { 0f }
-            val windKmh = wData.windSpeeds.getOrElse(wIndex) { 10.0 }.roundToInt()
-            val windDirDeg = wData.windDirections.getOrElse(wIndex) { 0.0 }
+            // Vent : AROME HD en court terme si dispo, sinon le modele meteo de cette heure,
+            // sinon le modele long terme. Jamais de valeur inventee ; la source est gardee
+            // pour le journal des previsions.
+            val longIndex = weatherMapLong[t]
+            val hd = if (isShortTerm) aromeHdWind[t] else null
+            val primarySpeed = wData.windSpeeds.getOrElse(wIndex) { Double.NaN }
+            val primaryDir = wData.windDirections.getOrElse(wIndex) { Double.NaN }
+            val longSpeed = longIndex?.let { longWeather.windSpeeds.getOrElse(it) { Double.NaN } } ?: Double.NaN
+            val longDir = longIndex?.let { longWeather.windDirections.getOrElse(it) { Double.NaN } } ?: Double.NaN
+            val (windSpeedRaw, windDirDeg, windSource) = when {
+                hd != null -> Triple(hd.first, hd.second, "AROME HD")
+                !primarySpeed.isNaN() && !primaryDir.isNaN() ->
+                    Triple(primarySpeed, primaryDir, if (wData === shortWeather) config.shortTermWeather.name else config.longTermWeather.name)
+                !longSpeed.isNaN() && !longDir.isNaN() -> Triple(longSpeed, longDir, config.longTermWeather.name)
+                else -> Triple(0.0, 0.0, WIND_SOURCE_MISSING)
+            }
+            val windKmh = windSpeedRaw.roundToInt()
 
             resultList.add(
                 HourlyUiModel(
@@ -336,6 +394,7 @@ class SurfRepository {
                     energyKj = calculateWaveEnergyReal(h, p),
                     windSpeedKmh = windKmh,
                     windDirectionStr = getCardinalDirection(windDirDeg),
+                    windSource = windSource,
                     weatherCode = wData.weatherCodes.getOrElse(wIndex) { 0 },
                     temperature = wData.temperatures.getOrElse(wIndex) { 20.0 }.roundToInt(),
                     cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 },
