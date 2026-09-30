@@ -564,11 +564,19 @@ fun MainScreen(viewModel: SurfViewModel) {
                                     }
 
                                     if (showSessionLogEntry) {
-                                        val todayHours = groupedByDate[LocalDate.now()] ?: state.hourlyForecast
-                                        val todayTide = state.dailyTides[LocalDate.now()]
+                                        val todayHours = groupedByDate[today] ?: state.hourlyForecast
+                                        val todayTide = state.dailyTides[today]
                                         val quiverBoards by viewModel.quiverBoards.collectAsState()
                                         val microSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
                                             .collectAsState(initial = emptyList())
+
+                                        // J-1 / J-2 : conditions gardees par le journal des previsions
+                                        // (la derniere prevision faite pour ce jour-la).
+                                        val pastConditions = remember(state.spotName, today) {
+                                            (1..2).associateWith { offset ->
+                                                viewModel.pastConditions(state.spotName, today.minusDays(offset.toLong()))
+                                            }.filterValues { it != null && it.first.isNotEmpty() }
+                                        }
 
                                         SessionLogEntryDialog(
                                             spotName = state.spotName,
@@ -577,12 +585,16 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             quiverBoards = quiverBoards,
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
-                                            onSave = { startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                            availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
+                                            onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                                val past = pastConditions[dayOffset]
+                                                val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
+                                                val dayTide = if (dayOffset == 0) todayTide else past?.second
                                                 val midpointHour = (startHour + endHour) / 2
-                                                val hourlyModel = todayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
+                                                val hourlyModel = dayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
                                                 if (hourlyModel != null) {
                                                     viewModel.logSurfSession(
-                                                        date = LocalDate.now(),
+                                                        date = today.minusDays(dayOffset.toLong()),
                                                         startHour = startHour,
                                                         endHour = endHour,
                                                         microSpotId = microSpotId,
@@ -591,7 +603,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                                         comment = comment,
                                                         mediaUri = mediaUri,
                                                         hourlyModel = hourlyModel,
-                                                        tideInfo = todayTide
+                                                        tideInfo = dayTide
                                                     )
                                                 }
                                             },

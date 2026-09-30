@@ -325,7 +325,7 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
             lastLoadedSpot = spot
             lastLoadedAtMillis = System.currentTimeMillis()
             // Journal des previsions (gardees 2 jours) : ne doit jamais faire echouer le chargement.
-            runCatching { ForecastHistoryStore.record(getApplication(), spot.name, engineConfig, forecast) }
+            runCatching { ForecastHistoryStore.record(getApplication(), spot.name, engineConfig, forecast, tides) }
             // Ne doit jamais faire échouer le chargement (ex: JSONException sur une
             // valeur NaN/Infinity) : une erreur ici ne doit ni repasser en état Erreur
             // ni empêcher le push vers le widget juste en dessous.
@@ -517,6 +517,10 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
             putString("collapsed_cards", collapsedCards.filterValues { it }.keys.joinToString(","))
         }
     }
+
+    /** Conditions gardees pour un jour passe (journal de bord J-1/J-2), ou null. */
+    fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
+        runCatching { ForecastHistoryStore.conditionsFor(getApplication(), spotName, date) }.getOrNull()
 
     fun loadForecastHistory(): List<ForecastHistoryStore.Snapshot> =
         runCatching { ForecastHistoryStore.load(getApplication()) }.getOrDefault(emptyList())

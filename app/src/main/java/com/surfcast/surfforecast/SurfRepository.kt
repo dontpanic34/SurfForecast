@@ -106,7 +106,7 @@ class SurfRepository {
     ): RawMarineHourly {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
                 "latitude=$lat&longitude=$lon" +
-                "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period" +
+                "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period" +
                 "&models=${waveModel.apiParam}" +
                 "&forecast_days=$days" +
                 "&timezone=auto"
@@ -121,6 +121,7 @@ class SurfRepository {
         val swellPArr = hourly.optJSONArray("swell_wave_period")
         val swellPeakArr = hourly.optJSONArray("swell_wave_peak_period")
         val windPeakArr = hourly.optJSONArray("wind_wave_peak_period")
+        val windMeanPArr = hourly.optJSONArray("wind_wave_period")
         val swellDArr = hourly.optJSONArray("swell_wave_direction")
         val windWaveHArr = hourly.optJSONArray("wind_wave_height")
         val windWaveDArr = hourly.optJSONArray("wind_wave_direction")
@@ -171,7 +172,15 @@ class SurfRepository {
             val windWaveH = if (windWaveHArr != null && !windWaveHArr.isNull(i)) windWaveHArr.getDouble(i) else 0.0
             val windWaveD = if (windWaveDArr != null && !windWaveDArr.isNull(i)) windWaveDArr.getDouble(i).toFloat() else 0f
             windWaveHeights.add(windWaveH)
-            windWavePeriods.add(if (!windPeak.isNaN()) windPeak else 0.0)
+            // Periode du clapot : pic, sinon periode moyenne, sinon 0 = inconnue (affichee "—").
+            val windMeanP = if (windMeanPArr != null && !windMeanPArr.isNull(i)) windMeanPArr.getDouble(i) else Double.NaN
+            windWavePeriods.add(
+                when {
+                    !windPeak.isNaN() && windPeak > 0.0 -> windPeak
+                    !windMeanP.isNaN() && windMeanP > 0.0 -> windMeanP
+                    else -> 0.0
+                }
+            )
             windWaveDirs.add(windWaveD)
         }
 

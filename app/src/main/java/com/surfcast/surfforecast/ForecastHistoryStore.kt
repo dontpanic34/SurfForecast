@@ -4,6 +4,7 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -31,7 +32,9 @@ object ForecastHistoryStore {
         val spotName: String,
         val loadedAt: LocalDateTime,
         val models: String,
-        val hours: List<HourEntry>
+        val hours: List<HourEntry>,
+        // Marees des jours couverts : pour pouvoir noter apres coup une session de J-1/J-2.
+        val tides: Map<LocalDate, DailyTideInfo> = emptyMap()
     )
 
     private const val FILE_NAME = "forecast_history.json"
@@ -41,7 +44,13 @@ object ForecastHistoryStore {
 
     private fun file(context: Context) = File(context.filesDir, FILE_NAME)
 
-    fun record(context: Context, spotName: String, config: ForecastEngineConfig, forecast: List<HourlyUiModel>) {
+    fun record(
+        context: Context,
+        spotName: String,
+        config: ForecastEngineConfig,
+        forecast: List<HourlyUiModel>,
+        tides: Map<LocalDate, DailyTideInfo> = emptyMap()
+    ) {
         val now = LocalDateTime.now()
         val lastDay = now.toLocalDate().plusDays(2)
         val snapshot = Snapshot(
@@ -61,7 +70,8 @@ object ForecastHistoryStore {
                         wavePeriod = it.wavePeriod,
                         waveDirection = it.waveDirection
                     )
-                }
+                },
+            tides = tides.filterKeys { it >= now.toLocalDate() && it <= lastDay }
         )
         synchronized(lock) {
             val kept = (loadAll(context) + snapshot)
@@ -90,6 +100,15 @@ object ForecastHistoryStore {
                 put("spot", s.spotName)
                 put("loadedAt", s.loadedAt.toString())
                 put("models", s.models)
+                put("tides", JSONObject().apply {
+                    s.tides.forEach { (date, t) ->
+                        put(date.toString(), JSONObject().apply {
+                            if (t.highTideTime != null) put("high", t.highTideTime)
+                            if (t.lowTideTime != null) put("low", t.lowTideTime)
+                            if (t.coefficient != null) put("coef", t.coefficient)
+                        })
+                    }
+                })
                 put("hours", JSONArray().apply {
                     s.hours.forEach { h ->
                         put(JSONObject().apply {
@@ -114,6 +133,16 @@ object ForecastHistoryStore {
             spotName = o.getString("spot"),
             loadedAt = LocalDateTime.parse(o.getString("loadedAt")),
             models = o.optString("models"),
+            tides = o.optJSONObject("tides")?.let { tObj ->
+                tObj.keys().asSequence().associate { key ->
+                    val t = tObj.getJSONObject(key)
+                    LocalDate.parse(key) to DailyTideInfo(
+                        highTideTime = if (t.has("high")) t.getString("high") else null,
+                        lowTideTime = if (t.has("low")) t.getString("low") else null,
+                        coefficient = if (t.has("coef")) t.getInt("coef") else null
+                    )
+                }
+            } ?: emptyMap(),
             hours = (0 until hoursArr.length()).map { j ->
                 val h = hoursArr.getJSONObject(j)
                 HourEntry(
@@ -127,5 +156,31 @@ object ForecastHistoryStore {
                 )
             }
         )
+    }
+
+    /**
+     * Conditions d'un jour passe (J-1, J-2) pour le journal de bord : la prevision la plus
+     * recente faite pour ce jour-la (donc souvent chargee ce jour-la), convertie en heures
+     * utilisables par la saisie de session. null si l'app n'a rien garde pour ce jour.
+     */
+    fun conditionsFor(context: Context, spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? {
+        val snap = load(context).firstOrNull { s -> s.spotName == spotName && s.hours.any { it.time.toLocalDate() == date } }
+            ?: return null
+        val hours = snap.hours.filter { it.time.toLocalDate() == date }.map { h ->
+            HourlyUiModel(
+                timeFormatted = formatHour(h.time),
+                rawTime = h.time,
+                waveHeight = h.waveHeight,
+                wavePeriod = h.wavePeriod,
+                waveDirection = h.waveDirection,
+                energyKj = (1.962 * h.waveHeight * h.waveHeight * h.wavePeriod * h.wavePeriod).toInt(),
+                windSpeedKmh = h.windKmh,
+                windDirectionStr = h.windDir,
+                weatherCode = 0,
+                temperature = 0,
+                windSource = h.windSource
+            )
+        }
+        return hours to snap.tides[date]
     }
 }

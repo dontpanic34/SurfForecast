@@ -207,12 +207,16 @@ fun SessionLogEntryDialog(
     quiverBoards: List<QuiverBoard>,
     microSpots: List<MicroSpot>,
     onAddMicroSpot: (name: String) -> Unit,
-    onSave: (startHour: Int, endHour: Int, microSpotId: Long, quiverId: Long, rating: Int, comment: String?, mediaUri: String?) -> Unit,
-    onDismiss: () -> Unit
+    onSave: (dayOffset: Int, startHour: Int, endHour: Int, microSpotId: Long, quiverId: Long, rating: Int, comment: String?, mediaUri: String?) -> Unit,
+    onDismiss: () -> Unit,
+    // Jours proposes : 0 = aujourd'hui, 1 = hier, 2 = avant-hier (seulement si l'app a
+    // garde les conditions de ce jour dans son journal des previsions).
+    availableDayOffsets: List<Int> = listOf(0)
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
 
+    var dayOffset by remember { mutableStateOf(0) }
     var startHour by remember { mutableStateOf<Int?>(null) }
     var endHour by remember { mutableStateOf<Int?>(null) }
     var selectedMicroSpotId by remember { mutableStateOf<Long?>(null) }
@@ -272,10 +276,47 @@ fun SessionLogEntryDialog(
                     TextButton(onClick = onDismiss) { Text("Fermer") }
                 }
                 Text(
-                    text = "$spotName · Aujourd'hui",
+                    text = "$spotName · ${dayOffsetLabel(dayOffset)}",
                     fontSize = 12.sp,
                     color = colors.onBackground.copy(alpha = 0.6f)
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Jour", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.7f))
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(2, 1, 0).forEach { offset ->
+                        val enabled = offset in availableDayOffsets
+                        val isSelected = offset == dayOffset
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(
+                                    when {
+                                        isSelected -> colors.primary.copy(alpha = 0.2f)
+                                        else -> colors.onBackground.copy(alpha = if (enabled) 0.08f else 0.03f)
+                                    }
+                                )
+                                .clickable(enabled = enabled) { dayOffset = offset }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = dayOffsetLabel(offset),
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = colors.onBackground.copy(alpha = if (enabled) 1f else 0.35f)
+                            )
+                        }
+                    }
+                }
+                if (availableDayOffsets.size < 3) {
+                    Text(
+                        text = "Hier / avant-hier : dispo seulement si l'app avait chargé les prévisions ce jour-là.",
+                        fontSize = 10.sp,
+                        color = colors.onBackground.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 HourRangeSelector("Debut", startHour, { startHour = it }, colors.onBackground, colors.primary)
@@ -338,7 +379,7 @@ fun SessionLogEntryDialog(
                 Button(
                     onClick = {
                         onSave(
-                            startHour!!, endHour!!, selectedMicroSpotId!!, selectedQuiverId!!,
+                            dayOffset, startHour!!, endHour!!, selectedMicroSpotId!!, selectedQuiverId!!,
                             rating, comment.ifBlank { null }, mediaUri?.toString()
                         )
                         onDismiss()
@@ -352,4 +393,10 @@ fun SessionLogEntryDialog(
             }
         }
     }
+}
+
+private fun dayOffsetLabel(offset: Int): String = when (offset) {
+    0 -> "Aujourd'hui"
+    1 -> "Hier"
+    else -> "Avant-hier"
 }
