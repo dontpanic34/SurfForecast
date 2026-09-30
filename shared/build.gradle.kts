@@ -7,7 +7,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "com.surfcast.surfforecast.shared"
         compileSdk = 37
         minSdk = 26
@@ -15,8 +15,8 @@ kotlin {
         withHostTestBuilder {}
     }
 
+    // Pas d'iosX64 (simulateur sur Mac Intel) : Compose Multiplatform 1.12 ne le publie plus.
     listOf(
-        iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->

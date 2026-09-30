@@ -39,10 +39,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build + test shared module (Android host tests)
-        run: ./gradlew :shared:testAndroidHostTest --stacktrace
+        run: ./gradlew :shared:testAndroidHostTest
 
       - name: Build existing Android app (regression check)
-        run: ./gradlew :app:assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug
 
   shared-ios:
     runs-on: macos-latest
@@ -65,10 +65,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build shared framework for iOS Simulator (arm64)
-        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
 
       - name: Run shared module tests on iOS Simulator
-        run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
+        run: ./gradlew :shared:iosSimulatorArm64Test
 
       - name: Install XcodeGen
         run: brew install xcodegen
