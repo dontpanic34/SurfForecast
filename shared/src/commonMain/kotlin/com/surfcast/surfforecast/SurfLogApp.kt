@@ -26,6 +26,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
+import kotlin.math.roundToInt
 
 /**
  * Écran temporaire de la migration Compose Multiplatform : affiche sur iOS les écrans déjà
@@ -40,6 +41,7 @@ fun SurfLogApp() {
     var selected by remember { mutableStateOf<HourlyUiModel?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var timelineCollapsed by remember { mutableStateOf(false) }
+    var weeklyCollapsed by remember { mutableStateOf(false) }
 
     LaunchedEffect(spot) {
         try {
@@ -79,6 +81,19 @@ fun SurfLogApp() {
                     val selectedDate = currentSelected.rawTime.date
                     val groupedByDate = currentForecast.hourly.groupBy { it.rawTime.date }
                     val hoursOfDay = groupedByDate[selectedDate].orEmpty()
+                    // Mêmes calculs que MainScreen/SurfViewModel côté Android.
+                    val availableDates = groupedByDate.keys.toList()
+                    val sun = currentForecast.dailySun
+                    val dailyPeriods = availableDates.map { date ->
+                        daylightHoursFor(date, groupedByDate, sun).maxByOrNull { it.waveHeight }?.wavePeriod?.roundToInt() ?: 10
+                    }
+                    val dailyHeights = availableDates.map { date ->
+                        daylightHoursFor(date, groupedByDate, sun).maxByOrNull { it.waveHeight }?.waveHeight ?: 0.0
+                    }
+                    val dailyFeelsLike = availableDates.map { date ->
+                        groupedByDate[date].orEmpty().takeIf { it.isNotEmpty() }?.map { it.temperature }?.average()?.roundToInt() ?: 20
+                    }
+                    val dailyWaterTemps = availableDates.map { 19 }
                     Column(
                         modifier = Modifier
                             .verticalScroll(rememberScrollState())
@@ -86,6 +101,31 @@ fun SurfLogApp() {
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(spot.name, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+                        WeeklyForecastCard(
+                            availableDates = availableDates,
+                            groupedByDate = groupedByDate,
+                            selectedDate = selectedDate,
+                            onSelectDate = { date ->
+                                selected = groupedByDate[date]?.firstOrNull { it.rawTime.hour == currentSelected.rawTime.hour }
+                                    ?: groupedByDate[date]?.firstOrNull() ?: currentSelected
+                            },
+                            dailyTides = tides,
+                            dailyPeriods = dailyPeriods,
+                            dailyHeights = dailyHeights,
+                            dailyFeelsLike = dailyFeelsLike,
+                            dailyWaterTemps = dailyWaterTemps,
+                            dailySunInfo = sun,
+                            fixedMaxScale = 4.0f,
+                            selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0),
+                            windUnit = "kmh",
+                            weeklyDensity = 3,
+                            weeklyWindMode = "both",
+                            primaryColor = MaterialTheme.colorScheme.primary,
+                            surfaceColor = MaterialTheme.colorScheme.surface,
+                            onSurfaceColor = MaterialTheme.colorScheme.onSurface,
+                            isCollapsed = weeklyCollapsed,
+                            onToggleCollapse = { weeklyCollapsed = !weeklyCollapsed }
+                        )
                         DailyTimelineCard(
                             selectedDate = selectedDate,
                             groupedByDate = groupedByDate,
