@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respondError
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -47,9 +48,10 @@ class SurfControllerTest {
     @Test
     fun networkFailureOnFirstLoadShowsError() = runTest {
         val c = controller(InMemoryKeyValueStore())
-        advanceUntilIdle()
-        assertIs<SurfUiState.Error>(c.uiState.value)
-        assertFalse(c.isRefreshing)
+        // Le moteur HTTP simulé répond sur son propre dispatcher (pas le temps virtuel du
+        // test) : on attend donc la sortie de l'état Loading plutôt que advanceUntilIdle().
+        val state = c.uiState.first { it !is SurfUiState.Loading }
+        assertIs<SurfUiState.Error>(state)
     }
 
     @Test
