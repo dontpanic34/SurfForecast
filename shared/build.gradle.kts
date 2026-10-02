@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose.multiplatform)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -44,6 +45,8 @@ kotlin {
             implementation(libs.compose.mp.material3)
             implementation(libs.compose.mp.ui)
             implementation(libs.compose.mp.resources)
+            implementation(libs.room.runtime)
+            implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -57,6 +60,13 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
     }
+}
+
+// Compilateur Room (KSP) pour chaque cible : génère DAO et SessionLogDatabaseConstructor.
+dependencies {
+    add("kspAndroid", libs.room.compiler)
+    add("kspIosArm64", libs.room.compiler)
+    add("kspIosSimulatorArm64", libs.room.compiler)
 }
 
 compose.resources {
