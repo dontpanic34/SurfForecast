@@ -64,13 +64,40 @@ class SurfRepositoryTest {
         HttpClient(engine) { install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) } }
     )
 
+    // AROME HD indisponible par défaut : la prévision doit retomber sur AROME standard.
     private val openMeteoEngine = MockEngine { request ->
         val model = request.url.parameters["models"]
+        if (model == "meteofrance_arome_france_hd") return@MockEngine respondError(HttpStatusCode.InternalServerError)
         val body = when (request.url.host) {
             "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else longMarine
             else -> if (model == "meteofrance_arome_france") shortWeather else longWeather
         }
         respondJson(body)
+    }
+
+    @Test
+    fun aromeHdWindWinsInShortTermAndMissingHoursFallBack() = runTest {
+        // HD : vent seulement, valeur nulle pour l'unique heure -> repli sur AROME standard
+        // pour cette heure ; puis un second cas où HD a une valeur et passe devant.
+        fun engine(hdSpeed: String) = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            val body = when {
+                request.url.host == "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else longMarine
+                model == "meteofrance_arome_france_hd" ->
+                    """{"hourly":{"time":["2026-01-01T10:00"],"wind_speed_10m":[$hdSpeed],"wind_direction_10m":[180.0]}}"""
+                model == "meteofrance_arome_france" -> shortWeather
+                else -> longWeather
+            }
+            respondJson(body)
+        }
+        val withHd = repository(engine("3.2")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        assertEquals(3, withHd.windSpeedKmh)
+        assertEquals("S", withHd.windDirectionStr)
+        assertEquals("AROME HD", withHd.windSource)
+
+        val hdNull = repository(engine("null")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        assertEquals(12, hdNull.windSpeedKmh)
+        assertEquals("AROME", hdNull.windSource)
     }
 
     @Test
@@ -90,6 +117,7 @@ class SurfRepositoryTest {
         assertEquals(calculateWaveEnergyReal(1.5, 12.0), shortTerm.energyKj)
         assertEquals(12, shortTerm.windSpeedKmh)
         assertEquals("E", shortTerm.windDirectionStr)
+        assertEquals("AROME", shortTerm.windSource)
         assertEquals(15, shortTerm.temperature)
         assertEquals(12, shortTerm.feelsLike)
         assertEquals(3, shortTerm.weatherCode)

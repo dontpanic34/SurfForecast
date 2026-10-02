@@ -97,7 +97,8 @@ fun WindSeaCardComponent(
                         color = onSurfaceColor
                     )
                     Text(
-                        text = "${selectedHour.windWavePeriod.roundToInt()}s",
+                        // 0 = période inconnue (le modèle ne la donne pas à cette heure), pas "0s".
+                        text = if (selectedHour.windWavePeriod > 0.0) "${selectedHour.windWavePeriod.roundToInt()}s" else "—",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = primaryColor

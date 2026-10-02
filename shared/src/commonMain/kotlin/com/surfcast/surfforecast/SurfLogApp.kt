@@ -2,6 +2,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.surfcast.surfforecast.ui.theme.SurfForecastTheme
@@ -11,9 +12,12 @@ import com.surfcast.surfforecast.ui.theme.SurfForecastTheme
  * (même choix de thème clair/sombre/système, même MainScreen).
  */
 @Composable
-fun SurfLogApp(prefs: KeyValueStore, onPinWidget: (() -> Unit)? = null) {
+fun SurfLogApp(prefs: KeyValueStore, onPinWidget: (() -> Unit)? = null, appVersion: String? = null) {
     val scope = rememberCoroutineScope()
     val controller = remember(prefs) { SurfController(scope = scope, prefs = prefs) }
+    LaunchedEffect(controller) {
+        AppForeground.events.collect { controller.onAppResumed() }
+    }
 
     val useDarkTheme = when (controller.themeMode) {
         "dark" -> true
@@ -22,6 +26,6 @@ fun SurfLogApp(prefs: KeyValueStore, onPinWidget: (() -> Unit)? = null) {
     }
 
     SurfForecastTheme(useDarkTheme = useDarkTheme) {
-        MainScreen(viewModel = controller, onPinWidget = onPinWidget)
+        MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion)
     }
 }

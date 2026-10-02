@@ -14,6 +14,9 @@ targets:
       path: SurfLog/Info.plist
       properties:
         CFBundleDisplayName: Surf Log
+        # Version affichée sur l'accueil : 1.0.<n° du build GitHub> (passé par la CI).
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         # Requis par Compose Multiplatform (sinon plantage au lancement) : autorise 120 Hz.
         CADisableMinimumFrameDurationOnPhone: true

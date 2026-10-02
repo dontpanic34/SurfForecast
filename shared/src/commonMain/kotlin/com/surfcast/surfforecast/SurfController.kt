@@ -109,6 +109,11 @@ class SurfController(
     var engineConfig by mutableStateOf(loadEngineConfigFromPrefs(prefs))
         private set
 
+    // Dernier spot chargé avec succès (favori ou spot consulté) et quand : sert à recharger
+    // ce même spot quand l'appli revient au premier plan.
+    private var lastLoadedSpot: SurfSpotItem? = null
+    private var lastLoadedAt: kotlinx.datetime.LocalDateTime? = null
+
     init {
         loadPreferences()
         loadActiveSpot(initialLoad = true)
@@ -195,6 +200,25 @@ class SurfController(
         loadActiveSpot(initialLoad = false)
     }
 
+    /**
+     * À chaque retour de l'appli au premier plan : recharge si les prévisions ont plus de
+     * 15 min, pour ne plus afficher un "maintenant" vieux de plusieurs heures.
+     */
+    fun onAppResumed() {
+        if (isRefreshing) return
+        val loadedAt = lastLoadedAt ?: return
+        val spot = lastLoadedSpot ?: return
+        val now = nowLocalDateTime()
+        val ageMinutes = (now.date.toEpochDays() - loadedAt.date.toEpochDays()) * 24 * 60 +
+            (now.hour * 60 + now.minute) - (loadedAt.hour * 60 + loadedAt.minute)
+        if (ageMinutes < RESUME_REFRESH_AFTER_MINUTES) return
+        scope.launch {
+            isRefreshing = true
+            loadSpotInternal(spot)
+            isRefreshing = false
+        }
+    }
+
     fun toggleLiveOverlay(show: Boolean) {
         showLiveOverlay = show
         prefs.putBoolean("show_live_overlay", show)
@@ -248,6 +272,8 @@ class SurfController(
                 lastUpdatedTime = nowLocalDateTime().formatHHmm()
             )
             _uiState.value = successState
+            lastLoadedSpot = spot
+            lastLoadedAt = nowLocalDateTime()
             // Ne doit jamais faire échouer le chargement (cache, widget... côté hôte).
             runCatching { onForecastLoaded(successState, tidesBundle) }
         } catch (e: CancellationException) {
@@ -352,6 +378,7 @@ class SurfController(
     }
 
     companion object {
+        private const val RESUME_REFRESH_AFTER_MINUTES = 15
         val DEFAULT_CARDS_ORDER = listOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
     }
 }
