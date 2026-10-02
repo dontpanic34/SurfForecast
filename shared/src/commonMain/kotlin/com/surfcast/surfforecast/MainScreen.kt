@@ -1011,31 +1011,3 @@ fun DynamicCardsSection(
         Spacer(modifier = Modifier.height(6.dp))
     }
 }
-
-@Composable
-fun JournalIcon(
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val stroke = Stroke(width = w * 0.09f)
-        drawRoundRect(
-            color = color,
-            size = Size(w * 0.8f, h * 0.9f),
-            topLeft = Offset(w * 0.1f, h * 0.05f),
-            cornerRadius = CornerRadius(w * 0.08f),
-            style = stroke
-        )
-        val lineY = listOf(0.38f, 0.55f, 0.72f)
-        lineY.forEach { fraction ->
-            drawLine(
-                color = color,
-                start = Offset(w * 0.28f, h * fraction),
-                end = Offset(w * 0.72f, h * fraction),
-                strokeWidth = w * 0.06f
-            )
-        }
-    }
-}
