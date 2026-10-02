@@ -67,3 +67,19 @@ fun frenchShortMonthName(date: LocalDate): String = when (date.month.number) {
     11 -> "nov."
     else -> "déc."
 }
+
+/** Comme Month.getDisplayName(TextStyle.FULL, Locale.FRANCE) : "janvier", "février"... */
+fun frenchMonthName(date: LocalDate): String = when (date.month.number) {
+    1 -> "janvier"
+    2 -> "février"
+    3 -> "mars"
+    4 -> "avril"
+    5 -> "mai"
+    6 -> "juin"
+    7 -> "juillet"
+    8 -> "août"
+    9 -> "septembre"
+    10 -> "octobre"
+    11 -> "novembre"
+    else -> "décembre"
+}

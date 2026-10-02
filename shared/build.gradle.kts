@@ -55,6 +55,8 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
+            implementation("androidx.activity:activity-compose:1.8.2")
+            implementation("io.coil-kt:coil-compose:2.7.0")
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

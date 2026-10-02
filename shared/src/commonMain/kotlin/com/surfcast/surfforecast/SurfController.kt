@@ -9,12 +9,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.plus
 import kotlin.math.roundToInt
 
@@ -46,8 +52,45 @@ class SurfController(
     private val scope: CoroutineScope,
     private val prefs: KeyValueStore,
     private val repository: SurfRepository = SurfRepository(),
-    private val onForecastLoaded: (SurfUiState.Success, SurfRepository.TidesBundle) -> Unit = { _, _ -> }
+    private val onForecastLoaded: (SurfUiState.Success, SurfRepository.TidesBundle) -> Unit = { _, _ -> },
+    // Journal de bord (Room) : null = pas de base (tests), le journal reste vide.
+    private val sessionLogDao: SessionLogDao? = null
 ) {
+
+    val quiverBoards: StateFlow<List<QuiverBoard>> = (sessionLogDao?.getAllQuiverBoards() ?: flowOf(emptyList()))
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val referenceSessions: StateFlow<List<SurfSessionWithRelations>> =
+        (sessionLogDao?.getReferenceSessions(4) ?: flowOf(emptyList()))
+            .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val allSessions: StateFlow<List<SurfSessionWithRelations>> = (sessionLogDao?.getAllSessions() ?: flowOf(emptyList()))
+        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun microSpotsFor(spotName: String): Flow<List<MicroSpot>> =
+        sessionLogDao?.getMicroSpotsForSpot(spotName) ?: flowOf(emptyList())
+
+    fun computePatternMatches(
+        hourlyForecast: List<HourlyUiModel>,
+        dailyTides: Map<LocalDate, DailyTideInfo>,
+        idealSwellDirection: Int?
+    ): List<PatternMatch> {
+        val refs = referenceSessions.value
+        if (refs.isEmpty()) return emptyList()
+
+        return hourlyForecast.mapNotNull { hour ->
+            val tideCoeff = dailyTides[hour.rawTime.date]?.coefficient
+            val candidateVector = sessionVectorFromForecast(hour, idealSwellDirection, tideCoeff)
+            val best = refs
+                .map { ref -> ref to matchScore(sessionVectorFromCondition(ref.condition, idealSwellDirection), candidateVector) }
+                .maxByOrNull { it.second }
+            if (best != null && best.second >= PATTERN_MATCH_THRESHOLD) {
+                PatternMatch(hourlyModel = hour, referenceSession = best.first, score = best.second.roundToInt())
+            } else {
+                null
+            }
+        }
+    }
 
     private val _uiState = MutableStateFlow<SurfUiState>(SurfUiState.Loading)
     val uiState: StateFlow<SurfUiState> = _uiState.asStateFlow()
@@ -380,6 +423,74 @@ class SurfController(
     /** Conditions gardées pour un jour passé (journal de bord J-1/J-2), ou null. */
     fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
         runCatching { history.conditionsFor(spotName, date) }.getOrNull()
+
+    fun addQuiverBoard(model: String, family: String, lengthLitrage: String, finSetup: String) {
+        val dao = sessionLogDao ?: return
+        scope.launch {
+            dao.insertQuiverBoard(QuiverBoard(model = model, family = family, lengthLitrage = lengthLitrage, finSetup = finSetup))
+        }
+    }
+
+    fun deleteQuiverBoard(board: QuiverBoard) {
+        val dao = sessionLogDao ?: return
+        scope.launch {
+            try {
+                dao.deleteQuiverBoard(board)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Le plus souvent la contrainte de clé étrangère : planche utilisée par une session.
+                val current = _uiState.value
+                if (current is SurfUiState.Success) {
+                    _uiState.value = current.copy(
+                        popupError = "Impossible de supprimer cette planche : elle est utilisee dans une session enregistree."
+                    )
+                }
+            }
+        }
+    }
+
+    fun addMicroSpot(parentSpotName: String, name: String) {
+        val dao = sessionLogDao ?: return
+        scope.launch { dao.insertMicroSpot(MicroSpot(parentSpotName = parentSpotName, name = name)) }
+    }
+
+    fun logSurfSession(
+        date: LocalDate,
+        startHour: Int,
+        endHour: Int,
+        microSpotId: Long,
+        quiverId: Long,
+        rating: Int,
+        comment: String?,
+        mediaUri: String?,
+        hourlyModel: HourlyUiModel,
+        tideInfo: DailyTideInfo?
+    ) {
+        val dao = sessionLogDao ?: return
+        scope.launch {
+            val snapshot = ConditionSnapshot(
+                energyKj = hourlyModel.energyKj,
+                waveHeight = hourlyModel.waveHeight,
+                wavePeriod = hourlyModel.wavePeriod,
+                waveDirection = hourlyModel.waveDirection.roundToInt(),
+                windSpeedKmh = hourlyModel.windSpeedKmh,
+                windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
+                tideCoeff = tideInfo?.coefficient,
+                isNearHighTide = isNearHighTide(hourlyModel, tideInfo)
+            )
+            dao.logSession(
+                startTime = LocalDateTime(date, LocalTime(startHour, 0)).toEpochMillis(),
+                endTime = LocalDateTime(date, LocalTime(endHour.coerceAtMost(23), 0)).toEpochMillis(),
+                microSpotId = microSpotId,
+                quiverId = quiverId,
+                condition = snapshot,
+                rating = rating,
+                comment = comment,
+                mediaUri = mediaUri
+            )
+        }
+    }
 
     fun dismissPopupError() {
         val current = _uiState.value

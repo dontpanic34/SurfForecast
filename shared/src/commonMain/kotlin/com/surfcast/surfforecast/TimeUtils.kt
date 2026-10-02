@@ -1,8 +1,10 @@
 package com.surfcast.surfforecast
 
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
@@ -25,3 +27,14 @@ fun LocalDateTime.formatHHmm(): String =
 
 fun LocalTime.formatHHmm(): String =
     "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+
+/** Instant stocké en base (millisecondes) -> date/heure locale du téléphone. */
+@OptIn(ExperimentalTime::class)
+fun epochMillisToLocalDateTime(millis: Long): LocalDateTime =
+    kotlin.time.Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.currentSystemDefault())
+
+/** Date/heure locale du téléphone -> millisecondes (format stocké en base, comme Android). */
+@OptIn(ExperimentalTime::class)
+fun LocalDateTime.toEpochMillis(): Long = toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+
+fun firstOfMonth(date: LocalDate): LocalDate = LocalDate(date.year, date.month, 1)

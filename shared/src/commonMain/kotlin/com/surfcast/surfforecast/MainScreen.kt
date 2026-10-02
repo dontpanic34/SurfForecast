@@ -37,7 +37,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.surfcast.surfforecast.ui.theme.AppColors
 import kotlinx.coroutines.delay
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -68,8 +70,9 @@ fun MainScreen(
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     var showSpotDialog by remember { mutableStateOf(false) }
     var showPreferencesDialog by remember { mutableStateOf(false) }
-    // Journal de sessions (Room côté Android) : pas encore porté dans le module partagé.
     var showSessionLogDialog by remember { mutableStateOf(false) }
+    var showSessionLogEntry by remember { mutableStateOf(false) }
+    var showQuiverDialog by remember { mutableStateOf(false) }
     var showWeatherDetail by remember { mutableStateOf(false) }
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var showForecastHistory by remember { mutableStateOf(false) }
@@ -260,6 +263,14 @@ fun MainScreen(
                     )
                 }
 
+                // Journal de session : meilleur "Pattern repere" dans les previsions a 7 jours
+                // par rapport aux sessions passees notees >= 4/5.
+                val referenceSessions by viewModel.referenceSessions.collectAsState()
+                val bestPatternMatch = remember(state.hourlyForecast, state.dailyTides, idealSwellDirection, referenceSessions) {
+                    viewModel.computePatternMatches(state.hourlyForecast, state.dailyTides, idealSwellDirection)
+                        .maxByOrNull { it.score }
+                }
+
                 Box(modifier = Modifier.fillMaxSize()) {
                     run {
                         val selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0)
@@ -363,6 +374,35 @@ fun MainScreen(
                                         }
                                     }
 
+                                    // Journal de session : bandeau "Pattern repere" si un creneau a venir
+                                    // matche une session passee bien notee.
+                                    if (bestPatternMatch != null) {
+                                        val refDate = epochMillisToLocalDateTime(bestPatternMatch.referenceSession.session.startTime).date
+                                        val refDateFormatted = "${refDate.day} ${frenchMonthName(refDate)}"
+                                        val matchDate = bestPatternMatch.hourlyModel.rawTime.date
+                                        val matchDateFormatted = "${frenchShortDayName(matchDate)} ${matchDate.day}"
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 10.dp, vertical = 2.dp)
+                                                .padding(bottom = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Canvas(modifier = Modifier.size(6.dp)) {
+                                                drawCircle(color = AppColors.TideLow, radius = size.minDimension / 2f)
+                                            }
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Pattern repéré $matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour}h : " +
+                                                    "match ${bestPatternMatch.score}% avec ta session du $refDateFormatted à " +
+                                                    "${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model})",
+                                                fontSize = 10.5.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = onSurfaceColor.copy(alpha = 0.75f),
+                                                maxLines = 2
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -453,15 +493,13 @@ fun MainScreen(
                                     }
 
                                     if (showSessionLogDialog) {
-                                        AlertDialog(
-                                            onDismissRequest = { showSessionLogDialog = false },
-                                            title = { Text(text = "Journal de sessions", fontWeight = FontWeight.Bold) },
-                                            text = { Text(text = "Le journal de sessions arrive bientôt sur cette version de l'app.") },
-                                            confirmButton = {
-                                                TextButton(onClick = { showSessionLogDialog = false }) {
-                                                    Text("OK")
-                                                }
-                                            }
+                                        val allSessions by viewModel.allSessions.collectAsState()
+
+                                        SessionLogHistoryScreen(
+                                            allSessions = allSessions,
+                                            onOpenNewEntry = { showSessionLogEntry = true },
+                                            onOpenQuiver = { showQuiverDialog = true },
+                                            onDismiss = { showSessionLogDialog = false }
                                         )
                                     }
 
@@ -472,6 +510,65 @@ fun MainScreen(
                                             availableDates = availableDates,
                                             windUnit = viewModel.windUnit,
                                             onDismiss = { showWeatherDetail = false }
+                                        )
+                                    }
+
+                                    if (showQuiverDialog) {
+                                        val quiverBoards by viewModel.quiverBoards.collectAsState()
+
+                                        QuiverScreen(
+                                            quiverBoards = quiverBoards,
+                                            onAddBoard = { model, family, length, fins -> viewModel.addQuiverBoard(model, family, length, fins) },
+                                            onDeleteBoard = { board -> viewModel.deleteQuiverBoard(board) },
+                                            onDismiss = { showQuiverDialog = false }
+                                        )
+                                    }
+
+                                    if (showSessionLogEntry) {
+                                        val todayHours = groupedByDate[today] ?: state.hourlyForecast
+                                        val todayTide = state.dailyTides[today]
+                                        val quiverBoards by viewModel.quiverBoards.collectAsState()
+                                        val microSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
+                                            .collectAsState(initial = emptyList())
+
+                                        // J-1 / J-2 : conditions gardees par le journal des previsions
+                                        // (la derniere prevision faite pour ce jour-la).
+                                        val pastConditions = remember(state.spotName, today) {
+                                            (1..2).associateWith { offset ->
+                                                viewModel.pastConditions(state.spotName, today.minus(offset, DateTimeUnit.DAY))
+                                            }.filterValues { it != null && it.first.isNotEmpty() }
+                                        }
+
+                                        SessionLogEntryDialog(
+                                            spotName = state.spotName,
+                                            todayHours = todayHours,
+                                            tideInfo = todayTide,
+                                            quiverBoards = quiverBoards,
+                                            microSpots = microSpots,
+                                            onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
+                                            availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
+                                            onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                                val past = pastConditions[dayOffset]
+                                                val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
+                                                val dayTide = if (dayOffset == 0) todayTide else past?.second
+                                                val midpointHour = (startHour + endHour) / 2
+                                                val hourlyModel = dayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
+                                                if (hourlyModel != null) {
+                                                    viewModel.logSurfSession(
+                                                        date = today.minus(dayOffset, DateTimeUnit.DAY),
+                                                        startHour = startHour,
+                                                        endHour = endHour,
+                                                        microSpotId = microSpotId,
+                                                        quiverId = quiverId,
+                                                        rating = rating,
+                                                        comment = comment,
+                                                        mediaUri = mediaUri,
+                                                        hourlyModel = hourlyModel,
+                                                        tideInfo = dayTide
+                                                    )
+                                                }
+                                            },
+                                            onDismiss = { showSessionLogEntry = false }
                                         )
                                     }
 
