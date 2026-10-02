@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -45,9 +46,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.surfcast.surfforecast.ui.theme.AppColors
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -83,6 +86,28 @@ fun MainScreen(viewModel: SurfViewModel) {
     var showLiveCam by rememberSaveable { mutableStateOf(false) }
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var directWebcamSpot by remember { mutableStateOf<String?>(null) }
+    var showForecastHistory by remember { mutableStateOf(false) }
+
+    // Heure courante qui avance vraiment : avant, "maintenant" n'etait calcule qu'au
+    // chargement, et le bandeau pouvait afficher le vent de 9h a 10h passees.
+    // "clock" = heure pleine la PLUS PROCHE (10h44 -> 11h), pas l'heure entamee : a 10h44
+    // le bandeau affichait encore le vent de 10h.
+    fun nearestHour(): LocalDateTime =
+        LocalDateTime.now().plusMinutes(30).truncatedTo(java.time.temporal.ChronoUnit.HOURS)
+    var clock by remember { mutableStateOf(nearestHour()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            val nearest = nearestHour()
+            if (nearest != clock) clock = nearest
+        }
+    }
+    val today = LocalDate.now()
+
+    val context = LocalContext.current
+    val appVersion = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
+    }
 
     val backgroundColor = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
@@ -145,8 +170,20 @@ fun MainScreen(viewModel: SurfViewModel) {
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
             engineConfig = viewModel.engineConfig,
             onEngineConfigChanged = { viewModel.updateEngineConfig(it) },
-            onViewLogs = { },
+            onViewLogs = {
+                showPreferencesDialog = false
+                showForecastHistory = true
+            },
             onDismiss = { showPreferencesDialog = false }
+        )
+    }
+
+    if (showForecastHistory) {
+        val snapshots = remember { viewModel.loadForecastHistory() }
+        ForecastHistoryScreen(
+            snapshots = snapshots,
+            currentSpotName = (uiState as? SurfUiState.Success)?.spotName,
+            onDismiss = { showForecastHistory = false }
         )
     }
 
@@ -235,11 +272,13 @@ fun MainScreen(viewModel: SurfViewModel) {
                 val groupedByDate = state.hourlyForecast.groupBy { it.rawTime.toLocalDate() }
                 val availableDates = groupedByDate.keys.toList()
 
-                if (selectedDate == null && availableDates.isNotEmpty()) {
+                // Aussi apres minuit ou un rechargement : un jour qui n'est plus dans les
+                // previsions ne doit pas rester selectionne (cartes vides).
+                if ((selectedDate == null || selectedDate !in availableDates) && availableDates.isNotEmpty()) {
                     selectedDate = availableDates.first()
                 }
 
-                val currentTideInfo = state.dailyTides[LocalDate.now()] ?: state.dailyTides.values.firstOrNull()
+                val currentTideInfo = state.dailyTides[today] ?: state.dailyTides.values.firstOrNull()
 
                 // Point 3 : angle de houle ideal du spot actif (peut etre null si pas encore renseigne)
                 // et meilleur creneau du jour selectionne, pour le bandeau "Statut Flash".
@@ -410,8 +449,8 @@ fun MainScreen(viewModel: SurfViewModel) {
                             }
 
                             run {
-                                val activeDayHours = groupedByDate[selectedDate ?: LocalDate.now()] ?: state.hourlyForecast
-                                val currentHourNow = LocalTime.now().hour
+                                val activeDayHours = groupedByDate[selectedDate ?: today] ?: state.hourlyForecast
+                                val currentHourNow = clock.hour
                                 val closestHourModel = activeDayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) } ?: activeDayHours.firstOrNull()
 
                                 if (viewModel.showLiveOverlay && closestHourModel != null) {
@@ -531,11 +570,19 @@ fun MainScreen(viewModel: SurfViewModel) {
                                     }
 
                                     if (showSessionLogEntry) {
-                                        val todayHours = groupedByDate[LocalDate.now()] ?: state.hourlyForecast
-                                        val todayTide = state.dailyTides[LocalDate.now()]
+                                        val todayHours = groupedByDate[today] ?: state.hourlyForecast
+                                        val todayTide = state.dailyTides[today]
                                         val quiverBoards by viewModel.quiverBoards.collectAsState()
                                         val microSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
                                             .collectAsState(initial = emptyList())
+
+                                        // J-1 / J-2 : conditions gardees par le journal des previsions
+                                        // (la derniere prevision faite pour ce jour-la).
+                                        val pastConditions = remember(state.spotName, today) {
+                                            (1..2).associateWith { offset ->
+                                                viewModel.pastConditions(state.spotName, today.minusDays(offset.toLong()))
+                                            }.filterValues { it != null && it.first.isNotEmpty() }
+                                        }
 
                                         SessionLogEntryDialog(
                                             spotName = state.spotName,
@@ -544,12 +591,16 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             quiverBoards = quiverBoards,
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
-                                            onSave = { startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                            availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
+                                            onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                                val past = pastConditions[dayOffset]
+                                                val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
+                                                val dayTide = if (dayOffset == 0) todayTide else past?.second
                                                 val midpointHour = (startHour + endHour) / 2
-                                                val hourlyModel = todayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
+                                                val hourlyModel = dayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
                                                 if (hourlyModel != null) {
                                                     viewModel.logSurfSession(
-                                                        date = LocalDate.now(),
+                                                        date = today.minusDays(dayOffset.toLong()),
                                                         startHour = startHour,
                                                         endHour = endHour,
                                                         microSpotId = microSpotId,
@@ -558,7 +609,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                                         comment = comment,
                                                         mediaUri = mediaUri,
                                                         hourlyModel = hourlyModel,
-                                                        tideInfo = todayTide
+                                                        tideInfo = dayTide
                                                     )
                                                 }
                                             },
@@ -566,9 +617,11 @@ fun MainScreen(viewModel: SurfViewModel) {
                                         )
                                     }
 
-                                    if (state.lastUpdatedTime.isNotEmpty()) {
+                                    run {
+                                        // Version installee (= n° du build GitHub, ex: surf-log-debug-27 -> 1.0.27).
+                                        val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime} · " else ""
                                         Text(
-                                            text = "Mis à jour à ${state.lastUpdatedTime}",
+                                            text = "${updated}v$appVersion",
                                             fontSize = 9.sp,
                                             color = onSurfaceColor.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
@@ -586,7 +639,8 @@ fun MainScreen(viewModel: SurfViewModel) {
                                         DynamicCardsSection(
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             dailyTideInfo = dailyTide,
-                                            isToday = (date == LocalDate.now()),
+                                            isToday = (date == today),
+                                            currentHour = clock.hour,
                                             viewModel = viewModel,
                                             availableDates = availableDates,
                                             groupedByDate = groupedByDate,
@@ -764,18 +818,20 @@ fun DynamicCardsSection(
     surfaceColor: Color,
     onSurfaceColor: Color,
     idealSwellDirection: Int?,
-    surferLevel: String
+    surferLevel: String,
+    currentHour: Int = LocalTime.now().hour
 ) {
-    val initialSelectedHour = remember(hoursForSelectedDay, isToday) {
+    // currentHour en cle : a chaque changement d'heure (ou rechargement), la selection
+    // revient sur l'heure actuelle au lieu de rester figee sur celle du chargement.
+    val initialSelectedHour = remember(hoursForSelectedDay, isToday, currentHour) {
         if (isToday) {
-            val currentHour = LocalTime.now().hour
             hoursForSelectedDay.minByOrNull { abs(it.rawTime.hour - currentHour) } ?: hoursForSelectedDay.firstOrNull()
         } else {
             hoursForSelectedDay.firstOrNull()
         }
     }
 
-    var selectedHourlyItem by remember(hoursForSelectedDay, isToday) { mutableStateOf(initialSelectedHour) }
+    var selectedHourlyItem by remember(hoursForSelectedDay, isToday, currentHour) { mutableStateOf(initialSelectedHour) }
 
     var draggedKey by remember { mutableStateOf<String?>(null) }
     var dragOffsetY by remember { mutableFloatStateOf(0f) }

@@ -44,6 +44,12 @@ class WidgetRefreshWorker(
             val toDate = grouped.keys.maxOrNull()?.toString() ?: LocalDate.now().plusDays(7).toString()
             val tidesBundle = repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
 
+            // Le rafraichissement en arriere-plan alimente aussi le journal des previsions
+            // (et donc les conditions J-1/J-2 du journal de bord), meme sans ouvrir l'app.
+            runCatching {
+                ForecastHistoryStore.record(applicationContext, spot.name, engineConfig, forecast, tidesBundle.dailyByDate)
+            }
+
             WidgetDataCache.push(
                 context = applicationContext,
                 spotName = spot.name,

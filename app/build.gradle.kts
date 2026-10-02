@@ -14,8 +14,11 @@ android {
         applicationId = "com.surfcast.surfforecast"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        // Numero de build = numero du run GitHub Actions (surf-log-debug-<n>) : la version
+        // affichee dans l'app correspond directement a l'artifact telecharge. 0 = build local.
+        val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
+        versionCode = buildNumber.coerceAtLeast(1)
+        versionName = "1.0.$buildNumber"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
