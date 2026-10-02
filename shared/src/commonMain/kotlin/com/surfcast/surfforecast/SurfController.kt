@@ -111,6 +111,8 @@ class SurfController(
 
     // Dernier spot chargé avec succès (favori ou spot consulté) et quand : sert à recharger
     // ce même spot quand l'appli revient au premier plan.
+    private val history = ForecastHistoryStore(prefs)
+
     private var lastLoadedSpot: SurfSpotItem? = null
     private var lastLoadedAt: kotlinx.datetime.LocalDateTime? = null
 
@@ -274,6 +276,8 @@ class SurfController(
             _uiState.value = successState
             lastLoadedSpot = spot
             lastLoadedAt = nowLocalDateTime()
+            // Journal des prévisions (gardé 2 jours) : ne doit jamais faire échouer le chargement.
+            runCatching { history.record(spot.name, engineConfig, forecast, tidesBundle.dailyByDate) }
             // Ne doit jamais faire échouer le chargement (cache, widget... côté hôte).
             runCatching { onForecastLoaded(successState, tidesBundle) }
         } catch (e: CancellationException) {
@@ -369,6 +373,13 @@ class SurfController(
         collapsedCards[cardKey] = !(collapsedCards[cardKey] ?: false)
         prefs.putString("collapsed_cards", collapsedCards.filterValues { it }.keys.joinToString(","))
     }
+
+    fun loadForecastHistory(): List<ForecastHistoryStore.Snapshot> =
+        runCatching { history.load() }.getOrDefault(emptyList())
+
+    /** Conditions gardées pour un jour passé (journal de bord J-1/J-2), ou null. */
+    fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
+        runCatching { history.conditionsFor(spotName, date) }.getOrNull()
 
     fun dismissPopupError() {
         val current = _uiState.value

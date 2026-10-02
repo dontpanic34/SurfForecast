@@ -7,6 +7,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 
 // Équivalents multiplateformes de android.graphics.Paint, pour porter les Canvas d'app/
 // sans changer leurs coordonnées.
@@ -49,4 +50,20 @@ fun frenchDayName(date: LocalDate): String = when (date.dayOfWeek) {
     DayOfWeek.FRIDAY -> "vendredi"
     DayOfWeek.SATURDAY -> "samedi"
     DayOfWeek.SUNDAY -> "dimanche"
+}
+
+/** Comme DateTimeFormatter.ofPattern("MMM", Locale.FRANCE) : "janv.", "févr."... */
+fun frenchShortMonthName(date: LocalDate): String = when (date.month.number) {
+    1 -> "janv."
+    2 -> "févr."
+    3 -> "mars"
+    4 -> "avr."
+    5 -> "mai"
+    6 -> "juin"
+    7 -> "juil."
+    8 -> "août"
+    9 -> "sept."
+    10 -> "oct."
+    11 -> "nov."
+    else -> "déc."
 }

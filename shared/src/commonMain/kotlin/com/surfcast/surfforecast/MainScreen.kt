@@ -72,6 +72,7 @@ fun MainScreen(
     var showSessionLogDialog by remember { mutableStateOf(false) }
     var showWeatherDetail by remember { mutableStateOf(false) }
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
+    var showForecastHistory by remember { mutableStateOf(false) }
     // Le lecteur webcam intégré (WebView côté Android) n'est pas encore porté : on ouvre
     // la page de la webcam dans le navigateur, sur Android comme sur iOS.
     val uriHandler = LocalUriHandler.current
@@ -137,9 +138,21 @@ fun MainScreen(
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
             engineConfig = viewModel.engineConfig,
             onEngineConfigChanged = { viewModel.updateEngineConfig(it) },
-            onViewLogs = { },
+            onViewLogs = {
+                showPreferencesDialog = false
+                showForecastHistory = true
+            },
             onDismiss = { showPreferencesDialog = false },
             onPinWidget = onPinWidget
+        )
+    }
+
+    if (showForecastHistory) {
+        val snapshots = remember { viewModel.loadForecastHistory() }
+        ForecastHistoryScreen(
+            snapshots = snapshots,
+            currentSpotName = (uiState as? SurfUiState.Success)?.spotName,
+            onDismiss = { showForecastHistory = false }
         )
     }
 
