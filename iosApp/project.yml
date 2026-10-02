@@ -29,4 +29,5 @@ targets:
         # Framework Kotlin statique produit par `./gradlew :shared:linkDebugFrameworkIosSimulatorArm64`.
         # Simulateur uniquement pour l'instant (pas de build appareil sans compte Apple Developer).
         FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../shared/build/bin/iosSimulatorArm64/debugFramework
-        OTHER_LDFLAGS: ["-framework", "SharedCore"]
+        # PhotosUI : sélecteur de photos du journal de bord (utilisé par le framework Kotlin statique).
+        OTHER_LDFLAGS: ["-framework", "SharedCore", "-framework", "PhotosUI"]
