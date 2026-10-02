@@ -18,7 +18,8 @@ class SurfControllerTest {
 
     private fun TestScope.controller(prefs: KeyValueStore): SurfController {
         val offline = HttpClient(MockEngine { respondError(HttpStatusCode.ServiceUnavailable) })
-        return SurfController(scope = this, prefs = prefs, repository = SurfRepository(offline))
+        // backgroundScope : les flux du journal de bord (stateIn) tournent en continu, comme dans l'app.
+        return SurfController(scope = backgroundScope, prefs = prefs, repository = SurfRepository(offline))
     }
 
     @Test
