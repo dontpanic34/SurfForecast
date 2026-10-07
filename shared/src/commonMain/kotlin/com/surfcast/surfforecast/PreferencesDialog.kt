@@ -51,7 +51,9 @@ fun SurfPreferencesDialog(
     onViewLogs: () -> Unit,
     onDismiss: () -> Unit,
     // Épinglage du widget d'accueil : Android seulement (null = bouton masqué).
-    onPinWidget: (() -> Unit)? = null
+    onPinWidget: (() -> Unit)? = null,
+    // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
+    onShowIntro: (() -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val pillShape = RoundedCornerShape(50)
@@ -644,6 +646,12 @@ fun SurfPreferencesDialog(
                                 Text("Voir les logs d'actualisation", fontSize = 11.5.sp, color = colors.onBackground)
                             }
                         }
+                    }
+                }
+
+                if (onShowIntro != null) {
+                    TextButton(onClick = onShowIntro, modifier = Modifier.fillMaxWidth()) {
+                        Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 11.5.sp)
                     }
                 }
 
