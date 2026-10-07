@@ -8,12 +8,14 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
-data class SurfSessionWithRelations(
-    @Embedded val session: SurfSession,
-    @Embedded(prefix = "spot_") val microSpot: MicroSpot,
-    @Embedded(prefix = "quiver_") val quiverBoard: QuiverBoard,
-    @Embedded(prefix = "cond_") val condition: ConditionSnapshot
-)
+data class SurfSessionWithRelationsEntity(
+    @Embedded val session: SurfSessionEntity,
+    @Embedded(prefix = "spot_") val microSpot: MicroSpotEntity,
+    @Embedded(prefix = "quiver_") val quiverBoard: QuiverBoardEntity,
+    @Embedded(prefix = "cond_") val condition: ConditionSnapshotEntity
+) {
+    fun toModel() = SurfSessionWithRelations(session.toModel(), microSpot.toModel(), quiverBoard.toModel(), condition.toModel())
+}
 
 private const val SESSION_WITH_RELATIONS_SELECT = """
     SELECT
@@ -33,25 +35,25 @@ private const val SESSION_WITH_RELATIONS_SELECT = """
 interface SessionLogDao {
 
     @Insert
-    suspend fun insertQuiverBoard(board: QuiverBoard): Long
+    suspend fun insertQuiverBoard(board: QuiverBoardEntity): Long
 
     @Delete
-    suspend fun deleteQuiverBoard(board: QuiverBoard)
+    suspend fun deleteQuiverBoard(board: QuiverBoardEntity)
 
     @Insert
-    suspend fun insertMicroSpot(spot: MicroSpot): Long
+    suspend fun insertMicroSpot(spot: MicroSpotEntity): Long
 
     @Insert
-    suspend fun insertCondition(condition: ConditionSnapshot): Long
+    suspend fun insertCondition(condition: ConditionSnapshotEntity): Long
 
     @Insert
-    suspend fun insertSession(session: SurfSession): Long
+    suspend fun insertSession(session: SurfSessionEntity): Long
 
     @Query("SELECT * FROM quiver ORDER BY model")
-    fun getAllQuiverBoards(): Flow<List<QuiverBoard>>
+    fun getAllQuiverBoards(): Flow<List<QuiverBoardEntity>>
 
     @Query("SELECT * FROM micro_spots WHERE parentSpotName = :parentSpotName ORDER BY name")
-    fun getMicroSpotsForSpot(parentSpotName: String): Flow<List<MicroSpot>>
+    fun getMicroSpotsForSpot(parentSpotName: String): Flow<List<MicroSpotEntity>>
 
     @Transaction
     suspend fun logSession(
@@ -59,14 +61,14 @@ interface SessionLogDao {
         endTime: Long,
         microSpotId: Long,
         quiverId: Long,
-        condition: ConditionSnapshot,
+        condition: ConditionSnapshotEntity,
         rating: Int,
         comment: String?,
         mediaUri: String?
     ): Long {
         val conditionId = insertCondition(condition)
         return insertSession(
-            SurfSession(
+            SurfSessionEntity(
                 startTime = startTime,
                 endTime = endTime,
                 microSpotId = microSpotId,
@@ -80,8 +82,8 @@ interface SessionLogDao {
     }
 
     @Query("$SESSION_WITH_RELATIONS_SELECT WHERE s.rating >= :minRating ORDER BY s.startTime DESC")
-    fun getReferenceSessions(minRating: Int = 4): Flow<List<SurfSessionWithRelations>>
+    fun getReferenceSessions(minRating: Int = 4): Flow<List<SurfSessionWithRelationsEntity>>
 
     @Query("$SESSION_WITH_RELATIONS_SELECT ORDER BY s.startTime DESC")
-    fun getAllSessions(): Flow<List<SurfSessionWithRelations>>
+    fun getAllSessions(): Flow<List<SurfSessionWithRelationsEntity>>
 }

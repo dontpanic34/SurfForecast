@@ -14,13 +14,13 @@ import com.surfcast.surfforecast.ui.theme.SurfForecastTheme
 @Composable
 fun SurfLogApp(
     prefs: KeyValueStore,
-    // Base du journal de bord (Room), fournie par la plateforme.
-    sessionLogDao: SessionLogDao? = null,
+    // Stockage du journal de bord, fourni par la plateforme.
+    sessionLogStore: SessionLogStore? = null,
     onPinWidget: (() -> Unit)? = null,
     appVersion: String? = null
 ) {
     val scope = rememberCoroutineScope()
-    val controller = remember(prefs) { SurfController(scope = scope, prefs = prefs, sessionLogDao = sessionLogDao) }
+    val controller = remember(prefs) { SurfController(scope = scope, prefs = prefs, sessionLogStore = sessionLogStore) }
     LaunchedEffect(controller) {
         AppForeground.events.collect { controller.onAppResumed() }
     }

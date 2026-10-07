@@ -32,7 +32,32 @@ kotlin {
         }
     }
 
+    // Version web (navigateur) : remplace l'app iOS, installable depuis Safari
+    // ("Ajouter à l'écran d'accueil"). Même interface Compose que sur Android.
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        outputModuleName.set("surflog")
+        browser {
+            commonWebpackConfig {
+                outputFileName = "surflog.js"
+            }
+        }
+        binaries.executable()
+    }
+
     sourceSets {
+        // Code commun aux applis mobiles (Android + iOS) : base Room du journal de bord,
+        // qui n'existe pas dans le navigateur (le web stocke le journal en JSON).
+        val mobileMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.room.runtime)
+                implementation(libs.sqlite.bundled)
+            }
+        }
+        androidMain.get().dependsOn(mobileMain)
+        iosMain.get().dependsOn(mobileMain)
+
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
@@ -45,8 +70,6 @@ kotlin {
             implementation(libs.compose.mp.material3)
             implementation(libs.compose.mp.ui)
             implementation(libs.compose.mp.resources)
-            implementation(libs.room.runtime)
-            implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -60,6 +83,11 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+            // Fuseaux horaires pour kotlinx-datetime dans le navigateur.
+            implementation(npm("@js-joda/timezone", "2.22.0"))
         }
     }
 }

@@ -479,10 +479,9 @@ internal fun defaultHttpClient(): HttpClient = HttpClient {
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
     }
-    // Équivalent des timeouts de 10 s de HttpURLConnection côté Android.
+    // Délai max par requête (pas de socketTimeout : non géré par le moteur du navigateur).
     install(HttpTimeout) {
         requestTimeoutMillis = 20_000
-        socketTimeoutMillis = 10_000
     }
 }
 

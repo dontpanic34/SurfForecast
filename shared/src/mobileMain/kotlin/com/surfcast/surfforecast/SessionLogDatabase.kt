@@ -13,7 +13,7 @@ import kotlinx.coroutines.Dispatchers
  * Room KMP : SQLite embarqué (BundledSQLiteDriver), identique sur Android et iOS.
  */
 @Database(
-    entities = [QuiverBoard::class, MicroSpot::class, ConditionSnapshot::class, SurfSession::class],
+    entities = [QuiverBoardEntity::class, MicroSpotEntity::class, ConditionSnapshotEntity::class, SurfSessionEntity::class],
     version = 2,
     exportSchema = false
 )

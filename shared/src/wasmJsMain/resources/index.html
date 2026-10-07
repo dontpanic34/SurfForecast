@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="app-version" content="dev">
+    <title>Surf Log</title>
+    <meta name="description" content="Prévisions surf : houle, vent, marées, journal de bord.">
+    <meta name="theme-color" content="#0D1B22">
+    <!-- iPhone : "Ajouter à l'écran d'accueil" ouvre Surf Log en plein écran, comme une app. -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Surf Log">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0D1B22; }
+        #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+                   justify-content: center; color: #9fb3bd; font: 15px -apple-system, system-ui, sans-serif; gap: 16px; }
+        #loading img { width: 96px; height: 96px; }
+    </style>
+</head>
+<body>
+<div id="loading">
+    <img src="icon-192.png" alt="">
+    <div id="loading-text">Chargement de Surf Log…</div>
+</div>
+<script>
+    // Safari iOS < 18.2 ne sait pas exécuter l'app (WebAssembly GC) : message clair plutôt qu'une page blanche.
+    if (typeof WebAssembly === "undefined") {
+        document.getElementById("loading-text").textContent = "Ce navigateur est trop ancien pour Surf Log (iOS 18.2 ou plus récent requis).";
+    }
+</script>
+<script src="surflog.js"></script>
+</body>
+</html>

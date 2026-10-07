@@ -1,4 +1,4 @@
-name: Build KMP shared module (Android + iOS)
+name: Build KMP shared module (Android + iOS + web)
 
 on:
   push:
@@ -114,5 +114,60 @@ jobs:
         with:
           name: ios-screenshot-${{ github.run_number }}
           path: iosApp/ios-screenshot.png
+          if-no-files-found: warn
+          retention-days: 30
+
+  # Version web (remplace l'app iOS) : site statique installable depuis Safari.
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build web app (WebAssembly)
+        run: ./gradlew :shared:wasmJsBrowserDistribution
+
+      - name: Stamp version
+        run: |
+          DIST=shared/build/dist/wasmJs/productionExecutable
+          sed -i 's/<meta name="app-version" content="dev">/<meta name="app-version" content="1.0.${{ github.run_number }}">/' "$DIST/index.html"
+          ls -la "$DIST"
+
+      - name: Screenshot in headless Chrome
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          DIST=shared/build/dist/wasmJs/productionExecutable
+          (cd "$DIST" && python3 -m http.server 8080 >/dev/null 2>&1 &)
+          sleep 2
+          google-chrome --headless=new --no-sandbox --disable-gpu --window-size=430,932 \
+            --virtual-time-budget=20000 --screenshot=web-screenshot.png http://localhost:8080/ || true
+          ls -la web-screenshot.png || true
+
+      - name: Upload web app
+        uses: actions/upload-artifact@v4
+        with:
+          name: surflog-web-${{ github.run_number }}
+          path: shared/build/dist/wasmJs/productionExecutable
+          retention-days: 30
+
+      - name: Upload web screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-screenshot-${{ github.run_number }}
+          path: web-screenshot.png
           if-no-files-found: warn
           retention-days: 30

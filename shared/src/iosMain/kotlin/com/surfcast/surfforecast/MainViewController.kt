@@ -8,7 +8,7 @@ import platform.UIKit.UIViewController
 
 private val iosPrefs: KeyValueStore by lazy { UserDefaultsStore() }
 
-private val sessionLogDao: SessionLogDao by lazy { sessionLogDatabase().sessionLogDao() }
+private val sessionLogStore: SessionLogStore by lazy { SessionLogRoomStore(sessionLogDatabase().sessionLogDao()) }
 
 private val appVersion: String? by lazy {
     NSBundle.mainBundle.infoDictionary?.get("CFBundleShortVersionString") as? String
@@ -25,5 +25,5 @@ private val foregroundObserver by lazy {
 
 fun MainViewController(): UIViewController {
     foregroundObserver
-    return ComposeUIViewController { SurfLogApp(prefs = iosPrefs, sessionLogDao = sessionLogDao, appVersion = appVersion) }
+    return ComposeUIViewController { SurfLogApp(prefs = iosPrefs, sessionLogStore = sessionLogStore, appVersion = appVersion) }
 }

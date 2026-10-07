@@ -53,22 +53,22 @@ class SurfController(
     private val prefs: KeyValueStore,
     private val repository: SurfRepository = SurfRepository(),
     private val onForecastLoaded: (SurfUiState.Success, SurfRepository.TidesBundle) -> Unit = { _, _ -> },
-    // Journal de bord (Room) : null = pas de base (tests), le journal reste vide.
-    private val sessionLogDao: SessionLogDao? = null
+    // Journal de bord (Room sur mobile, JSON dans le navigateur) : null = pas de stockage (tests).
+    private val sessionLogStore: SessionLogStore? = null
 ) {
 
-    val quiverBoards: StateFlow<List<QuiverBoard>> = (sessionLogDao?.getAllQuiverBoards() ?: flowOf(emptyList()))
+    val quiverBoards: StateFlow<List<QuiverBoard>> = (sessionLogStore?.getAllQuiverBoards() ?: flowOf(emptyList()))
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val referenceSessions: StateFlow<List<SurfSessionWithRelations>> =
-        (sessionLogDao?.getReferenceSessions(4) ?: flowOf(emptyList()))
+        (sessionLogStore?.getReferenceSessions(4) ?: flowOf(emptyList()))
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allSessions: StateFlow<List<SurfSessionWithRelations>> = (sessionLogDao?.getAllSessions() ?: flowOf(emptyList()))
+    val allSessions: StateFlow<List<SurfSessionWithRelations>> = (sessionLogStore?.getAllSessions() ?: flowOf(emptyList()))
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun microSpotsFor(spotName: String): Flow<List<MicroSpot>> =
-        sessionLogDao?.getMicroSpotsForSpot(spotName) ?: flowOf(emptyList())
+        sessionLogStore?.getMicroSpotsForSpot(spotName) ?: flowOf(emptyList())
 
     fun computePatternMatches(
         hourlyForecast: List<HourlyUiModel>,
@@ -306,7 +306,15 @@ class SurfController(
             val today = nowLocalDateTime().date
             val fromDate = grouped.keys.minOrNull()?.toString() ?: today.toString()
             val toDate = grouped.keys.maxOrNull()?.toString() ?: today.plus(7, DateTimeUnit.DAY).toString()
-            val tidesBundle = repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
+            // Marées facultatives : un échec (API indisponible, navigateur qui bloque l'appel)
+            // ne doit pas empêcher d'afficher houle et vent.
+            val tidesBundle = try {
+                repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SurfRepository.TidesBundle(emptyMap(), emptyMap())
+            }
 
             val successState = SurfUiState.Success(
                 spotName = spot.name,
@@ -425,14 +433,14 @@ class SurfController(
         runCatching { history.conditionsFor(spotName, date) }.getOrNull()
 
     fun addQuiverBoard(model: String, family: String, lengthLitrage: String, finSetup: String) {
-        val dao = sessionLogDao ?: return
+        val dao = sessionLogStore ?: return
         scope.launch {
             dao.insertQuiverBoard(QuiverBoard(model = model, family = family, lengthLitrage = lengthLitrage, finSetup = finSetup))
         }
     }
 
     fun deleteQuiverBoard(board: QuiverBoard) {
-        val dao = sessionLogDao ?: return
+        val dao = sessionLogStore ?: return
         scope.launch {
             try {
                 dao.deleteQuiverBoard(board)
@@ -451,7 +459,7 @@ class SurfController(
     }
 
     fun addMicroSpot(parentSpotName: String, name: String) {
-        val dao = sessionLogDao ?: return
+        val dao = sessionLogStore ?: return
         scope.launch { dao.insertMicroSpot(MicroSpot(parentSpotName = parentSpotName, name = name)) }
     }
 
@@ -467,7 +475,7 @@ class SurfController(
         hourlyModel: HourlyUiModel,
         tideInfo: DailyTideInfo?
     ) {
-        val dao = sessionLogDao ?: return
+        val dao = sessionLogStore ?: return
         scope.launch {
             val snapshot = ConditionSnapshot(
                 energyKj = hourlyModel.energyKj,
