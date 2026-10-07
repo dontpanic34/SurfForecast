@@ -389,6 +389,12 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             "orange" -> AppColors.WindMid
                                             else -> AppColors.TideLow
                                         }
+                                        // Le créneau suit le jour sélectionné : on le dit quand ce n'est pas aujourd'hui
+                                        // ("Sam. 10 · Meilleur créneau : ..."), sinon on croirait que c'est pour aujourd'hui.
+                                        val bestSlotDayPrefix = selectedDate?.takeIf { it != today }?.let { d ->
+                                            d.format(DateTimeFormatter.ofPattern("EEE d", Locale.FRANCE))
+                                                .replaceFirstChar { it.uppercase() } + " · "
+                                        }.orEmpty()
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -402,7 +408,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Column {
                                                 Text(
-                                                    text = "Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (score ${bestSlot.averageScore})",
+                                                    text = "${bestSlotDayPrefix}Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (score ${bestSlot.averageScore})",
                                                     fontSize = 10.5.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = onSurfaceColor.copy(alpha = 0.75f),
