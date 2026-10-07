@@ -34,26 +34,16 @@ kotlin {
         binaries.executable()
     }
 
-    // Code propre à l'appli mobile : base Room du journal de bord, qui n'existe pas dans le
-    // navigateur (le web stocke le journal en JSON).
-    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
-    applyDefaultHierarchyTemplate {
-        common {
-            group("mobile") {
-                withAndroidTarget()
-            }
-        }
-    }
-
     sourceSets {
-        val mobileMain by getting {
+        // Code propre à l'appli mobile : base Room du journal de bord, qui n'existe pas dans le
+        // navigateur (le web stocke le journal en JSON).
+        val mobileMain by creating {
+            dependsOn(commonMain.get())
             dependencies {
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
             }
         }
-        // Lien explicite : la cible Android du plugin AGP « kotlin.multiplatform.library » n'est
-        // pas toujours reconnue par withAndroidTarget().
         androidMain.get().dependsOn(mobileMain)
 
         commonMain.dependencies {
