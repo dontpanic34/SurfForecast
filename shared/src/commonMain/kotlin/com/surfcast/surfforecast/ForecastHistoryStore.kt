@@ -89,8 +89,12 @@ class ForecastHistoryStore(private val prefs: KeyValueStore) {
      * Conditions d'un jour passé (journal de bord J-1/J-2) : la prévision la plus récente
      * faite pour ce jour-là. null si rien n'a été gardé.
      */
-    fun conditionsFor(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? {
-        val snap = load().firstOrNull { s -> s.spotName == spotName && s.hours.any { it.time.date == date } }
+    fun conditionsFor(
+        spotName: String,
+        date: LocalDate,
+        now: LocalDateTime = nowLocalDateTime()
+    ): Pair<List<HourlyUiModel>, DailyTideInfo?>? {
+        val snap = load(now).firstOrNull { s -> s.spotName == spotName && s.hours.any { it.time.date == date } }
             ?: return null
         val hours = snap.hours.filter { it.time.date == date }.map { h ->
             HourlyUiModel(

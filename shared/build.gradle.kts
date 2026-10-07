@@ -45,18 +45,26 @@ kotlin {
         binaries.executable()
     }
 
+    // Code commun aux applis mobiles (Android + iOS) : base Room du journal de bord, qui
+    // n'existe pas dans le navigateur (le web stocke le journal en JSON). Ajouté au modèle de
+    // hiérarchie par défaut ; des dependsOn manuels le désactiveraient et couperaient iOS de nativeMain.
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+    applyDefaultHierarchyTemplate {
+        common {
+            group("mobile") {
+                withAndroidTarget()
+                withIos()
+            }
+        }
+    }
+
     sourceSets {
-        // Code commun aux applis mobiles (Android + iOS) : base Room du journal de bord,
-        // qui n'existe pas dans le navigateur (le web stocke le journal en JSON).
-        val mobileMain by creating {
-            dependsOn(commonMain.get())
+        val mobileMain by getting {
             dependencies {
                 implementation(libs.room.runtime)
                 implementation(libs.sqlite.bundled)
             }
         }
-        androidMain.get().dependsOn(mobileMain)
-        iosMain.get().dependsOn(mobileMain)
 
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)

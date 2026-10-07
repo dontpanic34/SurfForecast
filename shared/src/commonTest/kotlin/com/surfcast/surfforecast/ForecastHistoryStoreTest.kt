@@ -32,12 +32,12 @@ class ForecastHistoryStoreTest {
         store.record("Soulac", ForecastEngineConfig(), listOf(hour(1, 10, 3)), emptyMap(),
             now = LocalDateTime(2026, 10, 1, 9, 0))
 
-        val (hours, tide) = store.conditionsFor("Soulac", LocalDate(2026, 10, 1))!!
+        val (hours, tide) = store.conditionsFor("Soulac", LocalDate(2026, 10, 1), now = LocalDateTime(2026, 10, 2, 8, 0))!!
         // Prévision la plus récente pour ce jour-là (9h), pas celle de 8h.
         assertEquals(3, hours.single().windSpeedKmh)
         assertEquals("AROME HD", hours.single().windSource)
         assertNull(tide)
-        assertNull(store.conditionsFor("Lacanau", LocalDate(2026, 10, 1)))
+        assertNull(store.conditionsFor("Lacanau", LocalDate(2026, 10, 1), now = LocalDateTime(2026, 10, 2, 8, 0)))
     }
 
     @Test
