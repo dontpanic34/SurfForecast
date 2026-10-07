@@ -21,18 +21,7 @@ kotlin {
         }
     }
 
-    // Pas d'iosX64 (simulateur sur Mac Intel) : Compose Multiplatform 1.12 ne le publie plus.
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "SharedCore"
-            isStatic = true
-        }
-    }
-
-    // Version web (navigateur) : remplace l'app iOS, installable depuis Safari
+    // Version web (navigateur) : installable depuis Safari
     // ("Ajouter à l'écran d'accueil"). Même interface Compose que sur Android.
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
@@ -45,17 +34,13 @@ kotlin {
         binaries.executable()
     }
 
-    // Code commun aux applis mobiles (Android + iOS) : base Room du journal de bord, qui
-    // n'existe pas dans le navigateur (le web stocke le journal en JSON). Ajouté au modèle de
-    // hiérarchie par défaut ; des dependsOn manuels le désactiveraient et couperaient iOS de nativeMain.
+    // Code propre à l'appli mobile : base Room du journal de bord, qui n'existe pas dans le
+    // navigateur (le web stocke le journal en JSON).
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
     applyDefaultHierarchyTemplate {
         common {
             group("mobile") {
                 withAndroidTarget()
-                // Le groupe "ios" du modèle par défaut (iosMain), pas seulement ses cibles :
-                // sinon le code de iosMain ne voit pas celui de mobileMain.
-                group("ios")
             }
         }
     }
@@ -94,9 +79,6 @@ kotlin {
             implementation("androidx.activity:activity-compose:1.8.2")
             implementation("io.coil-kt:coil-compose:2.7.0")
         }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
         wasmJsMain.dependencies {
             implementation(libs.ktor.client.js)
             // Fuseaux horaires pour kotlinx-datetime dans le navigateur.
@@ -108,8 +90,6 @@ kotlin {
 // Compilateur Room (KSP) pour chaque cible : génère DAO et SessionLogDatabaseConstructor.
 dependencies {
     add("kspAndroid", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
 }
 
 compose.resources {

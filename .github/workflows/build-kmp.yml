@@ -1,9 +1,9 @@
-name: Build KMP shared module (Android + iOS + web)
+name: Build KMP shared module (Android + web)
 
 on:
   push:
     branches:
-      - ios-kmp-migration
+      - web
   workflow_dispatch: {}
 
 permissions:
@@ -44,80 +44,7 @@ jobs:
       - name: Build existing Android app (regression check)
         run: ./gradlew :app:assembleDebug
 
-  shared-ios:
-    runs-on: macos-latest
-    # Les minutes macOS comptent ~10x : un simulateur bloqué ne doit pas tourner des heures.
-    timeout-minutes: 40
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build shared framework for iOS Simulator (arm64)
-        run: ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64
-
-      - name: Run shared module tests on iOS Simulator
-        run: ./gradlew :shared:iosSimulatorArm64Test
-
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode project
-        working-directory: iosApp
-        run: xcodegen generate
-
-      - name: Build iOS app for Simulator (unsigned)
-        working-directory: iosApp
-        run: |
-          xcodebuild \
-            -project SurfLog.xcodeproj \
-            -target SurfLog \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=YES \
-            CODE_SIGNING_ALLOWED=NO \
-            MARKETING_VERSION="1.0.${{ github.run_number }}" \
-            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
-            build
-
-      # Non bloquant : sert à voir l'app tourner (capture téléchargeable en artifact),
-      # un souci d'environnement du simulateur ne doit pas faire échouer le build.
-      - name: Launch app in Simulator and take a screenshot
-        continue-on-error: true
-        timeout-minutes: 12
-        working-directory: iosApp
-        run: |
-          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for r,l in d.items() if "iOS" in r for x in l if x["name"].startswith("iPhone")))')
-          echo "Simulator: $DEVICE"
-          xcrun simctl boot "$DEVICE"
-          xcrun simctl bootstatus "$DEVICE" -b
-          xcrun simctl install "$DEVICE" build/Debug-iphonesimulator/SurfLog.app
-          xcrun simctl launch "$DEVICE" com.surfcast.surflog
-          sleep 25
-          xcrun simctl io "$DEVICE" screenshot ios-screenshot.png
-
-      - name: Upload iOS screenshot
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-screenshot-${{ github.run_number }}
-          path: iosApp/ios-screenshot.png
-          if-no-files-found: warn
-          retention-days: 30
-
-  # Version web (remplace l'app iOS) : site statique installable depuis Safari.
+  # Site web : statique, installable depuis le navigateur (Safari « Sur l'écran d'accueil »).
   web:
     runs-on: ubuntu-latest
     env:
