@@ -449,9 +449,14 @@ fun MainScreen(viewModel: SurfViewModel) {
                             }
 
                             run {
-                                val activeDayHours = groupedByDate[selectedDate ?: today] ?: state.hourlyForecast
+                                // Bandeau "temps réel" : toujours AUJOURD'HUI à l'heure actuelle (houle, vent,
+                                // température et marée du même moment), quel que soit le jour sélectionné plus bas.
+                                // Avant, houle/vent suivaient le jour choisi alors que la marée restait celle
+                                // d'aujourd'hui : le bandeau mélangeait deux jours.
+                                val todayHours = groupedByDate[today].orEmpty()
                                 val currentHourNow = clock.hour
-                                val closestHourModel = activeDayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) } ?: activeDayHours.firstOrNull()
+                                val closestHourModel = todayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) }
+                                    ?: state.hourlyForecast.firstOrNull()
 
                                 if (viewModel.showLiveOverlay && closestHourModel != null) {
                                     SurfLiveStripOverlay(
