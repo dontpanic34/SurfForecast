@@ -166,6 +166,32 @@ object SurfWebcamHelper {
         )
     )
 
+    /**
+     * Lien de la webcam qui ne périme jamais : GoSurf change régulièrement les identifiants de
+     * ses pages (/webcam/fr/76/...), donc au lieu d'une adresse figée on lance une recherche
+     * qui ouvre directement le premier résultat (DuckDuckGo « !ducky »), c'est-à-dire la page
+     * actuelle de la webcam. [camName] n'est ajouté que si le spot a plusieurs caméras.
+     */
+    fun liveCamUrl(spotName: String, camName: String? = null): String {
+        val query = listOfNotNull("!ducky", "webcam", "gosurf", spotName, camName?.substringBefore(" ("))
+            .joinToString(" ")
+        return "https://duckduckgo.com/?q=" + percentEncode(query)
+    }
+
+    /** Lien webcam d'une caméra du catalogue (nom ajouté seulement si le spot en a plusieurs). */
+    fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String {
+        val many = (catalog[spotName]?.cameras?.size ?: 0) > 1
+        return liveCamUrl(spotName, camera.camName.takeIf { many })
+    }
+
+    private fun percentEncode(text: String): String = buildString {
+        for (b in text.encodeToByteArray()) {
+            val c = b.toInt() and 0xFF
+            val plain = c in 'a'.code..'z'.code || c in 'A'.code..'Z'.code || c in '0'.code..'9'.code || c == '-'.code || c == '_'.code || c == '.'.code
+            if (plain) append(c.toChar()) else append('%').append(c.toString(16).uppercase().padStart(2, '0'))
+        }
+    }
+
     /** Vrai uniquement si ce nom de spot EXACT (celui de SurfDatabase) a au moins une webcam. */
     fun hasCamera(spotName: String): Boolean {
         return catalog[spotName]?.cameras?.isNotEmpty() == true

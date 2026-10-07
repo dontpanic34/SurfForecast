@@ -82,7 +82,7 @@ fun MainScreen(
     // la page de la webcam dans le navigateur, sur Android comme sur iOS.
     val uriHandler = LocalUriHandler.current
     fun openLiveCam(spotName: String) {
-        SurfWebcamHelper.getCamerasForSpot(spotName).cameras.firstOrNull()?.let { uriHandler.openUri(it.pageUrl) }
+        SurfWebcamHelper.getCamerasForSpot(spotName).cameras.firstOrNull()?.let { uriHandler.openUri(SurfWebcamHelper.liveCamUrl(spotName, it)) }
     }
 
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -208,7 +208,7 @@ fun MainScreen(
                                             .clip(RoundedCornerShape(6.dp))
                                             .clickable {
                                                 showWebcamDirectoryDialog = false
-                                                uriHandler.openUri(cam.pageUrl)
+                                                uriHandler.openUri(SurfWebcamHelper.liveCamUrl(spotEntry.spotDisplayName, cam))
                                             },
                                         color = MaterialTheme.colorScheme.surfaceVariant
                                     ) {
