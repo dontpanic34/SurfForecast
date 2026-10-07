@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Pas de viewport-fit=cover : sur iPhone le contenu reste dans la zone sûre (ni sous l'encoche / l'île dynamique, ni sous la barre du bas). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-version" content="dev">
     <title>Surf Log</title>
     <meta name="description" content="Prévisions surf : houle, vent, marées, journal de bord.">
@@ -10,7 +11,7 @@
     <!-- iPhone : "Ajouter à l'écran d'accueil" ouvre Surf Log en plein écran, comme une app. -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Surf Log">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" href="favicon.png">
