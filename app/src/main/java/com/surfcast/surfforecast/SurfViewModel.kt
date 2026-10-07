@@ -24,6 +24,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 sealed class SurfUiState {
@@ -44,6 +45,9 @@ data class DailySummaryUiModel(
     val avgFeelsLike: Int,
     val avgWaterTemp: Int
 )
+
+/** Conditions "maintenant" d'un spot (heure la plus proche d'aujourd'hui + marée du jour), pour le bandeau sur la webcam. */
+data class LiveConditions(val hour: HourlyUiModel, val tide: DailyTideInfo?)
 
 class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -243,6 +247,58 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
             loadSpotInternal(spot)
             isRefreshing = false
         }
+    }
+
+    // Conditions "maintenant" par spot déjà consulté depuis la webcam (valables 15 min).
+    private val liveConditionsCache = mutableMapOf<String, Pair<Long, LiveConditions>>()
+
+    /**
+     * Conditions actuelles d'un spot, pour le bandeau de l'écran webcam. Si c'est le spot déjà
+     * affiché, on réutilise ses données ; sinon on charge ses prévisions (le spot de la webcam
+     * peut différer du spot principal quand on change de spot depuis la webcam).
+     */
+    suspend fun liveConditionsFor(spotName: String): LiveConditions? {
+        val now = LocalDateTime.now()
+        (_uiState.value as? SurfUiState.Success)?.takeIf { it.spotName == spotName }?.let {
+            return currentLiveConditions(it.hourlyForecast, it.dailyTides, now)
+        }
+        liveConditionsCache[spotName]?.takeIf { System.currentTimeMillis() - it.first < LIVE_CACHE_MS }?.let {
+            return it.second
+        }
+        val spot = SurfDatabase.findSpotByName(spotName) ?: return null
+        return try {
+            val forecast = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig).hourly
+            val today = now.toLocalDate()
+            val tides = try {
+                repository.getTides(spot.latitude, spot.longitude, today.toString(), today.plusDays(1).toString()).dailyByDate
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyMap()
+            }
+            currentLiveConditions(forecast, tides, now)?.also {
+                liveConditionsCache[spotName] = System.currentTimeMillis() to it
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun currentLiveConditions(
+        hours: List<HourlyUiModel>,
+        tides: Map<LocalDate, DailyTideInfo>,
+        now: LocalDateTime
+    ): LiveConditions? {
+        val today = now.toLocalDate()
+        // Heure pleine la plus proche (10h44 -> 11h), comme le bandeau de l'écran principal.
+        val nearestHour = now.plusMinutes(30).hour
+        val hour = hours.filter { it.rawTime.toLocalDate() == today }
+            .minByOrNull { abs(it.rawTime.hour - nearestHour) }
+            ?: hours.firstOrNull()
+            ?: return null
+        return LiveConditions(hour, tides[today] ?: tides.values.firstOrNull())
     }
 
     fun refreshActiveSpot() {
@@ -534,5 +590,6 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
     private companion object {
         const val RESUME_REFRESH_AFTER_MS = 15 * 60 * 1000L
+        const val LIVE_CACHE_MS = 15 * 60 * 1000L
     }
 }

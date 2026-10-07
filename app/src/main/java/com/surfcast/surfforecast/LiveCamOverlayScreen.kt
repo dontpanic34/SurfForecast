@@ -60,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -93,7 +94,12 @@ private fun Context.findActivity(): Activity? {
 fun LiveCamOverlayScreen(
     currentSpotName: String,
     onClose: () -> Unit,
-    onSwitchSpot: (String) -> Unit = {}
+    onSwitchSpot: (String) -> Unit = {},
+    // Bandeau "conditions actuelles" par-dessus la webcam (même bandeau que l'écran principal),
+    // pour comparer ce qu'on voit avec la prévision.
+    showLiveOverlay: Boolean = true,
+    windUnit: String = "kmh",
+    loadLiveConditions: suspend (String) -> LiveConditions? = { null }
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -683,6 +689,28 @@ fun LiveCamOverlayScreen(
                         )
                     }
                 }
+            }
+        }
+
+        // Conditions actuelles du spot de la webcam (houle, marée, vent), au-dessus des spots proches.
+        // Se recharge à chaque changement de spot ; rien tant que les données ne sont pas là.
+        val liveConditions by produceState<LiveConditions?>(initialValue = null, currentSpotName) {
+            value = null
+            value = loadLiveConditions(currentSpotName)
+        }
+        if (showLiveOverlay && !manualNavigation) {
+            liveConditions?.let { c ->
+                SurfLiveStripOverlay(
+                    hourlyModel = c.hour,
+                    tideInfo = c.tide,
+                    windUnit = windUnit,
+                    onOpenCam = {},
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 92.dp)
+                        .fillMaxWidth(0.7f)
+                        .widthIn(max = 460.dp)
+                )
             }
         }
 

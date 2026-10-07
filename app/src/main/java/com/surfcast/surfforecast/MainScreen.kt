@@ -308,7 +308,10 @@ fun MainScreen(viewModel: SurfViewModel) {
                                 showLiveCam = false
                                 directWebcamSpot = null
                             },
-                            onSwitchSpot = { newSpot -> directWebcamSpot = newSpot }
+                            onSwitchSpot = { newSpot -> directWebcamSpot = newSpot },
+                            showLiveOverlay = viewModel.showLiveOverlay,
+                            windUnit = viewModel.windUnit,
+                            loadLiveConditions = { spot -> viewModel.liveConditionsFor(spot) }
                         )
                     } else {
                         val selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0)
