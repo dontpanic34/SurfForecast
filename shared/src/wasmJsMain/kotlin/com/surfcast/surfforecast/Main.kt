@@ -10,6 +10,9 @@ external object JsJodaTimeZoneModule : JsAny
 
 private val jsJodaTz = JsJodaTimeZoneModule
 
+@JsFun("() => document.visibilityState === 'visible'")
+private external fun isPageVisible(): Boolean
+
 /** Point d'entrée de la version web (surflog.js), même app que sur Android. */
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
@@ -21,7 +24,7 @@ fun main() {
 
     // Retour sur l'onglet / l'app installée -> recharge des prévisions trop anciennes.
     document.addEventListener("visibilitychange") {
-        if (!document.hidden) AppForeground.notifyResumed()
+        if (isPageVisible()) AppForeground.notifyResumed()
     }
 
     document.getElementById("loading")?.remove()
