@@ -120,6 +120,10 @@ jobs:
   # Version web (remplace l'app iOS) : site statique installable depuis Safari.
   web:
     runs-on: ubuntu-latest
+    env:
+      # Secrets GitHub (Settings > Secrets > Actions) : sans eux, le site est construit mais pas publié.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -171,3 +175,16 @@ jobs:
           path: web-screenshot.png
           if-no-files-found: warn
           retention-days: 30
+
+      # Publication sur Cloudflare Pages (surflog.pages.dev, puis surflog.fr une fois le domaine relié).
+      # Wrangler lit CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID dans l'environnement.
+      - name: Create Cloudflare Pages project (first time only)
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        continue-on-error: true
+        run: npx --yes wrangler@4 pages project create surflog --production-branch=main
+
+      - name: Deploy to Cloudflare Pages
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        run: >
+          npx --yes wrangler@4 pages deploy shared/build/dist/wasmJs/productionExecutable
+          --project-name=surflog --branch=main --commit-dirty=true

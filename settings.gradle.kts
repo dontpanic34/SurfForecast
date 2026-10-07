@@ -37,6 +37,17 @@ dependencyResolutionManagement {
             }
             filter { includeModule("com.yarnpkg", "yarn") }
         }
+        // Binaryen : optimiseur WebAssembly utilisé pour la version de production du site.
+        exclusiveContent {
+            forRepository {
+                ivy("https://github.com/WebAssembly/binaryen/releases/download") {
+                    name = "Binaryen Distributions"
+                    patternLayout { artifact("version_[revision]/binaryen-version_[revision]-[classifier].[ext]") }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeModule("com.github.webassembly", "binaryen") }
+        }
     }
 }
 
