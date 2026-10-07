@@ -9,7 +9,9 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // PREFER_SETTINGS : le plugin Kotlin Wasm ajoute un dépôt Node.js au projet ; il est ignoré
+    // (ceux déclarés ci-dessous font foi) au lieu de faire échouer le build.
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()

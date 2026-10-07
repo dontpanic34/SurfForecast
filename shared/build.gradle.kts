@@ -53,7 +53,9 @@ kotlin {
         common {
             group("mobile") {
                 withAndroidTarget()
-                withIos()
+                // Le groupe "ios" du modèle par défaut (iosMain), pas seulement ses cibles :
+                // sinon le code de iosMain ne voit pas celui de mobileMain.
+                group("ios")
             }
         }
     }
@@ -65,6 +67,9 @@ kotlin {
                 implementation(libs.sqlite.bundled)
             }
         }
+        // Lien explicite : la cible Android du plugin AGP « kotlin.multiplatform.library » n'est
+        // pas toujours reconnue par withAndroidTarget().
+        androidMain.get().dependsOn(mobileMain)
 
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
