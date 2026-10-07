@@ -53,7 +53,9 @@ fun SurfPreferencesDialog(
     engineConfig: ForecastEngineConfig,
     onEngineConfigChanged: (ForecastEngineConfig) -> Unit,
     onViewLogs: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
+    onShowIntro: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -647,6 +649,12 @@ fun SurfPreferencesDialog(
                                 Text("Voir les logs d'actualisation", fontSize = 11.5.sp, color = colors.onBackground)
                             }
                         }
+                    }
+                }
+
+                if (onShowIntro != null) {
+                    TextButton(onClick = onShowIntro, modifier = Modifier.fillMaxWidth()) {
+                        Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 11.5.sp)
                     }
                 }
 

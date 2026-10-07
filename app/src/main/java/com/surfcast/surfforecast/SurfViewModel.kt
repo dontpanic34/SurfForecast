@@ -103,6 +103,20 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
     var themeMode by mutableStateOf(prefs.getString("theme_mode", "system") ?: "system")
         private set
 
+    // Écran de bienvenue (unité du vent, niveau, origine des prévisions) : affiché tant qu'il n'a
+    // pas été fermé une fois, et rouvrable depuis les Paramètres.
+    var showOnboarding by mutableStateOf(!prefs.getBoolean("onboarding_v1_done", false))
+        private set
+
+    fun dismissOnboarding() {
+        showOnboarding = false
+        prefs.edit { putBoolean("onboarding_v1_done", true) }
+    }
+
+    fun showOnboardingAgain() {
+        showOnboarding = true
+    }
+
     var windUnit by mutableStateOf(prefs.getString("wind_unit", "kmh") ?: "kmh")
         private set
 

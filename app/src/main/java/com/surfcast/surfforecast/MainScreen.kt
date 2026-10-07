@@ -114,6 +114,19 @@ fun MainScreen(viewModel: SurfViewModel) {
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val primaryColor = MaterialTheme.colorScheme.primary
 
+    // Première ouverture : unité du vent, niveau et origine des prévisions (une fois les données là,
+    // pour ne pas masquer l'écran de démarrage).
+    if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
+        OnboardingDialog(
+            windUnit = viewModel.windUnit,
+            onWindUnitSelected = { viewModel.changeWindUnit(it) },
+            surferLevel = viewModel.surferLevel,
+            onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
+            engineConfig = viewModel.engineConfig,
+            onDone = { viewModel.dismissOnboarding() }
+        )
+    }
+
     val popupError = (uiState as? SurfUiState.Success)?.popupError
     if (popupError != null) {
         AlertDialog(
@@ -173,6 +186,10 @@ fun MainScreen(viewModel: SurfViewModel) {
             onViewLogs = {
                 showPreferencesDialog = false
                 showForecastHistory = true
+            },
+            onShowIntro = {
+                showPreferencesDialog = false
+                viewModel.showOnboardingAgain()
             },
             onDismiss = { showPreferencesDialog = false }
         )
