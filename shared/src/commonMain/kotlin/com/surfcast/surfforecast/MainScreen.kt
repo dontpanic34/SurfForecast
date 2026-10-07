@@ -52,7 +52,9 @@ fun MainScreen(
     // Épinglage du widget d'accueil (Android seulement) : null = bouton masqué.
     onPinWidget: (() -> Unit)? = null,
     // Version installée, affichée à côté de "Mis à jour à" (ex: "1.0.19").
-    appVersion: String? = null
+    appVersion: String? = null,
+    // Sauvegarde du journal dans un fichier (version web seulement).
+    backup: SessionLogBackup? = null
 ) {
     // "clock" = heure pleine la plus proche (10h44 -> 11h), qui avance toute seule : avant,
     // "maintenant" n'était calculé qu'au chargement.
@@ -163,7 +165,8 @@ fun MainScreen(
                 viewModel.showOnboardingAgain()
             },
             onDismiss = { showPreferencesDialog = false },
-            onPinWidget = onPinWidget
+            onPinWidget = onPinWidget,
+            backup = backup
         )
     }
 

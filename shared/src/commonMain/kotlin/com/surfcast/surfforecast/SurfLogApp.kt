@@ -17,7 +17,8 @@ fun SurfLogApp(
     // Stockage du journal de bord, fourni par la plateforme.
     sessionLogStore: SessionLogStore? = null,
     onPinWidget: (() -> Unit)? = null,
-    appVersion: String? = null
+    appVersion: String? = null,
+    backup: SessionLogBackup? = null
 ) {
     val scope = rememberCoroutineScope()
     val controller = remember(prefs) { SurfController(scope = scope, prefs = prefs, sessionLogStore = sessionLogStore) }
@@ -32,6 +33,6 @@ fun SurfLogApp(
     }
 
     SurfForecastTheme(useDarkTheme = useDarkTheme) {
-        MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion)
+        MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup)
     }
 }

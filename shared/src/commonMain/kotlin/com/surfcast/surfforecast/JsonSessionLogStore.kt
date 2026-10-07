@@ -105,6 +105,18 @@ class JsonSessionLogStore(private val prefs: KeyValueStore) : SessionLogStore {
         return sessionId
     }
 
+    /** Copie complète du journal (fichier de sauvegarde). */
+    fun exportJson(): String = json.encodeToString(Data.serializer(), state.value)
+
+    /** Remplace tout le journal par une sauvegarde ; false (rien modifié) si le fichier est illisible. */
+    fun importJson(text: String): Boolean {
+        val data = runCatching { json.decodeFromString(Data.serializer(), text) }.getOrNull() ?: return false
+        // Un fichier quelconque (JSON valide mais autre chose) donnerait un journal vide : refusé.
+        if (data.boards.isEmpty() && data.sessions.isEmpty() && data.microSpots.isEmpty()) return false
+        save(data)
+        return true
+    }
+
     private companion object {
         const val KEY = "session_log_json"
     }

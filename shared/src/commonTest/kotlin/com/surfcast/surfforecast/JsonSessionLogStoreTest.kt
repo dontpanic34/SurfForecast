@@ -5,6 +5,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class JsonSessionLogStoreTest {
 
@@ -39,5 +41,26 @@ class JsonSessionLogStoreTest {
         store.logSession(1_000, 2_000, spotId, boardId, condition, 4, null, null)
         val board = store.getAllQuiverBoards().first().single()
         assertFailsWith<IllegalStateException> { store.deleteQuiverBoard(board) }
+    }
+
+    @Test
+    fun exportedJournalCanBeRestoredIntoAnotherStore() = runTest {
+        val source = JsonSessionLogStore(InMemoryKeyValueStore())
+        val board = source.insertQuiverBoard(QuiverBoard(model = "Fish", family = "twin", lengthLitrage = "32L", finSetup = "twin"))
+        val spot = source.insertMicroSpot(MicroSpot(parentSpotName = "Soulac", name = "Plage centrale"))
+        source.logSession(1_000, 2_000, spot, board, condition, 5, "Glassy", null)
+
+        val target = JsonSessionLogStore(InMemoryKeyValueStore())
+        assertTrue(target.importJson(source.exportJson()))
+        assertEquals("Glassy", target.getAllSessions().first().single().session.comment)
+    }
+
+    @Test
+    fun unreadableBackupLeavesJournalUntouched() = runTest {
+        val store = JsonSessionLogStore(InMemoryKeyValueStore())
+        store.insertQuiverBoard(QuiverBoard(model = "Fish", family = "twin", lengthLitrage = "32L", finSetup = "twin"))
+        assertFalse(store.importJson("pas du json"))
+        assertFalse(store.importJson("{}"))
+        assertEquals(1, store.getAllQuiverBoards().first().size)
     }
 }

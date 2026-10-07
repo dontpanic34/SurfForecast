@@ -53,7 +53,9 @@ fun SurfPreferencesDialog(
     // Épinglage du widget d'accueil : Android seulement (null = bouton masqué).
     onPinWidget: (() -> Unit)? = null,
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
-    onShowIntro: (() -> Unit)? = null
+    onShowIntro: (() -> Unit)? = null,
+    // Sauvegarde / restauration du journal (version web seulement).
+    backup: SessionLogBackup? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val pillShape = RoundedCornerShape(50)
@@ -653,6 +655,30 @@ fun SurfPreferencesDialog(
                     TextButton(onClick = onShowIntro, modifier = Modifier.fillMaxWidth()) {
                         Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 11.5.sp)
                     }
+                }
+
+                if (backup != null) {
+                    var importMessage by remember { mutableStateOf<String?>(null) }
+                    Text("Journal de bord", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { backup.export() },
+                            modifier = Modifier.weight(1f),
+                            shape = pillShape,
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
+                        ) { Text("⬇ Sauvegarder", fontSize = 11.5.sp, color = colors.onBackground) }
+                        Button(
+                            onClick = {
+                                backup.import { ok ->
+                                    importMessage = if (ok) "Journal restauré." else "Fichier non reconnu."
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = pillShape,
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
+                        ) { Text("⬆ Restaurer", fontSize = 11.5.sp, color = colors.onBackground) }
+                    }
+                    importMessage?.let { Text(it, fontSize = 11.sp, color = colors.onBackground) }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
