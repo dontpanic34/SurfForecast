@@ -670,11 +670,39 @@ fun SurfPreferencesDialog(
 
                 if (install != null && (!install.isInstalled() || install.platform == "android")) {
                     var showIosGuide by remember { mutableStateOf(false) }
+                    var showAndroidInstall by remember { mutableStateOf(false) }
                     Text("Appli", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
                     when (install.platform) {
                         "android" -> {
-                            val apkUri = LocalUriHandler.current
-                            Column(
+                            Button(
+                                onClick = { showAndroidInstall = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = pillShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
+                            ) { Text("📲 Installer l'appli", fontSize = 11.5.sp, color = colors.onBackground) }
+                        }
+                        "ios" -> {
+                            Button(
+                                onClick = { showIosGuide = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = pillShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
+                            ) { Text("📲 Ajouter à l'écran d'accueil", fontSize = 11.5.sp, color = colors.onBackground) }
+                        }
+                    }
+                    if (showIosGuide) IosInstallGuideDialog(onDismiss = { showIosGuide = false })
+                    if (showAndroidInstall) {
+                        val apkUri = LocalUriHandler.current
+                        AlertDialog(
+                            onDismissRequest = { showAndroidInstall = false },
+                            confirmButton = { TextButton(onClick = { showAndroidInstall = false }) { Text("Fermer") } },
+                            title = { Text("Installer Surf Log", fontSize = 17.sp) },
+                            text = {
+                                Column(
+                                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(14.dp))
@@ -712,32 +740,26 @@ fun SurfPreferencesDialog(
                                     color = colors.onBackground.copy(alpha = 0.6f)
                                 )
                             }
-                            if (!install.isInstalled()) Text("Ou garder uniquement le site :", fontSize = 10.5.sp, color = colors.onBackground.copy(alpha = 0.6f))
-                            if (!install.isInstalled()) Button(
+
+                                    if (!install.isInstalled()) Text("Ou garder uniquement le site, sans télécharger :", fontSize = 10.5.sp, color = colors.onBackground.copy(alpha = 0.6f))
+                                    if (!install.isInstalled()) Button(
                                 onClick = { install.prompt() },
                                 enabled = install.canPrompt(),
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = pillShape,
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
-                            ) { Text("📲 Installer l'appli", fontSize = 11.5.sp, color = colors.onBackground) }
-                            if (!install.isInstalled() && !install.canPrompt()) {
+                                    ) { Text("Ajouter le raccourci du site", fontSize = 11.5.sp, color = colors.onBackground) }
+                                    if (!install.isInstalled() && !install.canPrompt()) {
                                 Text(
                                     "Si le bouton est grisé : menu ⋮ de Chrome → « Installer l'application » (ou « Ajouter à l'écran d'accueil »).",
                                     fontSize = 10.5.sp,
                                     color = colors.onBackground.copy(alpha = 0.6f)
                                 )
                             }
-                        }
-                        "ios" -> {
-                            Button(
-                                onClick = { showIosGuide = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = pillShape,
-                                colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
-                            ) { Text("📲 Ajouter à l'écran d'accueil", fontSize = 11.5.sp, color = colors.onBackground) }
-                        }
+                                }
+                            }
+                        )
                     }
-                    if (showIosGuide) IosInstallGuideDialog(onDismiss = { showIosGuide = false })
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
