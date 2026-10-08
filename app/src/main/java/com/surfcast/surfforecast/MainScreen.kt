@@ -1412,7 +1412,7 @@ fun ContinuousWaveCanvas(
     // dans les deux themes sans besoin de chip.
     val energyTextPaint = remember(density) {
         Paint().apply {
-            textSize = with(density) { 7.5.sp.toPx() }
+            textSize = with(density) { 9.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -1601,31 +1601,31 @@ fun ContinuousWaveCanvas(
                 drawCircle(color = tideLineColor, radius = 2.8.dp.toPx(), center = closestPoint)
             }
 
-            drawContext.canvas.nativeCanvas.drawText(hText, targetX - hTextW / 2f, textY, heightTextPaint)
+            // Taille de la houle au-dessus de la courbe, période juste à côté (le tout centré).
+            val period = dailyPeriods.getOrNull(i)
+            val pText = period?.let { "${it}s" }
+            val gap = 3.dp.toPx()
+            val pTextW = pText?.let { periodTextPaint.measureText(it) } ?: 0f
+            val totalW = hTextW + if (pText != null) gap + pTextW else 0f
+            val startX = targetX - totalW / 2f
+            drawContext.canvas.nativeCanvas.drawText(hText, startX, textY, heightTextPaint)
+            if (pText != null) {
+                drawContext.canvas.nativeCanvas.drawText(pText, startX + hTextW + gap, textY, periodTextPaint)
+            }
         }
 
+        // Énergie de la houle au pic du jour, à l'ancienne place de la période (bas de la courbe).
         for (i in 0 until daysCount) {
             val targetX = (i + 0.5f) * dayWidth
-            val period = dailyPeriods.getOrNull(i) ?: continue
-
-            val pText = "${period}s"
-            val pTextW = periodTextPaint.measureText(pText)
-            val pY = baseY - 3.dp.toPx()
-
-            drawContext.canvas.nativeCanvas.drawText(pText, targetX - pTextW / 2f, pY, periodTextPaint)
-
-            // Énergie : discrète, juste au-dessus de la période, teinte selon la puissance.
-            val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 }
-            if (energy != null) {
-                val eText = "${energy}kJ"
-                val eW = energyTextPaint.measureText(eText)
-                energyTextPaint.color = when {
-                    energy >= 400 -> 0xFFE53935.toInt()
-                    energy >= 150 -> 0xFFFB8C00.toInt()
-                    else -> 0xFF78909C.toInt()
-                }
-                drawContext.canvas.nativeCanvas.drawText(eText, targetX - eW / 2f, pY - 11.dp.toPx(), energyTextPaint)
+            val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
+            val eText = "${energy}kJ"
+            val eW = energyTextPaint.measureText(eText)
+            energyTextPaint.color = when {
+                energy >= 400 -> 0xFFE53935.toInt()
+                energy >= 150 -> 0xFFFB8C00.toInt()
+                else -> 0xFF78909C.toInt()
             }
+            drawContext.canvas.nativeCanvas.drawText(eText, targetX - eW / 2f, baseY - 3.dp.toPx(), energyTextPaint)
         }
     }
 }
