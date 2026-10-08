@@ -182,7 +182,14 @@ fun MainScreen(
             onDismiss = { showPreferencesDialog = false },
             onPinWidget = onPinWidget,
             backup = backup,
-            install = install
+            install = install,
+            quiverBoards = viewModel.quiverBoards.collectAsState().value,
+            bodyAge = viewModel.bodyAge,
+            bodyHeightCm = viewModel.bodyHeightCm,
+            bodyWeightKg = viewModel.bodyWeightKg,
+            onBodyChanged = { a, h, w -> viewModel.changeBody(a, h, w) },
+            onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est) },
+            onDeleteBoard = { viewModel.deleteQuiverBoard(it) }
         )
     }
 
@@ -596,7 +603,11 @@ fun MainScreen(
 
                                         QuiverScreen(
                                             quiverBoards = quiverBoards,
-                                            onAddBoard = { model, family, length, fins -> viewModel.addQuiverBoard(model, family, length, fins) },
+                                            age = viewModel.bodyAge,
+                                            heightCm = viewModel.bodyHeightCm,
+                                            weightKg = viewModel.bodyWeightKg,
+                                            onBodyChanged = { a, h, w -> viewModel.changeBody(a, h, w) },
+                                            onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est) },
                                             onDeleteBoard = { board -> viewModel.deleteQuiverBoard(board) },
                                             onDismiss = { showQuiverDialog = false }
                                         )
@@ -622,6 +633,8 @@ fun MainScreen(
                                             todayHours = todayHours,
                                             tideInfo = todayTide,
                                             quiverBoards = quiverBoards,
+                                            weightKg = viewModel.bodyWeightKg,
+                                            onOpenGear = { showQuiverDialog = true },
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
                                             onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },

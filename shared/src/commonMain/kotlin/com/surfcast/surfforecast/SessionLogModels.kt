@@ -13,7 +13,10 @@ data class QuiverBoard(
     val model: String,
     val family: String,
     val lengthLitrage: String,
-    val finSetup: String
+    val finSetup: String,
+    // Volume en litres (null = inconnu) ; [volumeEstimated] = calculé depuis les cotes, pas lu sur la planche.
+    val volumeL: Double? = null,
+    val volumeEstimated: Boolean = false
 )
 
 @Serializable

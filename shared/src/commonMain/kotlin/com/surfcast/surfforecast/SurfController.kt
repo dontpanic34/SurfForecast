@@ -441,6 +441,23 @@ class SurfController(
         prefs.putString("weekly_wind_mode", mode)
     }
 
+    // Mon matériel : âge, taille (cm) et poids (kg) du surfeur, 0 = non renseigné. Restent sur l'appareil.
+    var bodyAge by mutableStateOf(prefs.getInt("body_age", 0))
+        private set
+    var bodyHeightCm by mutableStateOf(prefs.getInt("body_height_cm", 0))
+        private set
+    var bodyWeightKg by mutableStateOf(prefs.getInt("body_weight_kg", 0))
+        private set
+
+    fun changeBody(age: Int, heightCm: Int, weightKg: Int) {
+        bodyAge = age
+        bodyHeightCm = heightCm
+        bodyWeightKg = weightKg
+        prefs.putInt("body_age", age)
+        prefs.putInt("body_height_cm", heightCm)
+        prefs.putInt("body_weight_kg", weightKg)
+    }
+
     fun changeSurferLevel(level: String) {
         surferLevel = level
         prefs.putString("surfer_level", level)
@@ -503,10 +520,22 @@ class SurfController(
     fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
         runCatching { history.conditionsFor(spotName, date) }.getOrNull()
 
-    fun addQuiverBoard(model: String, family: String, lengthLitrage: String, finSetup: String) {
+    fun addQuiverBoard(
+        model: String,
+        family: String,
+        lengthLitrage: String,
+        finSetup: String,
+        volumeL: Double? = null,
+        volumeEstimated: Boolean = false
+    ) {
         val dao = sessionLogStore ?: return
         scope.launch {
-            dao.insertQuiverBoard(QuiverBoard(model = model, family = family, lengthLitrage = lengthLitrage, finSetup = finSetup))
+            dao.insertQuiverBoard(
+                QuiverBoard(
+                    model = model, family = family, lengthLitrage = lengthLitrage, finSetup = finSetup,
+                    volumeL = volumeL, volumeEstimated = volumeEstimated
+                )
+            )
         }
     }
 

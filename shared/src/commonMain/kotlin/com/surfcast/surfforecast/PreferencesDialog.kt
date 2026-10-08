@@ -68,7 +68,15 @@ fun SurfPreferencesDialog(
     // Sauvegarde / restauration du journal (version web seulement).
     backup: SessionLogBackup? = null,
     // Installation du site comme appli (version web seulement).
-    install: AppInstall? = null
+    install: AppInstall? = null,
+    // Mon matériel : quiver partagé avec le journal de bord, et âge / taille / poids (0 = non renseigné).
+    quiverBoards: List<QuiverBoard> = emptyList(),
+    bodyAge: Int = 0,
+    bodyHeightCm: Int = 0,
+    bodyWeightKg: Int = 0,
+    onBodyChanged: (age: Int, heightCm: Int, weightKg: Int) -> Unit = { _, _, _ -> },
+    onAddBoard: (model: String, family: String, lengthLitrage: String, finSetup: String, volumeL: Double?, volumeEstimated: Boolean) -> Unit = { _, _, _, _, _, _ -> },
+    onDeleteBoard: (QuiverBoard) -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     val pillShape = RoundedCornerShape(50)
@@ -120,7 +128,7 @@ fun SurfPreferencesDialog(
                     )
                     ModelDescItem(
                         name = "4. Ton niveau",
-                        desc = "Débutant : les mousses et les petites vagues douces (plafond 450 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (plafond 1100).\nConfirmé : autonome dans l'eau, surfe seul, préfère un peu de puissance (plafond 3500).\nExpert : plein potentiel de la vague, cherche la puissance (plafond 8000)."
+                        desc = "Le profil règle l'énergie idéale, le plafond « trop gros », mais aussi la tolérance au vent, aux rafales, au clapot et à la période.\nDébutant : les mousses, petites vagues douces (trop gros dès 350 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (trop gros dès 700).\nConfirmé : autonome, surfe seul, préfère un peu de puissance (trop gros dès 3500).\nExpert : plein potentiel de la vague, aucune limite.\nPersonnalisé : tu règles tout toi-même."
                     )
                 }
             },
@@ -281,6 +289,7 @@ fun SurfPreferencesDialog(
                 page?.let { current ->
                     Text(
                         text = when (current) {
+                            "profile" -> "Mon profil"
                             "display" -> "Affichage"
                             "forecast" -> "Prévisions"
                             "journal" -> "Journal de bord"
@@ -308,11 +317,35 @@ fun SurfPreferencesDialog(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     if (page == null) {
-                        PrefMenuRow("🎛️", "Affichage", "Niveau, unité du vent, encarts") { page = "display" }
+                        PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel") { page = "profile" }
+                        PrefMenuRow("🎛️", "Affichage", "Unité du vent, encarts") { page = "display" }
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
                         if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
                         PrefMenuRow("💡", "Aide", "Comprendre les prévisions, visite guidée") { page = "help" }
+                    }
+
+                    if (page == "profile") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        SurferProfileSection(
+                            surferLevel = surferLevel,
+                            onLevelChanged = onSurferLevelChanged,
+                            onInfo = { showScoreInfo = true }
+                        )
+                        HorizontalDivider(color = colors.onBackground.copy(alpha = 0.1f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            QuiverIcon(color = colors.onBackground, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Mon matériel", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                        }
+                        GearContent(
+                            quiverBoards = quiverBoards,
+                            age = bodyAge,
+                            heightCm = bodyHeightCm,
+                            weightKg = bodyWeightKg,
+                            onBodyChanged = onBodyChanged,
+                            onAddBoard = onAddBoard,
+                            onDeleteBoard = onDeleteBoard
+                        )
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {
@@ -330,56 +363,6 @@ fun SurfPreferencesDialog(
                             )
 
                             Spacer(modifier = Modifier.height(4.dp))
-
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(colors.surfaceVariant)
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "Niveau de surf",
-                                        fontSize = 12.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = colors.onBackground,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    IconButton(
-                                        onClick = { showScoreInfo = true },
-                                        modifier = Modifier.size(18.dp)
-                                    ) {
-                                        Icon(SurfIcons.Info, contentDescription = "Comment le score est calcule", tint = colors.primary, modifier = Modifier.size(14.dp))
-                                    }
-                                }
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("beginner" to "Débutant", "intermediate" to "Interméd.", "confirmed" to "Confirmé", "expert" to "Expert").forEach { (key, label) ->
-                                        val isSelected = surferLevel == key
-                                        Surface(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .clip(pillShape)
-                                                .clickable { onSurferLevelChanged(key) },
-                                            color = if (isSelected) colors.primary else colors.background
-                                        ) {
-                                            Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = label,
-                                                    fontSize = 11.5.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
-                                                    maxLines = 1
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
 
                             Spacer(modifier = Modifier.height(4.dp))
 

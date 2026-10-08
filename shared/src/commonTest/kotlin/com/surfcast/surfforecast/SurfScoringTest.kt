@@ -48,16 +48,17 @@ class SurfScoringTest {
 
     @Test
     fun beginnerPenalties() {
-        // 1.962 x 1.44 x 144 = 406.84 kJ (sous le plafond débutant de 450) -> fit 200/406.84 = 0.4916 -> 49.16
-        // x0.85 (marée haute) = 41.8 -> 42
-        assertEquals(42, calculateSlotScore(hour(10, height = 1.2, period = 12.0), null, "beginner", true))
+        // 1.962 x 1 x 144 = 282.5 kJ (sous le plafond débutant de 350) -> fit 150/282.5 = 0.531 -> 53.1
+        // x0.85 (marée haute) = 45.1 -> 45
+        assertEquals(45, calculateSlotScore(hour(10, height = 1.0, period = 12.0), null, "beginner", true))
     }
 
     @Test
     fun swellDirectionAndCrossWind() {
         // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent N 10 km/h (travers) x0.9 ;
-        // ; houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 ; l'écart exact de la direction donne 75 au total.
-        assertEquals(75, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // ; vent de travers N 10 km/h pour un intermédiaire (tolérance 20) : 0.871 ; houle de travers :
+        // facteur 1 - 0.3 x 60/90 = 0.8 ; 100 x 0.871 x 0.8 = 69.7 -> 70.
+        assertEquals(70, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -195,5 +196,54 @@ class SurfScoringTest {
         val expert = calculateSlotRating(big, 275, "expert", false)
         assertFalse(expert.tooBig)
         assertTrue(expert.score >= 60, "3,2 m 14 s pour un expert : ${expert.score}")
+    }
+
+    // --- Profils : plafonds par niveau, profil personnalisé ---
+
+    @Test
+    fun capsPerLevelMatchTheDefinitions() {
+        // 1,4 m à 10 s ≈ 385 kJ : trop gros pour un débutant (plafond 350), pas pour un intermédiaire.
+        val day = hour(10, height = 1.4, period = 10.0, windKmh = 6, windDir = "E")
+        assertTrue(calculateSlotRating(day, 275, "beginner", false).tooBig)
+        assertFalse(calculateSlotRating(day, 275, "intermediate", false).tooBig)
+        // 2 m à 12 s ≈ 1130 kJ : trop gros pour un intermédiaire (plafond 700), pas pour un confirmé.
+        val big = hour(10, height = 2.0, period = 12.0, windKmh = 6, windDir = "E")
+        assertTrue(calculateSlotRating(big, 275, "intermediate", false).tooBig)
+        assertFalse(calculateSlotRating(big, 275, "confirmed", false).tooBig)
+        // L'expert surfe tout : jamais « trop gros ».
+        val huge = hour(10, height = 6.0, period = 18.0, windKmh = 6, windDir = "E")
+        assertFalse(calculateSlotRating(huge, 275, "expert", false).tooBig)
+    }
+
+    @Test
+    fun customProfileRoundTripsThroughTheLevelString() {
+        val confirmed = SurfProfile.preset("confirmed")
+        val level = confirmed.serialize()
+        assertTrue(isCustomLevel(level))
+        assertEquals(confirmed, SurfProfile.fromLevel(level))
+        val expert = SurfProfile.preset("expert")
+        assertFalse(SurfProfile.fromLevel(expert.serialize()).hasCap)
+        // Un profil personnalisé identique à un préréglage donne exactement les mêmes notes.
+        val hours = listOf(hour(10), hour(11, height = 2.0, period = 12.0, windKmh = 12, windDir = "O", gustKmh = 25))
+        hours.forEach { h ->
+            assertEquals(calculateSlotRating(h, 275, "confirmed", false), calculateSlotRating(h, 275, level, false))
+        }
+        // Texte invalide : retombe sur Intermédiaire plutôt que de planter.
+        assertEquals(SurfProfile.preset("intermediate"), SurfProfile.fromLevel("custom:n'importe quoi"))
+    }
+
+    @Test
+    fun customToleranceChangesTheScore() {
+        val windy = hour(10, windKmh = 18, windDir = "O", gustKmh = 18)
+        val strict = SurfProfile.preset("confirmed").copy(onshoreMax = 5.0).serialize()
+        val tolerant = SurfProfile.preset("confirmed").copy(onshoreMax = 20.0).serialize()
+        assertTrue(
+            calculateSlotScore(windy, 275, tolerant, false) > calculateSlotScore(windy, 275, strict, false),
+            "un surfeur qui tolère l'onshore note mieux ce jour-là"
+        )
+        val shortPeriod = hour(10, height = 1.5, period = 7.0)
+        val noMinimum = SurfProfile.preset("confirmed").copy(minPeriod = 6.0).serialize()
+        val longOnly = SurfProfile.preset("confirmed").copy(minPeriod = 12.0).serialize()
+        assertTrue(calculateSlotScore(shortPeriod, 275, noMinimum, false) > calculateSlotScore(shortPeriod, 275, longOnly, false))
     }
 }

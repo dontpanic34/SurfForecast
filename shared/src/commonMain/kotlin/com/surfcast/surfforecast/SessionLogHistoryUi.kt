@@ -77,9 +77,7 @@ fun SessionLogHistoryScreen(
                     ) {
                         Text("Journal de session", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = onOpenQuiver, modifier = Modifier.size(32.dp)) {
-                                QuiverIcon(color = colors.onBackground, modifier = Modifier.size(20.dp))
-                            }
+                            MyGearButton(onClick = onOpenQuiver)
                             TextButton(onClick = onDismiss) { Text("Fermer") }
                         }
                     }

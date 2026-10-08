@@ -200,6 +200,8 @@ fun SessionLogEntryDialog(
     todayHours: List<HourlyUiModel>,
     tideInfo: DailyTideInfo?,
     quiverBoards: List<QuiverBoard>,
+    weightKg: Int,
+    onOpenGear: () -> Unit,
     microSpots: List<MicroSpot>,
     onAddMicroSpot: (name: String) -> Unit,
     onUpdateMicroSpot: (MicroSpot) -> Unit = {},
@@ -347,13 +349,17 @@ fun SessionLogEntryDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 PillSelector(
                     label = "Planche",
-                    options = quiverBoards.map { it.id to "${it.model} (${boardFamilyLabel(it.family)})" },
+                    options = quiverBoards.map { board ->
+                        board.id to "${board.model} (${boardFamilyLabel(board.family)})" +
+                            (boardVolumeSummary(board, weightKg)?.let { " · $it" } ?: "")
+                    },
                     selectedId = selectedQuiverId,
                     onSelect = { selectedQuiverId = it },
                     onSurfaceColor = colors.onBackground,
                     primaryColor = colors.primary,
-                    emptyHint = "Aucune planche dans ton quiver. Ajoute-en une via l'icone Quiver."
+                    emptyHint = "Aucune planche dans ton matériel. Ajoute-en une avec « Mon matériel »."
                 )
+                MyGearButton(onClick = onOpenGear)
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Note", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.7f))

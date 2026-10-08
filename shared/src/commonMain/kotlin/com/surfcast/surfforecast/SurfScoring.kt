@@ -38,30 +38,71 @@ internal fun interpolate(x: Double, points: List<Pair<Double, Double>>): Double 
 }
 
 /**
- * Énergie (kJ) par niveau : [idealMin] = à partir de quand « ça ouvre » (0,8 m à 9 s ≈ 100 kJ ouvre pour
- * tout le monde), [idealMax] = au-delà la note baisse, [cap] = au-delà c'est « trop gros » pour ce niveau.
- * Entre [idealMin] et [rampEnd], la note monte de [rampStartFit] à 1 : les niveaux qui cherchent de la
- * puissance (confirmé, expert) préfèrent les jours costauds, sans pour autant bouder un petit jour propre.
+ * Profil de surfeur : tout ce qui change la note d'une heure selon qui surfe.
+ * Énergie (kJ) : [idealMin] = à partir de quand « ça ouvre » (0,8 m à 9 s ≈ 100 ouvre
+ * pour tout le monde), [idealMax] = au-delà la note baisse, [cap] = au-delà c'est « trop gros »
+ * ([NO_CAP] = jamais trop gros). Entre [idealMin] et [rampEnd], la note monte de [rampStartFit] à 1 :
+ * les niveaux qui cherchent de la puissance préfèrent les jours costauds sans bouder un petit jour propre.
+ * Tolérances : [minPeriod] (s), [windTolerance] (km/h, offshore et travers), [onshoreMax] (km/h),
+ * [gustThreshold] (km/h, au-delà les rafales pénalisent), [chopThreshold] (m de mer de vent).
  */
-private class LevelProfile(
+data class SurfProfile(
     val idealMin: Double,
     val idealMax: Double,
     val cap: Double,
     val rampStartFit: Double = 1.0,
-    val rampEnd: Double = idealMin
-)
+    val rampEnd: Double = idealMin,
+    val minPeriod: Double = 7.0,
+    val windTolerance: Double = 25.0,
+    val onshoreMax: Double = 12.0,
+    val gustThreshold: Double = 25.0,
+    val chopThreshold: Double = 0.3,
+    val beginnerExtras: Boolean = false
+) {
+    val hasCap: Boolean get() = cap < NO_CAP
 
-private fun profileFor(level: String) = when (level) {
-    // Débutant : les mousses, les petites vagues douces.
-    "beginner" -> LevelProfile(30.0, 200.0, 450.0)
-    // Intermédiaire : commence à aller au large et à suivre les vagues.
-    "intermediate" -> LevelProfile(80.0, 450.0, 1100.0)
-    // Confirmé : autonome, surfe seul.
-    "confirmed" -> LevelProfile(80.0, 2000.0, 3500.0, rampStartFit = 0.85, rampEnd = 250.0)
-    // Expert : plein potentiel de la vague, cherche la puissance.
-    "expert" -> LevelProfile(80.0, 4000.0, 8000.0, rampStartFit = 0.65, rampEnd = 400.0)
-    else -> LevelProfile(80.0, 450.0, 1100.0)
+    /** Forme texte stockée dans le niveau : "custom:" + 11 nombres séparés par « ; ». */
+    fun serialize(): String = "$CUSTOM_PREFIX" + listOf(
+        idealMin, idealMax, cap, rampStartFit, rampEnd, minPeriod, windTolerance, onshoreMax,
+        gustThreshold, chopThreshold, if (beginnerExtras) 1.0 else 0.0
+    ).joinToString(";")
+
+    companion object {
+        const val NO_CAP = 1e9
+        const val CUSTOM_PREFIX = "custom:"
+
+        /** Les 4 profils de départ. Le niveau ne se résume pas à l'énergie : vent, rafales et clapot suivent. */
+        fun preset(level: String): SurfProfile = when (level) {
+            // Débutant : les mousses, les petites vagues douces ; peu de vent toléré.
+            "beginner" -> SurfProfile(30.0, 150.0, 350.0, minPeriod = 6.0, windTolerance = 15.0, onshoreMax = 5.0,
+                gustThreshold = 15.0, chopThreshold = 0.15, beginnerExtras = true)
+            // Intermédiaire : commence à aller au large et à suivre les vagues.
+            "intermediate" -> SurfProfile(80.0, 300.0, 700.0, minPeriod = 7.0, windTolerance = 20.0)
+            // Confirmé : autonome, surfe seul, préfère un peu de puissance.
+            "confirmed" -> SurfProfile(80.0, 2000.0, 3500.0, rampStartFit = 0.85, rampEnd = 250.0, minPeriod = 8.0)
+            // Expert : tout surfer, plein potentiel de la vague, pas de limite de taille.
+            "expert" -> SurfProfile(80.0, 4000.0, NO_CAP, rampStartFit = 0.65, rampEnd = 400.0, minPeriod = 8.0,
+                windTolerance = 35.0, onshoreMax = 20.0, chopThreshold = 0.6)
+            else -> preset("intermediate")
+        }
+
+        /** Profil d'un niveau : « beginner »… « expert » ou « custom:… » (profil personnalisé). */
+        fun fromLevel(level: String): SurfProfile {
+            if (level.startsWith(CUSTOM_PREFIX)) {
+                val v = level.removePrefix(CUSTOM_PREFIX).split(";").mapNotNull { it.toDoubleOrNull() }
+                if (v.size == 11) {
+                    return SurfProfile(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10] > 0.5)
+                }
+                return preset("intermediate")
+            }
+            return preset(level)
+        }
+    }
 }
+
+fun isCustomLevel(level: String) = level.startsWith(SurfProfile.CUSTOM_PREFIX)
+
+private fun profileFor(level: String) = SurfProfile.fromLevel(level)
 
 fun calculateSlotScore(
     hourlyModel: HourlyUiModel,
@@ -85,6 +126,7 @@ fun calculateSlotRating(
     val t = hourlyModel.wavePeriod
     if (h < 0.4) return SlotRating(0, false)
 
+    val profile = profileFor(surferLevel)
     // Vent « ressenti » sur l'eau : les rafales comptent aux deux tiers de leur écart avec le vent moyen.
     val windKmh = effectiveWindKmh(hourlyModel)
     // idealSwellDirection = orientation de la plage : elle définit aussi offshore / onshore.
@@ -96,7 +138,6 @@ fun calculateSlotRating(
     val coeffDirection = if (directionDiff >= 90.0) 0.0 else cos(directionDiff * PI / 180.0)
 
     val energyKj = 1.962 * h * h * t * t * coeffDirection
-    val profile = profileFor(surferLevel)
     if (energyKj > profile.cap) return SlotRating(0, true)
 
     val fit = when {
@@ -110,15 +151,19 @@ fun calculateSlotRating(
     var score = fit * 100.0
 
     // Clapot (mer de vent) : une houle propre coiffée de clapot est moins bonne qu'une houle seule.
-    score *= chopFactor(h, hourlyModel.windWaveHeight)
-    score *= interpolate(windKmh, windCurves.getValue(windCategory))
+    score *= chopFactor(h, hourlyModel.windWaveHeight, profile.chopThreshold)
+    // La tolérance au vent décale les courbes : un profil tolérant « voit » moins de vent.
+    val scaledWind = if (windCategory == "onshore") windKmh * 12.0 / profile.onshoreMax else windKmh * 25.0 / profile.windTolerance
+    score *= interpolate(scaledWind, windCurves.getValue(windCategory))
     // Rafales fortes : mauvaises pour tout le monde, quelle que soit la direction.
     val gust = hourlyModel.windGustKmh
-    if (gust > 25) score *= (1.0 - (gust - 25) / 30.0).coerceAtLeast(0.3)
+    if (gust > profile.gustThreshold) score *= (1.0 - (gust - profile.gustThreshold) / 30.0).coerceAtLeast(0.3)
+    // Période trop courte pour le profil : houle de clapot, vagues moins organisées.
+    if (t < profile.minPeriod) score *= (t / profile.minPeriod).coerceAtLeast(0.3)
     // Houle de travers : en plus de l'énergie réduite, la vague est moins bien formée.
     score *= 1.0 - 0.3 * minOf(directionDiff, 90.0) / 90.0
 
-    if (surferLevel == "beginner") {
+    if (profile.beginnerExtras) {
         if (h > 1.5) score *= 0.7
         if (t > 13.0) score *= 0.8
         if (isHighTide) score *= 0.85
@@ -138,9 +183,9 @@ fun effectiveWindKmh(hourly: HourlyUiModel): Double {
  * Facteur (0.4 à 1) lié au clapot : 1 sous 0,3 m de mer de vent, puis baisse avec le rapport
  * clapot / houle (clapot de 0,6 m sur 1,2 m de houle : environ 0,8 ; égal à la houle : 0,4).
  */
-fun chopFactor(swellHeight: Double, windWaveHeight: Double): Double {
-    if (windWaveHeight <= 0.3) return 1.0
-    val ratio = (windWaveHeight - 0.3) / maxOf(swellHeight, 0.5)
+fun chopFactor(swellHeight: Double, windWaveHeight: Double, threshold: Double = 0.3): Double {
+    if (windWaveHeight <= threshold) return 1.0
+    val ratio = (windWaveHeight - threshold) / maxOf(swellHeight, 0.5)
     return (1.0 - ratio * 0.8).coerceIn(0.4, 1.0)
 }
 

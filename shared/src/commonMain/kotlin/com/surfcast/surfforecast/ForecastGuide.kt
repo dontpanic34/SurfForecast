@@ -33,8 +33,8 @@ private val guideSections = listOf(
     GuideSection(
         "⚡ L'énergie (en kJ)",
         "Elle résume hauteur et période en un chiffre : la force réelle de la houle. Repères : 0,8 m à 9 s ≈ 100 kJ (ça ouvre, pour " +
-            "tout le monde) ; 1,2 m à 11 s ≈ 285 ; 2 m à 12 s ≈ 1100 ; 2,5 m à 14 s ≈ 2400. Chaque niveau a son plafond : " +
-            "au-delà, la note est « trop gros » (violet)."
+            "tout le monde) ; 1,2 m à 11 s ≈ 285 ; 2 m à 12 s ≈ 1100 ; 2,5 m à 14 s ≈ 2400. Chaque profil a son plafond : " +
+            "au-delà, la note est « trop gros » (violet). Dans Paramètres › Mon profil, tu peux régler ton énergie minimum et maximum."
     ),
     GuideSection(
         "🧭 La direction",
@@ -61,7 +61,7 @@ private val guideSections = listOf(
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (avec rafales) et clapot. " +
             "Les couleurs : rouge = à éviter, orange = médiocre, jaune = correct, vert clair = bon, vert = très bon, vert vif = excellent. " +
             "Violet = trop gros pour ton niveau : ce n'est pas mauvais, c'est simplement au-dessus de ce que ton niveau gère " +
-            "(plafond d'énergie : débutant 450 kJ, intermédiaire 1100, confirmé 3500, expert 8000). " +
+            "(plafond d'énergie : débutant 350 kJ, intermédiaire 700, confirmé 3500, expert aucun). Le profil règle aussi la tolérance au vent, aux rafales, au clapot et à la période, et le profil Personnalisé te laisse tout ajuster. " +
             "Le meilleur créneau est la fenêtre de 2 à 3 heures avec la meilleure moyenne. " +
             "La note ne connaît pas ton spot (bancs de sable, courants) : c'est à toi de juger s'il marche. Regarde la webcam avant de partir."
     ),
