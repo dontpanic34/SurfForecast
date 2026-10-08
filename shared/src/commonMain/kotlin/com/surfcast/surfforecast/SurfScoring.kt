@@ -177,7 +177,10 @@ fun calculateSlotRating(
     val categoryFactor = interpolate(scaledWind, windCurves.getValue(windCategory))
     // Direction : un débutant (mousse) s'en moque, un confirmé / expert cherche l'offshore qui creuse la vague.
     val neutralFactor = interpolate(windKmh * 25.0 / profile.windTolerance, windCurves.getValue("offshore"))
-    var windFactor = neutralFactor + (categoryFactor - neutralFactor) * profile.directionMatters
+    // L'onshore, lui, abîme la vague pour tout le monde (tolérance [SurfProfile.onshoreMax]) : seule la différence
+    // offshore / travers est modulée par le niveau.
+    var windFactor = if (windCategory == "onshore") categoryFactor
+    else neutralFactor + (categoryFactor - neutralFactor) * profile.directionMatters
     // Un offshore soutenu fait des vagues creuses et rapides (tubes) : tout le monde n'est pas prêt.
     if (windCategory == "offshore") windFactor *= 1.0 - (1.0 - profile.offshoreMinFactor) * ((windKmh - 6.0) / 14.0).coerceIn(0.0, 1.0)
     score *= windFactor
