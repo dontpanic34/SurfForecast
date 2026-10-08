@@ -249,7 +249,7 @@ fun SurfPreferencesDialog(
                         color = colors.onBackground
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                    DonationButton(weroQr = { androidx.compose.foundation.Image(painter = androidx.compose.ui.res.painterResource(R.drawable.wero_qr), contentDescription = "QR code Wero", modifier = Modifier.fillMaxWidth(), contentScale = androidx.compose.ui.layout.ContentScale.FillWidth) })
+                    DonationButton()
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
                             imageVector = Icons.Default.Close,
