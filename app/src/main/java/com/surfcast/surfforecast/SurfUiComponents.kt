@@ -21,12 +21,23 @@ data class HourlyUiModel(
     val waveHeight: Double,
     val wavePeriod: Double,
     val waveDirection: Float,
+    // Mer de vent (clapot) : vagues courtes generees localement par le vent, distinctes
+    // de la houle ci-dessus. 0 = pas de clapot (valeur legitime, pas une donnee manquante).
+    val windWaveHeight: Double = 0.0,
+    val windWavePeriod: Double = 0.0,
+    val windWaveDirection: Float = 0f,
     val energyKj: Int,
     val windSpeedKmh: Int,
     val windDirectionStr: String,
     val weatherCode: Int,
     val temperature: Int,
-    val cloudCover: Int = 0
+    val cloudCover: Int = 0,
+    val feelsLike: Int = temperature,
+    // Modele d'ou vient le vent de cette heure ("AROME HD", "AROME", "ECMWF_IFS"...,
+    // ou WIND_SOURCE_MISSING) : sert au journal des previsions. Vide = inconnu (cache).
+    val windSource: String = "",
+    // Rafales (km/h) : par défaut égales au vent moyen quand la source n'en donne pas.
+    val windGustKmh: Int = windSpeedKmh
 )
 
 @Composable

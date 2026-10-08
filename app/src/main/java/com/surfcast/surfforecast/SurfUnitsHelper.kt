@@ -73,6 +73,15 @@ object SurfUnitsHelper {
         }
     }
 
+    /**
+     * Code couleur vent officiel de l'appli, base sur la direction ET la force : jaune =
+     * vent de terre (offshore, favorable, quelle que soit sa force), orange = vent de mer
+     * (onshore) modere, rouge = vent de mer fort. A afficher tel quel partout (icones ET
+     * texte) : ne jamais assombrir ces teintes pour la lisibilite sur fond clair, ca rend
+     * les 3 paliers indistinguables entre eux. Pour du texte/icone de petite taille sur fond
+     * clair, mettre un petit fond sombre derriere (cf. DailyTimelineCard/HourlyForecastRow)
+     * plutot que de changer la couleur.
+     */
     fun getSurfWindColor(directionFr: String, speedKmh: Int): Color {
         val dir = directionFr.uppercase().trim()
 
@@ -105,4 +114,22 @@ object SurfUnitsHelper {
             else -> if (hourly.cloudCover > 60) "☁️" else if (isDay) "☀️" else "🌙"
         }
     }
+
+    /** Libelle FR du temps, meme decoupage de codes WMO que resolveRealWeatherEmoji. */
+    fun weatherCodeLabel(code: Int): String = when (code) {
+        0 -> "Dégagé"
+        1, 2 -> "Partiellement nuageux"
+        3 -> "Nuageux"
+        45, 48 -> "Brouillard"
+        51, 53, 55, 61, 63, 65 -> "Pluie"
+        71, 73, 75, 77, 85, 86 -> "Neige"
+        80, 81, 82 -> "Averses"
+        95, 96, 99 -> "Orage"
+        else -> "Variable"
+    }
+
+    /** Vrai si le code WMO correspond a une forme de precipitation (pluie, averse, neige, orage). */
+    fun isPrecipitationCode(code: Int): Boolean = code in intArrayOf(
+        51, 53, 55, 61, 63, 65, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99
+    )
 }

@@ -1,4 +1,4 @@
-﻿package com.surfcast.surfforecast
+package com.surfcast.surfforecast
 
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -33,7 +33,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
-fun SurfCardComponent(
+fun WindSeaCardComponent(
     selectedHour: HourlyUiModel,
     allHoursOfDay: List<HourlyUiModel>,
     onHourSelected: (HourlyUiModel) -> Unit,
@@ -46,8 +46,8 @@ fun SurfCardComponent(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val maxWave = (allHoursOfDay.maxOfOrNull { it.waveHeight } ?: 1.5).coerceAtLeast(2.0)
+    val primaryColor = Color(0xFF66BB6A)
+    val maxWindWave = (allHoursOfDay.maxOfOrNull { it.windWaveHeight } ?: 1.0).coerceAtLeast(1.0)
 
     val density = LocalDensity.current
     val timeTextPaint = remember(density, onSurfaceColor) {
@@ -59,8 +59,8 @@ fun SurfCardComponent(
         }
     }
 
-    val swellDeg = selectedHour.waveDirection.roundToInt()
-    val swellRotationAngle = (selectedHour.waveDirection + 180f) % 360f
+    val windWaveDeg = selectedHour.windWaveDirection.roundToInt()
+    val windWaveRotationAngle = (selectedHour.windWaveDirection + 180f) % 360f
 
     Card(
         modifier = modifier
@@ -86,7 +86,7 @@ fun SurfCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
             CardControlsRow(
-                title = "Houle",
+                title = "Mer de vent",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier
@@ -103,13 +103,14 @@ fun SurfCardComponent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = String.format(Locale.US, "%.1fm", selectedHour.waveHeight),
+                        text = String.format(Locale.US, "%.1fm", selectedHour.windWaveHeight),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = onSurfaceColor
                     )
                     Text(
-                        text = "${selectedHour.wavePeriod.roundToInt()}s",
+                        // 0 = periode inconnue (le modele ne la donne pas a cette heure), pas "0s".
+                        text = if (selectedHour.windWavePeriod > 0.0) "${selectedHour.windWavePeriod.roundToInt()}s" else "—",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = primaryColor
@@ -118,49 +119,37 @@ fun SurfCardComponent(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    Canvas(modifier = Modifier.size(13.dp)) {
+                        val w = size.width
+                        val h = size.height
+                        rotate(windWaveRotationAngle, pivot = Offset(w / 2f, h / 2f)) {
+                            val path = Path().apply {
+                                moveTo(w * 0.5f, 0.5.dp.toPx())
+                                lineTo(w * 0.95f, h * 0.48f)
+                                lineTo(w * 0.68f, h * 0.48f)
+                                lineTo(w * 0.68f, h * 0.98f)
+                                lineTo(w * 0.32f, h * 0.98f)
+                                lineTo(w * 0.32f, h * 0.48f)
+                                lineTo(w * 0.05f, h * 0.48f)
+                                close()
+                            }
+                            drawPath(path = path, color = primaryColor)
+                            drawPath(
+                                path = path,
+                                color = onSurfaceColor.copy(alpha = 0.5f),
+                                style = Stroke(width = 0.8.dp.toPx())
+                            )
+                        }
+                    }
+
                     Text(
-                        text = "${selectedHour.energyKj} kJ",
+                        text = "$windWaveDeg°",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF8F6300)
+                        color = onSurfaceColor
                     )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Canvas(modifier = Modifier.size(13.dp)) {
-                            val w = size.width
-                            val h = size.height
-                            rotate(swellRotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                                val path = Path().apply {
-                                    moveTo(w * 0.5f, 0.5.dp.toPx())
-                                    lineTo(w * 0.95f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.48f)
-                                    lineTo(w * 0.05f, h * 0.48f)
-                                    close()
-                                }
-                                drawPath(path = path, color = Color(0xFF29B6F6))
-                                drawPath(
-                                    path = path,
-                                    color = onSurfaceColor.copy(alpha = 0.5f),
-                                    style = Stroke(width = 0.8.dp.toPx())
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "$swellDeg°",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = onSurfaceColor
-                        )
-                    }
                 }
             }
 
@@ -182,7 +171,7 @@ fun SurfCardComponent(
                     allHoursOfDay.forEach { hourly ->
                         val isSelected = hourly.rawTime == selectedHour.rawTime
                         val isCurrentHour = isToday && hourly.rawTime.hour == currentHourNow
-                        val heightRatio = (hourly.waveHeight / maxWave).toFloat().coerceIn(0.15f, 1f)
+                        val heightRatio = (hourly.windWaveHeight / maxWindWave).toFloat().coerceIn(0.15f, 1f)
 
                         Box(
                             modifier = Modifier
@@ -239,7 +228,7 @@ fun SurfCardComponent(
                         drawCircle(
                             color = onSurfaceColor,
                             radius = 3.2f,
-                            center = Offset(indicatorX, size.height * (1f - (selectedHour.waveHeight / maxWave).toFloat().coerceIn(0.15f, 1f)))
+                            center = Offset(indicatorX, size.height * (1f - (selectedHour.windWaveHeight / maxWindWave).toFloat().coerceIn(0.15f, 1f)))
                         )
 
                         val timeStr = selectedHour.rawTime.format(DateTimeFormatter.ofPattern("HH:mm"))

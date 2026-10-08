@@ -60,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -93,7 +94,12 @@ private fun Context.findActivity(): Activity? {
 fun LiveCamOverlayScreen(
     currentSpotName: String,
     onClose: () -> Unit,
-    onSwitchSpot: (String) -> Unit = {}
+    onSwitchSpot: (String) -> Unit = {},
+    // Bandeau "conditions actuelles" par-dessus la webcam (même bandeau que l'écran principal),
+    // pour comparer ce qu'on voit avec la prévision.
+    showLiveOverlay: Boolean = true,
+    windUnit: String = "kmh",
+    loadLiveConditions: suspend (String) -> LiveConditions? = { null }
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -163,6 +169,10 @@ fun LiveCamOverlayScreen(
     var showLinkSuccess by remember(currentSpotName) { mutableStateOf(false) }
 
     val activeCamera = spotWebcams.cameras.getOrElse(selectedCamIndex) { spotWebcams.cameras.first() }
+    // Meme raison que currentSpotNameState/searchTargetCamNameState : le WebViewClient
+    // est cree une seule fois dans factory, donc un simple val ne refleterait jamais
+    // les changements de camera (ex. selection d'une autre webcam dans la liste).
+    val activeCameraState = rememberUpdatedState(activeCamera)
 
     val mismatchTitle = realPageTitle
     // Decoupe sur espaces ET tirets (utile pour les noms composes, ex "Le Grand Crohot")
@@ -259,6 +269,29 @@ fun LiveCamOverlayScreen(
                                 }, 500)
                                 mainHandler.postDelayed({ isLoading = false }, 600)
                             } else {
+                                // Correctif : les URLs directes du catalogue (ex. Capbreton) pointent
+                                // vers un identifiant GoSurf precis, qui devient parfois perime (GoSurf
+                                // renumerote ses pages). GoSurf redirige alors en silence vers son annuaire
+                                // general (reponse 200, pas d'erreur HTTP) : sans ce controle, l'appli
+                                // affichait cet annuaire generique sans jamais lancer la recherche assistee.
+                                // On detecte ce cas via l'URL finale (une vraie page camera contient toujours
+                                // "/webcam/") plutot que via le seul titre, plus fiable et sans attendre un clic.
+                                val finalUrl = url ?: ""
+                                val isGoSurfCamera = activeCameraState.value.pageUrl.contains("gosurf.fr")
+                                val landedOnDirectory = isGoSurfCamera &&
+                                    finalUrl.contains("gosurf.fr") &&
+                                    !finalUrl.contains("/webcam/")
+                                if (isGoSurfCamera && (loadError || landedOnDirectory)) {
+                                    searchTargetCamName = activeCameraState.value.camName
+                                    isLoading = true
+                                    loadError = false
+                                    manualNavigation = true
+                                    view?.settings?.useWideViewPort = false
+                                    view?.settings?.loadWithOverviewMode = false
+                                    view?.loadUrl("https://gosurf.fr/list")
+                                    return
+                                }
+
                                 injectFullscreenJS(view)
                                 val retryDelays = listOf(300L, 800L, 1600L, 3000L)
                                 retryDelays.forEach { delay ->
@@ -375,7 +408,7 @@ fun LiveCamOverlayScreen(
                             )
                             Text(
                                 text = "La page affiche « ${mismatchTitle ?: ""} » au lieu de ${currentSpotNameState.value}.",
-                                fontSize = 11.5.sp,
+                                fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.6f),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(top = 6.dp, bottom = 16.dp)
@@ -506,7 +539,7 @@ fun LiveCamOverlayScreen(
                         Text(
                             text = "DIRECT • ${spotWebcams.spotDisplayName}",
                             color = Color.White,
-                            fontSize = 10.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -548,7 +581,7 @@ fun LiveCamOverlayScreen(
                         }
                         Text(
                             text = if (showLinkSuccess) "Lien enregistré !" else "🔗 Lier cette page à ${activeCamera.camName}",
-                            fontSize = 10.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (showLinkSuccess) Color.White else AppColors.WindMid
                         )
@@ -563,7 +596,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = "Source : $title",
-                            fontSize = 8.5.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.6f),
                             maxLines = 1,
@@ -608,7 +641,7 @@ fun LiveCamOverlayScreen(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = cam.camName,
-                                            fontSize = 10.5.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                                             color = Color.White,
                                             maxLines = 1
@@ -648,7 +681,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = name,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
                             color = if (isActive) AppColors.WindMid else Color.White,
                             maxLines = 1,
@@ -656,6 +689,28 @@ fun LiveCamOverlayScreen(
                         )
                     }
                 }
+            }
+        }
+
+        // Conditions actuelles du spot de la webcam (houle, marée, vent), au-dessus des spots proches.
+        // Se recharge à chaque changement de spot ; rien tant que les données ne sont pas là.
+        val liveConditions by produceState<LiveConditions?>(initialValue = null, currentSpotName) {
+            value = null
+            value = loadLiveConditions(currentSpotName)
+        }
+        if (showLiveOverlay && !manualNavigation) {
+            liveConditions?.let { c ->
+                SurfLiveStripOverlay(
+                    hourlyModel = c.hour,
+                    tideInfo = c.tide,
+                    windUnit = windUnit,
+                    onOpenCam = {},
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 92.dp)
+                        .fillMaxWidth(0.7f)
+                        .widthIn(max = 460.dp)
+                )
             }
         }
 
@@ -693,7 +748,7 @@ fun LiveCamOverlayScreen(
             if (!manualNavigation) {
                 Text(
                     text = "FAVORIS",
-                    fontSize = 9.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.5f),
                     modifier = Modifier.padding(bottom = 2.dp, end = 4.dp)
@@ -718,7 +773,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = favName ?: "＋",
-                            fontSize = 10.5.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (favName != null) Color.White else Color.White.copy(alpha = 0.4f),
                             maxLines = 1,

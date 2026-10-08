@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 
 import android.app.Application
 import android.content.Context
+import android.database.sqlite.SQLiteConstraintException
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -12,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +24,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 sealed class SurfUiState {
@@ -42,6 +45,9 @@ data class DailySummaryUiModel(
     val avgFeelsLike: Int,
     val avgWaterTemp: Int
 )
+
+/** Conditions "maintenant" d'un spot (heure la plus proche d'aujourd'hui + marée du jour), pour le bandeau sur la webcam. */
+data class LiveConditions(val hour: HourlyUiModel, val tide: DailyTideInfo?)
 
 class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -97,6 +103,66 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
     var themeMode by mutableStateOf(prefs.getString("theme_mode", "system") ?: "system")
         private set
 
+    // Écran de bienvenue (unité du vent, niveau, origine des prévisions) : affiché tant qu'il n'a
+    // pas été fermé une fois, et rouvrable depuis les Paramètres.
+    var showOnboarding by mutableStateOf(!prefs.getBoolean("onboarding_v1_done", false))
+        private set
+
+    fun dismissOnboarding() {
+        showOnboarding = false
+        prefs.edit { putBoolean("onboarding_v1_done", true) }
+    }
+
+    fun showOnboardingAgain() {
+        showOnboarding = true
+    }
+
+    // Visite guidée de la première utilisation (accueil) et astuces du journal : une seule fois,
+    // rouvrable depuis les Paramètres.
+    // Orientation des plages corrigee par l'utilisateur (Parametres > Previsions) : spot -> degres.
+    private val facingOverrides = androidx.compose.runtime.mutableStateMapOf<String, Int>().also { map ->
+        SurfDatabase.getAllSpots().forEach { spot ->
+            val key = "spot_facing_${spot.name}"
+            if (prefs.contains(key)) map[spot.name] = prefs.getInt(key, 270)
+        }
+    }
+
+    fun defaultFacingFor(spotName: String): Int? = SurfDatabase.findSpotByName(spotName)?.idealSwellDirection
+
+    /** Orientation utilisee pour le score : celle de l'utilisateur, sinon celle du catalogue. */
+    fun facingFor(spotName: String): Int? = facingOverrides[spotName] ?: defaultFacingFor(spotName)
+
+    /** [degrees] null = revenir a la valeur par defaut du catalogue. */
+    fun setFacing(spotName: String, degrees: Int?) {
+        if (degrees == null) {
+            facingOverrides.remove(spotName)
+            prefs.edit { remove("spot_facing_$spotName") }
+        } else {
+            facingOverrides[spotName] = degrees
+            prefs.edit { putInt("spot_facing_$spotName", degrees) }
+        }
+    }
+
+    var showHomeTour by mutableStateOf(!prefs.getBoolean("coach_home_v1_done", false))
+        private set
+
+    fun dismissHomeTour() {
+        showHomeTour = false
+        prefs.edit { putBoolean("coach_home_v1_done", true) }
+    }
+
+    fun showHomeTourAgain() {
+        showHomeTour = true
+    }
+
+    var showJournalTips by mutableStateOf(!prefs.getBoolean("coach_journal_v1_done", false))
+        private set
+
+    fun dismissJournalTips() {
+        showJournalTips = false
+        prefs.edit { putBoolean("coach_journal_v1_done", true) }
+    }
+
     var windUnit by mutableStateOf(prefs.getString("wind_unit", "kmh") ?: "kmh")
         private set
 
@@ -134,22 +200,23 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
     var showHourlyCard by mutableStateOf(prefs.getBoolean("show_hourly_card", true))
         private set
 
-    var cardsOrder = mutableStateListOf("weekly", "dailyTimeline", "surf", "wind", "weather", "hourly")
+    var showWindSeaCard by mutableStateOf(prefs.getBoolean("show_wind_sea_card", true))
+        private set
+
+    var cardsOrder = mutableStateListOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
         private set
 
     // Tâche 2 : état réduit ("collapsed") de chaque encart, clé = cardKey ("surf", "wind", ...)
     var collapsedCards = mutableStateMapOf<String, Boolean>()
         private set
 
-    var engineConfig by mutableStateOf(
-        ForecastEngineConfig(
-            shortTermWeather = WeatherModel.valueOf(prefs.getString("short_weather", WeatherModel.AROME.name) ?: WeatherModel.AROME.name),
-            shortTermWave = WaveModel.valueOf(prefs.getString("short_wave", WaveModel.MFWAM.name) ?: WaveModel.MFWAM.name),
-            longTermWeather = WeatherModel.valueOf(prefs.getString("long_weather", WeatherModel.ECMWF_IFS.name) ?: WeatherModel.ECMWF_IFS.name),
-            longTermWave = WaveModel.valueOf(prefs.getString("long_wave", WaveModel.MFWAM.name) ?: WaveModel.MFWAM.name)
-        )
-    )
+    var engineConfig by mutableStateOf(loadEngineConfigFromPrefs(prefs))
         private set
+
+    // Dernier spot charge avec succes (favori actif ou spot consulte via "Spots proches")
+    // et quand : sert a recharger ce meme spot quand l'appli revient au premier plan.
+    private var lastLoadedSpot: SurfSpotItem? = null
+    private var lastLoadedAtMillis = 0L
 
     init {
         loadPreferences()
@@ -171,14 +238,16 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
             val sanitized = savedOrder.split(",")
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
-            val defaults = listOf("weekly", "dailyTimeline", "surf", "wind", "weather", "hourly")
+            val defaults = listOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
             // On complète avec les nouvelles cles (weekly/dailyTimeline) si l'ordre sauvegarde
             // vient d'une version anterieure de l'app qui ne les connaissait pas encore.
             val merged = sanitized + defaults.filter { it !in sanitized }
             cardsOrder.addAll(merged.ifEmpty { defaults })
         }
 
-        val savedCollapsed = prefs.getString("collapsed_cards", "") ?: ""
+        // Première utilisation : seuls la semaine et le déroulé de la journée sont ouverts ;
+        // houle, vent, mer de vent, météo et heure par heure sont repliés (réglages ensuite mémorisés).
+        val savedCollapsed = prefs.getString("collapsed_cards", null) ?: "surf,wind,windSea,weather,hourly"
         collapsedCards.clear()
         savedCollapsed.split(",")
             .map { it.trim() }
@@ -242,8 +311,76 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Conditions "maintenant" par spot déjà consulté depuis la webcam (valables 15 min).
+    private val liveConditionsCache = mutableMapOf<String, Pair<Long, LiveConditions>>()
+
+    /**
+     * Conditions actuelles d'un spot, pour le bandeau de l'écran webcam. Si c'est le spot déjà
+     * affiché, on réutilise ses données ; sinon on charge ses prévisions (le spot de la webcam
+     * peut différer du spot principal quand on change de spot depuis la webcam).
+     */
+    suspend fun liveConditionsFor(spotName: String): LiveConditions? {
+        val now = LocalDateTime.now()
+        (_uiState.value as? SurfUiState.Success)?.takeIf { it.spotName == spotName }?.let {
+            return currentLiveConditions(it.hourlyForecast, it.dailyTides, now)
+        }
+        liveConditionsCache[spotName]?.takeIf { System.currentTimeMillis() - it.first < LIVE_CACHE_MS }?.let {
+            return it.second
+        }
+        val spot = SurfDatabase.findSpotByName(spotName) ?: return null
+        return try {
+            val forecast = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig).hourly
+            val today = now.toLocalDate()
+            val tides = try {
+                repository.getTides(spot.latitude, spot.longitude, today.toString(), today.plusDays(1).toString()).dailyByDate
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyMap()
+            }
+            currentLiveConditions(forecast, tides, now)?.also {
+                liveConditionsCache[spotName] = System.currentTimeMillis() to it
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun currentLiveConditions(
+        hours: List<HourlyUiModel>,
+        tides: Map<LocalDate, DailyTideInfo>,
+        now: LocalDateTime
+    ): LiveConditions? {
+        val today = now.toLocalDate()
+        // Heure pleine la plus proche (10h44 -> 11h), comme le bandeau de l'écran principal.
+        val nearestHour = now.plusMinutes(30).hour
+        val hour = hours.filter { it.rawTime.toLocalDate() == today }
+            .minByOrNull { abs(it.rawTime.hour - nearestHour) }
+            ?: hours.firstOrNull()
+            ?: return null
+        return LiveConditions(hour, tides[today] ?: tides.values.firstOrNull())
+    }
+
     fun refreshActiveSpot() {
         loadActiveSpot(initialLoad = false)
+    }
+
+    /**
+     * Appele a chaque retour de l'appli au premier plan : recharge les previsions si elles
+     * datent de plus de 15 min, pour ne plus afficher un "maintenant" vieux de plusieurs
+     * heures (ex: le vent de 9h encore affiche a 10h passees).
+     */
+    fun onAppResumed() {
+        if (isRefreshing || lastLoadedAtMillis == 0L) return
+        if (System.currentTimeMillis() - lastLoadedAtMillis < RESUME_REFRESH_AFTER_MS) return
+        val spot = lastLoadedSpot ?: return
+        viewModelScope.launch {
+            isRefreshing = true
+            loadSpotInternal(spot)
+            isRefreshing = false
+        }
     }
 
     fun toggleLiveOverlay(show: Boolean) {
@@ -289,11 +426,12 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
             val fromDate = grouped.keys.minOrNull()?.toString() ?: LocalDate.now().toString()
             val toDate = grouped.keys.maxOrNull()?.toString() ?: LocalDate.now().plusDays(7).toString()
-            val tides = repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
+            val tidesBundle = repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
+            val tides = tidesBundle.dailyByDate
 
             val nowStr = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm", Locale.FRANCE))
 
-            _uiState.value = SurfUiState.Success(
+            val successState = SurfUiState.Success(
                 spotName = spot.name,
                 hourlyForecast = forecast,
                 dailySummaries = summaries,
@@ -301,9 +439,36 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 dailySunInfo = forecastResult.dailySun,
                 lastUpdatedTime = nowStr
             )
+            _uiState.value = successState
+            lastLoadedSpot = spot
+            lastLoadedAtMillis = System.currentTimeMillis()
+            // Journal des previsions (gardees 2 jours) : ne doit jamais faire echouer le chargement.
+            runCatching { ForecastHistoryStore.record(getApplication(), spot.name, engineConfig, forecast, tides) }
+            // Ne doit jamais faire échouer le chargement (ex: JSONException sur une
+            // valeur NaN/Infinity) : une erreur ici ne doit ni repasser en état Erreur
+            // ni empêcher le push vers le widget juste en dessous.
+            runCatching { ForecastCacheStore.save(getApplication(), successState) }
+
+            // Widget d'écran d'accueil : pousse le même instantané que SurfLiveStripOverlay
+            // dès que ces données sont fraîches (heure la plus proche, tendance du vent,
+            // prochaine marée à venir).
+            WidgetDataCache.push(
+                context = getApplication(),
+                spotName = spot.name,
+                forecast = forecast,
+                allTideExtrema = tidesBundle.rawByDate,
+                windUnit = windUnit
+            )
         } catch (e: Exception) {
             if (_uiState.value !is SurfUiState.Success) {
-                _uiState.value = SurfUiState.Error(e.message ?: "Erreur de connexion.")
+                // Pas de réseau au tout premier chargement (rien encore en mémoire) :
+                // on retombe sur la dernière page connue, mais seulement si elle
+                // correspond bien au spot demandé (le cache n'est pas gardé par spot,
+                // et loadSpotInternal sert aussi bien le favori actif que previewSpot()).
+                val cached = ForecastCacheStore.load(getApplication())?.takeIf { it.spotName == spot.name }
+                _uiState.value = cached?.copy(
+                    popupError = "Hors connexion : dernières données du ${cached.lastUpdatedTime} affichées."
+                ) ?: SurfUiState.Error(e.message ?: "Erreur de connexion.")
             }
         }
     }
@@ -358,6 +523,11 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit { putBoolean("show_weather_card", show) }
     }
 
+    fun toggleWindSeaCard(show: Boolean) {
+        showWindSeaCard = show
+        prefs.edit { putBoolean("show_wind_sea_card", show) }
+    }
+
     fun addQuiverBoard(model: String, family: String, lengthLitrage: String, finSetup: String) {
         viewModelScope.launch {
             sessionLogDao.insertQuiverBoard(
@@ -368,7 +538,27 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteQuiverBoard(board: QuiverBoard) {
         viewModelScope.launch {
-            sessionLogDao.deleteQuiverBoard(board)
+            try {
+                sessionLogDao.deleteQuiverBoard(board)
+            } catch (e: CancellationException) {
+                // Ne jamais avaler une annulation de coroutine (ex: ViewModel efface
+                // pendant la suppression) : elle doit continuer a se propager.
+                throw e
+            } catch (e: SQLiteConstraintException) {
+                val current = _uiState.value
+                if (current is SurfUiState.Success) {
+                    _uiState.value = current.copy(
+                        popupError = "Impossible de supprimer cette planche : elle est utilisee dans une session enregistree."
+                    )
+                }
+            } catch (e: Exception) {
+                val current = _uiState.value
+                if (current is SurfUiState.Success) {
+                    _uiState.value = current.copy(
+                        popupError = "Impossible de supprimer cette planche : une erreur est survenue."
+                    )
+                }
+            }
         }
     }
 
@@ -376,6 +566,10 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             sessionLogDao.insertMicroSpot(MicroSpot(parentSpotName = parentSpotName, name = name))
         }
+    }
+
+    fun updateMicroSpot(spot: MicroSpot) {
+        viewModelScope.launch { sessionLogDao.updateMicroSpot(spot) }
     }
 
     fun logSurfSession(
@@ -399,7 +593,8 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 windSpeedKmh = hourlyModel.windSpeedKmh,
                 windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
                 tideCoeff = tideInfo?.coefficient,
-                isNearHighTide = isNearHighTide(hourlyModel, tideInfo)
+                isNearHighTide = isNearHighTide(hourlyModel, tideInfo),
+                tidePhase = tidePhaseAt(hourlyModel.rawTime.toLocalTime(), tideInfo)
             )
             sessionLogDao.logSession(
                 startTime = date.atTime(startHour, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
@@ -446,10 +641,22 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Conditions gardees pour un jour passe (journal de bord J-1/J-2), ou null. */
+    fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
+        runCatching { ForecastHistoryStore.conditionsFor(getApplication(), spotName, date) }.getOrNull()
+
+    fun loadForecastHistory(): List<ForecastHistoryStore.Snapshot> =
+        runCatching { ForecastHistoryStore.load(getApplication()) }.getOrDefault(emptyList())
+
     fun dismissPopupError() {
         val current = _uiState.value
         if (current is SurfUiState.Success) {
             _uiState.value = current.copy(popupError = null)
         }
+    }
+
+    private companion object {
+        const val RESUME_REFRESH_AFTER_MS = 15 * 60 * 1000L
+        const val LIVE_CACHE_MS = 15 * 60 * 1000L
     }
 }

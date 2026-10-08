@@ -80,7 +80,7 @@ private fun PillSelector(
         Spacer(modifier = Modifier.height(4.dp))
 
         if (options.isEmpty() && onAddNew == null && emptyHint != null) {
-            Text(text = emptyHint, fontSize = 11.sp, color = onSurfaceColor.copy(alpha = 0.5f))
+            Text(text = emptyHint, fontSize = 12.sp, color = onSurfaceColor.copy(alpha = 0.5f))
         }
 
         Row(
@@ -129,8 +129,14 @@ private fun PillSelector(
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = {
-                    if (newValue.isNotBlank()) {
-                        onAddNew(newValue.trim())
+                    val trimmed = newValue.trim()
+                    if (trimmed.isNotBlank()) {
+                        val existing = options.firstOrNull { it.second.equals(trimmed, ignoreCase = true) }
+                        if (existing != null) {
+                            onSelect(existing.first)
+                        } else {
+                            onAddNew(trimmed)
+                        }
                         newValue = ""
                         showAddField = false
                     }
@@ -201,12 +207,20 @@ fun SessionLogEntryDialog(
     quiverBoards: List<QuiverBoard>,
     microSpots: List<MicroSpot>,
     onAddMicroSpot: (name: String) -> Unit,
-    onSave: (startHour: Int, endHour: Int, microSpotId: Long, quiverId: Long, rating: Int, comment: String?, mediaUri: String?) -> Unit,
-    onDismiss: () -> Unit
+    onUpdateMicroSpot: (MicroSpot) -> Unit = {},
+    // Astuces affichées en tête la première fois qu'on ouvre le journal.
+    showTips: Boolean = false,
+    onDismissTips: () -> Unit = {},
+    onSave: (dayOffset: Int, startHour: Int, endHour: Int, microSpotId: Long, quiverId: Long, rating: Int, comment: String?, mediaUri: String?) -> Unit,
+    onDismiss: () -> Unit,
+    // Jours proposes : 0 = aujourd'hui, 1 = hier, 2 = avant-hier (seulement si l'app a
+    // garde les conditions de ce jour dans son journal des previsions).
+    availableDayOffsets: List<Int> = listOf(0)
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
 
+    var dayOffset by remember { mutableStateOf(0) }
     var startHour by remember { mutableStateOf<Int?>(null) }
     var endHour by remember { mutableStateOf<Int?>(null) }
     var selectedMicroSpotId by remember { mutableStateOf<Long?>(null) }
@@ -214,6 +228,19 @@ fun SessionLogEntryDialog(
     var rating by remember { mutableStateOf(0) }
     var comment by remember { mutableStateOf("") }
     var mediaUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingMicroSpotName by remember { mutableStateOf<String?>(null) }
+    var showSpotSheet by remember { mutableStateOf(false) }
+
+    LaunchedEffect(microSpots, pendingMicroSpotName) {
+        val pending = pendingMicroSpotName
+        if (pending != null) {
+            val match = microSpots.firstOrNull { it.name.equals(pending, ignoreCase = true) }
+            if (match != null) {
+                selectedMicroSpotId = match.id
+                pendingMicroSpotName = null
+            }
+        }
+    }
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -254,10 +281,52 @@ fun SessionLogEntryDialog(
                     TextButton(onClick = onDismiss) { Text("Fermer") }
                 }
                 Text(
-                    text = "$spotName · Aujourd'hui",
+                    text = "$spotName · ${dayOffsetLabel(dayOffset)}",
                     fontSize = 12.sp,
                     color = colors.onBackground.copy(alpha = 0.6f)
                 )
+
+                if (showTips) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    JournalTipsCard(onDismiss = onDismissTips)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Jour", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.7f))
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(2, 1, 0).forEach { offset ->
+                        val enabled = offset in availableDayOffsets
+                        val isSelected = offset == dayOffset
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(
+                                    when {
+                                        isSelected -> colors.primary.copy(alpha = 0.2f)
+                                        else -> colors.onBackground.copy(alpha = if (enabled) 0.08f else 0.03f)
+                                    }
+                                )
+                                .clickable(enabled = enabled) { dayOffset = offset }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = dayOffsetLabel(offset),
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = colors.onBackground.copy(alpha = if (enabled) 1f else 0.35f)
+                            )
+                        }
+                    }
+                }
+                if (availableDayOffsets.size < 3) {
+                    Text(
+                        text = "Hier / avant-hier : dispo seulement si l'app avait chargé les prévisions ce jour-là.",
+                        fontSize = 11.5.sp,
+                        color = colors.onBackground.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 HourRangeSelector("Debut", startHour, { startHour = it }, colors.onBackground, colors.primary)
@@ -270,11 +339,26 @@ fun SessionLogEntryDialog(
                     options = microSpots.map { it.id to it.name },
                     selectedId = selectedMicroSpotId,
                     onSelect = { selectedMicroSpotId = it },
-                    onAddNew = { onAddMicroSpot(it) },
+                    onAddNew = { name ->
+                        pendingMicroSpotName = name
+                        onAddMicroSpot(name)
+                    },
                     addPrompt = "Nom du sous-spot",
                     onSurfaceColor = colors.onBackground,
                     primaryColor = colors.primary
                 )
+                microSpots.firstOrNull { it.id == selectedMicroSpotId }?.let { selected ->
+                    val summary = selected.profileSummary()
+                    TextButton(onClick = { showSpotSheet = true }) {
+                        Text(
+                            if (summary.isEmpty()) "📋 Fiche du banc (marée, hauteur, notes)" else "📋 Fiche : $summary",
+                            fontSize = 12.sp
+                        )
+                    }
+                    if (showSpotSheet) {
+                        MicroSpotSheetDialog(spot = selected, onSave = onUpdateMicroSpot, onDismiss = { showSpotSheet = false })
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 PillSelector(
@@ -317,7 +401,7 @@ fun SessionLogEntryDialog(
                 Button(
                     onClick = {
                         onSave(
-                            startHour!!, endHour!!, selectedMicroSpotId!!, selectedQuiverId!!,
+                            dayOffset, startHour!!, endHour!!, selectedMicroSpotId!!, selectedQuiverId!!,
                             rating, comment.ifBlank { null }, mediaUri?.toString()
                         )
                         onDismiss()
@@ -331,4 +415,10 @@ fun SessionLogEntryDialog(
             }
         }
     }
+}
+
+private fun dayOffsetLabel(offset: Int): String = when (offset) {
+    0 -> "Aujourd'hui"
+    1 -> "Hier"
+    else -> "Avant-hier"
 }

@@ -64,11 +64,11 @@ fun SurfLiveStripOverlay(
                 modifier = Modifier.weight(1.05f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "🌊", fontSize = 11.sp)
+                Text(text = "🌊", fontSize = 12.sp)
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
                     text = "$formattedH - ${periodSec}s - ${tempVal}°C",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 1
@@ -121,7 +121,7 @@ fun SurfLiveStripOverlay(
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = if (coef != null) "$highTime ($coef)" else highTime,
-                        fontSize = 9.5.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         maxLines = 1
@@ -161,7 +161,7 @@ fun SurfLiveStripOverlay(
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = lowTime,
-                        fontSize = 9.5.sp,
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         maxLines = 1
@@ -186,7 +186,7 @@ fun SurfLiveStripOverlay(
             ) {
                 Text(
                     text = dirFr,
-                    fontSize = 9.5.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = arrowColor,
                     maxLines = 1
@@ -218,7 +218,7 @@ fun SurfLiveStripOverlay(
 
                 Text(
                     text = "$speedValue $unitSymbol",
-                    fontSize = 9.5.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = arrowColor,
                     maxLines = 1

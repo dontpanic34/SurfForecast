@@ -1,0 +1,65 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+      - main-26mfzy
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Accept Android SDK licenses
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMANAGER=$(find "$SDK_ROOT" -maxdepth 4 -type f -name sdkmanager 2>/dev/null | head -1)
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null || true
+          else
+            echo "sdkmanager not found under $SDK_ROOT, skipping (licenses are likely already accepted on this image)"
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Fixed signing key (if secrets are set)
+        env:
+          KS_B64: ${{ secrets.SURFLOG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/surflog.jks"
+            echo "SURFLOG_KEYSTORE_PATH=$RUNNER_TEMP/surflog.jks" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEYSTORE_PASSWORD=${{ secrets.SURFLOG_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEY_ALIAS=${{ secrets.SURFLOG_KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEY_PASSWORD=${{ secrets.SURFLOG_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Rename APK
+        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/surflog.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: surf-log-${{ github.run_number }}
+          path: app/build/outputs/apk/release/surflog.apk
+          retention-days: 30

@@ -8,7 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,10 +34,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -44,9 +48,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.surfcast.surfforecast.ui.theme.AppColors
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -78,15 +84,72 @@ fun MainScreen(viewModel: SurfViewModel) {
     var showSessionLogDialog by remember { mutableStateOf(false) }
     var showSessionLogEntry by remember { mutableStateOf(false) }
     var showQuiverDialog by remember { mutableStateOf(false) }
-    var showRadarDialog by remember { mutableStateOf(false) }
+    var showWeatherDetail by remember { mutableStateOf(false) }
     var showLiveCam by rememberSaveable { mutableStateOf(false) }
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var directWebcamSpot by remember { mutableStateOf<String?>(null) }
+    var showForecastHistory by remember { mutableStateOf(false) }
+
+    // Heure courante qui avance vraiment : avant, "maintenant" n'etait calcule qu'au
+    // chargement, et le bandeau pouvait afficher le vent de 9h a 10h passees.
+    // "clock" = heure pleine la PLUS PROCHE (10h44 -> 11h), pas l'heure entamee : a 10h44
+    // le bandeau affichait encore le vent de 10h.
+    fun nearestHour(): LocalDateTime =
+        LocalDateTime.now().plusMinutes(30).truncatedTo(java.time.temporal.ChronoUnit.HOURS)
+    var clock by remember { mutableStateOf(nearestHour()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            val nearest = nearestHour()
+            if (nearest != clock) clock = nearest
+        }
+    }
+    val today = LocalDate.now()
+
+    val context = LocalContext.current
+    val appVersion = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
+    }
+
+    // Nouvelle version de l'APK publiée sur le site (surflog.fr/apk-version.json) ?
+    val installedCode = remember {
+        runCatching { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0)) }.getOrDefault(0L)
+    }
+    var newVersionName by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        newVersionName = withContext(Dispatchers.IO) {
+            runCatching {
+                val conn = java.net.URL("https://surflog.fr/apk-version.json").openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                val json = org.json.JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                if (json.getLong("versionCode") > installedCode && installedCode > 0) json.getString("versionName") else null
+            }.getOrNull()
+        }
+    }
+
+    // Positions à l'écran des éléments éclairés par la visite guidée.
+    val coachTargets = remember { mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>() }
 
     val backgroundColor = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val primaryColor = MaterialTheme.colorScheme.primary
+
+    // Première ouverture : unité du vent, niveau et origine des prévisions (une fois les données là,
+    // pour ne pas masquer l'écran de démarrage).
+    if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
+        OnboardingDialog(
+            windUnit = viewModel.windUnit,
+            onWindUnitSelected = { viewModel.changeWindUnit(it) },
+            surferLevel = viewModel.surferLevel,
+            onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
+            themeMode = viewModel.themeMode,
+            onThemeModeChanged = { viewModel.changeThemeMode(it) },
+            engineConfig = viewModel.engineConfig,
+            onDone = { viewModel.dismissOnboarding() }
+        )
+    }
 
     val popupError = (uiState as? SurfUiState.Success)?.popupError
     if (popupError != null) {
@@ -134,6 +197,8 @@ fun MainScreen(viewModel: SurfViewModel) {
             onToggleSurfCard = { viewModel.toggleSurfCard(it) },
             showWindCard = viewModel.showWindCard,
             onToggleWindCard = { viewModel.toggleWindCard(it) },
+            showWindSeaCard = viewModel.showWindSeaCard,
+            onToggleWindSeaCard = { viewModel.toggleWindSeaCard(it) },
             showWeatherCard = viewModel.showWeatherCard,
             onToggleWeatherCard = { viewModel.toggleWeatherCard(it) },
             showHourlyCard = viewModel.showHourlyCard,
@@ -142,8 +207,32 @@ fun MainScreen(viewModel: SurfViewModel) {
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
             engineConfig = viewModel.engineConfig,
             onEngineConfigChanged = { viewModel.updateEngineConfig(it) },
-            onViewLogs = { },
+            onViewLogs = {
+                showPreferencesDialog = false
+                showForecastHistory = true
+            },
+            onShowIntro = {
+                showPreferencesDialog = false
+                viewModel.showOnboardingAgain()
+            },
+            spotName = (uiState as? SurfUiState.Success)?.spotName ?: "",
+            beachFacing = (uiState as? SurfUiState.Success)?.spotName?.let { viewModel.facingFor(it) },
+            defaultBeachFacing = (uiState as? SurfUiState.Success)?.spotName?.let { viewModel.defaultFacingFor(it) },
+            onBeachFacingChanged = (uiState as? SurfUiState.Success)?.spotName?.let { name -> { deg: Int? -> viewModel.setFacing(name, deg) } },
+            onShowTour = {
+                showPreferencesDialog = false
+                viewModel.showHomeTourAgain()
+            },
             onDismiss = { showPreferencesDialog = false }
+        )
+    }
+
+    if (showForecastHistory) {
+        val snapshots = remember { viewModel.loadForecastHistory() }
+        ForecastHistoryScreen(
+            snapshots = snapshots,
+            currentSpotName = (uiState as? SurfUiState.Success)?.spotName,
+            onDismiss = { showForecastHistory = false }
         )
     }
 
@@ -232,15 +321,17 @@ fun MainScreen(viewModel: SurfViewModel) {
                 val groupedByDate = state.hourlyForecast.groupBy { it.rawTime.toLocalDate() }
                 val availableDates = groupedByDate.keys.toList()
 
-                if (selectedDate == null && availableDates.isNotEmpty()) {
+                // Aussi apres minuit ou un rechargement : un jour qui n'est plus dans les
+                // previsions ne doit pas rester selectionne (cartes vides).
+                if ((selectedDate == null || selectedDate !in availableDates) && availableDates.isNotEmpty()) {
                     selectedDate = availableDates.first()
                 }
 
-                val currentTideInfo = state.dailyTides[LocalDate.now()] ?: state.dailyTides.values.firstOrNull()
+                val currentTideInfo = state.dailyTides[today] ?: state.dailyTides.values.firstOrNull()
 
                 // Point 3 : angle de houle ideal du spot actif (peut etre null si pas encore renseigne)
                 // et meilleur creneau du jour selectionne, pour le bandeau "Statut Flash".
-                val idealSwellDirection = SurfDatabase.findSpotByName(state.spotName)?.idealSwellDirection
+                val idealSwellDirection = viewModel.facingFor(state.spotName)
                 val bestSlot = selectedDate?.let { date ->
                     findBestSlot(
                         dailyHours = daylightHoursFor(date, groupedByDate, state.dailySunInfo),
@@ -252,6 +343,9 @@ fun MainScreen(viewModel: SurfViewModel) {
 
                 // Journal de session : meilleur "Pattern repere" dans les previsions a 7 jours
                 // par rapport aux sessions passees notees >= 4/5.
+                // Fiches des bancs du spot : créneaux du jour sélectionné où la fiche est respectée.
+                val spotMicroSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
+                    .collectAsState(initial = emptyList())
                 val referenceSessions by viewModel.referenceSessions.collectAsState()
                 val bestPatternMatch = remember(state.hourlyForecast, state.dailyTides, idealSwellDirection, referenceSessions) {
                     viewModel.computePatternMatches(state.hourlyForecast, state.dailyTides, idealSwellDirection)
@@ -266,7 +360,10 @@ fun MainScreen(viewModel: SurfViewModel) {
                                 showLiveCam = false
                                 directWebcamSpot = null
                             },
-                            onSwitchSpot = { newSpot -> directWebcamSpot = newSpot }
+                            onSwitchSpot = { newSpot -> directWebcamSpot = newSpot },
+                            showLiveOverlay = viewModel.showLiveOverlay,
+                            windUnit = viewModel.windUnit,
+                            loadLiveConditions = { spot -> viewModel.liveConditionsFor(spot) }
                         )
                     } else {
                         val selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0)
@@ -344,9 +441,16 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             "orange" -> AppColors.WindMid
                                             else -> AppColors.TideLow
                                         }
+                                        // Le créneau suit le jour sélectionné : on le dit quand ce n'est pas aujourd'hui
+                                        // ("Sam. 10 · Meilleur créneau : ..."), sinon on croirait que c'est pour aujourd'hui.
+                                        val bestSlotDayPrefix = selectedDate?.takeIf { it != today }?.let { d ->
+                                            d.format(DateTimeFormatter.ofPattern("EEE d", Locale.FRANCE))
+                                                .replaceFirstChar { it.uppercase() } + " · "
+                                        }.orEmpty()
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .coachTarget("bestSlot", coachTargets)
                                                 .padding(horizontal = 10.dp, vertical = 2.dp)
                                                 .padding(bottom = 6.dp),
                                             verticalAlignment = Alignment.CenterVertically
@@ -357,18 +461,50 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Column {
                                                 Text(
-                                                    text = "Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (score ${bestSlot.averageScore})",
-                                                    fontSize = 10.5.sp,
+                                                    text = "${bestSlotDayPrefix}Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (score ${bestSlot.averageScore})",
+                                                    fontSize = 12.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = onSurfaceColor.copy(alpha = 0.75f),
                                                     maxLines = 1
                                                 )
                                                 Text(
                                                     text = bestSlot.recap,
-                                                    fontSize = 9.5.sp,
+                                                    fontSize = 11.sp,
                                                     color = onSurfaceColor.copy(alpha = 0.55f),
                                                     maxLines = 1
                                                 )
+                                            }
+                                        }
+                                    }
+
+                                    // Fiches de bancs : « Le banc magique : 16h–18h (descendant · 1,0–1,6 m) ».
+                                    run {
+                                        val day = selectedDate ?: availableDates.firstOrNull()
+                                        val dayHours = day?.let { daylightHoursFor(it, groupedByDate, state.dailySunInfo) }.orEmpty()
+                                        spotMicroSpots.filter { it.hasProfile }.forEach { spot ->
+                                            val windows = spot.matchingWindows(dayHours, day?.let { state.dailyTides[it] })
+                                            if (windows.isNotEmpty()) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 10.dp, vertical = 2.dp)
+                                                        .padding(bottom = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Canvas(modifier = Modifier.size(6.dp)) {
+                                                        drawCircle(color = AppColors.WindMid, radius = size.minDimension / 2f)
+                                                    }
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = "${spot.name} : " +
+                                                            windows.joinToString(", ") { "${it.first}h–${it.last + 1}h" } +
+                                                            " (${spot.profileSummary()})",
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                                                        maxLines = 2
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -396,7 +532,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                                 text = "Pattern repéré $matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour}h : " +
                                                     "match ${bestPatternMatch.score}% avec ta session du $refDateFormatted à " +
                                                     "${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model})",
-                                                fontSize = 10.5.sp,
+                                                fontSize = 12.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = onSurfaceColor.copy(alpha = 0.75f),
                                                 maxLines = 2
@@ -407,9 +543,14 @@ fun MainScreen(viewModel: SurfViewModel) {
                             }
 
                             run {
-                                val activeDayHours = groupedByDate[selectedDate ?: LocalDate.now()] ?: state.hourlyForecast
-                                val currentHourNow = LocalTime.now().hour
-                                val closestHourModel = activeDayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) } ?: activeDayHours.firstOrNull()
+                                // Bandeau "temps réel" : toujours AUJOURD'HUI à l'heure actuelle (houle, vent,
+                                // température et marée du même moment), quel que soit le jour sélectionné plus bas.
+                                // Avant, houle/vent suivaient le jour choisi alors que la marée restait celle
+                                // d'aujourd'hui : le bandeau mélangeait deux jours.
+                                val todayHours = groupedByDate[today].orEmpty()
+                                val currentHourNow = clock.hour
+                                val closestHourModel = todayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) }
+                                    ?: state.hourlyForecast.firstOrNull()
 
                                 if (viewModel.showLiveOverlay && closestHourModel != null) {
                                     SurfLiveStripOverlay(
@@ -474,21 +615,18 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             )
                                         }
 
-                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp)) {
+                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp).coachTarget("journal", coachTargets)) {
                                             JournalIcon(
                                                 color = onSurfaceColor,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                         }
 
-                                        IconButton(onClick = { showRadarDialog = true }, modifier = Modifier.size(32.dp)) {
-                                            RadarIcon(
-                                                color = onSurfaceColor,
-                                                modifier = Modifier.size(20.dp)
-                                            )
+                                        IconButton(onClick = { showWeatherDetail = true }, modifier = Modifier.size(32.dp)) {
+                                            Text(text = "🌤️", fontSize = 18.sp)
                                         }
 
-                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp)) {
+                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp).coachTarget("settings", coachTargets)) {
                                             Icon(
                                                 imageVector = Icons.Default.Settings,
                                                 contentDescription = "Paramètres",
@@ -509,12 +647,13 @@ fun MainScreen(viewModel: SurfViewModel) {
                                         )
                                     }
 
-                                    if (showRadarDialog) {
-                                        val activeSpot = SurfDatabase.findSpotByName(state.spotName)
-                                        RadarScreen(
-                                            centerLat = activeSpot?.latitude?.takeIf { it != 0.0 } ?: 45.20,
-                                            centerLon = activeSpot?.longitude?.takeIf { it != 0.0 } ?: -1.20,
-                                            onDismiss = { showRadarDialog = false }
+                                    if (showWeatherDetail) {
+                                        WeatherDetailScreen(
+                                            spotName = state.spotName,
+                                            groupedByDate = groupedByDate,
+                                            availableDates = availableDates,
+                                            windUnit = viewModel.windUnit,
+                                            onDismiss = { showWeatherDetail = false }
                                         )
                                     }
 
@@ -530,11 +669,19 @@ fun MainScreen(viewModel: SurfViewModel) {
                                     }
 
                                     if (showSessionLogEntry) {
-                                        val todayHours = groupedByDate[LocalDate.now()] ?: state.hourlyForecast
-                                        val todayTide = state.dailyTides[LocalDate.now()]
+                                        val todayHours = groupedByDate[today] ?: state.hourlyForecast
+                                        val todayTide = state.dailyTides[today]
                                         val quiverBoards by viewModel.quiverBoards.collectAsState()
                                         val microSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
                                             .collectAsState(initial = emptyList())
+
+                                        // J-1 / J-2 : conditions gardees par le journal des previsions
+                                        // (la derniere prevision faite pour ce jour-la).
+                                        val pastConditions = remember(state.spotName, today) {
+                                            (1..2).associateWith { offset ->
+                                                viewModel.pastConditions(state.spotName, today.minusDays(offset.toLong()))
+                                            }.filterValues { it != null && it.first.isNotEmpty() }
+                                        }
 
                                         SessionLogEntryDialog(
                                             spotName = state.spotName,
@@ -543,12 +690,19 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             quiverBoards = quiverBoards,
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
-                                            onSave = { startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                            onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },
+                                            showTips = viewModel.showJournalTips,
+                                            onDismissTips = { viewModel.dismissJournalTips() },
+                                            availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
+                                            onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                                val past = pastConditions[dayOffset]
+                                                val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
+                                                val dayTide = if (dayOffset == 0) todayTide else past?.second
                                                 val midpointHour = (startHour + endHour) / 2
-                                                val hourlyModel = todayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
+                                                val hourlyModel = dayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
                                                 if (hourlyModel != null) {
                                                     viewModel.logSurfSession(
-                                                        date = LocalDate.now(),
+                                                        date = today.minusDays(dayOffset.toLong()),
                                                         startHour = startHour,
                                                         endHour = endHour,
                                                         microSpotId = microSpotId,
@@ -557,7 +711,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                                         comment = comment,
                                                         mediaUri = mediaUri,
                                                         hourlyModel = hourlyModel,
-                                                        tideInfo = todayTide
+                                                        tideInfo = dayTide
                                                     )
                                                 }
                                             },
@@ -565,10 +719,30 @@ fun MainScreen(viewModel: SurfViewModel) {
                                         )
                                     }
 
-                                    if (state.lastUpdatedTime.isNotEmpty()) {
+                                    newVersionName?.let { v ->
                                         Text(
-                                            text = "Mis à jour à ${state.lastUpdatedTime}",
-                                            fontSize = 9.sp,
+                                            text = "⬆ Nouvelle version disponible (v$v) · Mettre à jour",
+                                            fontSize = 12.sp,
+                                            color = primaryColor,
+                                            modifier = Modifier
+                                                .clickable {
+                                                    context.startActivity(
+                                                        android.content.Intent(
+                                                            android.content.Intent.ACTION_VIEW,
+                                                            android.net.Uri.parse("https://surflog.fr/surflog.apk")
+                                                        )
+                                                    )
+                                                }
+                                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                                        )
+                                    }
+
+                                    run {
+                                        // Version installee (= n° du build GitHub, ex: surf-log-debug-27 -> 1.0.27).
+                                        val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime} · " else ""
+                                        Text(
+                                            text = "${updated}v$appVersion",
+                                            fontSize = 10.5.sp,
                                             color = onSurfaceColor.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                         )
@@ -583,9 +757,11 @@ fun MainScreen(viewModel: SurfViewModel) {
 
                                     item {
                                         DynamicCardsSection(
+                                            coachTargets = coachTargets,
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             dailyTideInfo = dailyTide,
-                                            isToday = (date == LocalDate.now()),
+                                            isToday = (date == today),
+                                            currentHour = clock.hour,
                                             viewModel = viewModel,
                                             availableDates = availableDates,
                                             groupedByDate = groupedByDate,
@@ -610,7 +786,21 @@ fun MainScreen(viewModel: SurfViewModel) {
                             }
                         }
                     }
+                    // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
+                    if (viewModel.showHomeTour && !viewModel.showOnboarding) {
+                        CoachMarkOverlay(
+                            steps = listOf(
+                                CoachStep("journal", "📓 Le journal de bord", "Note tes sessions ici : l'appli remplit les conditions toute seule et repère dans quelles conditions tu surfes le mieux."),
+                                CoachStep("bestSlot", "🎯 Le meilleur créneau", "L'heure conseillée pour le jour sélectionné, calculée selon ton niveau. Touche un autre jour dans la semaine pour le changer."),
+                                CoachStep("weekCard", "📅 Les encarts", "Touche un jour pour le détailler. Chaque encart se déplace, se replie ou se masque (Paramètres) : compose ton écran."),
+                                CoachStep("settings", "⚙️ Les paramètres", "Modèles de prévision, unités, niveau, sauvegarde… Tu peux aussi rejouer cette visite ici.")
+                            ),
+                            targets = coachTargets,
+                            onFinish = { viewModel.dismissHomeTour() }
+                        )
+                    }
                 }
+
             }
         }
             }
@@ -717,7 +907,7 @@ fun FavoritesHeaderRow(
             ) {
                 Text(
                     text = spotName ?: "",
-                    fontSize = 9.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else onSurfaceColor,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
@@ -732,7 +922,7 @@ fun FavoritesHeaderRow(
         ) {
             Text(
                 text = "...",
-                fontSize = 9.sp,
+                fontSize = 10.5.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
@@ -743,6 +933,8 @@ fun FavoritesHeaderRow(
 
 @Composable
 fun DynamicCardsSection(
+    // Positions des éléments éclairés par la visite guidée (null = pas de visite).
+    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -763,18 +955,20 @@ fun DynamicCardsSection(
     surfaceColor: Color,
     onSurfaceColor: Color,
     idealSwellDirection: Int?,
-    surferLevel: String
+    surferLevel: String,
+    currentHour: Int = LocalTime.now().hour
 ) {
-    val initialSelectedHour = remember(hoursForSelectedDay, isToday) {
+    // currentHour en cle : a chaque changement d'heure (ou rechargement), la selection
+    // revient sur l'heure actuelle au lieu de rester figee sur celle du chargement.
+    val initialSelectedHour = remember(hoursForSelectedDay, isToday, currentHour) {
         if (isToday) {
-            val currentHour = LocalTime.now().hour
             hoursForSelectedDay.minByOrNull { abs(it.rawTime.hour - currentHour) } ?: hoursForSelectedDay.firstOrNull()
         } else {
             hoursForSelectedDay.firstOrNull()
         }
     }
 
-    var selectedHourlyItem by remember(hoursForSelectedDay, isToday) { mutableStateOf(initialSelectedHour) }
+    var selectedHourlyItem by remember(hoursForSelectedDay, isToday, currentHour) { mutableStateOf(initialSelectedHour) }
 
     var draggedKey by remember { mutableStateOf<String?>(null) }
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
@@ -786,14 +980,17 @@ fun DynamicCardsSection(
             "dailyTimeline" -> viewModel.showDailyTimelineCard
             "surf" -> viewModel.showSurfCard
             "wind" -> viewModel.showWindCard
+            "windSea" -> viewModel.showWindSeaCard
             "weather" -> viewModel.showWeatherCard
             "hourly" -> viewModel.showHourlyCard
             else -> true
         }
     }
 
+    // Glisser-déposer libre : on attrape la poignée, l'encart suit le doigt et les autres se
+    // décalent pour lui faire de la place, quelle que soit la distance parcourue.
     fun dragModifierFor(cardKey: String): Modifier = Modifier.pointerInput(cardKey) {
-        detectDragGesturesAfterLongPress(
+        detectDragGestures(
             onDragStart = {
                 draggedKey = cardKey
                 dragOffsetY = 0f
@@ -810,25 +1007,28 @@ fun DynamicCardsSection(
                 change.consume()
                 dragOffsetY += dragAmount.y
 
-                val orderedKeys = renderableCardKeys()
-                val currentIndex = orderedKeys.indexOf(cardKey)
-
-                if (currentIndex != -1) {
-                    if (dragOffsetY > 0f && currentIndex < orderedKeys.size - 1) {
-                        val nextKey = orderedKeys[currentIndex + 1]
-                        val nextHeight = (itemHeights[nextKey] ?: itemHeights[cardKey] ?: 0).toFloat()
+                // Plusieurs encarts peuvent être franchis d'un seul geste rapide.
+                var guard = 0
+                while (guard++ < 12) {
+                    val keys = renderableCardKeys()
+                    val currentIndex = keys.indexOf(cardKey)
+                    if (currentIndex == -1) break
+                    if (dragOffsetY > 0f && currentIndex < keys.size - 1) {
+                        val nextHeight = (itemHeights[keys[currentIndex + 1]] ?: 0).toFloat()
                         if (nextHeight > 0f && dragOffsetY > nextHeight / 2f) {
                             viewModel.moveCardDown(cardKey)
                             dragOffsetY -= nextHeight
+                            continue
                         }
                     } else if (dragOffsetY < 0f && currentIndex > 0) {
-                        val prevKey = orderedKeys[currentIndex - 1]
-                        val prevHeight = (itemHeights[prevKey] ?: itemHeights[cardKey] ?: 0).toFloat()
+                        val prevHeight = (itemHeights[keys[currentIndex - 1]] ?: 0).toFloat()
                         if (prevHeight > 0f && -dragOffsetY > prevHeight / 2f) {
                             viewModel.moveCardUp(cardKey)
                             dragOffsetY += prevHeight
+                            continue
                         }
                     }
+                    break
                 }
             }
         )
@@ -878,7 +1078,7 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth()
                             )
                         }
                         "dailyTimeline" -> {
@@ -920,6 +1120,20 @@ fun DynamicCardsSection(
                                     selectedHour = hourly,
                                     allHoursOfDay = hoursForSelectedDay,
                                     windUnit = viewModel.windUnit,
+                                    onHourSelected = { selectedHourlyItem = it },
+                                    isCollapsed = isCollapsed,
+                                    onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
+                                    dragHandleModifier = dragMod,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                        "windSea" -> {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            selectedHourlyItem?.let { hourly ->
+                                WindSeaCardComponent(
+                                    selectedHour = hourly,
+                                    allHoursOfDay = hoursForSelectedDay,
                                     onHourSelected = { selectedHourlyItem = it },
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
@@ -1056,7 +1270,7 @@ fun WeeklyForecastCard(
                     ) {
                         Text(
                             text = dayLabel,
-                            fontSize = 9.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isSelected) primaryColor else onSurfaceColor,
                             maxLines = 1
@@ -1127,7 +1341,7 @@ fun WeeklyForecastCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(96.dp)
+                    .height(132.dp)
             ) {
                 ContinuousWaveCanvas(
                     allHourlyData = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) },
@@ -1135,6 +1349,9 @@ fun WeeklyForecastCard(
                     dailyHeights = dailyHeights,
                     dailyFeelsLike = dailyFeelsLike,
                     dailyWaterTemps = dailyWaterTemps,
+                    dailyEnergies = availableDates.map { date ->
+                        daylightHoursFor(date, groupedByDate, dailySunInfo).maxOfOrNull { it.energyKj } ?: 0
+                    },
                     maxScale = fixedMaxScale,
                     daysCount = availableDates.size,
                     selectedIndex = selectedIndex,
@@ -1222,6 +1439,16 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
     }
 }
 
+/**
+ * True quand le theme (fonce/clair/systeme, apres arbitrage utilisateur dans
+ * SurfViewModel/MainActivity) rend actuellement une surface sombre. On se base sur la
+ * luminance reelle de MaterialTheme.colorScheme.surface plutot que sur
+ * isSystemInDarkTheme(), qui ignorerait un theme force manuellement par l'utilisateur.
+ */
+@Composable
+private fun isDarkSurfaceTheme(): Boolean =
+    MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
 @Composable
 fun ContinuousWaveCanvas(
     allHourlyData: List<HourlyUiModel>,
@@ -1229,6 +1456,8 @@ fun ContinuousWaveCanvas(
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
     dailyWaterTemps: List<Int>,
+    // Énergie de la houle au pic de chaque jour (kJ) : petite valeur discrète sous la période.
+    dailyEnergies: List<Int> = emptyList(),
     maxScale: Float,
     daysCount: Int,
     selectedIndex: Int,
@@ -1237,21 +1466,36 @@ fun ContinuousWaveCanvas(
     if (allHourlyData.isEmpty()) return
 
     val density = LocalDensity.current
-    val tideColorInt = AppColors.TideHighDark.toArgb()
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    // Texte simple, sans fond ni ombre : on choisit la variante claire ou foncee de
+    // chaque couleur maree selon le theme actif, pour rester lisible sur fond blanc
+    // comme sur fond quasi noir sans alterer l'identite de la couleur elle-meme.
+    val isDarkTheme = isDarkSurfaceTheme()
+    val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
+    val tideColorInt = tideLineColor.toArgb()
 
-    val heightTextPaint = remember(density) {
+    val heightTextPaint = remember(density, tideColorInt) {
         Paint().apply {
             color = tideColorInt
-            textSize = with(density) { 8.5.sp.toPx() }
+            textSize = with(density) { 11.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
 
-    val periodTextPaint = remember(density) {
+    // Etiquette neutre (pas de code couleur impose) : suit onSurface, lisible nativement
+    // dans les deux themes sans besoin de chip.
+    val energyTextPaint = remember(density) {
         Paint().apply {
-            color = 0xFF90A4AE.toInt()
-            textSize = with(density) { 8.sp.toPx() }
+            textSize = with(density) { 9.sp.toPx() }
+            isAntiAlias = true
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+    }
+    val periodTextPaint = remember(density, onSurfaceColor) {
+        Paint().apply {
+            color = onSurfaceColor.copy(alpha = 0.55f).toArgb()
+            textSize = with(density) { 10.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -1260,16 +1504,16 @@ fun ContinuousWaveCanvas(
     val feelsTextPaint = remember(density) {
         Paint().apply {
             color = AppColors.WindAccent.toArgb()
-            textSize = with(density) { 7.5.sp.toPx() }
+            textSize = with(density) { 8.5.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
 
-    val waterTextPaint = remember(density) {
+    val waterTextPaint = remember(density, tideColorInt) {
         Paint().apply {
             color = tideColorInt
-            textSize = with(density) { 7.5.sp.toPx() }
+            textSize = with(density) { 8.5.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
@@ -1341,17 +1585,17 @@ fun ContinuousWaveCanvas(
             }
         }
 
-        drawPath(path = strokePath, color = AppColors.TideHighDark, style = Stroke(width = 2.dp.toPx()))
+        drawPath(path = strokePath, color = tideLineColor, style = Stroke(width = 2.5.dp.toPx()))
 
         for (i in 0 until daysCount) {
             val colLeft = i * dayWidth + 3.dp.toPx()
             val feels = dailyFeelsLike.getOrNull(i) ?: 20
             val water = dailyWaterTemps.getOrNull(i) ?: 18
 
-            val thX = colLeft + 2.dp.toPx()
-            val thTop = padY + 1.2.dp.toPx()
-            val thBottom = padY + 7.dp.toPx()
-            val tubeW = 2.2.dp.toPx()
+            val thX = colLeft + 2.5.dp.toPx()
+            val thTop = padY + 1.5.dp.toPx()
+            val thBottom = padY + 8.7.dp.toPx()
+            val tubeW = 2.7.dp.toPx()
 
             drawRoundRect(
                 color = AppColors.WindAccent.copy(alpha = 0.35f),
@@ -1368,28 +1612,28 @@ fun ContinuousWaveCanvas(
             )
             drawCircle(
                 color = AppColors.WindAccent,
-                radius = 1.9.dp.toPx(),
-                center = Offset(thX, thBottom + 1.dp.toPx())
+                radius = 2.4.dp.toPx(),
+                center = Offset(thX, thBottom + 1.2.dp.toPx())
             )
 
             drawContext.canvas.nativeCanvas.drawText(
                 "$feels°",
-                colLeft + 5.5.dp.toPx(),
-                padY + 7.5.dp.toPx(),
+                colLeft + 9.dp.toPx(),
+                padY + 9.3.dp.toPx(),
                 feelsTextPaint
             )
 
-            val dropCenterX = colLeft + 2.dp.toPx()
-            val dropTop = padY + 12.dp.toPx()
-            val dropBottom = padY + 18.2.dp.toPx()
-            val dropW = 2.3.dp.toPx()
+            val dropCenterX = colLeft + 2.5.dp.toPx()
+            val dropTop = padY + 15.dp.toPx()
+            val dropBottom = padY + 22.7.dp.toPx()
+            val dropW = 2.9.dp.toPx()
 
             val dropPath = Path().apply {
                 moveTo(dropCenterX, dropTop)
                 cubicTo(
-                    dropCenterX + dropW * 0.3f, dropTop + 1.8.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 2.8.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 1.4.dp.toPx()
+                    dropCenterX + dropW * 0.3f, dropTop + 2.24.dp.toPx(),
+                    dropCenterX + dropW, dropBottom - 3.48.dp.toPx(),
+                    dropCenterX + dropW, dropBottom - 1.74.dp.toPx()
                 )
                 quadraticBezierTo(
                     dropCenterX + dropW, dropBottom,
@@ -1397,23 +1641,23 @@ fun ContinuousWaveCanvas(
                 )
                 quadraticBezierTo(
                     dropCenterX - dropW, dropBottom,
-                    dropCenterX - dropW, dropBottom - 1.4.dp.toPx()
+                    dropCenterX - dropW, dropBottom - 1.74.dp.toPx()
                 )
                 cubicTo(
-                    dropCenterX - dropW, dropBottom - 2.8.dp.toPx(),
-                    dropCenterX - dropW * 0.3f, dropTop + 1.8.dp.toPx(),
+                    dropCenterX - dropW, dropBottom - 3.48.dp.toPx(),
+                    dropCenterX - dropW * 0.3f, dropTop + 2.24.dp.toPx(),
                     dropCenterX, dropTop
                 )
                 close()
             }
 
-            drawPath(path = dropPath, color = AppColors.TideHighDark.copy(alpha = 0.25f))
-            drawPath(path = dropPath, color = AppColors.TideHighDark, style = Stroke(width = 0.85.dp.toPx()))
+            drawPath(path = dropPath, color = tideLineColor.copy(alpha = 0.25f))
+            drawPath(path = dropPath, color = tideLineColor, style = Stroke(width = 0.85.dp.toPx()))
 
             drawContext.canvas.nativeCanvas.drawText(
                 "$water°",
-                colLeft + 5.5.dp.toPx(),
-                padY + 17.5.dp.toPx(),
+                colLeft + 9.dp.toPx(),
+                padY + 21.9.dp.toPx(),
                 waterTextPaint
             )
         }
@@ -1425,25 +1669,38 @@ fun ContinuousWaveCanvas(
 
             val hText = String.format(Locale.US, "%.1fm", waveHeight)
             val hTextW = heightTextPaint.measureText(hText)
-            val textY = (closestPoint.y - 4.dp.toPx()).coerceAtLeast(padY + 7.dp.toPx())
+            val textY = (closestPoint.y - 5.dp.toPx()).coerceAtLeast(padY + 26.dp.toPx())
 
             if (i == selectedIndex) {
-                drawCircle(color = Color.White, radius = 3.5.dp.toPx(), center = closestPoint)
-                drawCircle(color = AppColors.TideHighDark, radius = 2.2.dp.toPx(), center = closestPoint)
+                drawCircle(color = Color.White, radius = 4.4.dp.toPx(), center = closestPoint)
+                drawCircle(color = tideLineColor, radius = 2.8.dp.toPx(), center = closestPoint)
             }
 
-            drawContext.canvas.nativeCanvas.drawText(hText, targetX - hTextW / 2f, textY, heightTextPaint)
+            // Taille de la houle au-dessus de la courbe, période juste à côté (le tout centré).
+            val period = dailyPeriods.getOrNull(i)
+            val pText = period?.let { "${it}s" }
+            val gap = 3.dp.toPx()
+            val pTextW = pText?.let { periodTextPaint.measureText(it) } ?: 0f
+            val totalW = hTextW + if (pText != null) gap + pTextW else 0f
+            val startX = targetX - totalW / 2f
+            drawContext.canvas.nativeCanvas.drawText(hText, startX, textY, heightTextPaint)
+            if (pText != null) {
+                drawContext.canvas.nativeCanvas.drawText(pText, startX + hTextW + gap, textY, periodTextPaint)
+            }
         }
 
+        // Énergie de la houle au pic du jour, à l'ancienne place de la période (bas de la courbe).
         for (i in 0 until daysCount) {
             val targetX = (i + 0.5f) * dayWidth
-            val period = dailyPeriods.getOrNull(i) ?: continue
-
-            val pText = "${period}s"
-            val pTextW = periodTextPaint.measureText(pText)
-            val pY = baseY - 2.dp.toPx()
-
-            drawContext.canvas.nativeCanvas.drawText(pText, targetX - pTextW / 2f, pY, periodTextPaint)
+            val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
+            val eText = "${energy}kJ"
+            val eW = energyTextPaint.measureText(eText)
+            energyTextPaint.color = when {
+                energy >= 400 -> 0xFFE53935.toInt()
+                energy >= 150 -> 0xFFFB8C00.toInt()
+                else -> 0xFF78909C.toInt()
+            }
+            drawContext.canvas.nativeCanvas.drawText(eText, targetX - eW / 2f, baseY - 3.dp.toPx(), energyTextPaint)
         }
     }
 }
@@ -1456,27 +1713,38 @@ fun DailyTideCanvas(
     if (tideInfo == null) return
 
     val density = LocalDensity.current
-    val highTextPaint = remember(density) {
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    // Texte simple, sans fond ni ombre : variante claire ou foncee selon le theme actif
+    // (meme couleur pour le texte et les traits/icones), pour rester lisible sur fond
+    // blanc comme sur fond quasi noir.
+    val isDarkTheme = isDarkSurfaceTheme()
+    val highIconColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
+    val lowIconColor = if (isDarkTheme) AppColors.TideLow else AppColors.TideLowDark
+
+    val highTextPaint = remember(density, highIconColor) {
         Paint().apply {
-            color = AppColors.TideHighDark.toArgb()
+            color = highIconColor.toArgb()
             textSize = with(density) { 7.2.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
 
-    val lowTextPaint = remember(density) {
+    val lowTextPaint = remember(density, lowIconColor) {
         Paint().apply {
-            color = AppColors.TideLowDark.toArgb()
+            color = lowIconColor.toArgb()
             textSize = with(density) { 7.2.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
 
-    val coefTextPaint = remember(density) {
+    // Correctif contraste : l'ancien gris-bleu clair (0xFFB0BEC5) etait pense pour fond
+    // sombre et devenait quasi invisible en theme clair. On suit desormais onSurface
+    // (fonce en clair, clair en sombre), comme les autres textes du bloc marees.
+    val coefTextPaint = remember(density, onSurfaceColor) {
         Paint().apply {
-            color = 0xFFB0BEC5.toInt()
+            color = onSurfaceColor.copy(alpha = 0.62f).toArgb()
             textSize = with(density) { 7.5.sp.toPx() }
             isAntiAlias = true
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -1493,7 +1761,7 @@ fun DailyTideCanvas(
 
         val iconW = 5.2.dp.toPx()
         val iconH = 4.8.dp.toPx()
-        val iconGap = 1.2.dp.toPx()
+        val iconGap = 3.2.dp.toPx()
 
         val highTextW = if (highTimeStr.isNotEmpty()) highTextPaint.measureText(highTimeStr) else 0f
         val lowTextW = if (lowTimeStr.isNotEmpty()) lowTextPaint.measureText(lowTimeStr) else 0f
@@ -1528,12 +1796,12 @@ fun DailyTideCanvas(
                     row1Y + iconH * 0.35f
                 )
             }
-            drawPath(wavePath, color = AppColors.TideHighDark.copy(alpha = 0.65f), style = Stroke(width = 0.75.dp.toPx()))
+            drawPath(wavePath, color = highIconColor.copy(alpha = 0.65f), style = Stroke(width = 0.75.dp.toPx()))
 
             val arrowBottom = row1Y + iconH * 0.35f
             val arrowTop = row1Y - iconH * 0.45f
             drawLine(
-                color = AppColors.TideHighDark,
+                color = highIconColor,
                 start = Offset(arrowX, arrowBottom),
                 end = Offset(arrowX, arrowTop),
                 strokeWidth = 0.9.dp.toPx()
@@ -1544,7 +1812,7 @@ fun DailyTideCanvas(
                 lineTo(arrowX, arrowTop)
                 lineTo(arrowX + headSize, arrowTop + headSize)
             }
-            drawPath(headPath, color = AppColors.TideHighDark, style = Stroke(width = 0.9.dp.toPx()))
+            drawPath(headPath, color = highIconColor, style = Stroke(width = 0.9.dp.toPx()))
 
             val highBaseline = row1Y - (highTextPaint.descent() + highTextPaint.ascent()) / 2f
             drawContext.canvas.nativeCanvas.drawText(highTimeStr, textStartX, highBaseline, highTextPaint)
@@ -1563,12 +1831,12 @@ fun DailyTideCanvas(
                     row2Y - iconH * 0.35f
                 )
             }
-            drawPath(wavePath2, color = AppColors.TideLowDark.copy(alpha = 0.65f), style = Stroke(width = 0.75.dp.toPx()))
+            drawPath(wavePath2, color = lowIconColor.copy(alpha = 0.65f), style = Stroke(width = 0.75.dp.toPx()))
 
             val arrowTop = row2Y - iconH * 0.35f
             val arrowBottom = row2Y + iconH * 0.45f
             drawLine(
-                color = AppColors.TideLowDark,
+                color = lowIconColor,
                 start = Offset(arrowX, arrowTop),
                 end = Offset(arrowX, arrowBottom),
                 strokeWidth = 0.9.dp.toPx()
@@ -1579,7 +1847,7 @@ fun DailyTideCanvas(
                 lineTo(arrowX, arrowBottom)
                 lineTo(arrowX + headSize, arrowBottom - headSize)
             }
-            drawPath(headPath2, color = AppColors.TideLowDark, style = Stroke(width = 0.9.dp.toPx()))
+            drawPath(headPath2, color = lowIconColor, style = Stroke(width = 0.9.dp.toPx()))
 
             val lowBaseline = row2Y - (lowTextPaint.descent() + lowTextPaint.ascent()) / 2f
             drawContext.canvas.nativeCanvas.drawText(lowTimeStr, textStartX, lowBaseline, lowTextPaint)
