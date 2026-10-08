@@ -34,6 +34,13 @@
         document.getElementById("loading-text").textContent = "Ce navigateur est trop ancien pour Surf Log (iOS 18.2 ou plus récent requis).";
     }
 </script>
+<script>
+    // Android (Chrome) : on garde l'invite d'installation pour la déclencher depuis un bouton des Paramètres.
+    window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.__installPrompt = e; });
+    window.addEventListener("appinstalled", function () { window.__installPrompt = null; });
+    // Service worker minimal (aucune mise en cache) : requis par certaines versions de Chrome pour proposer l'installation.
+    if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
+</script>
 <script src="surflog.js"></script>
 </body>
 </html>

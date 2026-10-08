@@ -54,7 +54,9 @@ fun MainScreen(
     // Version installée, affichée à côté de "Mis à jour à" (ex: "1.0.19").
     appVersion: String? = null,
     // Sauvegarde du journal dans un fichier (version web seulement).
-    backup: SessionLogBackup? = null
+    backup: SessionLogBackup? = null,
+    // Installation du site comme appli (version web seulement).
+    install: AppInstall? = null
 ) {
     // "clock" = heure pleine la plus proche (10h44 -> 11h), qui avance toute seule : avant,
     // "maintenant" n'était calculé qu'au chargement.
@@ -168,7 +170,8 @@ fun MainScreen(
             },
             onDismiss = { showPreferencesDialog = false },
             onPinWidget = onPinWidget,
-            backup = backup
+            backup = backup,
+            install = install
         )
     }
 

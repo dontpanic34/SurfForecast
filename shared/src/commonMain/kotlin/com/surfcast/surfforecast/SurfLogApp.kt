@@ -18,7 +18,8 @@ fun SurfLogApp(
     sessionLogStore: SessionLogStore? = null,
     onPinWidget: (() -> Unit)? = null,
     appVersion: String? = null,
-    backup: SessionLogBackup? = null
+    backup: SessionLogBackup? = null,
+    install: AppInstall? = null
 ) {
     val scope = rememberCoroutineScope()
     val controller = remember(prefs) { SurfController(scope = scope, prefs = prefs, sessionLogStore = sessionLogStore) }
@@ -33,6 +34,6 @@ fun SurfLogApp(
     }
 
     SurfForecastTheme(useDarkTheme = useDarkTheme) {
-        MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup)
+        MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install)
     }
 }

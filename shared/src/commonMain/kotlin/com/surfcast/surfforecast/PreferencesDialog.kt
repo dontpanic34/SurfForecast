@@ -55,7 +55,9 @@ fun SurfPreferencesDialog(
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
     onShowIntro: (() -> Unit)? = null,
     // Sauvegarde / restauration du journal (version web seulement).
-    backup: SessionLogBackup? = null
+    backup: SessionLogBackup? = null,
+    // Installation du site comme appli (version web seulement).
+    install: AppInstall? = null
 ) {
     val colors = MaterialTheme.colorScheme
     val pillShape = RoundedCornerShape(50)
@@ -644,6 +646,38 @@ fun SurfPreferencesDialog(
                         ) { Text("⬆ Restaurer", fontSize = 11.5.sp, color = colors.onBackground) }
                     }
                     importMessage?.let { Text(it, fontSize = 11.sp, color = colors.onBackground) }
+                }
+
+                if (install != null && !install.isInstalled()) {
+                    var showIosGuide by remember { mutableStateOf(false) }
+                    Text("Appli", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
+                    when (install.platform) {
+                        "android" -> {
+                            Button(
+                                onClick = { install.prompt() },
+                                enabled = install.canPrompt(),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = pillShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
+                            ) { Text("📲 Installer l'appli", fontSize = 11.5.sp, color = colors.onBackground) }
+                            if (!install.canPrompt()) {
+                                Text(
+                                    "Si le bouton est grisé : menu ⋮ de Chrome → « Installer l'application » (ou « Ajouter à l'écran d'accueil »).",
+                                    fontSize = 10.5.sp,
+                                    color = colors.onBackground.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                        "ios" -> {
+                            Button(
+                                onClick = { showIosGuide = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = pillShape,
+                                colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
+                            ) { Text("📲 Ajouter à l'écran d'accueil", fontSize = 11.5.sp, color = colors.onBackground) }
+                        }
+                    }
+                    if (showIosGuide) IosInstallGuideDialog(onDismiss = { showIosGuide = false })
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

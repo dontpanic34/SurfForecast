@@ -40,6 +40,21 @@ private external fun downloadTextFile(name: String, text: String)
 )
 private external fun pickTextFile(onText: (JsString) -> Unit)
 
+@JsFun("() => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)")
+private external fun isIosDevice(): Boolean
+
+@JsFun("() => /android/i.test(navigator.userAgent)")
+private external fun isAndroidDevice(): Boolean
+
+@JsFun("() => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true")
+private external fun isStandaloneMode(): Boolean
+
+@JsFun("() => !!window.__installPrompt")
+private external fun canPromptInstall(): Boolean
+
+@JsFun("() => { const p = window.__installPrompt; if (p) { window.__installPrompt = null; p.prompt(); } }")
+private external fun promptInstall()
+
 /** Point d'entrée de la version web (surflog.js), même app que sur Android. */
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
@@ -49,6 +64,16 @@ fun main() {
     val backup = SessionLogBackup(
         export = { downloadTextFile("surflog-journal.json", sessionLogStore.exportJson()) },
         import = { onDone -> pickTextFile { text -> onDone(sessionLogStore.importJson(text.toString())) } }
+    )
+    val install = AppInstall(
+        platform = when {
+            isIosDevice() -> "ios"
+            isAndroidDevice() -> "android"
+            else -> "other"
+        },
+        isInstalled = { isStandaloneMode() },
+        canPrompt = { canPromptInstall() },
+        prompt = { promptInstall() }
     )
     // Numéro de version injecté dans index.html par la CI (1.0.<n° de build>).
     val version = document.querySelector("meta[name=app-version]")?.getAttribute("content")
@@ -60,6 +85,6 @@ fun main() {
 
     document.getElementById("loading")?.remove()
     ComposeViewport(document.body!!) {
-        SurfLogApp(prefs = prefs, sessionLogStore = sessionLogStore, appVersion = version, backup = backup)
+        SurfLogApp(prefs = prefs, sessionLogStore = sessionLogStore, appVersion = version, backup = backup, install = install)
     }
 }
