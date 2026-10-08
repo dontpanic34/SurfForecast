@@ -4,7 +4,6 @@ package com.surfcast.surfforecast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -268,13 +267,18 @@ fun SurfPreferencesDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                LazyColumn(
+                // Colonne défilante simple (et non LazyColumn) : le contenu est court, et la hauteur de la
+                // carte APK (image chargée après coup) ne doit pas décaler le défilement.
+                val scrollState = rememberScrollState()
+                LaunchedEffect(Unit) { scrollState.scrollTo(0) }
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    item {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "1. Personnalisation",
@@ -431,7 +435,7 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    item {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "2. Unité du vent",
                                 fontSize = 13.sp,
@@ -464,7 +468,7 @@ fun SurfPreferencesDialog(
 
                     // Bouton d'épinglage du widget : Android seulement (rien à afficher sur le site).
                     if (onPinWidget != null) {
-                        item {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             OutlinedButton(
                                 onClick = onPinWidget,
                                 modifier = Modifier.fillMaxWidth(),
@@ -476,7 +480,7 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    item {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
