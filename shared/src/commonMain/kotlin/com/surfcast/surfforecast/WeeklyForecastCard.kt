@@ -75,7 +75,7 @@ fun WeeklyForecastCard(
     dailyPeriods: List<Int>,
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
-    dailyWaterTemps: List<Int>,
+    dailyWaterTemps: List<Int?>,
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     fixedMaxScale: Float,
     selectedIndex: Int,
@@ -321,7 +321,7 @@ fun ContinuousWaveCanvas(
     dailyPeriods: List<Int>,
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
-    dailyWaterTemps: List<Int>,
+    dailyWaterTemps: List<Int?>,
     // Énergie de la houle au pic de chaque jour (kJ) : petite valeur discrète sous la période.
     dailyEnergies: List<Int> = emptyList(),
     maxScale: Float,
@@ -347,9 +347,9 @@ fun ContinuousWaveCanvas(
     // dans les deux themes sans besoin de chip.
     val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
 
-    val feelsTextPaint = TextStyle(color = AppColors.WindAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-
-    val waterTextPaint = TextStyle(color = tideLineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    // Température de l'eau : bleu dédié, avec la vague pour icône.
+    val waterColor = waterTempColor()
+    val waterTextPaint = TextStyle(color = waterColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -421,67 +421,13 @@ fun ContinuousWaveCanvas(
 
         for (i in 0 until daysCount) {
             val colLeft = i * dayWidth + 3.dp.toPx()
-            val feels = dailyFeelsLike.getOrNull(i) ?: 20
-            val water = dailyWaterTemps.getOrNull(i) ?: 18
-
-            val thX = colLeft + 2.5.dp.toPx()
-            val thTop = padY + 1.5.dp.toPx()
-            val thBottom = padY + 8.7.dp.toPx()
-            val tubeW = 2.7.dp.toPx()
-
-            drawRoundRect(
-                color = AppColors.WindAccent.copy(alpha = 0.35f),
-                topLeft = Offset(thX - tubeW / 2f, thTop),
-                size = Size(tubeW, thBottom - thTop),
-                cornerRadius = CornerRadius(tubeW / 2f, tubeW / 2f)
-            )
-            drawRoundRect(
-                color = AppColors.WindAccent,
-                topLeft = Offset(thX - tubeW / 2f, thTop),
-                size = Size(tubeW, thBottom - thTop),
-                cornerRadius = CornerRadius(tubeW / 2f, tubeW / 2f),
-                style = Stroke(width = 0.7.dp.toPx())
-            )
-            drawCircle(
-                color = AppColors.WindAccent,
-                radius = 2.4.dp.toPx(),
-                center = Offset(thX, thBottom + 1.2.dp.toPx())
-            )
-
-            drawTextAtBaseline(textMeasurer, "$feels°", feelsTextPaint, colLeft + 9.dp.toPx(), padY + 9.3.dp.toPx())
-
-            val dropCenterX = colLeft + 2.5.dp.toPx()
-            val dropTop = padY + 15.dp.toPx()
-            val dropBottom = padY + 22.7.dp.toPx()
-            val dropW = 2.9.dp.toPx()
-
-            val dropPath = Path().apply {
-                moveTo(dropCenterX, dropTop)
-                cubicTo(
-                    dropCenterX + dropW * 0.3f, dropTop + 2.24.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 3.48.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 1.74.dp.toPx()
-                )
-                quadraticBezierTo(
-                    dropCenterX + dropW, dropBottom,
-                    dropCenterX, dropBottom
-                )
-                quadraticBezierTo(
-                    dropCenterX - dropW, dropBottom,
-                    dropCenterX - dropW, dropBottom - 1.74.dp.toPx()
-                )
-                cubicTo(
-                    dropCenterX - dropW, dropBottom - 3.48.dp.toPx(),
-                    dropCenterX - dropW * 0.3f, dropTop + 2.24.dp.toPx(),
-                    dropCenterX, dropTop
-                )
-                close()
+            // Température de l'eau (vraie prévision Open-Meteo) : vague + chiffre en bleu, rien si inconnue.
+            val water = dailyWaterTemps.getOrNull(i)
+            if (water != null) {
+                val iconSize = 9.dp.toPx()
+                drawWaveIcon(Offset(colLeft, padY + 1.5.dp.toPx()), iconSize, waterColor)
+                drawTextAtBaseline(textMeasurer, "$water°", waterTextPaint, colLeft + iconSize + 2.dp.toPx(), padY + 9.3.dp.toPx())
             }
-
-            drawPath(path = dropPath, color = tideLineColor.copy(alpha = 0.25f))
-            drawPath(path = dropPath, color = tideLineColor, style = Stroke(width = 0.85.dp.toPx()))
-
-            drawTextAtBaseline(textMeasurer, "$water°", waterTextPaint, colLeft + 9.dp.toPx(), padY + 21.9.dp.toPx())
         }
 
         for (i in 0 until daysCount) {
@@ -491,7 +437,7 @@ fun ContinuousWaveCanvas(
 
             val hText = "${formatDecimal(waveHeight, 1)}m"
             val hTextW = textMeasurer.measure(hText, heightTextPaint).size.width.toFloat()
-            val textY = (closestPoint.y - 5.dp.toPx()).coerceAtLeast(padY + 26.dp.toPx())
+            val textY = (closestPoint.y - 5.dp.toPx()).coerceAtLeast(padY + 18.dp.toPx())
 
             if (i == selectedIndex) {
                 drawCircle(color = Color.White, radius = 4.4.dp.toPx(), center = closestPoint)

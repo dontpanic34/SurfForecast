@@ -257,6 +257,24 @@ class SurfRepository(
         return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs)
     }
 
+    /**
+     * Température de la mer par heure (°C), sans modèle de vagues imposé : appel isolé, un échec ou une
+     * donnée absente (point trop côtier) laisse simplement la température inconnue.
+     */
+    private suspend fun fetchSeaTemperature(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Double> = runCatching {
+        val url = "https://marine-api.open-meteo.com/v1/marine?" +
+            "latitude=$lat&longitude=$lon&hourly=sea_surface_temperature&forecast_days=$days&timezone=auto"
+        val hourly = httpGet(url).getValue("hourly").jsonObject
+        val timeArr = hourly.getValue("time").jsonArray
+        val tempArr = hourly.optArray("sea_surface_temperature")
+        buildMap {
+            for (i in timeArr.indices) {
+                val t = tempArr.doubleAt(i) ?: continue
+                put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), t)
+            }
+        }
+    }.getOrDefault(emptyMap())
+
     private suspend fun fetchWeatherBlock(
         lat: Double,
         lon: Double,
@@ -403,11 +421,14 @@ class SurfRepository(
                 fetchWeatherBlock(lat, lon, config.longTermWeather, 7, includeDailySun = true)
             }
 
+            val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
+
             val shortMarine = shortMarineDeferred.await()
             val longMarine = longMarineDeferred.await()
             val shortWeather = shortWeatherDeferred.await()
             val longWeather = longWeatherDeferred.await()
             val aromeHdWind = aromeHdWindDeferred.await()
+            val seaTemps = seaTempDeferred.await()
 
             val marineMapShort = shortMarine.times.indices.associateBy { shortMarine.times[it] }
             val weatherMapShort = shortWeather.times.indices.associateBy { shortWeather.times[it] }
@@ -483,7 +504,8 @@ class SurfRepository(
                         cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 },
                         feelsLike = wData.apparentTemperatures.getOrElse(wIndex) {
                             wData.temperatures.getOrElse(wIndex) { 20.0 }
-                        }.roundToInt()
+                        }.roundToInt(),
+                        seaTemperature = seaTemps[t]
                     )
                 )
             }

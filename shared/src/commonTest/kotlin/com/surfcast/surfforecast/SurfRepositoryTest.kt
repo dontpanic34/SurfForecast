@@ -246,4 +246,25 @@ class SurfRepositoryTest {
         assertTrue(day.highTideTime!!.startsWith("17"), "PM : ${day.highTideTime}")
         assertEquals(88, day.coefficient)
     }
+
+    @Test
+    fun seaTemperatureComesFromItsOwnMarineRequestAndMayBeMissing() = runTest {
+        val engine = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            val body = when {
+                request.url.host == "marine-api.open-meteo.com" && request.url.parameters["hourly"] == "sea_surface_temperature" ->
+                    """{"hourly":{"time":["2026-01-01T10:00","2026-01-04T10:00"],"sea_surface_temperature":[14.4,null]}}"""
+                request.url.host == "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else longMarine
+                model == "meteofrance_arome_france" -> shortWeather
+                else -> longWeather
+            }
+            respondJson(body)
+        }
+        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        assertEquals(14.4, hourly[0].seaTemperature)
+        assertEquals(null, hourly[1].seaTemperature)
+        // Sans réponse exploitable, la température reste inconnue (jamais inventée).
+        val plain = repository(openMeteoEngine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        assertTrue(plain.all { it.seaTemperature == null })
+    }
 }

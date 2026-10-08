@@ -107,6 +107,12 @@ fun DailyTimelineCard(
     val tideInfo = dailyTides[selectedDate]
     val sun = dailySunInfo[selectedDate]
 
+    // Température de la mer (vraie prévision) : celle de l'heure touchée, sinon la moyenne du jour.
+    val seaTemp = (
+        selectedHour?.takeIf { it.rawTime.date == selectedDate }?.seaTemperature
+            ?: curveHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average()
+        )?.let { kotlin.math.round(it).toInt() }
+
     // Point 3 : score par heure (0-100), sert a colorer la courbe segment par segment.
     // Score négatif = trop gros pour le niveau (violet).
     val scores = curveHours.map { hourly ->
@@ -140,6 +146,11 @@ fun DailyTimelineCard(
                         color = onSurfaceColor.copy(alpha = 0.55f),
                         maxLines = 1
                     )
+
+                    if (seaTemp != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        WaterTempChip(celsius = seaTemp)
+                    }
 
                     if (tideInfo != null) {
                         Spacer(modifier = Modifier.width(8.dp))

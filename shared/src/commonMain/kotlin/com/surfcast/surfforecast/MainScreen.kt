@@ -345,7 +345,7 @@ fun MainScreen(
                         }
 
                         val dailyWaterTemps = availableDates.map { date ->
-                            state.dailySummaries[date]?.avgWaterTemp ?: 18
+                            state.dailySummaries[date]?.avgWaterTemp
                         }
 
                         Column(
@@ -909,7 +909,7 @@ fun DynamicCardsSection(
     dailyPeriods: List<Int>,
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
-    dailyWaterTemps: List<Int>,
+    dailyWaterTemps: List<Int?>,
     fixedMaxScale: Float,
     selectedIndex: Int,
     primaryColor: Color,

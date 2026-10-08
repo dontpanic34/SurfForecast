@@ -28,7 +28,9 @@ data class HourlyUiModel(
     // ou WIND_SOURCE_MISSING) : sert au journal des prévisions. Vide = inconnu.
     val windSource: String = "",
     // Rafales (km/h) : par défaut égales au vent moyen quand la source n'en donne pas.
-    val windGustKmh: Int = windSpeedKmh
+    val windGustKmh: Int = windSpeedKmh,
+    // Température de surface de la mer (°C, Open-Meteo Marine) : null = non fournie pour ce point.
+    val seaTemperature: Double? = null
 )
 
 data class DailyTideInfo(

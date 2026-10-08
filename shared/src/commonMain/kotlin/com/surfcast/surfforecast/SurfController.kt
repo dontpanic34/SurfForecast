@@ -40,7 +40,8 @@ sealed class SurfUiState {
 
 data class DailySummaryUiModel(
     val avgFeelsLike: Int,
-    val avgWaterTemp: Int
+    // Température de la mer moyenne du jour (°C), null si le service ne la fournit pas.
+    val avgWaterTemp: Int?
 )
 
 /**
@@ -371,7 +372,10 @@ class SurfController(
 
             val summaries = grouped.mapValues { (_, hours) ->
                 val avgTemp = if (hours.isNotEmpty()) hours.map { it.temperature }.average().roundToInt() else 20
-                DailySummaryUiModel(avgFeelsLike = avgTemp, avgWaterTemp = 19)
+                DailySummaryUiModel(
+                    avgFeelsLike = avgTemp,
+                    avgWaterTemp = hours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()
+                )
             }
 
             val today = nowLocalDateTime().date
