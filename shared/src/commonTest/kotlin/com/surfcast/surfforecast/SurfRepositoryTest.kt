@@ -190,4 +190,60 @@ class SurfRepositoryTest {
         assertTrue(tides.dailyByDate.isEmpty())
         assertTrue(tides.rawByDate.isEmpty())
     }
+
+    // --- Marées estimées hors de France ---
+
+    @Test
+    fun estimatedTidesFindHighAndLowWaterFromHourlySeaLevel() {
+        // Marée semi-diurne simulée : période 12,42 h, pleine mer à 03:00 puis ~15:25, amplitude 1,5 m.
+        val times = (0 until 48).map { LocalDateTime(2026, 1, 1 + it / 24, it % 24, 0) }
+        val heights = times.indices.map { i ->
+            1.5 * kotlin.math.cos(2 * kotlin.math.PI * (i - 3.0) / 12.42)
+        }
+        val days = tideDaysFromSeaLevel(times, heights, listOf(Triple("2026-01-01", "03:00", 95), Triple("2026-01-01", "16:00", 93)))
+        val first = days.first { it.date == "2026-01-01" }.extrema!!
+        val highs = first.filter { it.type == "PM" }
+        val lows = first.filter { it.type == "BM" }
+        assertEquals(2, highs.size)
+        assertEquals("03:00", highs[0].time)
+        assertTrue(highs[1].time in listOf("15:25", "15:24", "15:26"), "2e PM : ${highs[1].time}")
+        assertEquals(2, lows.size)
+        // Coefficient de la même date, PM le plus proche en heure.
+        assertEquals(95, highs[0].coef)
+        assertEquals(93, highs[1].coef)
+        assertTrue(lows.all { it.coef == null })
+        // Hauteurs relatives : la plus basse mer vaut 0, l'amplitude vaut ~3 m.
+        assertTrue(lows.minOf { it.height } < 0.05)
+        assertTrue(highs.maxOf { it.height } in 2.9..3.1)
+    }
+
+    @Test
+    fun spotFarFromAnyFrenchSiteUsesEstimatedTidesWithFrenchCoefficient() = runTest {
+        val engine = MockEngine { request ->
+            when {
+                request.url.encodedPath.endsWith("/sites") -> respondJson(
+                    """{"sites":[{"site_id":"brest","site_name":"Brest","latitude":48.38,"longitude":-4.49},
+                      {"site_id":"cordouan","latitude":45.58,"longitude":-1.17}]}"""
+                )
+                request.url.host == "marine-api.open-meteo.com" -> {
+                    val times = (0 until 24).joinToString(",") { "\"2026-01-01T${it.toString().padStart(2, '0')}:00\"" }
+                    val levels = (0 until 24).joinToString(",") { i ->
+                        (1.2 * kotlin.math.cos(2 * kotlin.math.PI * (i - 5.0) / 12.42)).toString()
+                    }
+                    respondJson("""{"hourly":{"time":[$times],"sea_level_height_msl":[$levels]}}""")
+                }
+                else -> respondJson(
+                    """{"data":[{"date":"2026-01-01","extrema":[
+                      {"type":"PM","time":"05:00","height":6.0,"coef":88},
+                      {"type":"BM","time":"11:10","height":1.0}]}]}"""
+                )
+            }
+        }
+        // Peniche (Portugal) : très loin de tout site français.
+        val tides = repository(engine).getTides(39.355, -9.378, "2026-01-01", "2026-01-01")
+        val day = tides.dailyByDate.getValue(today)
+        // PM de jour (06:00-21:30) le plus tôt : la 2e de la journée simulée (~17h25).
+        assertTrue(day.highTideTime!!.startsWith("17"), "PM : ${day.highTideTime}")
+        assertEquals(88, day.coefficient)
+    }
 }
