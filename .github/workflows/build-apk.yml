@@ -39,6 +39,18 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Fixed signing key (if secrets are set)
+        env:
+          KS_B64: ${{ secrets.SURFLOG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/surflog.jks"
+            echo "SURFLOG_KEYSTORE_PATH=$RUNNER_TEMP/surflog.jks" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEYSTORE_PASSWORD=${{ secrets.SURFLOG_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEY_ALIAS=${{ secrets.SURFLOG_KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEY_PASSWORD=${{ secrets.SURFLOG_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          fi
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 

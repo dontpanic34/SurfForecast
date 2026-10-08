@@ -23,6 +23,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Clé fixe (secrets GitHub) : l'APK publié se met à jour par-dessus l'ancien. Sans secrets, clé debug.
+    val keystorePath = System.getenv("SURFLOG_KEYSTORE_PATH")
+    if (!keystorePath.isNullOrBlank() && file(keystorePath).exists()) {
+        signingConfigs.getByName("debug").apply {
+            storeFile = file(keystorePath)
+            storePassword = System.getenv("SURFLOG_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SURFLOG_KEY_ALIAS")
+            keyPassword = System.getenv("SURFLOG_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
             optimization {
