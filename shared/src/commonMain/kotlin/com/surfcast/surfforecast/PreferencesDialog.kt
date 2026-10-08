@@ -255,12 +255,15 @@ fun SurfPreferencesDialog(
                         fontWeight = FontWeight.Bold,
                         color = colors.onBackground
                     )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    DonationButton(weroQr = { Image(painter = painterResource(Res.drawable.wero_qr), contentDescription = "QR code Wero", modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth) })
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
                             imageVector = SurfIcons.Close,
                             contentDescription = "Fermer",
                             tint = colors.onSurfaceVariant
                         )
+                    }
                     }
                 }
 
@@ -733,8 +736,6 @@ fun SurfPreferencesDialog(
                     }
                     if (showIosGuide) IosInstallGuideDialog(onDismiss = { showIosGuide = false })
                 }
-
-                DonationSection(weroQr = { Image(painter = painterResource(Res.drawable.wero_qr), contentDescription = "QR code Wero", modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth) })
 
                 Spacer(modifier = Modifier.height(10.dp))
 
