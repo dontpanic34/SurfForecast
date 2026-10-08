@@ -714,6 +714,7 @@ fun MainScreen(viewModel: SurfViewModel) {
 
                                     item {
                                         DynamicCardsSection(
+                                            coachTargets = coachTargets,
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             dailyTideInfo = dailyTide,
                                             isToday = (date == today),
@@ -889,6 +890,8 @@ fun FavoritesHeaderRow(
 
 @Composable
 fun DynamicCardsSection(
+    // Positions des éléments éclairés par la visite guidée (null = pas de visite).
+    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -1027,7 +1030,7 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets)
+                                modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth()
                             )
                         }
                         "dailyTimeline" -> {
