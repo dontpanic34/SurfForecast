@@ -112,7 +112,7 @@ fun LiveCamOverlayScreen(
     var refreshTrigger by remember(currentSpotName) { mutableIntStateOf(0) }
 
     val spotWebcams = remember(currentSpotName, refreshTrigger) {
-        SurfWebcamHelper.getCamerasForSpot(currentSpotName, context)
+        SurfWebcamHelper.getCamerasForSpot(currentSpotName, SharedPreferencesStore(context))
     }
 
     // Correctif : une closure creee une seule fois (dans factory) ne voit jamais
@@ -236,7 +236,7 @@ fun LiveCamOverlayScreen(
                             realPageTitle = null
 
                             if (manualNavigation && url != null && !url.endsWith("gosurf.fr/list") && url.contains("/webcam/")) {
-                                SurfWebcamHelper.saveOverride(context, currentSpotNameState.value, searchTargetCamNameState.value, url)
+                                SurfWebcamHelper.saveOverride(SharedPreferencesStore(context), currentSpotNameState.value, searchTargetCamNameState.value, url)
                                 manualNavigation = false
                                 refreshTrigger++
                             }
@@ -548,7 +548,7 @@ fun LiveCamOverlayScreen(
                             val activeUrl = webViewRef?.url
                             if (!activeUrl.isNullOrBlank() && !activeUrl.startsWith("data:") && !activeUrl.contains("about:blank")) {
                                 SurfWebcamHelper.saveOverride(
-                                    context,
+                                    SharedPreferencesStore(context),
                                     currentSpotNameState.value,
                                     activeCamera.camName,
                                     activeUrl
@@ -728,7 +728,7 @@ fun LiveCamOverlayScreen(
         // Favoris
         var favSlotsVersion by remember { mutableIntStateOf(0) }
         val favorites = remember(currentSpotName, favSlotsVersion) {
-            SurfWebcamHelper.getWebcamFavorites(context)
+            SurfWebcamHelper.getWebcamFavorites(SharedPreferencesStore(context))
         }
 
         Column(
@@ -756,7 +756,7 @@ fun LiveCamOverlayScreen(
                                     if (favName != null) onSwitchSpot(favName)
                                 },
                                 onLongClick = {
-                                    SurfWebcamHelper.setWebcamFavorite(context, slot, currentSpotNameState.value)
+                                    SurfWebcamHelper.setWebcamFavorite(SharedPreferencesStore(context), slot, currentSpotNameState.value)
                                     favSlotsVersion++
                                 }
                             ),
