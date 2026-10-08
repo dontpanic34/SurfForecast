@@ -451,21 +451,37 @@ class SurfController(
         prefs.putBoolean("profile_reviewed_v1", true)
     }
 
-    // Mon matériel : âge, taille (cm) et poids (kg) du surfeur, 0 = non renseigné. Restent sur l'appareil.
-    var bodyAge by mutableStateOf(prefs.getInt("body_age", 0))
-        private set
-    var bodyHeightCm by mutableStateOf(prefs.getInt("body_height_cm", 0))
-        private set
-    var bodyWeightKg by mutableStateOf(prefs.getInt("body_weight_kg", 0))
+    // Mon matériel : âge, taille (cm), poids (kg), forme physique et niveau du calcul de volume (0 = non renseigné).
+    // Restent sur l'appareil.
+    var body by mutableStateOf(
+        BodyState(
+            ageYears = prefs.getInt("body_age", 0),
+            heightCm = prefs.getInt("body_height_cm", 0),
+            weightKg = prefs.getInt("body_weight_kg", 0),
+            fitness = prefs.getInt("body_fitness", 0),
+            volumeLevel = prefs.getInt("volume_level_idx", -1)
+        )
+    )
         private set
 
-    fun changeBody(age: Int, heightCm: Int, weightKg: Int) {
-        bodyAge = age
-        bodyHeightCm = heightCm
-        bodyWeightKg = weightKg
-        prefs.putInt("body_age", age)
-        prefs.putInt("body_height_cm", heightCm)
-        prefs.putInt("body_weight_kg", weightKg)
+    fun changeBody(newBody: BodyState) {
+        body = newBody
+        prefs.putInt("body_age", newBody.ageYears)
+        prefs.putInt("body_height_cm", newBody.heightCm)
+        prefs.putInt("body_weight_kg", newBody.weightKg)
+        prefs.putInt("body_fitness", newBody.fitness)
+        prefs.putInt("volume_level_idx", newBody.volumeLevel)
+    }
+
+    // Mise à jour « Mon profil » : tout le monde, nouveaux comme anciens utilisateurs, doit renseigner son profil
+    // (niveau, poids, âge) une fois ; l'écran est obligatoire tant que ce n'est pas fait.
+    var profileSetupDone by mutableStateOf(prefs.getBoolean("profile_setup_v2_done", false))
+        private set
+
+    fun completeProfileSetup() {
+        profileSetupDone = true
+        prefs.putBoolean("profile_setup_v2_done", true)
+        markProfileReviewed()
     }
 
     fun changeSurferLevel(level: String) {

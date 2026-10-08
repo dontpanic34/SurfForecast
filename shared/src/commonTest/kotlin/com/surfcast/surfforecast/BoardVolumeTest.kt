@@ -78,4 +78,53 @@ class BoardVolumeTest {
         // L'inverse retrouve la hauteur.
         assertEquals(1.5, heightForEnergy(waveEnergyKj(1.5, 10.0), 10.0), 1e-9)
     }
+
+    @Test
+    fun recommendedVolumeMatchesTheShopReferenceExample() {
+        // 81 kg, 40 ans, forme excellente, Confirmé (index 4), planche courte : 30,62 L, plage 29,87 à 31,39.
+        val body = BodyState(ageYears = 40, weightKg = 81, fitness = 0)
+        val rec = recommendedVolumeL(body, 4)
+        assertNotNull(rec)
+        assertEquals(30.62, rec, 0.01)
+        val range = recommendedRange(rec)
+        assertEquals(29.85, range.start, 0.05)
+        assertEquals(31.38, range.endInclusive, 0.05)
+        assertNull(recommendedVolumeL(BodyState(ageYears = 40), 4))
+        // Plus âgé, moins en forme, planche longue : plus de volume.
+        val older = recommendedVolumeL(BodyState(ageYears = 55, weightKg = 81, fitness = 2), 4, longBoard = true)
+        assertNotNull(older)
+        assertTrue(older > rec * 1.5)
+    }
+
+    @Test
+    fun tableAndDefaultsFollowTheLevels() {
+        assertEquals(54.4, volumeTableValue(0, 80), 0.1)
+        assertEquals(43.2, volumeTableValue(1, 80), 0.1)
+        assertEquals(33.6, volumeTableValue(2, 80), 0.1)
+        assertEquals(28.0, volumeTableValue(4, 80), 0.1)
+        assertEquals(2, BodyState().levelIndex("intermediate"))
+        assertEquals(4, BodyState().levelIndex("confirmed"))
+        assertEquals(1, BodyState(volumeLevel = 1).levelIndex("expert"))
+        // Surfeur léger : plus de litres par kilo.
+        assertTrue(volumeTableValue(4, 40) / 40 > volumeTableValue(4, 80) / 80)
+    }
+
+    @Test
+    fun sliderDimensionsAreWrittenLikeOnABoard() {
+        assertEquals("20 3/8", formatInchesFraction(163, 8))
+        assertEquals("2 1/2", formatInchesFraction(40, 16))
+        assertEquals("2 5/16", formatInchesFraction(37, 16))
+        assertEquals("20", formatInchesFraction(160, 8))
+        assertEquals("5'8", formatLengthFeet(68))
+        assertEquals("5'8 x 20 3/8 x 2 1/2", formatSliderDimensions(68, 163, 40))
+        // Les cotes de ma planche écrites comme sur l'étiquette se relisent à l'identique.
+        assertEquals(2.3125, parseInches(formatInchesFraction(37, 16)))
+    }
+
+    @Test
+    fun fuller_boards_have_a_higher_fill_factor() {
+        assertTrue(fillFactorFor("longboard") > fillFactorFor("shortboard"))
+        assertTrue(fillFactorFor("fish") > fillFactorFor("shortboard"))
+        assertTrue(isLongFamily("mid-length") && !isLongFamily("shortboard"))
+    }
 }

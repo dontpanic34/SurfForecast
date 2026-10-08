@@ -37,12 +37,18 @@ const val VOLUME_FILL_FACTOR = 0.56
  * grandeur à quelques % près (le rocker, les rails et la forme du nez et du tail changent le résultat) :
  * seul le shaper connaît le volume exact, à saisir quand on le connaît.
  */
-fun estimateVolumeL(lengthFeet: Double, lengthInches: Double, widthIn: Double, thicknessIn: Double): Double? {
+fun estimateVolumeL(
+    lengthFeet: Double,
+    lengthInches: Double,
+    widthIn: Double,
+    thicknessIn: Double,
+    fillFactor: Double = VOLUME_FILL_FACTOR
+): Double? {
     val length = (lengthFeet * 12.0 + lengthInches) * 2.54
     val width = widthIn * 2.54
     val thickness = thicknessIn * 2.54
     if (length <= 0.0 || width <= 0.0 || thickness <= 0.0) return null
-    return length * width * thickness * VOLUME_FILL_FACTOR / 1000.0
+    return length * width * thickness * fillFactor / 1000.0
 }
 
 /** Ratio litres par kilo, ou null si une donnée manque. */
@@ -96,3 +102,101 @@ fun boardVolumeSummary(board: QuiverBoard, weightKg: Int): String? {
     val ratio = volumeRatio(v, weightKg)
     return approx + formatFr(v) + " L" + (ratio?.let { " · " + formatFr(it, 2) + " L/kg" } ?: "")
 }
+
+// --- Coefficient selon le type de planche, volume recommandé, curseurs de cotes ---
+
+/** Coefficient de remplissage selon la famille : une planche plus « pleine » (fish, mid-length, longboard) a un coefficient plus haut. */
+fun fillFactorFor(family: String): Double = when (family) {
+    "shortboard" -> VOLUME_FILL_FACTOR
+    "groveler", "twin", "fish" -> 0.58
+    "mid-length" -> 0.60
+    "longboard", "mousse" -> 0.62
+    else -> VOLUME_FILL_FACTOR
+}
+
+/** Planche « longue » : le volume recommandé est plus élevé que pour une planche courte. */
+fun isLongFamily(family: String): Boolean = family == "longboard" || family == "mousse" || family == "mid-length"
+
+/** Profils du calcul de volume : libellé et litres par kilo (adulte de 60 kg et plus, en forme). */
+val VOLUME_LEVELS: List<Pair<String, Double>> = listOf(
+    "Débutant" to 0.68,
+    "Débutant / Interm." to 0.54,
+    "Intermédiaire" to 0.42,
+    "Interm. / Confirmé" to 0.38,
+    "Confirmé" to 0.35,
+    "Expert" to 0.31
+)
+
+/** Forme physique : libellé et coefficient (moins en forme = plus de volume). */
+val FITNESS_LEVELS: List<Pair<String, Double>> = listOf(
+    "Excellente" to 1.0,
+    "Bonne" to 1.05,
+    "Moyenne" to 1.10,
+    "Faible" to 1.18
+)
+
+fun ageFactor(ageYears: Int): Double = when {
+    ageYears <= 30 -> 1.0
+    ageYears <= 50 -> 1.08
+    else -> 1.15
+}
+
+/** Les surfeurs légers ont besoin de plus de litres par kilo : +20 % à 35 kg, rien à partir de 60 kg. */
+fun weightFactor(weightKg: Double): Double = 1.0 + 0.2 * ((60.0 - weightKg) / 25.0).coerceIn(0.0, 1.0)
+
+/** Profil du calcul de volume proposé par défaut pour un niveau de l'appli. */
+fun defaultVolumeLevel(surferLevel: String): Int = when (surferLevel) {
+    "beginner" -> 0
+    "confirmed" -> 4
+    "expert" -> 5
+    else -> 2
+}
+
+/** Informations du surfeur (facultatives sauf pour le volume recommandé) ; 0 = non renseigné, [volumeLevel] -1 = déduit du niveau. */
+data class BodyState(
+    val ageYears: Int = 0,
+    val heightCm: Int = 0,
+    val weightKg: Int = 0,
+    val fitness: Int = 0,
+    val volumeLevel: Int = -1
+) {
+    fun levelIndex(surferLevel: String): Int =
+        if (volumeLevel in VOLUME_LEVELS.indices) volumeLevel else defaultVolumeLevel(surferLevel)
+}
+
+/** Volume recommandé (L) : poids x litres par kilo du profil x âge x forme x (type de planche), ou null sans poids. */
+fun recommendedVolumeL(body: BodyState, levelIndex: Int, longBoard: Boolean = false): Double? {
+    if (body.weightKg <= 0) return null
+    val ratio = VOLUME_LEVELS[levelIndex.coerceIn(0, VOLUME_LEVELS.lastIndex)].second
+    val fitness = FITNESS_LEVELS[body.fitness.coerceIn(0, FITNESS_LEVELS.lastIndex)].second
+    return body.weightKg * ratio * weightFactor(body.weightKg.toDouble()) * ageFactor(body.ageYears) * fitness *
+        (if (longBoard) 1.35 else 1.0)
+}
+
+/** Plage recommandée : ± 2,5 % autour du volume recommandé. */
+fun recommendedRange(volumeL: Double): ClosedFloatingPointRange<Double> = (volumeL * 0.975)..(volumeL * 1.025)
+
+/** Écart en % d'un volume par rapport au recommandé. */
+fun percentFromRecommended(volumeL: Double, recommendedL: Double): Double = (volumeL / recommendedL - 1.0) * 100.0
+
+/** Volume du tableau niveau x poids : adulte de moins de 30 ans en excellente forme, planche courte. */
+fun volumeTableValue(levelIndex: Int, weightKg: Int): Double =
+    weightKg * VOLUME_LEVELS[levelIndex].second * weightFactor(weightKg.toDouble())
+
+private fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
+
+/** Pouces en fraction depuis un nombre d'unités : (163, 8) -> « 20 3/8 », (40, 16) -> « 2 1/2 », (160, 8) -> « 20 ». */
+fun formatInchesFraction(units: Int, denominator: Int): String {
+    val whole = units / denominator
+    val rem = units % denominator
+    if (rem == 0) return whole.toString()
+    val g = gcd(rem, denominator)
+    return "${if (whole > 0) "$whole " else ""}${rem / g}/${denominator / g}"
+}
+
+/** Longueur en pieds et pouces : 68 pouces -> « 5'8 ». */
+fun formatLengthFeet(totalInches: Int): String = "${totalInches / 12}'${totalInches % 12}"
+
+/** Cotes lues sur les curseurs, telles qu'on les écrit sur une planche : « 5'8 x 20 3/8 x 2 1/2 ». */
+fun formatSliderDimensions(lengthInches: Int, widthEighths: Int, thicknessSixteenths: Int): String =
+    "${formatLengthFeet(lengthInches)} x ${formatInchesFraction(widthEighths, 8)} x ${formatInchesFraction(thicknessSixteenths, 16)}"

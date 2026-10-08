@@ -137,6 +137,23 @@ fun MainScreen(
         )
     }
 
+    // Mise à jour « Mon profil » : écran obligatoire pour tout le monde, une fois l'écran de bienvenue passé.
+    if (!viewModel.profileSetupDone && !viewModel.showOnboarding) {
+        ProfileSetupDialog(
+            surferLevel = viewModel.surferLevel,
+            onLevelChanged = { viewModel.changeSurferLevel(it) },
+            body = viewModel.body,
+            onBodyChanged = { viewModel.changeBody(it) },
+            onDone = { openGear ->
+                viewModel.completeProfileSetup()
+                if (openGear) {
+                    preferencesStartPage = "profile"
+                    showPreferencesDialog = true
+                }
+            }
+        )
+    }
+
     if (showPreferencesDialog) {
         SurfPreferencesDialog(
             windUnit = viewModel.windUnit,
@@ -186,10 +203,8 @@ fun MainScreen(
             backup = backup,
             install = install,
             quiverBoards = viewModel.quiverBoards.collectAsState().value,
-            bodyAge = viewModel.bodyAge,
-            bodyHeightCm = viewModel.bodyHeightCm,
-            bodyWeightKg = viewModel.bodyWeightKg,
-            onBodyChanged = { a, h, w -> viewModel.changeBody(a, h, w); viewModel.markProfileReviewed() },
+            body = viewModel.body,
+            onBodyChanged = { viewModel.changeBody(it); viewModel.markProfileReviewed() },
             onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est); viewModel.markProfileReviewed() },
             onDeleteBoard = { viewModel.deleteQuiverBoard(it) },
             startPage = preferencesStartPage,
@@ -607,10 +622,9 @@ fun MainScreen(
 
                                         QuiverScreen(
                                             quiverBoards = quiverBoards,
-                                            age = viewModel.bodyAge,
-                                            heightCm = viewModel.bodyHeightCm,
-                                            weightKg = viewModel.bodyWeightKg,
-                                            onBodyChanged = { a, h, w -> viewModel.changeBody(a, h, w) },
+                                            surferLevel = viewModel.surferLevel,
+                                            body = viewModel.body,
+                                            onBodyChanged = { viewModel.changeBody(it) },
                                             onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est) },
                                             onDeleteBoard = { board -> viewModel.deleteQuiverBoard(board) },
                                             onDismiss = { showQuiverDialog = false }
@@ -637,7 +651,7 @@ fun MainScreen(
                                             todayHours = todayHours,
                                             tideInfo = todayTide,
                                             quiverBoards = quiverBoards,
-                                            weightKg = viewModel.bodyWeightKg,
+                                            weightKg = viewModel.body.weightKg,
                                             onOpenGear = { showQuiverDialog = true },
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
@@ -735,7 +749,7 @@ fun MainScreen(
             }
         }
         // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
-        if (viewModel.showHomeTour && !viewModel.showOnboarding) {
+        if (viewModel.showHomeTour && !viewModel.showOnboarding && viewModel.profileSetupDone) {
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(

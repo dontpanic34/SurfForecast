@@ -71,10 +71,8 @@ fun SurfPreferencesDialog(
     install: AppInstall? = null,
     // Mon matériel : quiver partagé avec le journal de bord, et âge / taille / poids (0 = non renseigné).
     quiverBoards: List<QuiverBoard> = emptyList(),
-    bodyAge: Int = 0,
-    bodyHeightCm: Int = 0,
-    bodyWeightKg: Int = 0,
-    onBodyChanged: (age: Int, heightCm: Int, weightKg: Int) -> Unit = { _, _, _ -> },
+    body: BodyState = BodyState(),
+    onBodyChanged: (BodyState) -> Unit = {},
     onAddBoard: (model: String, family: String, lengthLitrage: String, finSetup: String, volumeL: Double?, volumeEstimated: Boolean) -> Unit = { _, _, _, _, _, _ -> },
     onDeleteBoard: (QuiverBoard) -> Unit = {},
     // Page à ouvrir directement (« profile » depuis la visite guidée) et état du badge « Recommandé ».
@@ -343,9 +341,8 @@ fun SurfPreferencesDialog(
                         }
                         GearContent(
                             quiverBoards = quiverBoards,
-                            age = bodyAge,
-                            heightCm = bodyHeightCm,
-                            weightKg = bodyWeightKg,
+                            surferLevel = surferLevel,
+                            body = body,
                             onBodyChanged = onBodyChanged,
                             onAddBoard = onAddBoard,
                             onDeleteBoard = onDeleteBoard
