@@ -60,6 +60,52 @@ private fun previewDays(): List<PreviewDay> {
     )
 }
 
+private fun parseNumber(text: String): Double? = text.trim().replace(',', '.').toDoubleOrNull()
+
+private fun roundedEnergy(e: Double): Double = (e / 10.0).roundToInt() * 10.0
+
+/** « ≈ 1,3 m à 10 s » : ce que représente une énergie pour quelqu'un qui pense en hauteur et en période. */
+private fun energyAsWave(e: Double): String =
+    if (e >= SurfProfile.NO_CAP) "" else "≈ ${formatFr(heightForEnergy(e, 10.0))} m à 10 s"
+
+/** Calculette : on entre la hauteur et la période d'une vague de référence, l'appli en tire l'énergie. */
+@Composable
+private fun EnergyCalculator(onUseAsMin: (Double) -> Unit, onUseAsMax: (Double) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    var heightText by remember { mutableStateOf("") }
+    var periodText by remember { mutableStateOf("") }
+    val h = parseNumber(heightText)
+    val t = parseNumber(periodText)
+    val energy = if (h != null && t != null && h > 0.0 && t > 0.0) roundedEnergy(waveEnergyKj(h, t)).coerceAtLeast(10.0) else null
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(colors.background).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text("Je ne connais pas mon énergie : je la calcule", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+        Text(
+            "Entre la hauteur et la période d'une vague que tu aimes (ou que tu ne veux pas dépasser), l'appli fait le calcul.",
+            fontSize = 11.sp, color = colors.onSurfaceVariant
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = heightText, onValueChange = { heightText = it }, label = { Text("Hauteur") }, suffix = { Text("M") },
+                singleLine = true, isError = heightText.isNotBlank() && h == null, modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = periodText, onValueChange = { periodText = it }, label = { Text("Période") }, suffix = { Text("S") },
+                singleLine = true, isError = periodText.isNotBlank() && t == null, modifier = Modifier.weight(1f)
+            )
+        }
+        if (energy != null) {
+            Text("= ${energy.roundToInt()} kJ · ${energyName(energy)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { onUseAsMin(energy) }, modifier = Modifier.weight(1f)) { Text("Mon minimum", fontSize = 12.sp, maxLines = 1) }
+                OutlinedButton(onClick = { onUseAsMax(energy) }, modifier = Modifier.weight(1f)) { Text("Mon maximum", fontSize = 12.sp, maxLines = 1) }
+            }
+        }
+    }
+}
+
 @Composable
 private fun ChoiceRow(choices: List<Pair<Double, String>>, current: Double, onPick: (Double) -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -175,8 +221,9 @@ fun SurferProfileSection(
                 val minIdx = nearestIndex(MIN_ENERGIES, profile.idealMin)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Mon minimum", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
-                    Text(energyLabel(MIN_ENERGIES[minIdx]), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+                    Text(energyLabel(profile.idealMin), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                 }
+                Text(energyAsWave(profile.idealMin), fontSize = 11.sp, color = colors.onSurfaceVariant)
                 Slider(
                     value = minIdx.toFloat(), onValueChange = { i ->
                         val v = MIN_ENERGIES[i.roundToInt().coerceIn(0, 6)]
@@ -187,8 +234,9 @@ fun SurferProfileSection(
                 val maxIdx = if (!profile.hasCap) 6 else nearestIndex(MAX_ENERGIES, profile.cap)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Mon maximum (au-delà : trop gros)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
-                    Text(energyLabel(MAX_ENERGIES[maxIdx]), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+                    Text(energyLabel(profile.cap), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                 }
+                Text(energyAsWave(profile.cap), fontSize = 11.sp, color = colors.onSurfaceVariant)
                 Slider(
                     value = maxIdx.toFloat(), onValueChange = { i ->
                         val cap = MAX_ENERGIES[i.roundToInt().coerceIn(0, 6)]
@@ -201,6 +249,12 @@ fun SurferProfileSection(
                         )
                     },
                     valueRange = 0f..6f, steps = 5
+                )
+                EnergyCalculator(
+                    onUseAsMin = { e -> update(profile.copy(idealMin = e, rampEnd = e, cap = maxOf(profile.cap, e), idealMax = maxOf(profile.idealMax, e))) },
+                    onUseAsMax = { e ->
+                        update(profile.copy(cap = e, idealMax = maxOf(e / 2.2, minOf(profile.idealMin, e)), idealMin = minOf(profile.idealMin, e), rampEnd = minOf(profile.rampEnd, e)))
+                    }
                 )
                 Text(
                     "Repères : très douce ≈ 80 (0,6 m 8 s, mousses) · douce ≈ 150 (Oléron, Montalivet) · moyenne ≈ 350 (beach breaks landais) · " +
@@ -256,5 +310,29 @@ fun SurferProfileSection(
                 }
             }
         }
+    }
+}
+
+/** Pourquoi renseigner son profil : l'argument montré en tête de la page, repris par la visite guidée. */
+@Composable
+fun ProfileBenefitsCard() {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.primary.copy(alpha = 0.12f)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text("⭐ Recommandé : renseigne ton profil", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        Text(
+            "Deux surfeurs ne cherchent pas la même vague. Une journée à 1,4 m et 10 s peut être parfaite pour l'un et trop grosse pour l'autre : " +
+                "plus l'appli te connaît, plus ses notes te ressemblent.",
+            fontSize = 12.sp, color = colors.onSurfaceVariant
+        )
+        listOf(
+            "🎯 Des scores faits pour toi : l'énergie qui te convient, et « trop gros » (violet) quand ça dépasse ton niveau, sans que ce soit « mauvais ».",
+            "💨 Ta tolérance au vent, aux rafales, au clapot et aux houles courtes : le meilleur créneau tient compte de tout ça.",
+            "🏄 Ton matériel : tes planches avec leur volume et leur ratio litres par kilo, pour voir d'un coup d'œil ce que tu peux surfer.",
+            "📓 Le journal de bord : tu choisis ta planche en un geste, et l'appli retient avec quoi tu surfes le mieux."
+        ).forEach { Text(it, fontSize = 12.sp, color = colors.onBackground) }
+        Text("Ça prend une minute, et tu peux tout changer plus tard.", fontSize = 11.5.sp, color = colors.onSurfaceVariant)
     }
 }

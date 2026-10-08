@@ -76,7 +76,10 @@ fun SurfPreferencesDialog(
     bodyWeightKg: Int = 0,
     onBodyChanged: (age: Int, heightCm: Int, weightKg: Int) -> Unit = { _, _, _ -> },
     onAddBoard: (model: String, family: String, lengthLitrage: String, finSetup: String, volumeL: Double?, volumeEstimated: Boolean) -> Unit = { _, _, _, _, _, _ -> },
-    onDeleteBoard: (QuiverBoard) -> Unit = {}
+    onDeleteBoard: (QuiverBoard) -> Unit = {},
+    // Page à ouvrir directement (« profile » depuis la visite guidée) et état du badge « Recommandé ».
+    startPage: String? = null,
+    profileReviewed: Boolean = true
 ) {
     val colors = MaterialTheme.colorScheme
     val pillShape = RoundedCornerShape(50)
@@ -92,7 +95,7 @@ fun SurfPreferencesDialog(
     var infoTab by remember { mutableStateOf("France") }
     var showScoreInfo by remember { mutableStateOf(false) }
     // Page ouverte : null = menu des Paramètres, sinon "display", "forecast", "journal", "app" ou "help".
-    var page by remember { mutableStateOf<String?>(null) }
+    var page by remember { mutableStateOf(startPage) }
 
     if (showScoreInfo) {
         AlertDialog(
@@ -317,7 +320,7 @@ fun SurfPreferencesDialog(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     if (page == null) {
-                        PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel") { page = "profile" }
+                        PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
                         PrefMenuRow("🎛️", "Affichage", "Unité du vent, encarts") { page = "display" }
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
@@ -326,6 +329,7 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "profile") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        ProfileBenefitsCard()
                         SurferProfileSection(
                             surferLevel = surferLevel,
                             onLevelChanged = onSurferLevelChanged,
@@ -881,7 +885,7 @@ private fun waveModelFromLabel(label: String): WaveModel =
 
 
 @Composable
-private fun PrefMenuRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+private fun PrefMenuRow(icon: String, title: String, subtitle: String, badge: String? = null, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -901,7 +905,16 @@ private fun PrefMenuRow(icon: String, title: String, subtitle: String, onClick: 
         ) { Text(icon, fontSize = 18.sp) }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                if (badge != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primary).padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
             Text(subtitle, fontSize = 12.sp, color = colors.onSurfaceVariant)
         }
         Text("›", fontSize = 22.sp, color = colors.onSurfaceVariant)

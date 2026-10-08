@@ -441,6 +441,16 @@ class SurfController(
         prefs.putString("weekly_wind_mode", mode)
     }
 
+    // Mon profil : le badge « Recommandé » reste tant que l'utilisateur n'a rien réglé dans sa page.
+    var profileReviewed by mutableStateOf(prefs.getBoolean("profile_reviewed_v1", false))
+        private set
+
+    fun markProfileReviewed() {
+        if (profileReviewed) return
+        profileReviewed = true
+        prefs.putBoolean("profile_reviewed_v1", true)
+    }
+
     // Mon matériel : âge, taille (cm) et poids (kg) du surfeur, 0 = non renseigné. Restent sur l'appareil.
     var bodyAge by mutableStateOf(prefs.getInt("body_age", 0))
         private set

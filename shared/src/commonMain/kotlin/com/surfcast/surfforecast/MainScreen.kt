@@ -80,6 +80,8 @@ fun MainScreen(
     var showSessionLogDialog by remember { mutableStateOf(false) }
     var showSessionLogEntry by remember { mutableStateOf(false) }
     var showQuiverDialog by remember { mutableStateOf(false) }
+    // Page des Paramètres à ouvrir directement (« profile » depuis la visite guidée).
+    var preferencesStartPage by remember { mutableStateOf<String?>(null) }
     var showWeatherDetail by remember { mutableStateOf(false) }
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var showForecastHistory by remember { mutableStateOf(false) }
@@ -102,7 +104,7 @@ fun MainScreen(
             windUnit = viewModel.windUnit,
             onWindUnitSelected = { viewModel.changeWindUnit(it) },
             surferLevel = viewModel.surferLevel,
-            onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
+            onSurferLevelChanged = { viewModel.changeSurferLevel(it); viewModel.markProfileReviewed() },
             themeMode = viewModel.themeMode,
             onThemeModeChanged = { viewModel.changeThemeMode(it) },
             engineConfig = viewModel.engineConfig,
@@ -179,7 +181,7 @@ fun MainScreen(
                 showPreferencesDialog = false
                 viewModel.showHomeTourAgain()
             },
-            onDismiss = { showPreferencesDialog = false },
+            onDismiss = { showPreferencesDialog = false; preferencesStartPage = null },
             onPinWidget = onPinWidget,
             backup = backup,
             install = install,
@@ -187,9 +189,11 @@ fun MainScreen(
             bodyAge = viewModel.bodyAge,
             bodyHeightCm = viewModel.bodyHeightCm,
             bodyWeightKg = viewModel.bodyWeightKg,
-            onBodyChanged = { a, h, w -> viewModel.changeBody(a, h, w) },
-            onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est) },
-            onDeleteBoard = { viewModel.deleteQuiverBoard(it) }
+            onBodyChanged = { a, h, w -> viewModel.changeBody(a, h, w); viewModel.markProfileReviewed() },
+            onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est); viewModel.markProfileReviewed() },
+            onDeleteBoard = { viewModel.deleteQuiverBoard(it) },
+            startPage = preferencesStartPage,
+            profileReviewed = viewModel.profileReviewed
         )
     }
 
@@ -567,7 +571,7 @@ fun MainScreen(
                                             Text(text = "🌤️", fontSize = 18.sp)
                                         }
 
-                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp).coachTarget("settings", coachTargets)) {
+                                        IconButton(onClick = { preferencesStartPage = null; showPreferencesDialog = true }, modifier = Modifier.size(32.dp).coachTarget("settings", coachTargets)) {
                                             Icon(
                                                 imageVector = SurfIcons.Settings,
                                                 contentDescription = "Paramètres",
@@ -734,10 +738,19 @@ fun MainScreen(
         if (viewModel.showHomeTour && !viewModel.showOnboarding) {
             CoachMarkOverlay(
                 steps = listOf(
+                    CoachStep(
+                        "settings", "🏄 Commence par ton profil",
+                        "C'est le réglage qui change le plus l'appli. Dis-lui ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou règle-le à ta sauce : " +
+                            "l'énergie de vague que tu cherches, ta tolérance au vent, aux rafales et au clapot. Les scores, le meilleur créneau et le « trop gros » " +
+                            "(violet) sont alors calculés pour toi, pas pour un surfeur moyen. Tu peux aussi y ranger tes planches, avec leur volume : elles " +
+                            "te serviront dans le journal de bord. Ça prend une minute.",
+                        actionLabel = "Renseigner mon profil",
+                        onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
+                    ),
                     CoachStep("journal", "📓 Le journal de bord", "Note tes sessions ici : l'appli remplit les conditions toute seule et repère dans quelles conditions tu surfes le mieux."),
                     CoachStep("bestSlot", "🎯 Le meilleur créneau", "L'heure conseillée pour le jour sélectionné, calculée selon ton niveau. Touche un autre jour dans la semaine pour le changer."),
                     CoachStep("weekCard", "📅 Les encarts", "Touche un jour pour le détailler. Chaque encart se déplace, se replie ou se masque (Paramètres) : compose ton écran."),
-                    CoachStep("settings", "⚙️ Les paramètres", "Modèles de prévision, unités, niveau, sauvegarde… Tu peux aussi rejouer cette visite ici.")
+                    CoachStep("settings", "⚙️ Les paramètres", "Mon profil, modèles de prévision, unités, sauvegarde… Tu peux aussi rejouer cette visite ici.")
                 ),
                 targets = coachTargets,
                 onFinish = { viewModel.dismissHomeTour() }

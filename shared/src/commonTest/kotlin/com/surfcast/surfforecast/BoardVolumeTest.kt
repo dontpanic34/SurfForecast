@@ -56,4 +56,13 @@ class BoardVolumeTest {
         assertEquals("6'0 x 19 x 2 5/16", formatDimensions("6", "0", "19", "2 5/16"))
         assertEquals("5'8 x 19 1/4 x 2,38", formatDimensions(" 5 ", "8", "19 1/4", "2,38"))
     }
+
+    @Test
+    fun energyCalculatorMatchesTheScoringFormula() {
+        // 1,5 m à 10 s ≈ 441 kJ ; 0,8 m à 9 s ≈ 102.
+        assertEquals(441.45, waveEnergyKj(1.5, 10.0), 0.01)
+        assertEquals(101.7, waveEnergyKj(0.8, 9.0), 0.1)
+        // L'inverse retrouve la hauteur.
+        assertEquals(1.5, heightForEnergy(waveEnergyKj(1.5, 10.0), 10.0), 1e-9)
+    }
 }

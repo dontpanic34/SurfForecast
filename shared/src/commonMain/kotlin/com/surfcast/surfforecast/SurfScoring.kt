@@ -100,6 +100,12 @@ data class SurfProfile(
     }
 }
 
+/** Énergie (kJ) d'une houle de face : 1,962 x hauteur² x période². Ex. 1,5 m à 10 s ≈ 441. */
+fun waveEnergyKj(heightM: Double, periodS: Double): Double = 1.962 * heightM * heightM * periodS * periodS
+
+/** Hauteur (m) qui donne cette énergie pour une période donnée : l'inverse de [waveEnergyKj]. */
+fun heightForEnergy(energyKj: Double, periodS: Double): Double = kotlin.math.sqrt(energyKj / (1.962 * periodS * periodS))
+
 fun isCustomLevel(level: String) = level.startsWith(SurfProfile.CUSTOM_PREFIX)
 
 private fun profileFor(level: String) = SurfProfile.fromLevel(level)
@@ -137,7 +143,7 @@ fun calculateSlotRating(
     } ?: 0.0
     val coeffDirection = if (directionDiff >= 90.0) 0.0 else cos(directionDiff * PI / 180.0)
 
-    val energyKj = 1.962 * h * h * t * t * coeffDirection
+    val energyKj = waveEnergyKj(h, t) * coeffDirection
     if (energyKj > profile.cap) return SlotRating(0, true)
 
     val fit = when {
