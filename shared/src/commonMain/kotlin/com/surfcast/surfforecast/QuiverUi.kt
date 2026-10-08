@@ -120,21 +120,37 @@ private fun GearLabel(text: String) {
     Text(text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
 }
 
-/** Rangée de pastilles défilante : un seul choix. */
+/** Pastilles à choix unique, sur plusieurs lignes si besoin : tout reste visible, rien ne se cache hors de l'écran. */
 @Composable
 internal fun PillRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        options.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(if (on) colors.primary else colors.onBackground.copy(alpha = 0.08f))
-                    .clickable { onSelect(i) }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, color = if (on) colors.onPrimary else colors.onBackground)
+    val columns = when (options.size) {
+        in 0..3 -> options.size.coerceAtLeast(1)
+        4 -> 2
+        else -> 3
+    }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        options.withIndex().toList().chunked(columns).forEach { rowItems ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                rowItems.forEach { (i, label) ->
+                    val on = i == selected
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(50))
+                            .background(if (on) colors.primary else colors.onBackground.copy(alpha = 0.08f))
+                            .clickable { onSelect(i) }
+                            .padding(horizontal = 6.dp, vertical = 7.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            color = if (on) colors.onPrimary else colors.onBackground
+                        )
+                    }
+                }
+                repeat(columns - rowItems.size) { Spacer(modifier = Modifier.weight(1f)) }
             }
         }
     }
