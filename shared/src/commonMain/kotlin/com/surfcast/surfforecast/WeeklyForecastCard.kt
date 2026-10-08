@@ -498,27 +498,27 @@ fun ContinuousWaveCanvas(
                 drawCircle(color = tideLineColor, radius = 2.8.dp.toPx(), center = closestPoint)
             }
 
-            drawTextAtBaseline(textMeasurer, hText, heightTextPaint, targetX - hTextW / 2f, textY)
+            // Taille de la houle au-dessus de la courbe, période juste à côté (le tout centré).
+            val period = dailyPeriods.getOrNull(i)
+            val pText = period?.let { "${it}s" }
+            val gap = 3.dp.toPx()
+            val pTextW = pText?.let { textMeasurer.measure(it, periodTextPaint).size.width.toFloat() } ?: 0f
+            val totalW = hTextW + if (pText != null) gap + pTextW else 0f
+            val startX = targetX - totalW / 2f
+            drawTextAtBaseline(textMeasurer, hText, heightTextPaint, startX, textY)
+            if (pText != null) {
+                drawTextAtBaseline(textMeasurer, pText, periodTextPaint, startX + hTextW + gap, textY)
+            }
         }
 
+        // Énergie de la houle au pic du jour, à l'ancienne place de la période (bas de la courbe).
         for (i in 0 until daysCount) {
             val targetX = (i + 0.5f) * dayWidth
-            val period = dailyPeriods.getOrNull(i) ?: continue
-
-            val pText = "${period}s"
-            val pTextW = textMeasurer.measure(pText, periodTextPaint).size.width.toFloat()
-            val pY = baseY - 3.dp.toPx()
-
-            drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - pTextW / 2f, pY)
-
-            // Énergie : discrète, juste au-dessus de la période, teinte selon la puissance.
-            val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 }
-            if (energy != null) {
-                val eText = "${energy}kJ"
-                val eStyle = energyTextPaint(energy)
-                val eW = textMeasurer.measure(eText, eStyle).size.width.toFloat()
-                drawTextAtBaseline(textMeasurer, eText, eStyle, targetX - eW / 2f, pY - 11.dp.toPx())
-            }
+            val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
+            val eText = "${energy}kJ"
+            val eStyle = energyTextPaint(energy)
+            val eW = textMeasurer.measure(eText, eStyle).size.width.toFloat()
+            drawTextAtBaseline(textMeasurer, eText, eStyle, targetX - eW / 2f, baseY - 3.dp.toPx())
         }
     }
 }
@@ -530,7 +530,7 @@ private fun energyTextPaint(energyKj: Int): TextStyle {
         energyKj >= 150 -> Color(0xFFFB8C00)
         else -> Color(0xFF78909C)
     }
-    return TextStyle(color = color, fontSize = 7.5.sp, fontWeight = FontWeight.Bold)
+    return TextStyle(color = color, fontSize = 9.sp, fontWeight = FontWeight.Bold)
 }
 
 @Composable
