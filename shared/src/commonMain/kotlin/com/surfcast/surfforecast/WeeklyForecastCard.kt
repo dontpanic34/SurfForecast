@@ -386,20 +386,24 @@ fun ContinuousWaveCanvas(
             val targetX = plotLeft + (i + 0.5f) * dayWidth
             val closestPoint = points.minByOrNull { abs(it.x - targetX) } ?: continue
 
-            // Période juste au-dessus de la courbe, centrée sur le jour.
-            dailyPeriods.getOrNull(i)?.let { period ->
-                val pText = "${period}s"
-                val pW = textMeasurer.measure(pText, periodTextPaint).size.width.toFloat()
-                drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - pW / 2f, (closestPoint.y - 5.dp.toPx()).coerceAtLeast(10.dp.toPx()))
-            }
-
-            // Jour sélectionné : point sur la courbe et sa hauteur dessous.
+            val pText = dailyPeriods.getOrNull(i)?.let { "${it}s" }
             if (i == selectedIndex) {
+                // Jour sélectionné : un seul repère, sur la courbe, avec « hauteur période » au-dessus (rien dessous,
+                // pour ne pas chevaucher la courbe).
                 drawCircle(color = Color.White, radius = 4.4.dp.toPx(), center = closestPoint)
                 drawCircle(color = tideLineColor, radius = 2.8.dp.toPx(), center = closestPoint)
                 val hText = "${formatDecimal(dailyHeights.getOrNull(i) ?: 0.0, 1)}m".replace('.', ',')
                 val hW = textMeasurer.measure(hText, heightTextPaint).size.width.toFloat()
-                drawTextAtBaseline(textMeasurer, hText, heightTextPaint, targetX - hW / 2f, (closestPoint.y + 14.dp.toPx()).coerceAtMost(baseY - 2.dp.toPx()))
+                val pW = pText?.let { textMeasurer.measure(it, periodTextPaint).size.width.toFloat() } ?: 0f
+                val gap = 3.dp.toPx()
+                val totalW = hW + if (pText != null) gap + pW else 0f
+                val baseline = (closestPoint.y - 9.dp.toPx()).coerceAtLeast(10.dp.toPx())
+                drawTextAtBaseline(textMeasurer, hText, heightTextPaint, targetX - totalW / 2f, baseline)
+                if (pText != null) drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - totalW / 2f + hW + gap, baseline)
+            } else if (pText != null) {
+                // Autres jours : la période seule, juste au-dessus de la courbe.
+                val pW = textMeasurer.measure(pText, periodTextPaint).size.width.toFloat()
+                drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - pW / 2f, (closestPoint.y - 5.dp.toPx()).coerceAtLeast(10.dp.toPx()))
             }
         }
 
