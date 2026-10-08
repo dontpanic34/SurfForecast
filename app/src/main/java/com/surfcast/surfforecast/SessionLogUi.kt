@@ -208,6 +208,9 @@ fun SessionLogEntryDialog(
     microSpots: List<MicroSpot>,
     onAddMicroSpot: (name: String) -> Unit,
     onUpdateMicroSpot: (MicroSpot) -> Unit = {},
+    // Astuces affichées en tête la première fois qu'on ouvre le journal.
+    showTips: Boolean = false,
+    onDismissTips: () -> Unit = {},
     onSave: (dayOffset: Int, startHour: Int, endHour: Int, microSpotId: Long, quiverId: Long, rating: Int, comment: String?, mediaUri: String?) -> Unit,
     onDismiss: () -> Unit,
     // Jours proposes : 0 = aujourd'hui, 1 = hier, 2 = avant-hier (seulement si l'app a
@@ -282,6 +285,11 @@ fun SessionLogEntryDialog(
                     fontSize = 12.sp,
                     color = colors.onBackground.copy(alpha = 0.6f)
                 )
+
+                if (showTips) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    JournalTipsCard(onDismiss = onDismissTips)
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Jour", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.7f))

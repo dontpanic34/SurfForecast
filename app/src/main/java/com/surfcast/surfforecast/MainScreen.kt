@@ -109,6 +109,9 @@ fun MainScreen(viewModel: SurfViewModel) {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
     }
 
+    // Positions à l'écran des éléments éclairés par la visite guidée.
+    val coachTargets = remember { mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>() }
+
     val backgroundColor = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
@@ -190,6 +193,10 @@ fun MainScreen(viewModel: SurfViewModel) {
             onShowIntro = {
                 showPreferencesDialog = false
                 viewModel.showOnboardingAgain()
+            },
+            onShowTour = {
+                showPreferencesDialog = false
+                viewModel.showHomeTourAgain()
             },
             onDismiss = { showPreferencesDialog = false }
         )
@@ -418,6 +425,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .coachTarget("bestSlot", coachTargets)
                                                 .padding(horizontal = 10.dp, vertical = 2.dp)
                                                 .padding(bottom = 6.dp),
                                             verticalAlignment = Alignment.CenterVertically
@@ -582,7 +590,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             )
                                         }
 
-                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp)) {
+                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp).coachTarget("journal", coachTargets)) {
                                             JournalIcon(
                                                 color = onSurfaceColor,
                                                 modifier = Modifier.size(20.dp)
@@ -593,7 +601,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             Text(text = "🌤️", fontSize = 18.sp)
                                         }
 
-                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp)) {
+                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp).coachTarget("settings", coachTargets)) {
                                             Icon(
                                                 imageVector = Icons.Default.Settings,
                                                 contentDescription = "Paramètres",
@@ -658,6 +666,8 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
                                             onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },
+                                            showTips = viewModel.showJournalTips,
+                                            onDismissTips = { viewModel.dismissJournalTips() },
                                             availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
                                             onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
                                                 val past = pastConditions[dayOffset]
@@ -732,7 +742,21 @@ fun MainScreen(viewModel: SurfViewModel) {
                             }
                         }
                     }
+                    // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
+                    if (viewModel.showHomeTour && !viewModel.showOnboarding) {
+                        CoachMarkOverlay(
+                            steps = listOf(
+                                CoachStep("journal", "📓 Le journal de bord", "Note tes sessions ici : l'appli remplit les conditions toute seule et repère dans quelles conditions tu surfes le mieux."),
+                                CoachStep("bestSlot", "🎯 Le meilleur créneau", "L'heure conseillée pour le jour sélectionné, calculée selon ton niveau. Touche un autre jour dans la semaine pour le changer."),
+                                CoachStep("weekCard", "📅 Les encarts", "Touche un jour pour le détailler. Chaque encart se déplace, se replie ou se masque (Paramètres) : compose ton écran."),
+                                CoachStep("settings", "⚙️ Les paramètres", "Modèles de prévision, unités, niveau, sauvegarde… Tu peux aussi rejouer cette visite ici.")
+                            ),
+                            targets = coachTargets,
+                            onFinish = { viewModel.dismissHomeTour() }
+                        )
+                    }
                 }
+
             }
         }
             }
@@ -1003,7 +1027,7 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets)
                             )
                         }
                         "dailyTimeline" -> {

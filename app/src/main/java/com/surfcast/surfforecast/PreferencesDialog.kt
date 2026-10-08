@@ -55,7 +55,9 @@ fun SurfPreferencesDialog(
     onViewLogs: () -> Unit,
     onDismiss: () -> Unit,
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
-    onShowIntro: (() -> Unit)? = null
+    onShowIntro: (() -> Unit)? = null,
+    // Rejoue la visite guidée de l'accueil.
+    onShowTour: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -649,6 +651,12 @@ fun SurfPreferencesDialog(
                                 Text("Voir les logs d'actualisation", fontSize = 11.5.sp, color = colors.onBackground)
                             }
                         }
+                    }
+                }
+
+                if (onShowTour != null) {
+                    TextButton(onClick = onShowTour, modifier = Modifier.fillMaxWidth()) {
+                        Text("🧭 Revoir la visite guidée de l'écran", fontSize = 11.5.sp)
                     }
                 }
 
