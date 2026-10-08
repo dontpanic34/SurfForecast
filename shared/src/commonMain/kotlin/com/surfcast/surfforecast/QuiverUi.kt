@@ -267,8 +267,11 @@ fun GearContent(
             val w = parseInches(width)
             val t = parseInches(thickness)
             val typedVolume = parseInches(volumeText)
-            val volumeL: Double? = if (knowsVolume) typedVolume?.takeIf { it > 0.0 }
-            else if (ft != null && inch != null && w != null && t != null) estimateVolumeL(ft, inch, w, t) else null
+            // Volume exact saisi (même avec les cotes) = prioritaire sur l'estimation.
+            val exactVolume = typedVolume?.takeIf { it > 0.0 }
+            val volumeL: Double? = if (knowsVolume) exactVolume
+            else exactVolume ?: if (ft != null && inch != null && w != null && t != null) estimateVolumeL(ft, inch, w, t) else null
+            val volumeIsEstimated = !knowsVolume && exactVolume == null
 
             if (knowsVolume) {
                 GearLabel("Volume écrit sur la planche")
@@ -310,12 +313,23 @@ fun GearContent(
                     "Décimal (2,15 · 2,38) ou fraction comme sur la planche (2 5/16 · 19 1/4).",
                     fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f), modifier = Modifier.padding(top = 4.dp)
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                GearLabel("Volume exact (si tu le connais)")
+                OutlinedTextField(
+                    value = volumeText, onValueChange = { volumeText = it },
+                    placeholder = { Text("Ex. 31,5", fontSize = 12.sp) }, suffix = { Text("Litres") },
+                    singleLine = true, isError = volumeText.isNotBlank() && typedVolume == null, modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    "Sans volume exact, il est estimé à partir des cotes (à quelques % près, selon la forme de la planche).",
+                    fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f), modifier = Modifier.padding(top = 4.dp)
+                )
             }
 
             volumeL?.let { v ->
                 val ratio = volumeRatio(v, weightKg)
                 Text(
-                    text = (if (knowsVolume) "" else "≈ ") + formatFr(v) + " L" +
+                    text = (if (volumeIsEstimated) "≈ " else "") + formatFr(v) + " L" +
                         (ratio?.let { " · " + formatFr(it, 2) + " L/kg · Ratio de surfeur ${levelLabel(levelForRatio(it)).lowercase()}" } ?: ""),
                     fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary, modifier = Modifier.padding(top = 8.dp)
                 )
@@ -336,7 +350,7 @@ fun GearContent(
                 Button(
                     onClick = {
                         val dims = if (knowsVolume) "" else formatDimensions(feet, inches, width, thickness)
-                        onAddBoard(model.trim(), family ?: "shortboard", dims, finSetup.trim(), volumeL, !knowsVolume && volumeL != null)
+                        onAddBoard(model.trim(), family ?: "shortboard", dims, finSetup.trim(), volumeL, volumeIsEstimated && volumeL != null)
                         resetForm()
                     },
                     enabled = model.isNotBlank() && family != null,

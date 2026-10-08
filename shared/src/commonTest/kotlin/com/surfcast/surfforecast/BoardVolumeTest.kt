@@ -23,11 +23,19 @@ class BoardVolumeTest {
     }
 
     @Test
-    fun estimatesTheVolumeOfATypicalShortboard() {
-        // 6'0 x 19 x 2 5/16 : environ 31 L.
-        val volume = estimateVolumeL(6.0, 0.0, 19.0, 2.3125)
-        assertNotNull(volume)
-        assertTrue(volume in 30.5..31.7, "volume : $volume")
+    fun estimatesMatchAManufacturerVolumeChart() {
+        // Grille d'un modèle réel (longueur, largeur, épaisseur -> volume annoncé) : estimation à ±1 L.
+        val chart = listOf(
+            Triple(Triple(5.0, 4.0, 19.875), 2.3125, 27.6),
+            Triple(Triple(5.0, 8.0, 20.375), 2.5, 32.5),
+            Triple(Triple(6.0, 0.0, 21.25), 2.75, 39.4),
+            Triple(Triple(6.0, 4.0, 21.75), 2.875, 44.4)
+        )
+        chart.forEach { (dims, thickness, expected) ->
+            val volume = estimateVolumeL(dims.first, dims.second, dims.third, thickness)
+            assertNotNull(volume)
+            assertEquals(expected, volume, 1.0, "${dims.first}'${dims.second}")
+        }
         assertNull(estimateVolumeL(0.0, 0.0, 19.0, 2.3))
     }
 

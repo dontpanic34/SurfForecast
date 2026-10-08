@@ -29,16 +29,20 @@ private fun parseFractionOrNumber(part: String): Double? {
     return if (d == 0.0) null else n / d
 }
 
+/** Coefficient volume / (longueur x largeur x épaisseur) : 0,57 retrouve à 1 % près la grille de volumes d'un shortboard moderne. */
+const val VOLUME_FILL_FACTOR = 0.57
+
 /**
- * Volume estimé (litres) depuis les cotes : longueur x largeur x épaisseur x 0,6 (coefficient moyen d'un
- * shortboard). Ordre de grandeur seulement : seul le shaper connaît le volume exact.
+ * Volume estimé (litres) depuis les cotes : longueur x largeur x épaisseur x [VOLUME_FILL_FACTOR]. Ordre de
+ * grandeur à quelques % près (le rocker, les rails et la forme du nez et du tail changent le résultat) :
+ * seul le shaper connaît le volume exact, à saisir quand on le connaît.
  */
 fun estimateVolumeL(lengthFeet: Double, lengthInches: Double, widthIn: Double, thicknessIn: Double): Double? {
     val length = (lengthFeet * 12.0 + lengthInches) * 2.54
     val width = widthIn * 2.54
     val thickness = thicknessIn * 2.54
     if (length <= 0.0 || width <= 0.0 || thickness <= 0.0) return null
-    return length * width * thickness * 0.6 / 1000.0
+    return length * width * thickness * VOLUME_FILL_FACTOR / 1000.0
 }
 
 /** Ratio litres par kilo, ou null si une donnée manque. */
