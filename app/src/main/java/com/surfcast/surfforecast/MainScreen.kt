@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,6 +109,23 @@ fun MainScreen(viewModel: SurfViewModel) {
     val context = LocalContext.current
     val appVersion = remember {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "?"
+    }
+
+    // Nouvelle version de l'APK publiée sur le site (surflog.fr/apk-version.json) ?
+    val installedCode = remember {
+        runCatching { androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0)) }.getOrDefault(0L)
+    }
+    var newVersionName by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        newVersionName = withContext(Dispatchers.IO) {
+            runCatching {
+                val conn = java.net.URL("https://surflog.fr/apk-version.json").openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                val json = org.json.JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+                if (json.getLong("versionCode") > installedCode && installedCode > 0) json.getString("versionName") else null
+            }.getOrNull()
+        }
     }
 
     // Positions à l'écran des éléments éclairés par la visite guidée.
@@ -693,6 +712,24 @@ fun MainScreen(viewModel: SurfViewModel) {
                                                 }
                                             },
                                             onDismiss = { showSessionLogEntry = false }
+                                        )
+                                    }
+
+                                    newVersionName?.let { v ->
+                                        Text(
+                                            text = "⬆ Nouvelle version disponible (v$v) · Mettre à jour",
+                                            fontSize = 11.sp,
+                                            color = primaryColor,
+                                            modifier = Modifier
+                                                .clickable {
+                                                    context.startActivity(
+                                                        android.content.Intent(
+                                                            android.content.Intent.ACTION_VIEW,
+                                                            android.net.Uri.parse("https://surflog.fr/surflog.apk")
+                                                        )
+                                                    )
+                                                }
+                                                .padding(horizontal = 6.dp, vertical = 4.dp)
                                         )
                                     }
 
