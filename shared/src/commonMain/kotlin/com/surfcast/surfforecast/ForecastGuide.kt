@@ -61,7 +61,7 @@ private val guideSections = listOf(
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (avec rafales) et clapot. " +
             "Les couleurs : rouge = à éviter, orange = médiocre, jaune = correct, vert clair = bon, vert = très bon, vert vif = excellent. " +
             "Violet = trop gros pour ton niveau : ce n'est pas mauvais, c'est simplement au-dessus de ce que ton niveau gère " +
-            "(plafond d'énergie : débutant 250 kJ, intermédiaire 450, confirmé 700, expert aucun). Le profil règle aussi la tolérance au vent, aux rafales, au clapot et à la période (plus on cherche la qualité de la vague, plus ces défauts pèsent : un expert est plus exigeant qu'un débutant), et le profil Personnalisé te laisse tout ajuster. " +
+            "(plafond d'énergie : débutant 250 kJ, intermédiaire 450, confirmé 700, expert aucun). Le profil règle aussi l'importance de l'offshore (il creuse la vague et fait les tubes : réservé surtout aux confirmés et experts) et la tolérance au vent, aux rafales, au clapot et à la période (plus on cherche la qualité de la vague, plus ces défauts pèsent : un expert est plus exigeant qu'un débutant), et le profil Personnalisé te laisse tout ajuster. " +
             "Le meilleur créneau est la fenêtre de 2 à 3 heures avec la meilleure moyenne. " +
             "La note ne connaît pas ton spot (bancs de sable, courants) : c'est à toi de juger s'il marche. Regarde la webcam avant de partir."
     ),

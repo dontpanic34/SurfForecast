@@ -57,8 +57,9 @@ class SurfScoringTest {
     fun swellDirectionAndCrossWind() {
         // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent N 10 km/h (travers) x0.9 ;
         // ; vent de travers N 10 km/h pour un intermédiaire (tolérance 25) : 0.943 ; houle de travers :
-        // facteur 1 - 0.3 x 60/90 = 0.8 ; 100 x 0.943 x 0.8 = 75.4 -> 75.
-        assertEquals(75, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // facteur 1 - 0.3 x 60/90 = 0.8 ; la direction compte à 80 % pour un intermédiaire : 1 - 0.057 x 0.8 = 0.954 ;
+        // 100 x 0.954 x 0.8 = 76.3 -> 76.
+        assertEquals(76, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -263,5 +264,29 @@ class SurfScoringTest {
         // Période courte : le débutant (mousse) s'en moque plus que l'expert.
         val shortPeriod = hour(10, height = 0.9, period = 5.0, windKmh = 5, windDir = "E")
         assertTrue(calculateSlotScore(shortPeriod, 275, "beginner", false) > calculateSlotScore(shortPeriod, 275, "expert", false))
+    }
+
+    @Test
+    fun offshoreIsForConfirmedAndExpertNotForBeginners() {
+        val offshore = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "E")
+        val cross = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "N")
+        // Débutant : la direction ne change presque rien.
+        val begDiff = calculateSlotScore(offshore, 275, "beginner", false) - calculateSlotScore(cross, 275, "beginner", false)
+        assertTrue(begDiff in 0..6, "débutant offshore - travers : $begDiff")
+        // Confirmé : l'offshore est nettement mieux que le travers.
+        val confDiff = calculateSlotScore(offshore, 275, "confirmed", false) - calculateSlotScore(cross, 275, "confirmed", false)
+        assertTrue(confDiff >= 12, "confirmé offshore - travers : $confDiff")
+        // Offshore soutenu (20 km/h) : creux et rapide, mieux noté par un confirmé que par un intermédiaire.
+        val strong = hour(10, height = 0.9, period = 9.0, windKmh = 20, windDir = "E")
+        assertTrue(calculateSlotScore(strong, 275, "confirmed", false) > calculateSlotScore(strong, 275, "intermediate", false))
+    }
+
+    @Test
+    fun oldCustomProfilesWithoutDirectionSettingsStillLoad() {
+        val legacy = "custom:80.0;500.0;700.0;0.85;250.0;7.0;25.0;8.0;25.0;0.2;0.0"
+        val profile = SurfProfile.fromLevel(legacy)
+        assertEquals(700.0, profile.cap)
+        assertEquals(1.0, profile.directionMatters)
+        assertEquals(1.0, profile.offshoreMinFactor)
     }
 }

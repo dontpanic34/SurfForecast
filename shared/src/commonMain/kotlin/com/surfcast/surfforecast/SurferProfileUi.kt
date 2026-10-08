@@ -24,6 +24,12 @@ private val LEVELS = listOf("beginner", "intermediate", "confirmed", "expert")
 private val MIN_ENERGIES = listOf(30.0, 80.0, 150.0, 250.0, 450.0, 700.0, 1500.0)
 private val MAX_ENERGIES = listOf(150.0, 250.0, 450.0, 700.0, 1000.0, 1500.0, 3500.0, SurfProfile.NO_CAP)
 private val ONSHORE_CHOICES = listOf(5.0 to "Aucun\n5\u00A0km/h", 8.0 to "Faible\n8\u00A0km/h", 12.0 to "Léger\n12\u00A0km/h", 20.0 to "Tolérant\n20\u00A0km/h")
+// (importance de la direction, facteur offshore soutenu) : Indifférent / Apprécié / Recherché.
+private val OFFSHORE_CHOICES = listOf(
+    Triple(0.25, 1.0, "Indifférent\nsans effet"),
+    Triple(0.8, 0.85, "Apprécié\nmodéré"),
+    Triple(1.0, 1.0, "Recherché\ntubes")
+)
 private val GUST_CHOICES = listOf(20.0 to "Sensible\n20\u00A0km/h", 25.0 to "Normal\n25\u00A0km/h", 30.0 to "Tolérant\n30\u00A0km/h")
 private val CHOP_CHOICES = listOf(0.15 to "Strict\n0,15\u00A0m", 0.2 to "Sensible\n0,2\u00A0m", 0.3 to "Normal\n0,3\u00A0m", 0.6 to "Tolérant\n0,6\u00A0m")
 
@@ -279,6 +285,15 @@ fun SurferProfileSection(
                 )
                 Text("Vent de mer (onshore) toléré jusqu'à", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
                 ChoiceRow(ONSHORE_CHOICES, profile.onshoreMax) { update(profile.copy(onshoreMax = it)) }
+                Text("Vent de terre (offshore)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                Text(
+                    "L'offshore creuse la vague et fait les tubes : un débutant n'y est pas sensible, un intermédiaire l'apprécie avec modération, un confirmé ou un expert le recherche.",
+                    fontSize = 11.sp, color = colors.onSurfaceVariant
+                )
+                ChoiceRow(OFFSHORE_CHOICES.map { it.first to it.third }, profile.directionMatters) { dm ->
+                    val choice = OFFSHORE_CHOICES.first { it.first == dm }
+                    update(profile.copy(directionMatters = choice.first, offshoreMinFactor = choice.second))
+                }
                 Text("Rafales gênantes à partir de", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
                 ChoiceRow(GUST_CHOICES, profile.gustThreshold) { update(profile.copy(gustThreshold = it)) }
                 Text("Clapot gênant à partir de", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)

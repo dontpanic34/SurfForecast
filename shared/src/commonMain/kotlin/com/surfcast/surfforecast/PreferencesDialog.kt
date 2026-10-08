@@ -131,7 +131,7 @@ fun SurfPreferencesDialog(
                     )
                     ModelDescItem(
                         name = "4. Ton niveau",
-                        desc = "Le profil règle l'énergie idéale, le plafond « trop gros », mais aussi la tolérance au vent, aux rafales, au clapot et à la période. Tout ce qui dégrade la vague ne pèse pas pareil : un expert, qui cherche le plein potentiel de la vague, y est plus sensible qu'un débutant qui prend de la mousse.\nDébutant : les mousses, petites vagues douces (trop gros dès 250 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (trop gros dès 450).\nConfirmé : autonome, surfe seul, préfère un peu de puissance (trop gros dès 700).\nExpert : plein potentiel de la vague, aucune limite.\nPersonnalisé : tu règles tout toi-même."
+                        desc = "Le profil règle l'énergie idéale, le plafond « trop gros », mais aussi la tolérance au vent, aux rafales, au clapot et à la période. La direction du vent compte aussi selon le niveau : l'offshore creuse la vague et fait les tubes, ce qu'un débutant ignore, qu'un intermédiaire apprécie avec modération et qu'un confirmé ou un expert recherche. Tout ce qui dégrade la vague ne pèse pas pareil : un expert, qui cherche le plein potentiel de la vague, y est plus sensible qu'un débutant qui prend de la mousse.\nDébutant : les mousses, petites vagues douces (trop gros dès 250 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (trop gros dès 450).\nConfirmé : autonome, surfe seul, préfère un peu de puissance (trop gros dès 700).\nExpert : plein potentiel de la vague, aucune limite.\nPersonnalisé : tu règles tout toi-même."
                     )
                 }
             },

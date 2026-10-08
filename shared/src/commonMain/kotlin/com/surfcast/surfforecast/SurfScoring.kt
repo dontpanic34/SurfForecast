@@ -57,14 +57,18 @@ data class SurfProfile(
     val onshoreMax: Double = 12.0,
     val gustThreshold: Double = 25.0,
     val chopThreshold: Double = 0.3,
-    val beginnerExtras: Boolean = false
+    val beginnerExtras: Boolean = false,
+    // Importance de la direction du vent (0 = seule la force compte, 1 = offshore / travers / onshore comptent à plein).
+    val directionMatters: Double = 1.0,
+    // Un offshore soutenu creuse la vague (tubes) : facteur final pour un offshore de 20 km/h et plus (1 = aucun effet).
+    val offshoreMinFactor: Double = 1.0
 ) {
     val hasCap: Boolean get() = cap < NO_CAP
 
-    /** Forme texte stockée dans le niveau : "custom:" + 11 nombres séparés par « ; ». */
+    /** Forme texte stockée dans le niveau : "custom:" + 13 nombres séparés par « ; ». */
     fun serialize(): String = "$CUSTOM_PREFIX" + listOf(
         idealMin, idealMax, cap, rampStartFit, rampEnd, minPeriod, windTolerance, onshoreMax,
-        gustThreshold, chopThreshold, if (beginnerExtras) 1.0 else 0.0
+        gustThreshold, chopThreshold, if (beginnerExtras) 1.0 else 0.0, directionMatters, offshoreMinFactor
     ).joinToString(";")
 
     companion object {
@@ -79,10 +83,10 @@ data class SurfProfile(
         fun preset(level: String): SurfProfile = when (level) {
             // Débutant : les mousses, les petites vagues douces ; la qualité de la vague compte peu.
             "beginner" -> SurfProfile(30.0, 110.0, 250.0, minPeriod = 5.0, windTolerance = 30.0, onshoreMax = 20.0,
-                gustThreshold = 30.0, chopThreshold = 0.6, beginnerExtras = true)
+                gustThreshold = 30.0, chopThreshold = 0.6, beginnerExtras = true, directionMatters = 0.25)
             // Intermédiaire : commence à aller au large et à suivre les vagues.
             "intermediate" -> SurfProfile(80.0, 220.0, 450.0, minPeriod = 6.0, windTolerance = 25.0, onshoreMax = 12.0,
-                gustThreshold = 25.0, chopThreshold = 0.3)
+                gustThreshold = 25.0, chopThreshold = 0.3, directionMatters = 0.8, offshoreMinFactor = 0.85)
             // Confirmé : autonome, surfe seul, préfère un peu de puissance et de la vague propre.
             "confirmed" -> SurfProfile(80.0, 500.0, 700.0, rampStartFit = 0.85, rampEnd = 250.0, minPeriod = 7.0,
                 windTolerance = 25.0, onshoreMax = 8.0, gustThreshold = 25.0, chopThreshold = 0.2)
@@ -96,8 +100,12 @@ data class SurfProfile(
         fun fromLevel(level: String): SurfProfile {
             if (level.startsWith(CUSTOM_PREFIX)) {
                 val v = level.removePrefix(CUSTOM_PREFIX).split(";").mapNotNull { it.toDoubleOrNull() }
-                if (v.size == 11) {
-                    return SurfProfile(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10] > 0.5)
+                // 11 nombres = ancien format (sans direction du vent) : les nouveaux réglages gardent leur valeur par défaut.
+                if (v.size == 11 || v.size == 13) {
+                    return SurfProfile(
+                        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10] > 0.5,
+                        directionMatters = v.getOrElse(11) { 1.0 }, offshoreMinFactor = v.getOrElse(12) { 1.0 }
+                    )
                 }
                 return preset("intermediate")
             }
@@ -166,7 +174,13 @@ fun calculateSlotRating(
     score *= chopFactor(h, hourlyModel.windWaveHeight, profile.chopThreshold)
     // La tolérance au vent décale les courbes : un profil tolérant « voit » moins de vent.
     val scaledWind = if (windCategory == "onshore") windKmh * 12.0 / profile.onshoreMax else windKmh * 25.0 / profile.windTolerance
-    score *= interpolate(scaledWind, windCurves.getValue(windCategory))
+    val categoryFactor = interpolate(scaledWind, windCurves.getValue(windCategory))
+    // Direction : un débutant (mousse) s'en moque, un confirmé / expert cherche l'offshore qui creuse la vague.
+    val neutralFactor = interpolate(windKmh * 25.0 / profile.windTolerance, windCurves.getValue("offshore"))
+    var windFactor = neutralFactor + (categoryFactor - neutralFactor) * profile.directionMatters
+    // Un offshore soutenu fait des vagues creuses et rapides (tubes) : tout le monde n'est pas prêt.
+    if (windCategory == "offshore") windFactor *= 1.0 - (1.0 - profile.offshoreMinFactor) * ((windKmh - 6.0) / 14.0).coerceIn(0.0, 1.0)
+    score *= windFactor
     // Rafales fortes : mauvaises pour tout le monde, quelle que soit la direction.
     val gust = hourlyModel.windGustKmh
     if (gust > profile.gustThreshold) score *= (1.0 - (gust - profile.gustThreshold) / 30.0).coerceAtLeast(0.3)
