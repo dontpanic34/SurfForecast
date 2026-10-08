@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -21,17 +20,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Lien de don (PayPal.Me). */
 const val DONATION_URL = "https://www.paypal.me/othmanmiara"
 
-/** Numéro lié au compte Wero (affiché à côté du QR code). */
-const val WERO_PHONE = "06 65 35 83 24"
-
-/** Bouton « Offrir une wax » (en-tête des Paramètres) : ouvre le choix PayPal ou Wero (numéro / QR code). */
+/** Bouton « Offrir une wax » (en-tête des Paramètres) : ouvre le choix PayPal ou Wero (QR code). */
 @Composable
 fun DonationButton(weroQr: @Composable () -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -67,15 +62,7 @@ fun DonationButton(weroQr: @Composable () -> Unit) {
                     ) { Text(if (showWero) "Masquer Wero" else "Avec Wero", fontSize = 12.sp, color = colors.onSurface) }
                     if (showWero) {
                         Text(
-                            "Dans ton appli Wero, envoie de l'argent à ce numéro :",
-                            fontSize = 11.sp,
-                            color = colors.onSurface.copy(alpha = 0.75f)
-                        )
-                        SelectionContainer {
-                            Text(WERO_PHONE, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                        }
-                        Text(
-                            "Ou scanne ce QR code depuis un autre écran :",
+                            "Scanne ce QR code depuis un autre écran (ordi, téléphone d'un ami) avec ton appli Wero ou ta banque :",
                             fontSize = 11.sp,
                             color = colors.onSurface.copy(alpha = 0.75f)
                         )
