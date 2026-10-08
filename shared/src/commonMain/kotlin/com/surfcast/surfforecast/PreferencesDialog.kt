@@ -131,7 +131,7 @@ fun SurfPreferencesDialog(
                     )
                     ModelDescItem(
                         name = "4. Ton niveau",
-                        desc = "Le profil règle l'énergie idéale, le plafond « trop gros », mais aussi la tolérance au vent, aux rafales, au clapot et à la période.\nDébutant : les mousses, petites vagues douces (trop gros dès 350 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (trop gros dès 700).\nConfirmé : autonome, surfe seul, préfère un peu de puissance (trop gros dès 3500).\nExpert : plein potentiel de la vague, aucune limite.\nPersonnalisé : tu règles tout toi-même."
+                        desc = "Le profil règle l'énergie idéale, le plafond « trop gros », mais aussi la tolérance au vent, aux rafales, au clapot et à la période.\nDébutant : les mousses, petites vagues douces (trop gros dès 250 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (trop gros dès 450).\nConfirmé : autonome, surfe seul, préfère un peu de puissance (trop gros dès 700).\nExpert : plein potentiel de la vague, aucune limite.\nPersonnalisé : tu règles tout toi-même."
                     )
                 }
             },

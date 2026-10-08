@@ -74,12 +74,12 @@ data class SurfProfile(
         /** Les 4 profils de départ. Le niveau ne se résume pas à l'énergie : vent, rafales et clapot suivent. */
         fun preset(level: String): SurfProfile = when (level) {
             // Débutant : les mousses, les petites vagues douces ; peu de vent toléré.
-            "beginner" -> SurfProfile(30.0, 150.0, 350.0, minPeriod = 6.0, windTolerance = 15.0, onshoreMax = 5.0,
+            "beginner" -> SurfProfile(30.0, 110.0, 250.0, minPeriod = 6.0, windTolerance = 15.0, onshoreMax = 5.0,
                 gustThreshold = 15.0, chopThreshold = 0.15, beginnerExtras = true)
             // Intermédiaire : commence à aller au large et à suivre les vagues.
-            "intermediate" -> SurfProfile(80.0, 300.0, 700.0, minPeriod = 7.0, windTolerance = 20.0)
+            "intermediate" -> SurfProfile(80.0, 220.0, 450.0, minPeriod = 7.0, windTolerance = 20.0)
             // Confirmé : autonome, surfe seul, préfère un peu de puissance.
-            "confirmed" -> SurfProfile(80.0, 2000.0, 3500.0, rampStartFit = 0.85, rampEnd = 250.0, minPeriod = 8.0)
+            "confirmed" -> SurfProfile(80.0, 500.0, 700.0, rampStartFit = 0.85, rampEnd = 250.0, minPeriod = 8.0)
             // Expert : tout surfer, plein potentiel de la vague, pas de limite de taille.
             "expert" -> SurfProfile(80.0, 4000.0, NO_CAP, rampStartFit = 0.65, rampEnd = 400.0, minPeriod = 8.0,
                 windTolerance = 35.0, onshoreMax = 20.0, chopThreshold = 0.6)

@@ -21,8 +21,8 @@ import kotlin.math.roundToInt
 // Mon style de surf : 4 profils de départ + un profil personnalisé (énergie, période, vent, rafales, clapot).
 
 private val LEVELS = listOf("beginner", "intermediate", "confirmed", "expert")
-private val MIN_ENERGIES = listOf(30.0, 80.0, 150.0, 350.0, 700.0, 1500.0, 3500.0)
-private val MAX_ENERGIES = listOf(80.0, 150.0, 350.0, 700.0, 1500.0, 3500.0, SurfProfile.NO_CAP)
+private val MIN_ENERGIES = listOf(30.0, 80.0, 150.0, 250.0, 450.0, 700.0, 1500.0)
+private val MAX_ENERGIES = listOf(150.0, 250.0, 450.0, 700.0, 1000.0, 1500.0, 3500.0, SurfProfile.NO_CAP)
 private val ONSHORE_CHOICES = listOf(5.0 to "Aucun · 5 km/h", 12.0 to "Léger · 12 km/h", 20.0 to "Tolérant · 20 km/h")
 private val GUST_CHOICES = listOf(15.0 to "15 km/h · Sensible", 25.0 to "25 km/h · Normal", 35.0 to "35 km/h · Tolérant")
 private val CHOP_CHOICES = listOf(0.15 to "0,15 m · Sensible", 0.3 to "0,3 m · Normal", 0.6 to "0,6 m · Tolérant")
@@ -31,7 +31,8 @@ private fun energyName(w: Double) = when {
     w >= SurfProfile.NO_CAP -> "Aucune limite"
     w <= 80 -> "Très douce"
     w <= 150 -> "Douce"
-    w <= 350 -> "Moyenne"
+    w <= 250 -> "Modérée"
+    w <= 450 -> "Moyenne"
     w <= 700 -> "Soutenue"
     w <= 1500 -> "Puissante"
     else -> "Très puissante"
@@ -226,12 +227,12 @@ fun SurferProfileSection(
                 Text(energyAsWave(profile.idealMin), fontSize = 11.sp, color = colors.onSurfaceVariant)
                 Slider(
                     value = minIdx.toFloat(), onValueChange = { i ->
-                        val v = MIN_ENERGIES[i.roundToInt().coerceIn(0, 6)]
+                        val v = MIN_ENERGIES[i.roundToInt().coerceIn(0, MIN_ENERGIES.lastIndex)]
                         update(profile.copy(idealMin = v, rampEnd = maxOf(v, minOf(profile.rampEnd, profile.idealMax)), cap = maxOf(profile.cap, v)))
                     },
                     valueRange = 0f..6f, steps = 5
                 )
-                val maxIdx = if (!profile.hasCap) 6 else nearestIndex(MAX_ENERGIES, profile.cap)
+                val maxIdx = if (!profile.hasCap) MAX_ENERGIES.lastIndex else nearestIndex(MAX_ENERGIES, profile.cap)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Mon maximum (au-delà : trop gros)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
                     Text(energyLabel(profile.cap), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
@@ -239,7 +240,7 @@ fun SurferProfileSection(
                 Text(energyAsWave(profile.cap), fontSize = 11.sp, color = colors.onSurfaceVariant)
                 Slider(
                     value = maxIdx.toFloat(), onValueChange = { i ->
-                        val cap = MAX_ENERGIES[i.roundToInt().coerceIn(0, 6)]
+                        val cap = MAX_ENERGIES[i.roundToInt().coerceIn(0, MAX_ENERGIES.lastIndex)]
                         update(
                             profile.copy(
                                 cap = cap,
@@ -248,7 +249,7 @@ fun SurferProfileSection(
                             )
                         )
                     },
-                    valueRange = 0f..6f, steps = 5
+                    valueRange = 0f..7f, steps = 6
                 )
                 EnergyCalculator(
                     onUseAsMin = { e -> update(profile.copy(idealMin = e, rampEnd = e, cap = maxOf(profile.cap, e), idealMax = maxOf(profile.idealMax, e))) },
@@ -257,7 +258,7 @@ fun SurferProfileSection(
                     }
                 )
                 Text(
-                    "Repères : très douce ≈ 80 (0,6 m 8 s, mousses) · douce ≈ 150 (Oléron, Montalivet) · moyenne ≈ 350 (beach breaks landais) · " +
+                    "Repères : très douce ≈ 80 (0,6 m 8 s, mousses) · douce ≈ 150 (Oléron, Montalivet) · modérée ≈ 250 · moyenne ≈ 450 (1,5 m 10 s, beach breaks landais) · " +
                         "soutenue ≈ 700 · puissante ≈ 1 500 (La Gravière, Hossegor) · très puissante ≈ 3 500 (gros jours).",
                     fontSize = 11.sp, color = colors.onSurfaceVariant
                 )

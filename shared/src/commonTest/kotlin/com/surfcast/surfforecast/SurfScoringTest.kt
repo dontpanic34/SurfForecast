@@ -36,7 +36,7 @@ class SurfScoringTest {
 
     @Test
     fun perfectIntermediateConditionsScore100() {
-        // 1.962 x 1² x 10² = 196.2 kJ, dans la cible 150-300 ; vent offshore faible -> x1.
+        // 1.962 x 1² x 10² = 196.2 kJ, dans la cible 80-220 ; vent offshore faible -> x1.
         assertEquals(100, calculateSlotScore(hour(10), null, "intermediate", false))
     }
 
@@ -48,9 +48,9 @@ class SurfScoringTest {
 
     @Test
     fun beginnerPenalties() {
-        // 1.962 x 1 x 144 = 282.5 kJ (sous le plafond débutant de 350) -> fit 150/282.5 = 0.531 -> 53.1
-        // x0.85 (marée haute) = 45.1 -> 45
-        assertEquals(45, calculateSlotScore(hour(10, height = 1.0, period = 12.0), null, "beginner", true))
+        // 1.962 x 0.81 x 144 = 228.9 kJ (sous le plafond débutant de 250) -> fit 110/228.9 = 0.4806 -> 48.1
+        // x0.85 (marée haute) = 40.8 -> 41
+        assertEquals(41, calculateSlotScore(hour(10, height = 0.9, period = 12.0), null, "beginner", true))
     }
 
     @Test
@@ -93,14 +93,12 @@ class SurfScoringTest {
     }
 
     @Test
-    fun bigDayIsGoodForConfirmedAndTooBigForIntermediate() {
+    fun bigDayIsTooBigForConfirmedButGoodForExpert() {
         val big = hour(10, height = 2.5, period = 14.0, windKmh = 10, windDir = "E")
-        val confirmed = calculateSlotRating(big, 275, "confirmed", false)
-        assertFalse(confirmed.tooBig)
-        assertTrue(confirmed.score >= 70, "2,5 m 14 s offshore pour un confirmé : ${confirmed.score}")
-        val intermediate = calculateSlotRating(big, 275, "intermediate", false)
-        assertTrue(intermediate.tooBig)
-        assertEquals(0, intermediate.score)
+        assertTrue(calculateSlotRating(big, 275, "confirmed", false).tooBig)
+        val expert = calculateSlotRating(big, 275, "expert", false)
+        assertFalse(expert.tooBig)
+        assertTrue(expert.score >= 70, "2,5 m 14 s offshore pour un expert : ${expert.score}")
     }
 
     @Test
@@ -202,14 +200,17 @@ class SurfScoringTest {
 
     @Test
     fun capsPerLevelMatchTheDefinitions() {
-        // 1,4 m à 10 s ≈ 385 kJ : trop gros pour un débutant (plafond 350), pas pour un intermédiaire.
-        val day = hour(10, height = 1.4, period = 10.0, windKmh = 6, windDir = "E")
+        // 1,2 m à 10 s ≈ 283 kJ : trop gros pour un débutant (plafond 250), pas pour un intermédiaire (450).
+        val day = hour(10, height = 1.2, period = 10.0, windKmh = 6, windDir = "E")
         assertTrue(calculateSlotRating(day, 275, "beginner", false).tooBig)
         assertFalse(calculateSlotRating(day, 275, "intermediate", false).tooBig)
-        // 2 m à 12 s ≈ 1130 kJ : trop gros pour un intermédiaire (plafond 700), pas pour un confirmé.
-        val big = hour(10, height = 2.0, period = 12.0, windKmh = 6, windDir = "E")
+        // 1,8 m à 10 s ≈ 636 kJ : trop gros pour un intermédiaire, pas pour un confirmé (plafond 700).
+        val big = hour(10, height = 1.8, period = 10.0, windKmh = 6, windDir = "E")
         assertTrue(calculateSlotRating(big, 275, "intermediate", false).tooBig)
         assertFalse(calculateSlotRating(big, 275, "confirmed", false).tooBig)
+        // 2 m à 12 s ≈ 1130 kJ : trop gros pour un confirmé.
+        val bigger = hour(10, height = 2.0, period = 12.0, windKmh = 6, windDir = "E")
+        assertTrue(calculateSlotRating(bigger, 275, "confirmed", false).tooBig)
         // L'expert surfe tout : jamais « trop gros ».
         val huge = hour(10, height = 6.0, period = 18.0, windKmh = 6, windDir = "E")
         assertFalse(calculateSlotRating(huge, 275, "expert", false).tooBig)
