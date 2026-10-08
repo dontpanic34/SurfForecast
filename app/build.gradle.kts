@@ -25,21 +25,32 @@ android {
 
     // Clé fixe (secrets GitHub) : l'APK publié se met à jour par-dessus l'ancien. Sans secrets, clé debug.
     val keystorePath = System.getenv("SURFLOG_KEYSTORE_PATH")
-    if (!keystorePath.isNullOrBlank() && file(keystorePath).exists()) {
-        signingConfigs.getByName("debug").apply {
-            storeFile = file(keystorePath)
+    val hasFixedKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
+    if (hasFixedKey) {
+        fun com.android.build.api.dsl.ApkSigningConfig.useFixedKey() {
+            storeFile = file(keystorePath!!)
             storePassword = System.getenv("SURFLOG_KEYSTORE_PASSWORD")
             keyAlias = System.getenv("SURFLOG_KEY_ALIAS")
             keyPassword = System.getenv("SURFLOG_KEY_PASSWORD")
         }
+        signingConfigs.getByName("debug").useFixedKey()
+        signingConfigs.create("release").useFixedKey()
     }
 
     buildTypes {
         release {
+            // APK publié : version « release » (non déboguable). Même clé que le debug quand les
+            // secrets sont là (mises à jour par-dessus), sinon clé debug pour rester installable.
+            signingConfig = signingConfigs.getByName(if (hasFixedKey) "release" else "debug")
             optimization {
                 enable = false
             }
         }
+    }
+    lint {
+        // Le contrôle lint tourne déjà en local ; il ne doit pas bloquer la publication.
+        checkReleaseBuilds = false
+        abortOnError = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

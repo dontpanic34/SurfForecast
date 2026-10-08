@@ -1,4 +1,4 @@
-name: Build debug APK
+name: Build APK
 
 on:
   push:
@@ -51,15 +51,15 @@ jobs:
             echo "SURFLOG_KEY_PASSWORD=${{ secrets.SURFLOG_KEY_PASSWORD }}" >> "$GITHUB_ENV"
           fi
 
-      - name: Build debug APK
+      - name: Build APK
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/surflog.apk
+        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/surflog.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: surf-log-debug-${{ github.run_number }}
-          path: app/build/outputs/apk/debug/surflog.apk
+          name: surf-log-${{ github.run_number }}
+          path: app/build/outputs/apk/release/surflog.apk
           retention-days: 30
