@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 class SurfWebcamHelperTest {
 
     @Test
-    fun liveCamUrlIsASearchThatNeverGoesStale() {
+    fun liveCamUrlWithoutKnownCameraIsASearch() {
         assertEquals(
             "https://duckduckgo.com/?q=%21ducky%20webcam%20gosurf%20Montalivet",
             SurfWebcamHelper.liveCamUrl("Montalivet")
@@ -14,17 +14,12 @@ class SurfWebcamHelperTest {
     }
 
     @Test
-    fun cameraNameIsOnlyAddedWhenTheSpotHasSeveral() {
+    fun cameraOfTheCatalogOpensItsDirectPage() {
         val mimizan = SurfWebcamHelper.getCamerasForSpot("Mimizan").cameras
-        assertEquals(
-            "https://duckduckgo.com/?q=%21ducky%20webcam%20gosurf%20Mimizan%20Plage%20Nord",
-            SurfWebcamHelper.liveCamUrl("Mimizan", mimizan.first { it.camName == "Plage Nord" })
-        )
+        val nord = mimizan.first { it.camName == "Plage Nord" }
+        assertEquals(nord.pageUrl, SurfWebcamHelper.liveCamUrl("Mimizan", nord))
         val lacanau = SurfWebcamHelper.getCamerasForSpot("Lacanau").cameras.single()
-        assertEquals(
-            "https://duckduckgo.com/?q=%21ducky%20webcam%20gosurf%20Lacanau",
-            SurfWebcamHelper.liveCamUrl("Lacanau", lacanau)
-        )
+        assertEquals("https://gosurf.fr/webcam/fr/76/Lacanau-Ocean-Plage-Centrale", SurfWebcamHelper.liveCamUrl("Lacanau", lacanau))
     }
 
     @Test

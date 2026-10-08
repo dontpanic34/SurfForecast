@@ -178,11 +178,12 @@ object SurfWebcamHelper {
         return "https://duckduckgo.com/?q=" + percentEncode(query)
     }
 
-    /** Lien webcam d'une caméra du catalogue (nom ajouté seulement si le spot en a plusieurs). */
-    fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String {
-        val many = (catalog[spotName]?.cameras?.size ?: 0) > 1
-        return liveCamUrl(spotName, camera.camName.takeIf { many })
-    }
+    /**
+     * Lien webcam d'une caméra du catalogue : sa page directe (comme dans l'appli Android).
+     * La recherche ci-dessus ne sert que pour un spot sans caméra connue.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String = camera.pageUrl
 
     private fun percentEncode(text: String): String = buildString {
         for (b in text.encodeToByteArray()) {
