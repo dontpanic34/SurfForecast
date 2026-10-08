@@ -149,7 +149,7 @@ fun DailyTimelineCard(
 
                     if (seaTemp != null) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        WaterTempChip(celsius = seaTemp)
+                        WaterTempChip(celsius = seaTemp, showSuit = true)
                     }
 
                     if (tideInfo != null) {

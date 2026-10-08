@@ -238,34 +238,6 @@ fun WeeklyForecastCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                availableDates.forEach { date ->
-                    val isSelected = date == selectedDate
-                    val tideInfo = dailyTides[date]
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
-                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
-                            .clickable { onSelectDate(date) }
-                            .padding(vertical = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        DailyTideCanvas(
-                            tideInfo = tideInfo,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(26.dp)
-                        )
-                    }
-                }
-            }
             }
         }
     }
@@ -294,11 +266,11 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
                 Text(text = emoji, fontSize = 13.sp)
                 Text(
                     text = "${slot.temperature}°",
-                    fontSize = 6.5.sp,
+                    fontSize = 8.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    lineHeight = 8.sp
+                    lineHeight = 9.sp
                 )
             }
         }
@@ -341,15 +313,15 @@ fun ContinuousWaveCanvas(
     val isDarkTheme = isDarkSurfaceTheme()
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
 
-    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
 
     // Etiquette neutre (pas de code couleur impose) : suit onSurface, lisible nativement
     // dans les deux themes sans besoin de chip.
-    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.6f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
 
     // Température de l'eau : bleu dédié, avec la vague pour icône.
     val waterColor = waterTempColor()
-    val waterTextPaint = TextStyle(color = waterColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    val waterTextPaint = TextStyle(color = waterColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -476,7 +448,7 @@ private fun energyTextPaint(energyKj: Int): TextStyle {
         energyKj >= 150 -> Color(0xFFFB8C00)
         else -> Color(0xFF78909C)
     }
-    return TextStyle(color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    return TextStyle(color = color, fontSize = 9.sp, fontWeight = FontWeight.Bold)
 }
 
 @Composable
@@ -702,22 +674,22 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
         if (showText) {
         Text(
             text = dirFr,
-            fontSize = if (dirFr.length >= 3) 6.sp else 7.sp,
+            fontSize = if (dirFr.length >= 3) 7.5.sp else 8.sp,
             fontWeight = FontWeight.Bold,
             color = if (windMode == "text") arrowColor else onSurfaceColor,
             maxLines = 1,
-            lineHeight = 8.sp
+            lineHeight = 9.sp
         )
         }
 
         if (showText) {
         Text(
             text = formattedSpeed,
-            fontSize = 6.5.sp,
+            fontSize = 8.sp,
             fontWeight = FontWeight.SemiBold,
             color = if (windMode == "text") arrowColor else onSurfaceColor.copy(alpha = 0.7f),
             maxLines = 1,
-            lineHeight = 8.sp
+            lineHeight = 9.sp
         )
         }
     }

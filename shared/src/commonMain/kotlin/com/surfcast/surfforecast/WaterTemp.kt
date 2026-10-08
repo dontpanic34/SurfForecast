@@ -47,13 +47,25 @@ fun WaveIcon(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) { drawWaveIcon(Offset.Zero, size.minDimension, color) }
 }
 
-/** Température de l'eau : l'icône vague puis le chiffre, en bleu. */
+/** Équipement courant pour cette température de l'eau (repères du Stormrider, indicatifs). */
+fun wetsuitLabel(celsius: Int): String = when {
+    celsius >= 25 -> "Short"
+    celsius >= 20 -> "Shorty"
+    celsius >= 15 -> "3/2"
+    celsius >= 10 -> "4/3"
+    else -> "5/4 + cagoule"
+}
+
+/** Température de l'eau : l'icône vague puis le chiffre, en bleu ; [showSuit] ajoute l'équipement (« 17° · 3/2 »). */
 @Composable
-fun WaterTempChip(celsius: Int, modifier: Modifier = Modifier) {
+fun WaterTempChip(celsius: Int, modifier: Modifier = Modifier, showSuit: Boolean = false) {
     val color = waterTempColor()
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         WaveIcon(color = color, modifier = Modifier.size(13.dp))
         Spacer(modifier = Modifier.width(3.dp))
-        Text(text = "$celsius°", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color, maxLines = 1)
+        Text(
+            text = if (showSuit) "$celsius° · ${wetsuitLabel(celsius)}" else "$celsius°",
+            fontSize = 11.sp, fontWeight = FontWeight.Bold, color = color, maxLines = 1
+        )
     }
 }

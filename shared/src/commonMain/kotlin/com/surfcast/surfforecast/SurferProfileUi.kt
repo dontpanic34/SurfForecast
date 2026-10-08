@@ -116,6 +116,7 @@ private fun EnergyCalculator(onUseAsMin: (Double) -> Unit, onUseAsMax: (Double) 
         }
         if (energy != null) {
             Text("= ${energy.roundToInt()} kJ · ${energyName(energy)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+            Text(energySpotHint(energy), fontSize = 11.sp, color = colors.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onUseAsMin(energy) }, modifier = Modifier.weight(1f)) { Text("Mon minimum", fontSize = 12.sp, maxLines = 1) }
                 OutlinedButton(onClick = { onUseAsMax(energy) }, modifier = Modifier.weight(1f)) { Text("Mon maximum", fontSize = 12.sp, maxLines = 1) }
