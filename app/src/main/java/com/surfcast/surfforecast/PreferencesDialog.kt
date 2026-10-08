@@ -347,10 +347,15 @@ fun SurfPreferencesDialog(
                                         verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(
-                                            text = "Densité (créneaux/jour)",
+                                            text = "Icônes par jour",
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = colors.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = "Combien d'icônes météo et vent par jour (1 = léger, 3 = détaillé)",
+                                            fontSize = 10.sp,
+                                            color = colors.onSurfaceVariant.copy(alpha = 0.8f)
                                         )
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                             listOf(1, 2, 3).forEach { d ->
@@ -448,51 +453,11 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    item {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "3. Options d'affichage",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Text(
-                                text = "Réorganisez et réduisez vos encarts directement depuis l'écran principal (glisser-déposer et chevron sur chaque encart).",
-                                fontSize = 11.sp,
-                                color = colors.onSurfaceVariant
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp)),
-                                color = colors.surfaceVariant
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = "Overlay temps réel", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-                                        Text(text = "Marée, houle et vent", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
-                                    }
-                                    Switch(
-                                        checked = showLiveOverlay,
-                                        onCheckedChange = onToggleLiveOverlay,
-                                        colors = SwitchDefaults.colors(checkedThumbColor = colors.onPrimary, checkedTrackColor = colors.primary)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
+                    // Bouton d'épinglage du widget d'accueil (Android).
+                    if (onPinWidget != null) {
+                        item {
                             OutlinedButton(
-                                onClick = { SurfOverlayWidgetProvider.pinWidget(context) },
+                                onClick = onPinWidget,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = pillShape,
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
@@ -509,7 +474,7 @@ fun SurfPreferencesDialog(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "4. Combos de prévision",
+                                    text = "3. Combos de prévision",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = colors.primary

@@ -221,7 +221,9 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
             cardsOrder.addAll(merged.ifEmpty { defaults })
         }
 
-        val savedCollapsed = prefs.getString("collapsed_cards", "") ?: ""
+        // Première utilisation : seuls la semaine et le déroulé de la journée sont ouverts ;
+        // houle, vent, mer de vent, météo et heure par heure sont repliés (réglages ensuite mémorisés).
+        val savedCollapsed = prefs.getString("collapsed_cards", null) ?: "surf,wind,windSea,weather,hourly"
         collapsedCards.clear()
         savedCollapsed.split(",")
             .map { it.trim() }

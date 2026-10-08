@@ -1,8 +1,13 @@
-﻿@file:Suppress("SpellCheckingInspection")
+@file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,12 +55,10 @@ fun CardControlsRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = dragHandleModifier,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            DragHandleIcon(color = onSurfaceColor.copy(alpha = 0.35f))
-            Spacer(modifier = Modifier.width(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Poignée : on glisse l'encart par là (le titre reste libre pour faire défiler la page).
+            CardGrip(modifier = dragHandleModifier)
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = title,
                 fontSize = 11.sp,
@@ -65,30 +68,86 @@ fun CardControlsRow(
             )
         }
 
-        IconButton(
-            onClick = onToggleCollapse,
-            modifier = Modifier.size(22.dp)
-        ) {
-            Canvas(modifier = Modifier.size(12.dp)) {
-                val w = size.width
-                val h = size.height
-                val path = Path().apply {
-                    if (isCollapsed) {
-                        // Pointe vers le bas : "developper"
-                        moveTo(w * 0.2f, h * 0.35f)
-                        lineTo(w * 0.8f, h * 0.35f)
-                        lineTo(w * 0.5f, h * 0.75f)
-                        close()
-                    } else {
-                        // Pointe vers le haut : "reduire"
-                        moveTo(w * 0.2f, h * 0.65f)
-                        lineTo(w * 0.8f, h * 0.65f)
-                        lineTo(w * 0.5f, h * 0.25f)
-                        close()
-                    }
+        CardCollapseButton(isCollapsed = isCollapsed, onToggle = onToggleCollapse)
+    }
+}
+
+/**
+ * Poignée de déplacement bien visible : pastille arrondie avec une flèche vers le haut, quatre
+ * petits carrés et une flèche vers le bas. On la touche et on glisse pour déplacer l'encart.
+ */
+@Composable
+fun CardGrip(modifier: Modifier = Modifier) {
+    val tint = MaterialTheme.colorScheme.onSurface
+    Box(
+        modifier = modifier
+            .size(width = 30.dp, height = 32.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(tint.copy(alpha = 0.10f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(width = 14.dp, height = 22.dp)) {
+            val w = size.width
+            val h = size.height
+            val color = tint.copy(alpha = 0.7f)
+            // Flèche vers le haut
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, 0f)
+                    lineTo(w, h * 0.22f)
+                    lineTo(0f, h * 0.22f)
+                    close()
+                },
+                color
+            )
+            // Quatre petits carrés
+            val sq = w * 0.34f
+            listOf(w * 0.08f, w * 0.58f).forEach { x ->
+                listOf(h * 0.36f, h * 0.55f).forEach { y ->
+                    drawRect(color = color, topLeft = Offset(x, y), size = androidx.compose.ui.geometry.Size(sq, sq))
                 }
-                drawPath(path = path, color = onSurfaceColor.copy(alpha = 0.6f))
             }
+            // Flèche vers le bas
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h)
+                    lineTo(w, h * 0.78f)
+                    lineTo(0f, h * 0.78f)
+                    close()
+                },
+                color
+            )
+        }
+    }
+}
+
+/** Bouton réduire / agrandir : pastille colorée avec un chevron net (vers le bas = agrandir). */
+@Composable
+fun CardCollapseButton(isCollapsed: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primary
+    Box(
+        modifier = modifier
+            .size(32.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(primary.copy(alpha = 0.16f))
+            .clickable(onClick = onToggle),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(16.dp)) {
+            val w = size.width
+            val h = size.height
+            val path = Path().apply {
+                if (isCollapsed) {
+                    moveTo(w * 0.1f, h * 0.32f); lineTo(w * 0.5f, h * 0.72f); lineTo(w * 0.9f, h * 0.32f)
+                } else {
+                    moveTo(w * 0.1f, h * 0.68f); lineTo(w * 0.5f, h * 0.28f); lineTo(w * 0.9f, h * 0.68f)
+                }
+            }
+            drawPath(
+                path = path,
+                color = primary,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+            )
         }
     }
 }
