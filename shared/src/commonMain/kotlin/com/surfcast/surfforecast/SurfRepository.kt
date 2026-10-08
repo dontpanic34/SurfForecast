@@ -527,7 +527,7 @@ class SurfRepository(
                 } else {
                     // Hors France : le coefficient (indice de vives-eaux / mortes-eaux défini au port de
                     // Brest par le SHOM) vaut pour toute la côte atlantique. On le lit chez un port français.
-                    val referenceSite = sites.firstOrNull { it.siteName.contains("brest", ignoreCase = true) || it.siteId.equals("brest", true) }
+                    val referenceSite = sites.firstOrNull { it.siteId.contains("brest", ignoreCase = true) || it.siteName.contains("brest", ignoreCase = true) }
                         ?: nearest
                     val french = runCatching { fetchMareeExtrema(referenceSite.siteId, fromDate, toDate) }.getOrDefault(emptyList())
                     estimatedTideDays(lat, lon, french)
