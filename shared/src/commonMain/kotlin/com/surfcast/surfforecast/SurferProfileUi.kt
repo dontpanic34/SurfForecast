@@ -381,3 +381,22 @@ fun ProfileNudgeCard(onOpen: () -> Unit, onLater: () -> Unit, modifier: Modifier
         }
     }
 }
+
+private val TIDE_CHOICES = listOf(
+    "any" to "Peu importe",
+    "rising" to "Montant",
+    "falling" to "Descendant",
+    "high" to "Pleine mer",
+    "low" to "Basse mer"
+)
+
+/** Marée préférée : le score favorise les heures dont la phase de marée est celle qu'on aime (voisine : un peu moins, opposée : nettement moins). */
+@Composable
+fun TidePreferenceSection(current: String, onChange: (String) -> Unit) {
+    SettingBlock(
+        "Marée préférée",
+        hint = "Les heures où la marée est celle que tu aimes sont mieux notées ; les autres un peu moins (voisine : − 15 %, opposée : − 30 %)."
+    ) {
+        PillRow(TIDE_CHOICES.map { it.second }, TIDE_CHOICES.indexOfFirst { it.first == current }.coerceAtLeast(0)) { onChange(TIDE_CHOICES[it].first) }
+    }
+}

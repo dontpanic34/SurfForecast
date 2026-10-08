@@ -66,6 +66,7 @@ fun DailyTimelineCard(
     windUnit: String,
     idealSwellDirection: Int?,
     surferLevel: String,
+    tidePreference: String = "any",
     selectedHour: HourlyUiModel?,
     onHourSelected: (HourlyUiModel) -> Unit,
     isCollapsed: Boolean,
@@ -109,7 +110,7 @@ fun DailyTimelineCard(
     // Point 3 : score par heure (0-100), sert a colorer la courbe segment par segment.
     // Score négatif = trop gros pour le niveau (violet).
     val scores = curveHours.map { hourly ->
-        val rating = calculateSlotRating(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, tideInfo))
+        val rating = calculateSlotRating(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, tideInfo), tidePreference, tideInfo)
         if (rating.tooBig) -1 else rating.score
     }
 

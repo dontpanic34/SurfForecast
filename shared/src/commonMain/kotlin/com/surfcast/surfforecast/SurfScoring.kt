@@ -128,8 +128,26 @@ fun calculateSlotScore(
     hourlyModel: HourlyUiModel,
     idealSwellDirection: Int?,
     surferLevel: String,
-    isHighTide: Boolean
-): Int = calculateSlotRating(hourlyModel, idealSwellDirection, surferLevel, isHighTide).score
+    isHighTide: Boolean,
+    tidePreference: String = "any",
+    tide: DailyTideInfo? = null
+): Int = calculateSlotRating(hourlyModel, idealSwellDirection, surferLevel, isHighTide, tidePreference, tide).score
+
+private val tideCycle = listOf("low", "rising", "high", "falling")
+
+/**
+ * Facteur lié à la marée préférée : 1 quand la phase de marée de l'heure est celle qu'on aime, 0,85 quand elle
+ * en est voisine (basse -> montant -> pleine -> descendant -> basse), 0,7 quand elle est opposée.
+ * Sans préférence ou sans horaires de marée, aucun effet.
+ */
+fun tidePreferenceFactor(preference: String, phase: String?): Double {
+    if (preference == "any" || phase == null) return 1.0
+    val wanted = tideCycle.indexOf(preference)
+    val actual = tideCycle.indexOf(phase)
+    if (wanted < 0 || actual < 0) return 1.0
+    val gap = minOf((wanted - actual + 4) % 4, (actual - wanted + 4) % 4)
+    return when (gap) { 0 -> 1.0; 1 -> 0.85; else -> 0.7 }
+}
 
 /**
  * Note d'une heure de prévision (sans connaître le spot réel : bancs de sable, courants...).
@@ -140,7 +158,9 @@ fun calculateSlotRating(
     hourlyModel: HourlyUiModel,
     idealSwellDirection: Int?,
     surferLevel: String,
-    isHighTide: Boolean
+    isHighTide: Boolean,
+    tidePreference: String = "any",
+    tide: DailyTideInfo? = null
 ): SlotRating {
     val h = hourlyModel.waveHeight
     val t = hourlyModel.wavePeriod
@@ -198,6 +218,9 @@ fun calculateSlotRating(
         if (isHighTide) score *= 0.85
     }
 
+    // Marée préférée (montant, descendant, pleine mer, basse mer) : l'heure doit coïncider.
+    if (tidePreference != "any") score *= tidePreferenceFactor(tidePreference, tidePhaseAt(hourlyModel.rawTime.time, tide))
+
     return SlotRating(score.roundToInt().coerceIn(0, 100), false)
 }
 
@@ -222,13 +245,14 @@ fun findBestSlot(
     dailyHours: List<HourlyUiModel>,
     idealSwellDirection: Int?,
     surferLevel: String,
-    dailyTide: DailyTideInfo?
+    dailyTide: DailyTideInfo?,
+    tidePreference: String = "any"
 ): BestSlotResult? {
     if (dailyHours.size < 2) return null
 
     val sorted = dailyHours.sortedBy { it.rawTime }
     val scores = sorted.map { hourly ->
-        calculateSlotScore(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, dailyTide))
+        calculateSlotScore(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, dailyTide), tidePreference, dailyTide)
     }
 
     var best: BestSlotResult? = null
@@ -263,10 +287,11 @@ fun findBestSlotsOfDay(
     dailyHours: List<HourlyUiModel>,
     idealSwellDirection: Int?,
     surferLevel: String,
-    dailyTide: DailyTideInfo?
+    dailyTide: DailyTideInfo?,
+    tidePreference: String = "any"
 ): BestSlotsOfDay = BestSlotsOfDay(
-    morning = findBestSlot(dailyHours.filter { it.rawTime.hour < 13 }, idealSwellDirection, surferLevel, dailyTide),
-    afternoon = findBestSlot(dailyHours.filter { it.rawTime.hour >= 13 }, idealSwellDirection, surferLevel, dailyTide)
+    morning = findBestSlot(dailyHours.filter { it.rawTime.hour < 13 }, idealSwellDirection, surferLevel, dailyTide, tidePreference),
+    afternoon = findBestSlot(dailyHours.filter { it.rawTime.hour >= 13 }, idealSwellDirection, surferLevel, dailyTide, tidePreference)
 )
 
 fun angularDifference(a: Double, b: Double): Double {

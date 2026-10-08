@@ -105,6 +105,8 @@ fun MainScreen(
             onWindUnitSelected = { viewModel.changeWindUnit(it) },
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it); viewModel.markProfileReviewed() },
+            tidePreference = viewModel.tidePreference,
+            onTidePreferenceChanged = { viewModel.changeTidePreference(it); viewModel.markProfileReviewed() },
             themeMode = viewModel.themeMode,
             onThemeModeChanged = { viewModel.changeThemeMode(it) },
             engineConfig = viewModel.engineConfig,
@@ -304,7 +306,8 @@ fun MainScreen(
                         dailyHours = daylightHoursFor(date, groupedByDate, state.dailySunInfo),
                         idealSwellDirection = idealSwellDirection,
                         surferLevel = viewModel.surferLevel,
-                        dailyTide = state.dailyTides[date]
+                        dailyTide = state.dailyTides[date],
+                        tidePreference = viewModel.tidePreference
                     )
                 }
 
@@ -731,6 +734,7 @@ fun MainScreen(
                                             onSurfaceColor = onSurfaceColor,
                                             idealSwellDirection = idealSwellDirection,
                                             surferLevel = viewModel.surferLevel,
+                                            tidePreference = viewModel.tidePreference,
                                             coachTargets = coachTargets
                                         )
                                     }
@@ -917,6 +921,7 @@ fun DynamicCardsSection(
     onSurfaceColor: Color,
     idealSwellDirection: Int?,
     surferLevel: String,
+    tidePreference: String = "any",
     currentHour: Int = nowLocalDateTime().hour,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null
 ) {
@@ -1053,6 +1058,7 @@ fun DynamicCardsSection(
                                 windUnit = viewModel.windUnit,
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
+                                tidePreference = tidePreference,
                                 selectedHour = selectedHourlyItem,
                                 onHourSelected = { selectedHourlyItem = it },
                                 isCollapsed = isCollapsed,

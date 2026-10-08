@@ -52,6 +52,8 @@ fun SurfPreferencesDialog(
     onToggleHourlyCard: (Boolean) -> Unit,
     surferLevel: String,
     onSurferLevelChanged: (String) -> Unit,
+    tidePreference: String = "any",
+    onTidePreferenceChanged: (String) -> Unit = {},
     engineConfig: ForecastEngineConfig,
     onEngineConfigChanged: (ForecastEngineConfig) -> Unit,
     onViewLogs: () -> Unit,
@@ -347,6 +349,7 @@ fun SurfPreferencesDialog(
                             onLevelChanged = onSurferLevelChanged,
                             onInfo = { showScoreInfo = true }
                         )
+                        TidePreferenceSection(current = tidePreference, onChange = onTidePreferenceChanged)
                         HorizontalDivider(color = colors.onBackground.copy(alpha = 0.1f))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             QuiverIcon(color = colors.onBackground, modifier = Modifier.size(20.dp))

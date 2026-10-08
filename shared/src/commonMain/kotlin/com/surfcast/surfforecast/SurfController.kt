@@ -482,6 +482,15 @@ class SurfController(
         profileNudgeHidden = true
     }
 
+    // Marée préférée : "any", "rising" (montant), "falling" (descendant), "high" (pleine mer), "low" (basse mer).
+    var tidePreference by mutableStateOf(prefs.getString("tide_preference", "any") ?: "any")
+        private set
+
+    fun changeTidePreference(preference: String) {
+        tidePreference = preference
+        prefs.putString("tide_preference", preference)
+    }
+
     fun changeSurferLevel(level: String) {
         surferLevel = level
         prefs.putString("surfer_level", level)

@@ -308,4 +308,19 @@ class SurfScoringTest {
         val onlyAfternoon = findBestSlotsOfDay(listOf(hour(14), hour(15), hour(16)), null, "intermediate", null)
         assertTrue(onlyAfternoon.morning == null && onlyAfternoon.afternoon != null)
     }
+
+    @Test
+    fun preferredTidePhaseMatchesTheScore() {
+        // Basse mer à 6 h, pleine mer à 12 h : à 9 h la marée monte.
+        val tide = DailyTideInfo(highTideTime = "12:00", lowTideTime = "06:00")
+        val nine = hour(9)
+        assertEquals("rising", tidePhaseAt(nine.rawTime.time, tide))
+        assertEquals(100, calculateSlotScore(nine, null, "intermediate", false, "rising", tide))
+        assertEquals(100, calculateSlotScore(nine, null, "intermediate", false, "any", tide))
+        assertEquals(85, calculateSlotScore(nine, null, "intermediate", false, "high", tide))
+        assertEquals(70, calculateSlotScore(nine, null, "intermediate", false, "falling", tide))
+        // Sans horaires de marée connus : aucun effet.
+        assertEquals(100, calculateSlotScore(nine, null, "intermediate", false, "falling", null))
+        assertEquals(1.0, tidePreferenceFactor("any", "low"))
+    }
 }
