@@ -48,15 +48,16 @@ class SurfScoringTest {
 
     @Test
     fun beginnerPenalties() {
-        // 1.962 x 1.44 x 144 = 406.84 -> fit 150/406.84 = 0.3687 -> 36.87
-        // x0.3 (h > 1) x0.5 (t > 11) x0.6 (marée haute) = 3.318 -> 3
-        assertEquals(3, calculateSlotScore(hour(10, height = 1.2, period = 12.0), null, "beginner", true))
+        // 1.962 x 1.44 x 144 = 406.84 kJ (sous le plafond débutant de 450) -> fit 200/406.84 = 0.4916 -> 49.16
+        // x0.85 (marée haute) = 41.8 -> 42
+        assertEquals(42, calculateSlotScore(hour(10, height = 1.2, period = 12.0), null, "beginner", true))
     }
 
     @Test
     fun swellDirectionAndCrossWind() {
-        // Écart 60° -> cos = 0.5 -> 98.1 kJ -> fit 0.654 -> 65.4 ; vent N 10 km/h (travers) x0.6 -> 39.24
-        assertEquals(39, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // Écart 60° -> cos = 0.5 -> 98.1 kJ -> fit 0.654 -> 65.4 ; vent N 10 km/h (travers) x0.9 ;
+        // ; houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 ; l'écart exact de la direction donne 49 au total.
+        assertEquals(49, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -79,10 +80,40 @@ class SurfScoringTest {
     }
 
     @Test
-    fun scoreColorCategories() {
-        assertEquals("red", scoreToColorCategory(29))
-        assertEquals("orange", scoreToColorCategory(60))
-        assertEquals("green", scoreToColorCategory(61))
+    fun scoreBandsHaveSixShadesPlusTooBig() {
+        assertEquals(ScoreBand.RED, scoreBand(19))
+        assertEquals(ScoreBand.ORANGE, scoreBand(20))
+        assertEquals(ScoreBand.YELLOW, scoreBand(40))
+        assertEquals(ScoreBand.LIGHT_GREEN, scoreBand(55))
+        assertEquals(ScoreBand.GREEN, scoreBand(70))
+        assertEquals(ScoreBand.EXCELLENT, scoreBand(85))
+        assertEquals(ScoreBand.TOO_BIG, scoreBand(-1))
+        assertEquals(ScoreBand.TOO_BIG, scoreBand(50, tooBig = true))
+    }
+
+    @Test
+    fun bigDayIsGoodForConfirmedAndTooBigForIntermediate() {
+        val big = hour(10, height = 2.5, period = 14.0, windKmh = 10, windDir = "E")
+        val confirmed = calculateSlotRating(big, 275, "confirmed", false)
+        assertFalse(confirmed.tooBig)
+        assertTrue(confirmed.score >= 70, "2,5 m 14 s offshore pour un confirmé : ${confirmed.score}")
+        val intermediate = calculateSlotRating(big, 275, "intermediate", false)
+        assertTrue(intermediate.tooBig)
+        assertEquals(0, intermediate.score)
+    }
+
+    @Test
+    fun veryGustyOffshoreIsBadForEveryone() {
+        val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12, windDir = "E", gustKmh = 40)
+        listOf("beginner", "intermediate", "confirmed").forEach { level ->
+            assertTrue(calculateSlotScore(gusty, 275, level, false) < 40, "rafales 40 ($level)")
+        }
+    }
+
+    @Test
+    fun lightOnshoreIsNearlyAsGoodAsOffshore() {
+        val calmOnshore = calculateSlotScore(hour(10, windKmh = 6, windDir = "O"), 275, "intermediate", false)
+        assertTrue(calmOnshore >= 90, "onshore faible : $calmOnshore")
     }
 
     // --- Orientation de la plage, rafales, clapot ---
@@ -103,9 +134,9 @@ class SurfScoringTest {
 
     @Test
     fun sameSouthWindIsOffshoreOnANorthFacingBeachAndOnshoreOnASouthFacingOne() {
-        val southWind = hour(10, windKmh = 12, windDir = "S")
-        val north = calculateSlotScore(southWind, 350, "intermediate", false)
-        val south = calculateSlotScore(southWind, 195, "intermediate", false)
+        // Houle de face dans les deux cas : seule la lecture du vent (S 12 km/h) change.
+        val north = calculateSlotScore(hour(10, waveDir = 350f, windKmh = 12, windDir = "S"), 350, "intermediate", false)
+        val south = calculateSlotScore(hour(10, waveDir = 195f, windKmh = 12, windDir = "S"), 195, "intermediate", false)
         assertTrue(north > south, "offshore ($north) doit battre onshore ($south)")
     }
 
@@ -124,7 +155,7 @@ class SurfScoringTest {
         val calm = calculateSlotScore(hour(10, windKmh = 12, windDir = "E"), 275, "intermediate", false)
         val gusty = calculateSlotScore(hour(10, windKmh = 12, windDir = "E", gustKmh = 40), 275, "intermediate", false)
         assertTrue(gusty < calm, "rafales ($gusty) < calme ($calm)")
-        assertEquals(12.0 + 0.5 * (40 - 12), effectiveWindKmh(hour(10, windKmh = 12, gustKmh = 40)))
+        assertEquals(12.0 + 0.7 * (40 - 12), effectiveWindKmh(hour(10, windKmh = 12, gustKmh = 40)))
     }
 
     @Test

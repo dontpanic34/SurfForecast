@@ -59,8 +59,11 @@ private val guideSections = listOf(
     GuideSection(
         "🎯 Le score et le meilleur créneau",
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (avec rafales) et clapot. " +
-            "Vert = très bien, orange = correct, rouge = à éviter. Le meilleur créneau est la fenêtre de 2 à 3 heures avec la meilleure moyenne. " +
-            "C'est une aide, pas une vérité : regarde la webcam avant de partir, et affine avec ton journal."
+            "Les couleurs : rouge = à éviter, orange = médiocre, jaune = correct, vert clair = bon, vert = très bon, vert vif = excellent. " +
+            "Violet = trop gros pour ton niveau : ce n'est pas mauvais, c'est simplement au-dessus de ce que ton niveau gère " +
+            "(plafond d'énergie : débutant 450 kJ, intermédiaire 1100, confirmé 3500). " +
+            "Le meilleur créneau est la fenêtre de 2 à 3 heures avec la meilleure moyenne. " +
+            "La note ne connaît pas ton spot (bancs de sable, courants) : c'est à toi de juger s'il marche. Regarde la webcam avant de partir."
     ),
     GuideSection(
         "📅 Quelle confiance accorder à chaque jour ?",

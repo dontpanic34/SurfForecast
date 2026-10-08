@@ -16,82 +16,103 @@ data class BestSlotResult(
     val recap: String
 )
 
-private const val ENERGY_SATURATION_THRESHOLD_KJ = 1000.0
+/** Note d'une heure : [score] 0-100, [tooBig] = trop gros pour le niveau (ce n'est pas « mauvais », c'est trop). */
+data class SlotRating(val score: Int, val tooBig: Boolean)
+
+/** Courbes du facteur vent (de 0 à 1) selon la vitesse effective (km/h) : offshore, travers, onshore. */
+private val windCurves: Map<String, List<Pair<Double, Double>>> = mapOf(
+    "offshore" to listOf(0.0 to 1.0, 15.0 to 1.0, 25.0 to 0.8, 40.0 to 0.5, 55.0 to 0.3),
+    "cross" to listOf(0.0 to 1.0, 8.0 to 1.0, 15.0 to 0.8, 25.0 to 0.45, 40.0 to 0.2, 55.0 to 0.1),
+    // Onshore très faible (quasi pas de vent) : presque aussi bon que l'offshore.
+    "onshore" to listOf(0.0 to 0.95, 8.0 to 0.95, 12.0 to 0.75, 18.0 to 0.4, 25.0 to 0.15, 30.0 to 0.0)
+)
+
+internal fun interpolate(x: Double, points: List<Pair<Double, Double>>): Double {
+    if (x <= points.first().first) return points.first().second
+    for (i in 1 until points.size) {
+        val (x0, y0) = points[i - 1]
+        val (x1, y1) = points[i]
+        if (x <= x1) return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+    }
+    return points.last().second
+}
+
+/** Énergie (kJ) : zone idéale [min, max] et plafond au-delà duquel c'est « trop gros » pour ce niveau. */
+private class LevelProfile(val idealMin: Double, val idealMax: Double, val cap: Double)
+
+private fun profileFor(level: String) = when (level) {
+    "beginner" -> LevelProfile(50.0, 200.0, 450.0)
+    "confirmed" -> LevelProfile(250.0, 2000.0, 3500.0)
+    else -> LevelProfile(150.0, 450.0, 1100.0)
+}
 
 fun calculateSlotScore(
     hourlyModel: HourlyUiModel,
     idealSwellDirection: Int?,
     surferLevel: String,
     isHighTide: Boolean
-): Int {
+): Int = calculateSlotRating(hourlyModel, idealSwellDirection, surferLevel, isHighTide).score
+
+/**
+ * Note d'une heure de prévision (sans connaître le spot réel : bancs de sable, courants...).
+ * Énergie de la houle selon le niveau, direction par rapport à la plage, vent (rafales comprises,
+ * offshore / onshore selon l'orientation) et clapot.
+ */
+fun calculateSlotRating(
+    hourlyModel: HourlyUiModel,
+    idealSwellDirection: Int?,
+    surferLevel: String,
+    isHighTide: Boolean
+): SlotRating {
     val h = hourlyModel.waveHeight
     val t = hourlyModel.wavePeriod
-    // Vent « ressenti » sur l'eau : les rafales comptent à moitié (un vent de 15 avec rafales
-    // à 35 gâche la surface autant qu'un vent de 25 régulier).
+    if (h < 0.4) return SlotRating(0, false)
+
+    // Vent « ressenti » sur l'eau : les rafales comptent aux deux tiers de leur écart avec le vent moyen.
     val windKmh = effectiveWindKmh(hourlyModel)
     // idealSwellDirection = orientation de la plage : elle définit aussi offshore / onshore.
     val windCategory = windCategoryFor(hourlyModel.windDirectionStr, idealSwellDirection)
 
-    if (windCategory == "onshore" && windKmh > 25.0) return 0
-    if (h < 0.4) return 0
-
-    val coeffDirection = if (idealSwellDirection == null) {
-        1.0
-    } else {
-        val diff = angularDifference(hourlyModel.waveDirection.toDouble(), idealSwellDirection.toDouble())
-        if (diff >= 90.0) 0.0 else cos(diff * PI / 180.0)
-    }
+    val directionDiff = idealSwellDirection?.let {
+        angularDifference(hourlyModel.waveDirection.toDouble(), it.toDouble())
+    } ?: 0.0
+    val coeffDirection = if (directionDiff >= 90.0) 0.0 else cos(directionDiff * PI / 180.0)
 
     val energyKj = 1.962 * h * h * t * t * coeffDirection
-
-    if (energyKj > ENERGY_SATURATION_THRESHOLD_KJ) return 0
-
-    val (targetMin, targetMax) = when (surferLevel) {
-        "beginner" -> 50.0 to 150.0
-        "confirmed" -> 300.0 to 800.0
-        else -> 150.0 to 300.0
-    }
+    val profile = profileFor(surferLevel)
+    if (energyKj > profile.cap) return SlotRating(0, true)
 
     val fit = when {
-        energyKj in targetMin..targetMax -> 1.0
-        energyKj < targetMin -> (energyKj / targetMin).coerceIn(0.0, 1.0)
-        else -> (targetMax / energyKj).coerceIn(0.0, 1.0)
+        energyKj in profile.idealMin..profile.idealMax -> 1.0
+        energyKj < profile.idealMin -> (energyKj / profile.idealMin).coerceIn(0.0, 1.0)
+        else -> (profile.idealMax / energyKj).coerceIn(0.0, 1.0)
     }
 
     var score = fit * 100.0
 
     // Clapot (mer de vent) : une houle propre coiffée de clapot est moins bonne qu'une houle seule.
     score *= chopFactor(h, hourlyModel.windWaveHeight)
+    score *= interpolate(windKmh, windCurves.getValue(windCategory))
+    // Rafales fortes : mauvaises pour tout le monde, quelle que soit la direction.
+    val gust = hourlyModel.windGustKmh
+    if (gust > 25) score *= (1.0 - (gust - 25) / 30.0).coerceAtLeast(0.3)
+    // Houle de travers : en plus de l'énergie réduite, la vague est moins bien formée.
+    score *= 1.0 - 0.3 * minOf(directionDiff, 90.0) / 90.0
 
-    val windPercent = windMatrixPercent(windKmh, windCategory)
-    score *= windPercent
-
-    when (surferLevel) {
-        "beginner" -> {
-            if (h > 1.0) score *= 0.3
-            if (t > 11.0) score *= 0.5
-            if (isHighTide) score *= 0.6
-            if (windCategory == "onshore" && windKmh <= 15.0 && windPercent > 0.0) {
-                score = (score / windPercent) * windPercent.coerceAtLeast(0.6)
-            }
-        }
-        "confirmed" -> {
-            if (windCategory != "offshore" && windKmh > 3.0) score *= 0.4
-            if (h < 0.8) score *= 0.5
-        }
-        else -> {
-            if (windCategory == "onshore" && windKmh > 15.0) score *= 0.5
-        }
+    if (surferLevel == "beginner") {
+        if (h > 1.5) score *= 0.7
+        if (t > 13.0) score *= 0.8
+        if (isHighTide) score *= 0.85
     }
 
-    return score.roundToInt().coerceIn(0, 100)
+    return SlotRating(score.roundToInt().coerceIn(0, 100), false)
 }
 
-/** Vent pris en compte : vent moyen + la moitié de l'écart avec les rafales. */
+/** Vent pris en compte : vent moyen + les deux tiers de l'écart avec les rafales (0,7 arrondi). */
 fun effectiveWindKmh(hourly: HourlyUiModel): Double {
     val wind = hourly.windSpeedKmh.toDouble()
     val gust = hourly.windGustKmh.toDouble()
-    return if (gust > wind) wind + 0.5 * (gust - wind) else wind
+    return if (gust > wind) wind + 0.7 * (gust - wind) else wind
 }
 
 /**
@@ -142,14 +163,6 @@ fun findBestSlot(
     return best
 }
 
-fun scoreToColorCategory(score: Int): String {
-    return when {
-        score < 30 -> "red"
-        score <= 60 -> "orange"
-        else -> "green"
-    }
-}
-
 fun angularDifference(a: Double, b: Double): Double {
     var diff = abs(a - b) % 360.0
     if (diff > 180.0) diff = 360.0 - diff
@@ -174,26 +187,6 @@ fun windCategoryFromDegrees(degrees: Float, beachFacing: Int? = null): String {
         diff >= 135.0 -> "offshore"
         diff <= 45.0 -> "onshore"
         else -> "cross"
-    }
-}
-
-private fun windMatrixPercent(windKmh: Double, category: String): Double {
-    return when {
-        windKmh < 8.0 -> when (category) {
-            "offshore" -> 1.00
-            "cross" -> 0.90
-            else -> 0.80
-        }
-        windKmh <= 18.0 -> when (category) {
-            "offshore" -> 1.00
-            "cross" -> 0.60
-            else -> 0.30
-        }
-        else -> when (category) {
-            "offshore" -> 0.70
-            "cross" -> 0.20
-            else -> 0.00
-        }
     }
 }
 
