@@ -125,11 +125,11 @@ fun DailyTimelineCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    modifier = Modifier.weight(1f).then(dragHandleModifier),
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    DragHandleIcon(color = onSurfaceColor.copy(alpha = 0.35f))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    CardGrip(modifier = dragHandleModifier)
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Déroulé de la journée",
                         fontSize = 12.sp,
@@ -144,29 +144,7 @@ fun DailyTimelineCard(
                     }
                 }
 
-                IconButton(
-                    onClick = onToggleCollapse,
-                    modifier = Modifier.size(22.dp)
-                ) {
-                    Canvas(modifier = Modifier.size(12.dp)) {
-                        val w = size.width
-                        val h = size.height
-                        val path = Path().apply {
-                            if (isCollapsed) {
-                                moveTo(w * 0.2f, h * 0.35f)
-                                lineTo(w * 0.8f, h * 0.35f)
-                                lineTo(w * 0.5f, h * 0.75f)
-                                close()
-                            } else {
-                                moveTo(w * 0.2f, h * 0.65f)
-                                lineTo(w * 0.8f, h * 0.65f)
-                                lineTo(w * 0.5f, h * 0.25f)
-                                close()
-                            }
-                        }
-                        drawPath(path = path, color = onSurfaceColor.copy(alpha = 0.6f))
-                    }
-                }
+                CardCollapseButton(isCollapsed = isCollapsed, onToggle = onToggleCollapse)
             }
 
             if (!isCollapsed) {

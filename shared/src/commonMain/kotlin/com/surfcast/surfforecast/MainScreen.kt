@@ -6,7 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -870,8 +870,10 @@ fun DynamicCardsSection(
         }
     }
 
+    // Glisser-déposer libre : on attrape la poignée, l'encart suit le doigt et les autres se
+    // décalent pour lui faire de la place, quelle que soit la distance parcourue.
     fun dragModifierFor(cardKey: String): Modifier = Modifier.pointerInput(cardKey) {
-        detectDragGesturesAfterLongPress(
+        detectDragGestures(
             onDragStart = {
                 draggedKey = cardKey
                 dragOffsetY = 0f
@@ -888,25 +890,28 @@ fun DynamicCardsSection(
                 change.consume()
                 dragOffsetY += dragAmount.y
 
-                val orderedKeys = renderableCardKeys()
-                val currentIndex = orderedKeys.indexOf(cardKey)
-
-                if (currentIndex != -1) {
-                    if (dragOffsetY > 0f && currentIndex < orderedKeys.size - 1) {
-                        val nextKey = orderedKeys[currentIndex + 1]
-                        val nextHeight = (itemHeights[nextKey] ?: itemHeights[cardKey] ?: 0).toFloat()
+                // Plusieurs encarts peuvent être franchis d'un seul geste rapide.
+                var guard = 0
+                while (guard++ < 12) {
+                    val keys = renderableCardKeys()
+                    val currentIndex = keys.indexOf(cardKey)
+                    if (currentIndex == -1) break
+                    if (dragOffsetY > 0f && currentIndex < keys.size - 1) {
+                        val nextHeight = (itemHeights[keys[currentIndex + 1]] ?: 0).toFloat()
                         if (nextHeight > 0f && dragOffsetY > nextHeight / 2f) {
                             viewModel.moveCardDown(cardKey)
                             dragOffsetY -= nextHeight
+                            continue
                         }
                     } else if (dragOffsetY < 0f && currentIndex > 0) {
-                        val prevKey = orderedKeys[currentIndex - 1]
-                        val prevHeight = (itemHeights[prevKey] ?: itemHeights[cardKey] ?: 0).toFloat()
+                        val prevHeight = (itemHeights[keys[currentIndex - 1]] ?: 0).toFloat()
                         if (prevHeight > 0f && -dragOffsetY > prevHeight / 2f) {
                             viewModel.moveCardUp(cardKey)
                             dragOffsetY += prevHeight
+                            continue
                         }
                     }
+                    break
                 }
             }
         )

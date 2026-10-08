@@ -197,7 +197,10 @@ class SurfController(
             cardsOrder.addAll(merged.ifEmpty { DEFAULT_CARDS_ORDER })
         }
 
-        val savedCollapsed = prefs.getString("collapsed_cards", "") ?: ""
+        // Première utilisation : seuls la semaine et le déroulé de la journée sont ouverts ;
+        // houle, vent, mer de vent, météo et heure par heure sont repliés (chaque réglage
+        // ensuite mémorisé).
+        val savedCollapsed = prefs.getString("collapsed_cards", null) ?: DEFAULT_COLLAPSED_CARDS
         collapsedCards.clear()
         savedCollapsed.split(",")
             .map { it.trim() }
@@ -529,6 +532,7 @@ class SurfController(
 
     companion object {
         private const val RESUME_REFRESH_AFTER_MINUTES = 15
+        const val DEFAULT_COLLAPSED_CARDS = "surf,wind,windSea,weather,hourly"
         val DEFAULT_CARDS_ORDER = listOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
     }
 }
