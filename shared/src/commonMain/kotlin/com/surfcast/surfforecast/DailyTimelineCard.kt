@@ -107,8 +107,10 @@ fun DailyTimelineCard(
     val sun = dailySunInfo[selectedDate]
 
     // Point 3 : score par heure (0-100), sert a colorer la courbe segment par segment.
+    // Score négatif = trop gros pour le niveau (violet).
     val scores = curveHours.map { hourly ->
-        calculateSlotScore(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, tideInfo))
+        val rating = calculateSlotRating(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, tideInfo))
+        if (rating.tooBig) -1 else rating.score
     }
 
     Card(
@@ -255,14 +257,12 @@ fun DailyTimelineCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    listOf(
-                        AppColors.WindHigh to "Faible",
-                        AppColors.WindMid to "Moyen",
-                        AppColors.TideLow to "Bon"
-                    ).forEach { (dotColor, label) ->
+                    val legend = listOf(ScoreBand.RED, ScoreBand.ORANGE, ScoreBand.YELLOW, ScoreBand.LIGHT_GREEN, ScoreBand.EXCELLENT) +
+                        (if (scores.any { it < 0 }) listOf(ScoreBand.TOO_BIG) else emptyList())
+                    legend.map { it.color() to it.label }.forEach { (dotColor, label) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 6.dp)
+                            modifier = Modifier.padding(horizontal = 4.dp)
                         ) {
                             Canvas(modifier = Modifier.size(7.dp)) {
                                 drawCircle(color = dotColor, radius = size.minDimension / 2f)
@@ -610,11 +610,7 @@ private fun DailyTimelineSwellCanvas(
                 cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
             }
             val score = scores.getOrElse(i - 1) { scores.getOrElse(i) { 50 } }
-            val segColor = when (scoreToColorCategory(score)) {
-                "red" -> AppColors.WindHigh
-                "orange" -> AppColors.WindMid
-                else -> AppColors.TideLow
-            }
+            val segColor = scoreBand(score).color()
             drawPath(path = segPath, color = segColor, style = Stroke(width = 2.6.dp.toPx()))
         }
 

@@ -396,11 +396,8 @@ fun MainScreen(
 
                                     // Point 3 : "Statut Flash" - meilleur creneau du jour selectionne.
                                     if (bestSlot != null) {
-                                        val flashColor = when (scoreToColorCategory(bestSlot.averageScore)) {
-                                            "red" -> AppColors.WindHigh
-                                            "orange" -> AppColors.WindMid
-                                            else -> AppColors.TideLow
-                                        }
+                                        val flashBand = scoreBand(bestSlot.averageScore)
+                                        val flashColor = flashBand.color()
                                         // Le créneau suit le jour sélectionné : on le dit quand ce n'est pas aujourd'hui
                                         // ("Sam. 10 · Meilleur créneau : ..."), sinon on croirait que c'est pour aujourd'hui.
                                         val bestSlotDayPrefix = selectedDate?.takeIf { it != today }?.let { d ->
@@ -420,7 +417,7 @@ fun MainScreen(
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Column {
                                                 Text(
-                                                    text = "${bestSlotDayPrefix}Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (score ${bestSlot.averageScore})",
+                                                    text = "${bestSlotDayPrefix}Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (${flashBand.label} · ${bestSlot.averageScore})",
                                                     fontSize = 12.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = onSurfaceColor.copy(alpha = 0.75f),
