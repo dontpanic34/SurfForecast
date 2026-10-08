@@ -1,36 +1,38 @@
 package com.surfcast.surfforecast
 
 import androidx.compose.ui.graphics.Color
-import com.surfcast.surfforecast.ui.theme.AppColors
 
-/** Nuances de la note : plus fines que rouge / orange / vert, plus « trop gros » à part (violet). */
+/**
+ * Nuances de la note, du pire au meilleur, avec des couleurs bien contrastées : gris (à éviter), rouge (médiocre),
+ * orange (correct), jaune (bon), vert (très bon), vert fluo (excellent) ; « trop gros » à part (violet).
+ */
 enum class ScoreBand(val label: String) {
     TOO_BIG("Trop gros"),
-    RED("À éviter"),
-    ORANGE("Médiocre"),
-    YELLOW("Correct"),
-    LIGHT_GREEN("Bon"),
-    GREEN("Très bon"),
+    AVOID("À éviter"),
+    POOR("Médiocre"),
+    FAIR("Correct"),
+    GOOD("Bon"),
+    VERY_GOOD("Très bon"),
     EXCELLENT("Excellent")
 }
 
 /** [score] négatif ou [tooBig] = trop gros pour ce niveau. */
 fun scoreBand(score: Int, tooBig: Boolean = false): ScoreBand = when {
     tooBig || score < 0 -> ScoreBand.TOO_BIG
-    score < 20 -> ScoreBand.RED
-    score < 40 -> ScoreBand.ORANGE
-    score < 55 -> ScoreBand.YELLOW
-    score < 70 -> ScoreBand.LIGHT_GREEN
-    score < 85 -> ScoreBand.GREEN
+    score < 20 -> ScoreBand.AVOID
+    score < 40 -> ScoreBand.POOR
+    score < 55 -> ScoreBand.FAIR
+    score < 70 -> ScoreBand.GOOD
+    score < 85 -> ScoreBand.VERY_GOOD
     else -> ScoreBand.EXCELLENT
 }
 
 fun ScoreBand.color(): Color = when (this) {
     ScoreBand.TOO_BIG -> Color(0xFF7E57C2)
-    ScoreBand.RED -> AppColors.WindHigh
-    ScoreBand.ORANGE -> AppColors.WindMid
-    ScoreBand.YELLOW -> AppColors.WindLow
-    ScoreBand.LIGHT_GREEN -> Color(0xFF9CCC65)
-    ScoreBand.GREEN -> AppColors.TideLow
-    ScoreBand.EXCELLENT -> Color(0xFF00C853)
+    ScoreBand.AVOID -> Color(0xFF9E9E9E)
+    ScoreBand.POOR -> Color(0xFFE53935)
+    ScoreBand.FAIR -> Color(0xFFFB8C00)
+    ScoreBand.GOOD -> Color(0xFFFFD600)
+    ScoreBand.VERY_GOOD -> Color(0xFF43A047)
+    ScoreBand.EXCELLENT -> Color(0xFF00E676)
 }

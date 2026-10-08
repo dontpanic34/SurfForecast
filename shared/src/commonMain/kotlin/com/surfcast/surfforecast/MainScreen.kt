@@ -105,6 +105,8 @@ fun MainScreen(
             onWindUnitSelected = { viewModel.changeWindUnit(it) },
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it); viewModel.markProfileReviewed() },
+            customProfile = viewModel.customProfile,
+            onCustomProfileSaved = { viewModel.saveCustomProfile(it) },
             tidePreference = viewModel.tidePreference,
             onTidePreferenceChanged = { viewModel.changeTidePreference(it); viewModel.markProfileReviewed() },
             themeMode = viewModel.themeMode,
@@ -382,12 +384,6 @@ fun MainScreen(
                                                 size = 15.dp
                                             )
                                         }
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        NearbySpotsRow(
-                                            currentSpotName = state.spotName,
-                                            onSelectSpot = { spotName -> viewModel.previewSpot(spotName) },
-                                            modifier = Modifier.weight(1f)
-                                        )
                                     }
 
                                     // Profil pas encore renseigné : un message cliquable remplace le meilleur créneau.

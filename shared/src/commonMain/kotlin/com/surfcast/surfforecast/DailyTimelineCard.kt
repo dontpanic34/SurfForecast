@@ -258,7 +258,7 @@ fun DailyTimelineCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    val legend = listOf(ScoreBand.RED, ScoreBand.ORANGE, ScoreBand.YELLOW, ScoreBand.LIGHT_GREEN, ScoreBand.EXCELLENT) +
+                    val legend = listOf(ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.FAIR, ScoreBand.GOOD, ScoreBand.VERY_GOOD, ScoreBand.EXCELLENT) +
                         (if (scores.any { it < 0 }) listOf(ScoreBand.TOO_BIG) else emptyList())
                     legend.map { it.color() to it.label }.forEach { (dotColor, label) ->
                         Row(

@@ -491,6 +491,17 @@ class SurfController(
         prefs.putString("tide_preference", preference)
     }
 
+    // Profil Personnalisé gardé à part : passer sur Débutant (pour montrer à un élève) ne l'efface pas.
+    var customProfile by mutableStateOf(
+        (prefs.getString("custom_profile", "") ?: "").ifBlank { if (isCustomLevel(surferLevel)) surferLevel else "" }
+    )
+        private set
+
+    fun saveCustomProfile(serialized: String) {
+        customProfile = serialized
+        prefs.putString("custom_profile", serialized)
+    }
+
     fun changeSurferLevel(level: String) {
         surferLevel = level
         prefs.putString("surfer_level", level)

@@ -47,6 +47,17 @@ private fun energyName(w: Double) = when {
 private fun energyLabel(w: Double) =
     if (w >= SurfProfile.NO_CAP) "Aucune limite" else energyName(w) + " · " + w.roundToInt().toString().reversed().chunked(3).joinToString(" ").reversed() + " kJ"
 
+/** À quoi ressemblent les spots de cette énergie : repères pour choisir son minimum et son maximum. */
+private fun energySpotHint(w: Double): String = when {
+    w >= SurfProfile.NO_CAP -> "Aucune limite de taille."
+    w <= 80 -> "Les mousses, les spots abrités."
+    w <= 150 -> "Oléron, Montalivet : vagues douces, plutôt pour longboard."
+    w <= 450 -> "Les beach breaks girondins."
+    w <= 700 -> "Plutôt les Landes."
+    w <= 1500 -> "La Gravière et les spots puissants."
+    else -> "Les gros jours, les spots de grosse houle."
+}
+
 private fun nearestIndex(values: List<Double>, v: Double): Int =
     values.indices.minByOrNull { abs(values[it] - v) } ?: 0
 
@@ -160,12 +171,19 @@ private fun SettingBlock(title: String, valueText: String? = null, hint: String?
 fun SurferProfileSection(
     surferLevel: String,
     onLevelChanged: (String) -> Unit,
+    // Profil Personnalisé gardé à part (texte « custom:… », vide = aucun) et sa sauvegarde.
+    savedCustom: String,
+    onCustomSaved: (String) -> Unit,
     onInfo: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     val custom = isCustomLevel(surferLevel)
     val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
-    fun update(p: SurfProfile) = onLevelChanged(p.serialize())
+    fun update(p: SurfProfile) {
+        val serialized = p.serialize()
+        onLevelChanged(serialized)
+        onCustomSaved(serialized)
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(
@@ -185,7 +203,7 @@ fun SurferProfileSection(
                         val selected = if (key == "custom") custom else surferLevel == key
                         Surface(
                             modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).clickable {
-                                if (key == "custom") { if (!custom) update(profile) } else onLevelChanged(key)
+                                if (key == "custom") { if (!custom) update(if (savedCustom.isNotBlank()) SurfProfile.fromLevel(savedCustom) else profile) } else onLevelChanged(key)
                             },
                             color = if (selected) colors.primary else colors.background
                         ) {
@@ -210,6 +228,12 @@ fun SurferProfileSection(
                 },
                 fontSize = 12.sp, color = colors.onSurfaceVariant
             )
+            if (!custom && savedCustom.isNotBlank()) {
+                Text(
+                    "Ton profil Personnalisé est gardé : touche « Personnalisé » pour le retrouver tel que tu l'as réglé.",
+                    fontSize = 11.sp, color = colors.primary
+                )
+            }
             if (!custom) {
                 Text(
                     "Ce profil règle : énergie ${profile.idealMin.roundToInt()} à " +
@@ -232,6 +256,7 @@ fun SurferProfileSection(
                     Text(energyLabel(profile.idealMin), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                 }
                 Text(energyAsWave(profile.idealMin), fontSize = 11.sp, color = colors.onSurfaceVariant)
+                Text(energySpotHint(profile.idealMin), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.primary)
                 Slider(
                     value = minIdx.toFloat(), onValueChange = { i ->
                         val v = MIN_ENERGIES[i.roundToInt().coerceIn(0, MIN_ENERGIES.lastIndex)]
@@ -245,6 +270,7 @@ fun SurferProfileSection(
                     Text(energyLabel(profile.cap), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                 }
                 Text(energyAsWave(profile.cap), fontSize = 11.sp, color = colors.onSurfaceVariant)
+                Text(energySpotHint(profile.cap), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.primary)
                 Slider(
                     value = maxIdx.toFloat(), onValueChange = { i ->
                         val cap = MAX_ENERGIES[i.roundToInt().coerceIn(0, MAX_ENERGIES.lastIndex)]
@@ -263,11 +289,6 @@ fun SurferProfileSection(
                     onUseAsMax = { e ->
                         update(profile.copy(cap = e, idealMax = maxOf(e / 2.2, minOf(profile.idealMin, e)), idealMin = minOf(profile.idealMin, e), rampEnd = minOf(profile.rampEnd, e)))
                     }
-                )
-                Text(
-                    "Repères : très douce ≈ 80 (0,6 m 8 s, mousses) · douce ≈ 150 (Oléron, Montalivet) · modérée ≈ 250 · moyenne ≈ 450 (1,5 m 10 s, beach breaks landais) · " +
-                        "soutenue ≈ 700 · puissante ≈ 1 500 (La Gravière, Hossegor) · très puissante ≈ 3 500 (gros jours).",
-                    fontSize = 11.sp, color = colors.onSurfaceVariant
                 )
             }
             SettingBlock("Période minimum", "${profile.minPeriod.roundToInt()} s", "Houle courte et clapoteuse ↔ houle longue.") {

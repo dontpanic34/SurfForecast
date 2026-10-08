@@ -83,11 +83,11 @@ class SurfScoringTest {
 
     @Test
     fun scoreBandsHaveSixShadesPlusTooBig() {
-        assertEquals(ScoreBand.RED, scoreBand(19))
-        assertEquals(ScoreBand.ORANGE, scoreBand(20))
-        assertEquals(ScoreBand.YELLOW, scoreBand(40))
-        assertEquals(ScoreBand.LIGHT_GREEN, scoreBand(55))
-        assertEquals(ScoreBand.GREEN, scoreBand(70))
+        assertEquals(ScoreBand.AVOID, scoreBand(19))
+        assertEquals(ScoreBand.POOR, scoreBand(20))
+        assertEquals(ScoreBand.FAIR, scoreBand(40))
+        assertEquals(ScoreBand.GOOD, scoreBand(55))
+        assertEquals(ScoreBand.VERY_GOOD, scoreBand(70))
         assertEquals(ScoreBand.EXCELLENT, scoreBand(85))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(-1))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(50, tooBig = true))

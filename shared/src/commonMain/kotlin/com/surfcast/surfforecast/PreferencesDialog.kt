@@ -52,6 +52,8 @@ fun SurfPreferencesDialog(
     onToggleHourlyCard: (Boolean) -> Unit,
     surferLevel: String,
     onSurferLevelChanged: (String) -> Unit,
+    customProfile: String = "",
+    onCustomProfileSaved: (String) -> Unit = {},
     tidePreference: String = "any",
     onTidePreferenceChanged: (String) -> Unit = {},
     engineConfig: ForecastEngineConfig,
@@ -347,6 +349,8 @@ fun SurfPreferencesDialog(
                         SurferProfileSection(
                             surferLevel = surferLevel,
                             onLevelChanged = onSurferLevelChanged,
+                            savedCustom = customProfile,
+                            onCustomSaved = onCustomProfileSaved,
                             onInfo = { showScoreInfo = true }
                         )
                         TidePreferenceSection(current = tidePreference, onChange = onTidePreferenceChanged)
