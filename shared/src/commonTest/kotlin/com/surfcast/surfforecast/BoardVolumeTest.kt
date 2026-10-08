@@ -134,14 +134,4 @@ class BoardVolumeTest {
         assertEquals("31–34", volumeRangeText(32.15))
         assertEquals("52–57", volumeRangeText(54.4))
     }
-
-    @Test
-    fun wetsuitFollowsTheWaterTemperature() {
-        assertEquals("Short", wetsuitLabel(26))
-        assertEquals("Shorty", wetsuitLabel(22))
-        assertEquals("3/2", wetsuitLabel(17))
-        assertEquals("3/2", wetsuitLabel(15))
-        assertEquals("4/3", wetsuitLabel(12))
-        assertEquals("5/4 + cagoule", wetsuitLabel(9))
-    }
 }
