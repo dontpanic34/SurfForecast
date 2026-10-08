@@ -629,7 +629,7 @@ fun SurfPreferencesDialog(
                     }
                 }
 
-                DonationSection()
+                DonationSection(weroQr = { androidx.compose.foundation.Image(painter = androidx.compose.ui.res.painterResource(R.drawable.wero_qr), contentDescription = "QR code Wero", modifier = Modifier.fillMaxWidth(), contentScale = androidx.compose.ui.layout.ContentScale.FillWidth) })
 
                 Spacer(modifier = Modifier.height(10.dp))
 
