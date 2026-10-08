@@ -70,11 +70,9 @@ jobs:
       - name: Build web app (WebAssembly)
         run: ./gradlew :shared:wasmJsBrowserDistribution
 
-      - name: Stamp version
+      - name: Stamp version and version the files
         run: |
-          DIST=shared/build/dist/wasmJs/productionExecutable
-          sed -i 's/<meta name="app-version" content="dev">/<meta name="app-version" content="1.0.${{ github.run_number }}">/' "$DIST/index.html"
-          ls -la "$DIST"
+          bash scripts/web-release.sh shared/build/dist/wasmJs/productionExecutable ${{ github.run_number }}
 
       - name: Screenshot in headless Chrome
         continue-on-error: true

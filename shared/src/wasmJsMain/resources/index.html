@@ -38,6 +38,43 @@
     // Android (Chrome) : on garde l'invite d'installation pour la déclencher depuis un bouton des Paramètres.
     window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.__installPrompt = e; });
     window.addEventListener("appinstalled", function () { window.__installPrompt = null; });
+    // Mise à jour automatique : le site publie version.json à chaque nouvelle version. Quand on revient
+    // sur l'appli et qu'une version plus récente existe, on recharge ; sur un onglet resté ouvert, une
+    // bannière propose d'actualiser (on ne coupe pas quelqu'un en pleine saisie).
+    (function () {
+        var meta = document.querySelector('meta[name=app-version]');
+        var current = meta && meta.getAttribute("content");
+        if (!current || current === "dev") return;
+        function newerVersion() {
+            return fetch("version.json?t=" + Date.now(), { cache: "no-store" })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { return d && d.version && d.version !== current ? d.version : null; })
+                .catch(function () { return null; });
+        }
+        function reloadOnce(version) {
+            // Garde-fou : jamais deux rechargements pour la même version (pas de boucle).
+            try {
+                if (sessionStorage.getItem("surflog_reloaded_for") === version) return;
+                sessionStorage.setItem("surflog_reloaded_for", version);
+            } catch (e) {}
+            location.reload();
+        }
+        function showBanner(version) {
+            if (document.getElementById("update-banner")) return;
+            var b = document.createElement("div");
+            b.id = "update-banner";
+            b.textContent = "Nouvelle version disponible · Actualiser";
+            b.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;" +
+                "background:#1E88E5;color:#fff;padding:10px 16px;border-radius:20px;font:600 13px -apple-system,system-ui,sans-serif;" +
+                "box-shadow:0 2px 10px rgba(0,0,0,.4);cursor:pointer";
+            b.onclick = function () { reloadOnce(version); };
+            document.body.appendChild(b);
+        }
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible") newerVersion().then(function (v) { if (v) reloadOnce(v); });
+        });
+        setInterval(function () { newerVersion().then(function (v) { if (v) showBanner(v); }); }, 10 * 60 * 1000);
+    })();
     // Service worker minimal (aucune mise en cache) : requis par certaines versions de Chrome pour proposer l'installation.
     if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
 </script>
