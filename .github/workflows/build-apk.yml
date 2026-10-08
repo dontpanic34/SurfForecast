@@ -51,8 +51,8 @@ jobs:
             echo "SURFLOG_KEY_PASSWORD=${{ secrets.SURFLOG_KEY_PASSWORD }}" >> "$GITHUB_ENV"
           fi
 
-      - name: Build APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build release APK
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Rename APK
         run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/surflog.apk
