@@ -353,3 +353,31 @@ fun ProfileBenefitsCard() {
         Text("Ça prend une minute, et tu peux tout changer plus tard.", fontSize = 11.5.sp, color = colors.onSurfaceVariant)
     }
 }
+
+/** Message qui remplace le « Meilleur créneau » tant que le profil n'est pas renseigné : toute la carte est cliquable. */
+@Composable
+fun ProfileNudgeCard(onOpen: () -> Unit, onLater: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(colors.primary.copy(alpha = 0.14f))
+            .clickable(onClick = onOpen)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text("⭐ Ton meilleur créneau, calculé pour toi", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        Text(
+            "Renseigne ton profil (niveau, vent, poids, planches) : sans lui, la note est celle d'un surfeur moyen. Une minute suffit.",
+            fontSize = 11.5.sp, color = colors.onSurfaceVariant
+        )
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Renseigner mon profil ›", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.primary, modifier = Modifier.weight(1f))
+            Text(
+                "Plus tard", fontSize = 11.sp, color = colors.onSurfaceVariant,
+                modifier = Modifier.clip(RoundedCornerShape(50)).clickable(onClick = onLater).padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+    }
+}

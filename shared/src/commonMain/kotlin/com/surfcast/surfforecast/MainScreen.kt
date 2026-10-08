@@ -137,24 +137,6 @@ fun MainScreen(
         )
     }
 
-    // Mise à jour « Mon profil » : proposé à tout le monde (fortement encouragé, « Plus tard » possible).
-    if (viewModel.showProfileSetup && !viewModel.showOnboarding) {
-        ProfileSetupDialog(
-            surferLevel = viewModel.surferLevel,
-            onLevelChanged = { viewModel.changeSurferLevel(it) },
-            body = viewModel.body,
-            onBodyChanged = { viewModel.changeBody(it) },
-            onLater = { viewModel.skipProfileSetup() },
-            onDone = { openGear ->
-                viewModel.completeProfileSetup()
-                if (openGear) {
-                    preferencesStartPage = "profile"
-                    showPreferencesDialog = true
-                }
-            }
-        )
-    }
-
     if (showPreferencesDialog) {
         SurfPreferencesDialog(
             windUnit = viewModel.windUnit,
@@ -405,6 +387,14 @@ fun MainScreen(
                                         )
                                     }
 
+                                    // Profil pas encore renseigné : un message cliquable remplace le meilleur créneau.
+                                    if (viewModel.showProfileNudge) {
+                                        ProfileNudgeCard(
+                                            onOpen = { preferencesStartPage = "profile"; showPreferencesDialog = true },
+                                            onLater = { viewModel.hideProfileNudge() },
+                                            modifier = Modifier.coachTarget("bestSlot", coachTargets).padding(horizontal = 10.dp, vertical = 2.dp).padding(bottom = 6.dp)
+                                        )
+                                    } else
                                     // Point 3 : "Statut Flash" - meilleur creneau du jour selectionne.
                                     if (bestSlot != null) {
                                         val flashBand = scoreBand(bestSlot.averageScore)
@@ -750,7 +740,7 @@ fun MainScreen(
             }
         }
         // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
-        if (viewModel.showHomeTour && !viewModel.showOnboarding && !viewModel.showProfileSetup) {
+        if (viewModel.showHomeTour && !viewModel.showOnboarding) {
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(
