@@ -23,6 +23,8 @@ class SessionLogRoomStore(private val dao: SessionLogDao) : SessionLogStore {
 
     override suspend fun insertMicroSpot(spot: MicroSpot): Long = dao.insertMicroSpot(spot.toEntity())
 
+    override suspend fun updateMicroSpot(spot: MicroSpot) = dao.updateMicroSpot(spot.toEntity())
+
     override suspend fun logSession(
         startTime: Long,
         endTime: Long,

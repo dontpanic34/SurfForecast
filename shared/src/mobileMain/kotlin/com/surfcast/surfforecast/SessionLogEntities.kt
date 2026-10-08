@@ -22,7 +22,11 @@ data class QuiverBoardEntity(
 data class MicroSpotEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val parentSpotName: String,
-    val name: String
+    val name: String,
+    val tidePhase: String = "any",
+    val minHeight: Double? = null,
+    val maxHeight: Double? = null,
+    val notes: String = ""
 )
 
 @Entity(tableName = "condition_snapshots")
@@ -35,7 +39,8 @@ data class ConditionSnapshotEntity(
     val windSpeedKmh: Int,
     val windDirection: Int,
     val tideCoeff: Int?,
-    val isNearHighTide: Boolean
+    val isNearHighTide: Boolean,
+    val tidePhase: String? = null
 )
 
 @Entity(
@@ -61,13 +66,13 @@ data class SurfSessionEntity(
 
 internal fun QuiverBoardEntity.toModel() = QuiverBoard(id, model, family, lengthLitrage, finSetup)
 internal fun QuiverBoard.toEntity() = QuiverBoardEntity(id, model, family, lengthLitrage, finSetup)
-internal fun MicroSpotEntity.toModel() = MicroSpot(id, parentSpotName, name)
-internal fun MicroSpot.toEntity() = MicroSpotEntity(id, parentSpotName, name)
+internal fun MicroSpotEntity.toModel() = MicroSpot(id, parentSpotName, name, tidePhase, minHeight, maxHeight, notes)
+internal fun MicroSpot.toEntity() = MicroSpotEntity(id, parentSpotName, name, tidePhase, minHeight, maxHeight, notes)
 internal fun ConditionSnapshotEntity.toModel() = ConditionSnapshot(
-    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide
+    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide, tidePhase
 )
 internal fun ConditionSnapshot.toEntity() = ConditionSnapshotEntity(
-    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide
+    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide, tidePhase
 )
 internal fun SurfSessionEntity.toModel() = SurfSession(
     id, startTime, endTime, microSpotId, quiverId, conditionId, rating, comment, mediaUri

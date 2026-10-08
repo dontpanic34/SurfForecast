@@ -215,6 +215,9 @@ fun WeeklyForecastCard(
                     dailyHeights = dailyHeights,
                     dailyFeelsLike = dailyFeelsLike,
                     dailyWaterTemps = dailyWaterTemps,
+                    dailyEnergies = availableDates.map { date ->
+                        daylightHoursFor(date, groupedByDate, dailySunInfo).maxOfOrNull { it.energyKj } ?: 0
+                    },
                     maxScale = fixedMaxScale,
                     daysCount = availableDates.size,
                     selectedIndex = selectedIndex,
@@ -319,6 +322,8 @@ fun ContinuousWaveCanvas(
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
     dailyWaterTemps: List<Int>,
+    // Énergie de la houle au pic de chaque jour (kJ) : petite valeur discrète sous la période.
+    dailyEnergies: List<Int> = emptyList(),
     maxScale: Float,
     daysCount: Int,
     selectedIndex: Int,
@@ -505,8 +510,27 @@ fun ContinuousWaveCanvas(
             val pY = baseY - 3.dp.toPx()
 
             drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - pTextW / 2f, pY)
+
+            // Énergie : discrète, juste au-dessus de la période, teinte selon la puissance.
+            val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 }
+            if (energy != null) {
+                val eText = "${energy}kJ"
+                val eStyle = energyTextPaint(energy)
+                val eW = textMeasurer.measure(eText, eStyle).size.width.toFloat()
+                drawTextAtBaseline(textMeasurer, eText, eStyle, targetX - eW / 2f, pY - 11.dp.toPx())
+            }
         }
     }
+}
+
+// Teinte de l'énergie de houle : faible (neutre), moyenne (orange), forte (rouge).
+private fun energyTextPaint(energyKj: Int): TextStyle {
+    val color = when {
+        energyKj >= 400 -> Color(0xFFE53935)
+        energyKj >= 150 -> Color(0xFFFB8C00)
+        else -> Color(0xFF78909C)
+    }
+    return TextStyle(color = color, fontSize = 7.5.sp, fontWeight = FontWeight.Bold)
 }
 
 @Composable

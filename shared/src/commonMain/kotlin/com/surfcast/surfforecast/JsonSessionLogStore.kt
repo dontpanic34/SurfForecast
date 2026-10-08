@@ -71,6 +71,11 @@ class JsonSessionLogStore(private val prefs: KeyValueStore) : SessionLogStore {
         return d.nextId
     }
 
+    override suspend fun updateMicroSpot(spot: MicroSpot) {
+        val d = state.value
+        save(d.copy(microSpots = d.microSpots.map { if (it.id == spot.id) spot else it }))
+    }
+
     override suspend fun logSession(
         startTime: Long,
         endTime: Long,

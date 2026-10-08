@@ -477,6 +477,11 @@ class SurfController(
         scope.launch { dao.insertMicroSpot(MicroSpot(parentSpotName = parentSpotName, name = name)) }
     }
 
+    fun updateMicroSpot(spot: MicroSpot) {
+        val dao = sessionLogStore ?: return
+        scope.launch { dao.updateMicroSpot(spot) }
+    }
+
     fun logSurfSession(
         date: LocalDate,
         startHour: Int,
@@ -499,7 +504,8 @@ class SurfController(
                 windSpeedKmh = hourlyModel.windSpeedKmh,
                 windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
                 tideCoeff = tideInfo?.coefficient,
-                isNearHighTide = isNearHighTide(hourlyModel, tideInfo)
+                isNearHighTide = isNearHighTide(hourlyModel, tideInfo),
+                tidePhase = tidePhaseAt(hourlyModel.rawTime.time, tideInfo)
             )
             dao.logSession(
                 startTime = LocalDateTime(date, LocalTime(startHour, 0)).toEpochMillis(),

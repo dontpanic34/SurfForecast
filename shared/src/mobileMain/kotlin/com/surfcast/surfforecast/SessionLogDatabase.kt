@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
  */
 @Database(
     entities = [QuiverBoardEntity::class, MicroSpotEntity::class, ConditionSnapshotEntity::class, SurfSessionEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @ConstructedBy(SessionLogDatabaseConstructor::class)

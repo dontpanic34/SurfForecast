@@ -20,7 +20,13 @@ data class QuiverBoard(
 data class MicroSpot(
     val id: Long = 0,
     val parentSpotName: String,
-    val name: String
+    val name: String,
+    // Fiche du banc : conditions où il marche (tout est facultatif).
+    // tidePhase : "any" / "rising" (montant) / "falling" (descendant) / "high" (pleine mer) / "low" (basse mer)
+    val tidePhase: String = "any",
+    val minHeight: Double? = null,
+    val maxHeight: Double? = null,
+    val notes: String = ""
 )
 
 @Serializable
@@ -33,7 +39,9 @@ data class ConditionSnapshot(
     val windSpeedKmh: Int,
     val windDirection: Int,
     val tideCoeff: Int?,
-    val isNearHighTide: Boolean
+    val isNearHighTide: Boolean,
+    // Phase de marée pendant la session : "rising" / "falling" / "high" / "low" (null = inconnue).
+    val tidePhase: String? = null
 )
 
 @Serializable
@@ -66,6 +74,8 @@ interface SessionLogStore {
     /** Échoue si la planche est utilisée par une session enregistrée. */
     suspend fun deleteQuiverBoard(board: QuiverBoard)
     suspend fun insertMicroSpot(spot: MicroSpot): Long
+    /** Met à jour la fiche d'un banc (marée, hauteur, notes). */
+    suspend fun updateMicroSpot(spot: MicroSpot)
     suspend fun logSession(
         startTime: Long,
         endTime: Long,

@@ -43,6 +43,9 @@ interface SessionLogDao {
     @Insert
     suspend fun insertMicroSpot(spot: MicroSpotEntity): Long
 
+    @androidx.room.Update
+    suspend fun updateMicroSpot(spot: MicroSpotEntity)
+
     @Insert
     suspend fun insertCondition(condition: ConditionSnapshotEntity): Long
 

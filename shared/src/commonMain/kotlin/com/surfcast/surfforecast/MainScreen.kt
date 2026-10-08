@@ -291,6 +291,10 @@ fun MainScreen(
                         .maxByOrNull { it.score }
                 }
 
+                // Fiches des bancs du spot : créneaux du jour sélectionné où la fiche est respectée.
+                val spotMicroSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
+                    .collectAsState(initial = emptyList())
+
                 Box(modifier = Modifier.fillMaxSize()) {
                     run {
                         val selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0)
@@ -395,6 +399,38 @@ fun MainScreen(
                                                     color = onSurfaceColor.copy(alpha = 0.55f),
                                                     maxLines = 1
                                                 )
+                                            }
+                                        }
+                                    }
+
+                                    // Fiches de bancs : « Le banc magique : 16h–18h (descendant · 1,0–1,6 m) ».
+                                    run {
+                                        val day = selectedDate ?: today
+                                        val dayHours = daylightHoursFor(day, groupedByDate, state.dailySunInfo)
+                                        spotMicroSpots.filter { it.hasProfile }.forEach { spot ->
+                                            val windows = spot.matchingWindows(dayHours, state.dailyTides[day])
+                                            if (windows.isNotEmpty()) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 10.dp, vertical = 2.dp)
+                                                        .padding(bottom = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Canvas(modifier = Modifier.size(6.dp)) {
+                                                        drawCircle(color = AppColors.WindMid, radius = size.minDimension / 2f)
+                                                    }
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = "${spot.name} : " +
+                                                            windows.joinToString(", ") { "${it.first}h–${it.last + 1}h" } +
+                                                            " (${spot.profileSummary()})",
+                                                        fontSize = 10.5.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = onSurfaceColor.copy(alpha = 0.75f),
+                                                        maxLines = 2
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -574,6 +610,7 @@ fun MainScreen(
                                             quiverBoards = quiverBoards,
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
+                                            onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },
                                             availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
                                             onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
                                                 val past = pastConditions[dayOffset]
