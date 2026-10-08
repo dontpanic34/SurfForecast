@@ -469,7 +469,7 @@ class SurfRepository {
             } else {
                 // Hors France : horaires estimes (hauteur d'eau Open-Meteo), coefficient repris de la
                 // France (indice defini au port de Brest par le SHOM, valable sur toute la cote atlantique).
-                val reference = sites.firstOrNull { it.siteName.contains("brest", ignoreCase = true) || it.siteId.equals("brest", true) }
+                val reference = sites.firstOrNull { it.siteId.contains("brest", ignoreCase = true) }
                     ?: closest
                 val french = runCatching { mareeExtrema(reference.siteId, fromDate, toDate) }.getOrDefault(emptyList())
                 estimatedTideDays(lat, lon, french)
