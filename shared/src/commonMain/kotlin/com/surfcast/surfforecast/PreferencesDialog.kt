@@ -61,6 +61,7 @@ fun SurfPreferencesDialog(
     onPinWidget: (() -> Unit)? = null,
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
     onShowIntro: (() -> Unit)? = null,
+    onShowTour: (() -> Unit)? = null,
     // Sauvegarde / restauration du journal (version web seulement).
     backup: SessionLogBackup? = null,
     // Installation du site comme appli (version web seulement).
@@ -622,6 +623,12 @@ fun SurfPreferencesDialog(
                                 Text("Voir les logs d'actualisation", fontSize = 11.5.sp, color = colors.onBackground)
                             }
                         }
+                    }
+                }
+
+                if (onShowTour != null) {
+                    TextButton(onClick = onShowTour, modifier = Modifier.fillMaxWidth()) {
+                        Text("🧭 Revoir la visite guidée de l'écran", fontSize = 11.5.sp)
                     }
                 }
 

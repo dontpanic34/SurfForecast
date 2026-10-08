@@ -121,6 +121,28 @@ class SurfController(
         showOnboarding = true
     }
 
+    // Visite guidée de la première utilisation (accueil) et astuces du journal : une seule fois,
+    // rouvrable depuis les Paramètres.
+    var showHomeTour by mutableStateOf(!prefs.getBoolean("coach_home_v1_done", false))
+        private set
+
+    fun dismissHomeTour() {
+        showHomeTour = false
+        prefs.putBoolean("coach_home_v1_done", true)
+    }
+
+    fun showHomeTourAgain() {
+        showHomeTour = true
+    }
+
+    var showJournalTips by mutableStateOf(!prefs.getBoolean("coach_journal_v1_done", false))
+        private set
+
+    fun dismissJournalTips() {
+        showJournalTips = false
+        prefs.putBoolean("coach_journal_v1_done", true)
+    }
+
     var windUnit by mutableStateOf(prefs.getString("wind_unit", "kmh") ?: "kmh")
         private set
 

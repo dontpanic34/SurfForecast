@@ -70,6 +70,9 @@ fun MainScreen(
     }
     val today = nowLocalDateTime().date
 
+    // Positions à l'écran des éléments éclairés par la visite guidée.
+    val coachTargets = remember { mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>() }
+
     val uiState by viewModel.uiState.collectAsState()
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     var showSpotDialog by remember { mutableStateOf(false) }
@@ -167,6 +170,10 @@ fun MainScreen(
             onShowIntro = {
                 showPreferencesDialog = false
                 viewModel.showOnboardingAgain()
+            },
+            onShowTour = {
+                showPreferencesDialog = false
+                viewModel.showHomeTourAgain()
             },
             onDismiss = { showPreferencesDialog = false },
             onPinWidget = onPinWidget,
@@ -382,6 +389,7 @@ fun MainScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .coachTarget("bestSlot", coachTargets)
                                                 .padding(horizontal = 10.dp, vertical = 2.dp)
                                                 .padding(bottom = 6.dp),
                                             verticalAlignment = Alignment.CenterVertically
@@ -540,7 +548,7 @@ fun MainScreen(
                                             )
                                         }
 
-                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp)) {
+                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp).coachTarget("journal", coachTargets)) {
                                             JournalIcon(
                                                 color = onSurfaceColor,
                                                 modifier = Modifier.size(20.dp)
@@ -551,7 +559,7 @@ fun MainScreen(
                                             Text(text = "🌤️", fontSize = 18.sp)
                                         }
 
-                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp)) {
+                                        IconButton(onClick = { showPreferencesDialog = true }, modifier = Modifier.size(32.dp).coachTarget("settings", coachTargets)) {
                                             Icon(
                                                 imageVector = SurfIcons.Settings,
                                                 contentDescription = "Paramètres",
@@ -616,6 +624,8 @@ fun MainScreen(
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
                                             onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },
+                                            showTips = viewModel.showJournalTips,
+                                            onDismissTips = { viewModel.dismissJournalTips() },
                                             availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
                                             onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
                                                 val past = pastConditions[dayOffset]
@@ -683,7 +693,8 @@ fun MainScreen(
                                             surfaceColor = surfaceColor,
                                             onSurfaceColor = onSurfaceColor,
                                             idealSwellDirection = idealSwellDirection,
-                                            surferLevel = viewModel.surferLevel
+                                            surferLevel = viewModel.surferLevel,
+                                            coachTargets = coachTargets
                                         )
                                     }
                                 }
@@ -694,6 +705,19 @@ fun MainScreen(
             }
         }
             }
+        }
+        // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
+        if (viewModel.showHomeTour && !viewModel.showOnboarding) {
+            CoachMarkOverlay(
+                steps = listOf(
+                    CoachStep("journal", "📓 Le journal de bord", "Note tes sessions ici : l'appli remplit les conditions toute seule et repère dans quelles conditions tu surfes le mieux."),
+                    CoachStep("bestSlot", "🎯 Le meilleur créneau", "L'heure conseillée pour le jour sélectionné, calculée selon ton niveau. Touche un autre jour dans la semaine pour le changer."),
+                    CoachStep("weekCard", "📅 Les encarts", "Touche un jour pour le détailler. Chaque encart se déplace, se replie ou se masque (Paramètres) : compose ton écran."),
+                    CoachStep("settings", "⚙️ Les paramètres", "Modèles de prévision, unités, niveau, sauvegarde… Tu peux aussi rejouer cette visite ici.")
+                ),
+                targets = coachTargets,
+                onFinish = { viewModel.dismissHomeTour() }
+            )
         }
     }
 }
@@ -844,7 +868,8 @@ fun DynamicCardsSection(
     onSurfaceColor: Color,
     idealSwellDirection: Int?,
     surferLevel: String,
-    currentHour: Int = nowLocalDateTime().hour
+    currentHour: Int = nowLocalDateTime().hour,
+    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null
 ) {
     // currentHour en clé : à chaque changement d'heure (ou rechargement), la sélection
     // revient sur l'heure actuelle au lieu de rester figée sur celle du chargement.
@@ -966,7 +991,7 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth()
                             )
                         }
                         "dailyTimeline" -> {
