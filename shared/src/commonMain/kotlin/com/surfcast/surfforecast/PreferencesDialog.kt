@@ -78,6 +78,8 @@ fun SurfPreferencesDialog(
     var showModelsInfo by remember { mutableStateOf(false) }
     var infoTab by remember { mutableStateOf("France") }
     var showScoreInfo by remember { mutableStateOf(false) }
+    // Page ouverte : null = menu des Paramètres, sinon "display", "forecast", "journal", "app" ou "help".
+    var page by remember { mutableStateOf<String?>(null) }
 
     if (showScoreInfo) {
         AlertDialog(
@@ -247,14 +249,18 @@ fun SurfPreferencesDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Paramètres",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.onBackground
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                    DonationButton()
+                    if (page == null) {
+                        Text(
+                            text = "Paramètres",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onBackground
+                        )
+                    } else {
+                        TextButton(onClick = { page = null }) {
+                            Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
+                        }
+                    }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
                             imageVector = SurfIcons.Close,
@@ -262,7 +268,20 @@ fun SurfPreferencesDialog(
                             tint = colors.onSurfaceVariant
                         )
                     }
-                    }
+                }
+                page?.let { current ->
+                    Text(
+                        text = when (current) {
+                            "display" -> "Affichage"
+                            "forecast" -> "Prévisions"
+                            "journal" -> "Journal de bord"
+                            "app" -> "Appli"
+                            else -> "Aide"
+                        },
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onBackground
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -270,7 +289,7 @@ fun SurfPreferencesDialog(
                 // Colonne défilante simple (et non LazyColumn) : le contenu est court, et la hauteur de la
                 // carte APK (image chargée après coup) ne doit pas décaler le défilement.
                 val scrollState = rememberScrollState()
-                LaunchedEffect(Unit) { scrollState.scrollTo(0) }
+                LaunchedEffect(page) { scrollState.scrollTo(0) }
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -278,7 +297,15 @@ fun SurfPreferencesDialog(
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
+                    if (page == null) {
+                        PrefMenuRow("🎛️", "Affichage", "Niveau, unité du vent, encarts") { page = "display" }
+                        PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
+                        if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
+                        if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
+                        if (onShowTour != null || onShowIntro != null) PrefMenuRow("💡", "Aide", "Visite guidée, introduction") { page = "help" }
+                    }
+
+                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "1. Personnalisation",
@@ -435,7 +462,7 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "2. Unité du vent",
                                 fontSize = 13.sp,
@@ -467,7 +494,7 @@ fun SurfPreferencesDialog(
                     }
 
                     // Bouton d'épinglage du widget : Android seulement (rien à afficher sur le site).
-                    if (onPinWidget != null) {
+                    if (page == "app" && onPinWidget != null) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             OutlinedButton(
                                 onClick = onPinWidget,
@@ -480,7 +507,7 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (page == "forecast") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -630,21 +657,19 @@ fun SurfPreferencesDialog(
                             }
                         }
                     }
-                }
-
-                if (onShowTour != null) {
+                    if (page == "help" && onShowTour != null) {
                     TextButton(onClick = onShowTour, modifier = Modifier.fillMaxWidth()) {
                         Text("🧭 Revoir la visite guidée de l'écran", fontSize = 11.5.sp)
                     }
                 }
 
-                if (onShowIntro != null) {
+                    if (page == "help" && onShowIntro != null) {
                     TextButton(onClick = onShowIntro, modifier = Modifier.fillMaxWidth()) {
                         Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 11.5.sp)
                     }
                 }
 
-                if (backup != null) {
+                    if (page == "journal" && backup != null) {
                     var importMessage by remember { mutableStateOf<String?>(null) }
                     Text("Journal de bord", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -668,7 +693,7 @@ fun SurfPreferencesDialog(
                     importMessage?.let { Text(it, fontSize = 11.sp, color = colors.onBackground) }
                 }
 
-                if (install != null && (!install.isInstalled() || install.platform == "android")) {
+                    if (page == "app" && install != null && (!install.isInstalled() || install.platform == "android")) {
                     var showIosGuide by remember { mutableStateOf(false) }
                     var showAndroidInstall by remember { mutableStateOf(false) }
                     Text("Appli", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
@@ -762,11 +787,18 @@ fun SurfPreferencesDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                }
 
-                Button(
-                    onClick = {
-                        val newConfig = ForecastEngineConfig(
+                if (page == null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    DonationButton(modifier = Modifier.fillMaxWidth())
+                }
+                if (page == "forecast") {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = {
+                            val newConfig = ForecastEngineConfig(
                             shortTermWeather = weatherModelFromLabel(shortTermWind),
                             shortTermWave = waveModelFromLabel(shortTermWave),
                             longTermWeather = weatherModelFromLabel(longTermWind),
@@ -780,7 +812,8 @@ fun SurfPreferencesDialog(
                     shape = pillShape,
                     colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                 ) {
-                    Text("Enregistrer et fermer", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Appliquer et fermer", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
                 }
             }
         }
@@ -839,3 +872,32 @@ private fun waveModelLabel(model: WaveModel): String = when (model) {
 
 private fun waveModelFromLabel(label: String): WaveModel =
     if (label == "ECMWF Wave") WaveModel.ECMWF_WAM else WaveModel.MFWAM
+
+
+@Composable
+private fun PrefMenuRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.surfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(colors.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) { Text(icon, fontSize = 18.sp) }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+            Text(subtitle, fontSize = 11.sp, color = colors.onSurfaceVariant)
+        }
+        Text("›", fontSize = 22.sp, color = colors.onSurfaceVariant)
+    }
+}
