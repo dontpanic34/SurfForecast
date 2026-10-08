@@ -80,7 +80,7 @@ private val guideSections = listOf(
     GuideSection(
         "📡 D'où viennent les données",
         "Prévisions de houle et de vent : Open-Meteo.com (licence CC BY 4.0), à partir des modèles Météo-France (AROME, ARPEGE, MFWAM) " +
-            "et ECMWF. Marées et coefficients en France : api-maree.fr (données SHOM). Hors de France : estimation Open-Meteo."
+            "et ECMWF. Marées et coefficients en France : api-maree.fr, à partir des composantes harmoniques Ifremer / PREVIMER (licence CC BY 4.0) ; ce sont des prévisions calculées, à vérifier avant de partir. Hors de France : estimation Open-Meteo. Température de la mer : Open-Meteo Marine."
     )
 )
 
