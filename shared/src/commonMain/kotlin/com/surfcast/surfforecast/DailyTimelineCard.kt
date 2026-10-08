@@ -153,7 +153,7 @@ fun DailyTimelineCard(
             if (timelineItems.isEmpty()) {
                 Text(
                     text = "Pas de données diurnes disponibles pour cette sélection.",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = onSurfaceColor.copy(alpha = 0.5f),
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
@@ -219,14 +219,14 @@ fun DailyTimelineCard(
                             }
                             Text(
                                 text = dirFr,
-                                fontSize = 8.sp,
+                                fontSize = 9.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = arrowColor,
                                 maxLines = 1
                             )
                             Text(
                                 text = SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit),
-                                fontSize = 8.5.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = arrowColor,
                                 maxLines = 1
@@ -270,7 +270,7 @@ fun DailyTimelineCard(
                             Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = label,
-                                fontSize = 8.5.sp,
+                                fontSize = 10.sp,
                                 color = onSurfaceColor.copy(alpha = 0.55f),
                                 maxLines = 1
                             )
@@ -300,7 +300,7 @@ fun DailyTimelineCard(
                                     )
                                     Text(
                                         text = sun.sunrise.formatHHmm(),
-                                        fontSize = 9.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onSurfaceColor.copy(alpha = 0.6f),
                                         maxLines = 1
@@ -314,7 +314,7 @@ fun DailyTimelineCard(
                                     )
                                     Text(
                                         text = sun.sunset.formatHHmm(),
-                                        fontSize = 9.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onSurfaceColor.copy(alpha = 0.6f),
                                         maxLines = 1
@@ -323,7 +323,7 @@ fun DailyTimelineCard(
                                 else -> {
                                     Text(
                                         text = "${hourly.rawTime.hour.toString().padStart(2, '0')}h",
-                                        fontSize = 9.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                         color = if (isSelected) primaryColor else onSurfaceColor.copy(alpha = 0.5f),
                                         maxLines = 1,
@@ -431,7 +431,7 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = highTime,
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor,
                 maxLines = 1
@@ -467,7 +467,7 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = lowTime,
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor,
                 maxLines = 1
@@ -485,7 +485,7 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
 
             Text(
                 text = "$coef",
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor.copy(alpha = 0.75f),
                 maxLines = 1
@@ -536,8 +536,8 @@ private fun DailyTimelineSwellCanvas(
     val primaryColor = MaterialTheme.colorScheme.primary
     // Remplace les Paint Android (non multiplateformes) : mêmes tailles, graisses et alignements.
     val textMeasurer = rememberTextMeasurer()
-    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 9.sp, fontWeight = FontWeight.Normal)
-    val periodTextStyle = TextStyle(color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
+    val periodTextStyle = TextStyle(color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
 
     Canvas(modifier = modifier) {
         val w = size.width

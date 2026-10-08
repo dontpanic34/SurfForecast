@@ -55,7 +55,7 @@ fun IosInstallGuideDialog(onDismiss: () -> Unit) {
                 }
                 Text(
                     "Astuce : à faire depuis Safari, avec le site ouvert (pas depuis une application qui l'ouvre en fenêtre intégrée).",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                 )
             }

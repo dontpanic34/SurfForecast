@@ -72,21 +72,84 @@ private const val AROME_HD_MODEL = "meteofrance_arome_france_hd"
 /** Source du vent quand aucun modèle n'a de valeur pour cette heure (vent affiché : 0). */
 const val WIND_SOURCE_MISSING = "manquant"
 
-class SurfRepository(private val httpClient: HttpClient) {
+class SurfRepository(
+    private val httpClient: HttpClient,
+    // Cache hors réseau (navigateur) : la dernière réponse de chaque appel sert de repli quand le réseau
+    // ou l'API tombe. null = pas de cache (tests, Android qui a le sien).
+    private val cache: KeyValueStore? = null
+) {
 
     constructor() : this(defaultHttpClient())
+
+    /** Date (ms) de la plus ancienne réponse servie depuis le cache depuis le dernier [resetStale] ; null = tout est frais. */
+    var staleSinceMillis: Long? = null
+        private set
+
+    fun resetStale() {
+        staleSinceMillis = null
+    }
+
+    private fun cacheKey(url: String) = "hc_" + url.hashCode().toUInt().toString(16)
+
+    private fun markStale(savedAt: Long) {
+        val current = staleSinceMillis
+        if (current == null || savedAt < current) staleSinceMillis = savedAt
+    }
+
+    private fun readCached(url: String): Pair<Long, String>? {
+        val raw = cache?.getString(cacheKey(url), null) ?: return null
+        val sep = raw.indexOf('\n')
+        if (sep <= 0) return null
+        val savedAt = raw.substring(0, sep).toLongOrNull() ?: return null
+        return savedAt to raw.substring(sep + 1)
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private fun writeCached(url: String, text: String) {
+        val store = cache ?: return
+        if (text.length > 400_000) return
+        try {
+            val key = cacheKey(url)
+            val index = (store.getString("hc_index", "") ?: "").split(',').filter { it.isNotEmpty() && it != key }.toMutableList()
+            index.add(key)
+            // 20 réponses au plus (quelques spots) : le stockage du navigateur est limité (~5 Mo).
+            while (index.size > 20) store.remove(index.removeAt(0))
+            store.putString(key, "${Clock.System.now().toEpochMilliseconds()}\n$text")
+            store.putString("hc_index", index.joinToString(","))
+        } catch (e: Exception) {
+            // Stockage plein ou refusé : le cache est un confort, pas une obligation.
+        }
+    }
+
+    /** Texte d'une réponse : réseau d'abord, sinon dernière réponse en cache (marquée périmée). */
+    private suspend fun getTextWithFallback(url: String, fetch: suspend () -> String): String {
+        return try {
+            val text = fetch()
+            writeCached(url, text)
+            text
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            val cached = readCached(url) ?: throw e
+            markStale(cached.first)
+            cached.second
+        }
+    }
 
     private val apiMareeToken = "0093ca14ffeffadcf739be7cc77f4738"
 
     private suspend fun httpGet(url: String): JsonObject {
-        val response = httpClient.get(url)
-        val text = response.bodyAsText()
-        val code = response.status.value
-        if (code !in 200..299) {
-            val reason = runCatching {
-                Json.parseToJsonElement(text).jsonObject["reason"]?.jsonPrimitive?.contentOrNull
-            }.getOrNull() ?: text
-            throw IllegalStateException("API Open-Meteo ($code): $reason")
+        val text = getTextWithFallback(url) {
+            val response = httpClient.get(url)
+            val body = response.bodyAsText()
+            val code = response.status.value
+            if (code !in 200..299) {
+                val reason = runCatching {
+                    Json.parseToJsonElement(body).jsonObject["reason"]?.jsonPrimitive?.contentOrNull
+                }.getOrNull() ?: body
+                throw IllegalStateException("API Open-Meteo ($code): $reason")
+            }
+            body
         }
         return Json.parseToJsonElement(text).jsonObject
     }
@@ -108,6 +171,7 @@ class SurfRepository(private val httpClient: HttpClient) {
         val weatherCodes: List<Int>,
         val windSpeeds: List<Double>,
         val windDirections: List<Double>,
+        val windGusts: List<Double>,
         val cloudCovers: List<Int>,
         val apparentTemperatures: List<Double>,
         val sunriseByDate: Map<LocalDate, LocalTime>,
@@ -202,7 +266,7 @@ class SurfRepository(private val httpClient: HttpClient) {
 
         val url = "https://api.open-meteo.com/v1/forecast?" +
             "latitude=$lat&longitude=$lon" +
-            "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,cloudcover,apparent_temperature" +
+            "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover,apparent_temperature" +
             modelParam +
             dailyParam +
             "&forecast_days=$safeDays" +
@@ -224,6 +288,7 @@ class SurfRepository(private val httpClient: HttpClient) {
         val codeArr = getArray("weather_code")
         val windSpeedArr = getArray("wind_speed_10m")
         val windDirArr = getArray("wind_direction_10m")
+        val windGustArr = getArray("wind_gusts_10m")
         val cloudArr = getArray("cloudcover")
         val apparentArr = getArray("apparent_temperature")
 
@@ -232,6 +297,7 @@ class SurfRepository(private val httpClient: HttpClient) {
         val codes = mutableListOf<Int>()
         val windSpeeds = mutableListOf<Double>()
         val windDirs = mutableListOf<Double>()
+        val windGusts = mutableListOf<Double>()
         val clouds = mutableListOf<Int>()
         val apparentTemps = mutableListOf<Double>()
 
@@ -244,6 +310,7 @@ class SurfRepository(private val httpClient: HttpClient) {
             // un vent (ancien défaut : 10 km/h de Nord).
             windSpeeds.add(windSpeedArr.doubleAt(i) ?: Double.NaN)
             windDirs.add(windDirArr.doubleAt(i) ?: Double.NaN)
+            windGusts.add(windGustArr.doubleAt(i) ?: Double.NaN)
             clouds.add(cloudArr.doubleAt(i)?.toInt() ?: 0)
             // Repli sur la température de l'air si le ressenti manque pour cette heure.
             apparentTemps.add(apparentArr.doubleAt(i) ?: temp)
@@ -271,7 +338,7 @@ class SurfRepository(private val httpClient: HttpClient) {
             }
         }
 
-        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, clouds, apparentTemps, sunriseByDate, sunsetByDate)
+        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, windGusts, clouds, apparentTemps, sunriseByDate, sunsetByDate)
     }
 
     /**
@@ -372,6 +439,15 @@ class SurfRepository(private val httpClient: HttpClient) {
                 val primaryDir = wData.windDirections.getOrElse(wIndex) { Double.NaN }
                 val longSpeed = longIndex?.let { longWeather.windSpeeds.getOrElse(it) { Double.NaN } } ?: Double.NaN
                 val longDir = longIndex?.let { longWeather.windDirections.getOrElse(it) { Double.NaN } } ?: Double.NaN
+                // Rafales : celles du modèle météo de l'heure, sinon du long terme ; jamais
+                // inférieures au vent moyen affiché.
+                val primaryGust = wData.windGusts.getOrElse(wIndex) { Double.NaN }
+                val longGust = longIndex?.let { longWeather.windGusts.getOrElse(it) { Double.NaN } } ?: Double.NaN
+                val gustRaw = when {
+                    !primaryGust.isNaN() -> primaryGust
+                    !longGust.isNaN() -> longGust
+                    else -> Double.NaN
+                }
                 val (windSpeedRaw, windDirDeg, windSource) = when {
                     hd != null -> Triple(hd.first, hd.second, "AROME HD")
                     !primarySpeed.isNaN() && !primaryDir.isNaN() -> Triple(
@@ -395,6 +471,7 @@ class SurfRepository(private val httpClient: HttpClient) {
                         windWaveDirection = mData.windWaveDirections.getOrElse(mIndex) { 0f },
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
+                        windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),
                         windDirectionStr = getCardinalDirection(windDirDeg),
                         windSource = windSource,
                         weatherCode = wData.weatherCodes.getOrElse(wIndex) { 0 },

@@ -46,7 +46,7 @@ fun MicroSpotSheetDialog(
             Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     "Dis quand ce banc marche : l'appli te prévient quand les prévisions collent.",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
                 )
                 Text("Marée", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -94,7 +94,7 @@ fun MicroSpotSheetDialog(
                     )
                 }
                 if (rangeInvalid) {
-                    Text("Le mini doit être inférieur au maxi.", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                    Text("Le mini doit être inférieur au maxi.", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
                 }
                 OutlinedTextField(
                     value = notes,

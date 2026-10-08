@@ -51,7 +51,7 @@ data class DailySummaryUiModel(
 class SurfController(
     private val scope: CoroutineScope,
     private val prefs: KeyValueStore,
-    private val repository: SurfRepository = SurfRepository(),
+    private val repository: SurfRepository = SurfRepository(defaultHttpClient(), prefs),
     private val onForecastLoaded: (SurfUiState.Success, SurfRepository.TidesBundle) -> Unit = { _, _ -> },
     // Journal de bord (Room sur mobile, JSON dans le navigateur) : null = pas de stockage (tests).
     private val sessionLogStore: SessionLogStore? = null
@@ -66,6 +66,32 @@ class SurfController(
 
     val allSessions: StateFlow<List<SurfSessionWithRelations>> = (sessionLogStore?.getAllSessions() ?: flowOf(emptyList()))
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Orientation des plages corrigée par l'utilisateur (Paramètres > Prévisions) : spot -> degrés.
+    private val facingOverrides = mutableStateMapOf<String, Int>().also { map ->
+        SurfDatabase.getAllSpots().forEach { spot ->
+            val key = facingKey(spot.name)
+            if (prefs.contains(key)) map[spot.name] = prefs.getInt(key, 270)
+        }
+    }
+
+    private fun facingKey(spotName: String) = "spot_facing_$spotName"
+
+    fun defaultFacingFor(spotName: String): Int? = SurfDatabase.findSpotByName(spotName)?.idealSwellDirection
+
+    /** Orientation utilisée pour le score : celle de l'utilisateur, sinon celle du catalogue. */
+    fun facingFor(spotName: String): Int? = facingOverrides[spotName] ?: defaultFacingFor(spotName)
+
+    /** [degrees] null = revenir à la valeur par défaut du catalogue. */
+    fun setFacing(spotName: String, degrees: Int?) {
+        if (degrees == null) {
+            facingOverrides.remove(spotName)
+            prefs.remove(facingKey(spotName))
+        } else {
+            facingOverrides[spotName] = degrees
+            prefs.putInt(facingKey(spotName), degrees)
+        }
+    }
 
     fun microSpotsFor(spotName: String): Flow<List<MicroSpot>> =
         sessionLogStore?.getMicroSpotsForSpot(spotName) ?: flowOf(emptyList())
@@ -331,9 +357,15 @@ class SurfController(
         }
     }
 
+    /** Non null = pas de réseau : les prévisions affichées datent de ce moment (ms). */
+    var offlineSinceMillis by mutableStateOf<Long?>(null)
+        private set
+
     private suspend fun loadSpotInternal(spot: SurfSpotItem) {
         try {
+            repository.resetStale()
             val forecastResult = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig)
+            offlineSinceMillis = repository.staleSinceMillis
             val forecast = forecastResult.hourly
             val grouped = forecast.groupBy { it.rawTime.date }
 

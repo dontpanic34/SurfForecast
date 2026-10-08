@@ -16,7 +16,9 @@ class SurfScoringTest {
         period: Double = 10.0,
         waveDir: Float = 270f,
         windKmh: Int = 5,
-        windDir: String = "E"
+        windDir: String = "E",
+        gustKmh: Int = windKmh,
+        chop: Double = 0.0
     ) = HourlyUiModel(
         timeFormatted = formatHour(LocalDateTime(2026, 1, 1, h, 0)),
         rawTime = LocalDateTime(2026, 1, 1, h, 0),
@@ -27,7 +29,9 @@ class SurfScoringTest {
         windSpeedKmh = windKmh,
         windDirectionStr = windDir,
         weatherCode = 0,
-        temperature = 18
+        temperature = 18,
+        windWaveHeight = chop,
+        windGustKmh = gustKmh
     )
 
     @Test
@@ -79,5 +83,66 @@ class SurfScoringTest {
         assertEquals("red", scoreToColorCategory(29))
         assertEquals("orange", scoreToColorCategory(60))
         assertEquals("green", scoreToColorCategory(61))
+    }
+
+    // --- Orientation de la plage, rafales, clapot ---
+
+    @Test
+    fun windCategoryFollowsTheBeachOrientation() {
+        // Plage plein ouest (275) : vent d'est = offshore, vent d'ouest = onshore, nord = travers.
+        assertEquals("offshore", windCategoryFromDegrees(90f, 275))
+        assertEquals("onshore", windCategoryFromDegrees(270f, 275))
+        assertEquals("cross", windCategoryFromDegrees(0f, 275))
+        // Côte nord de l'Espagne (350) : le vent de sud est offshore, celui du nord onshore.
+        assertEquals("offshore", windCategoryFromDegrees(170f, 350))
+        assertEquals("onshore", windCategoryFromDegrees(350f, 350))
+        // Sans orientation : ancienne règle (plein ouest).
+        assertEquals("offshore", windCategoryFromDegrees(90f))
+        assertEquals("onshore", windCategoryFromDegrees(270f))
+    }
+
+    @Test
+    fun sameSouthWindIsOffshoreOnANorthFacingBeachAndOnshoreOnASouthFacingOne() {
+        val southWind = hour(10, windKmh = 12, windDir = "S")
+        val north = calculateSlotScore(southWind, 350, "intermediate", false)
+        val south = calculateSlotScore(southWind, 195, "intermediate", false)
+        assertTrue(north > south, "offshore ($north) doit battre onshore ($south)")
+    }
+
+    @Test
+    fun swellComingFromTheSideScoresLowerThanHeadOn() {
+        val headOn = calculateSlotScore(hour(10, waveDir = 275f), 275, "intermediate", false)
+        val oblique = calculateSlotScore(hour(10, waveDir = 330f), 275, "intermediate", false)
+        val blocked = calculateSlotScore(hour(10, waveDir = 5f), 275, "intermediate", false)
+        assertTrue(headOn > oblique, "de face ($headOn) > de travers ($oblique)")
+        assertTrue(oblique > blocked, "de travers ($oblique) > bloquée ($blocked)")
+        assertEquals(0, blocked)
+    }
+
+    @Test
+    fun gustsLowerTheScoreOfOtherwiseIdenticalHours() {
+        val calm = calculateSlotScore(hour(10, windKmh = 12, windDir = "E"), 275, "intermediate", false)
+        val gusty = calculateSlotScore(hour(10, windKmh = 12, windDir = "E", gustKmh = 40), 275, "intermediate", false)
+        assertTrue(gusty < calm, "rafales ($gusty) < calme ($calm)")
+        assertEquals(12.0 + 0.5 * (40 - 12), effectiveWindKmh(hour(10, windKmh = 12, gustKmh = 40)))
+    }
+
+    @Test
+    fun chopLowersTheScoreProgressively() {
+        assertEquals(1.0, chopFactor(1.0, 0.2))
+        val some = chopFactor(1.2, 0.6)
+        val lots = chopFactor(1.2, 1.2)
+        assertTrue(some in 0.7..0.9, "clapot modéré : $some")
+        assertTrue(lots < some && lots >= 0.4, "gros clapot : $lots")
+        val clean = calculateSlotScore(hour(10), 275, "intermediate", false)
+        val choppy = calculateSlotScore(hour(10, chop = 0.8), 275, "intermediate", false)
+        assertTrue(choppy < clean)
+    }
+
+    @Test
+    fun everySpotHasAnOrientation() {
+        val missing = SurfDatabase.getAllSpots().filter { it.idealSwellDirection == null }.map { it.name }
+        assertTrue(missing.isEmpty(), "spots sans orientation : $missing")
+        assertTrue(SurfDatabase.getAllSpots().all { it.idealSwellDirection in 0..359 })
     }
 }

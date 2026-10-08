@@ -78,7 +78,7 @@ fun NearbySpotsRow(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = spot.name,
-                        fontSize = 10.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                         color = if (isActive) AppColors.WindMid else colors.onBackground,
                         maxLines = 1

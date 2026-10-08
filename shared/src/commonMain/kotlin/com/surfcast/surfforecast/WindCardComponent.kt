@@ -44,7 +44,7 @@ fun WindCardComponent(
 
     // Remplace le Paint Android (non multiplateforme) : même taille, même graisse.
     val textMeasurer = rememberTextMeasurer()
-    val timeTextPaint = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+    val timeTextPaint = TextStyle(color = onSurfaceColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
     val dirFr = SurfUnitsHelper.formatCardinalFr(selectedHour.windDirectionStr)
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)

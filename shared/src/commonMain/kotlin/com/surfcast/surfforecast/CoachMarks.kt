@@ -109,7 +109,7 @@ fun CoachMarkOverlay(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${index.coerceIn(0, visible.lastIndex) + 1}/${visible.size}",
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                     )
                     Spacer(modifier = Modifier.weight(1f))

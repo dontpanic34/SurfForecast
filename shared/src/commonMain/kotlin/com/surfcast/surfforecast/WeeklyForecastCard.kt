@@ -136,7 +136,7 @@ fun WeeklyForecastCard(
                     ) {
                         Text(
                             text = dayLabel,
-                            fontSize = 9.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isSelected) primaryColor else onSurfaceColor,
                             maxLines = 1
@@ -341,15 +341,15 @@ fun ContinuousWaveCanvas(
     val isDarkTheme = isDarkSurfaceTheme()
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
 
-    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
     // Etiquette neutre (pas de code couleur impose) : suit onSurface, lisible nativement
     // dans les deux themes sans besoin de chip.
-    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
 
-    val feelsTextPaint = TextStyle(color = AppColors.WindAccent, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+    val feelsTextPaint = TextStyle(color = AppColors.WindAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
-    val waterTextPaint = TextStyle(color = tideLineColor, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+    val waterTextPaint = TextStyle(color = tideLineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -530,7 +530,7 @@ private fun energyTextPaint(energyKj: Int): TextStyle {
         energyKj >= 150 -> Color(0xFFFB8C00)
         else -> Color(0xFF78909C)
     }
-    return TextStyle(color = color, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+    return TextStyle(color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 }
 
 @Composable

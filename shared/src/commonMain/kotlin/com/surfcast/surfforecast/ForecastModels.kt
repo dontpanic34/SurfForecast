@@ -26,7 +26,9 @@ data class HourlyUiModel(
     val feelsLike: Int = temperature,
     // Modèle d'où vient le vent de cette heure ("AROME HD", "AROME", "ECMWF_IFS"...,
     // ou WIND_SOURCE_MISSING) : sert au journal des prévisions. Vide = inconnu.
-    val windSource: String = ""
+    val windSource: String = "",
+    // Rafales (km/h) : par défaut égales au vent moyen quand la source n'en donne pas.
+    val windGustKmh: Int = windSpeedKmh
 )
 
 data class DailyTideInfo(

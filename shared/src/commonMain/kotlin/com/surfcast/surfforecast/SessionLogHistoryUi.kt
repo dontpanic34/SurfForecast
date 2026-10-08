@@ -123,7 +123,7 @@ fun SessionLogHistoryScreen(
                         listOf("L", "M", "M", "J", "V", "S", "D").forEach { label ->
                             Text(
                                 text = label,
-                                fontSize = 10.sp,
+                                fontSize = 11.5.sp,
                                 color = colors.onBackground.copy(alpha = 0.5f),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 modifier = Modifier.weight(1f)
@@ -253,12 +253,12 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Planche : ${session.quiverBoard.model}",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = colors.onSurface.copy(alpha = 0.7f)
             )
             Text(
                 text = "Conditions : ${session.condition.energyKj} kJ · vent ${session.condition.windSpeedKmh} km/h · houle ${session.condition.waveHeight}m/${session.condition.wavePeriod}s",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = colors.onSurface.copy(alpha = 0.7f)
             )
 

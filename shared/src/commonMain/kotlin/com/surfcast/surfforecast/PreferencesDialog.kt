@@ -60,6 +60,11 @@ fun SurfPreferencesDialog(
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
     onShowIntro: (() -> Unit)? = null,
     onShowTour: (() -> Unit)? = null,
+    // Orientation du spot affiché (null = pas de spot chargé : la carte est masquée).
+    spotName: String = "",
+    beachFacing: Int? = null,
+    defaultBeachFacing: Int? = null,
+    onBeachFacingChanged: ((Int?) -> Unit)? = null,
     // Sauvegarde / restauration du journal (version web seulement).
     backup: SessionLogBackup? = null,
     // Installation du site comme appli (version web seulement).
@@ -191,7 +196,7 @@ fun SurfPreferencesDialog(
                                 Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                     Text(
                                         text = tab,
-                                        fontSize = 11.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
                                     )
@@ -257,8 +262,8 @@ fun SurfPreferencesDialog(
                             color = colors.onBackground
                         )
                     } else {
-                        TextButton(onClick = { page = null }) {
-                            Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
+                        TextButton(onClick = { page = if (page == "guide") "help" else null }) {
+                            Text(if (page == "guide") "‹ Aide" else "‹ Paramètres", fontSize = 13.sp, color = colors.primary)
                         }
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
@@ -276,6 +281,7 @@ fun SurfPreferencesDialog(
                             "forecast" -> "Prévisions"
                             "journal" -> "Journal de bord"
                             "app" -> "Appli"
+                            "guide" -> "Comprendre les prévisions"
                             else -> "Aide"
                         },
                         fontSize = 19.sp,
@@ -302,7 +308,7 @@ fun SurfPreferencesDialog(
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
                         if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
-                        if (onShowTour != null || onShowIntro != null) PrefMenuRow("💡", "Aide", "Visite guidée, introduction") { page = "help" }
+                        PrefMenuRow("💡", "Aide", "Comprendre les prévisions, visite guidée") { page = "help" }
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {
@@ -315,7 +321,7 @@ fun SurfPreferencesDialog(
                             )
                             Text(
                                 text = "Choisissez les encarts affichés sur l'écran principal.",
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 color = colors.onSurfaceVariant
                             )
 
@@ -360,7 +366,7 @@ fun SurfPreferencesDialog(
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = label,
-                                                    fontSize = 10.sp,
+                                                    fontSize = 11.5.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
                                                     maxLines = 1
@@ -388,13 +394,13 @@ fun SurfPreferencesDialog(
                                     ) {
                                         Text(
                                             text = "Icônes par jour",
-                                            fontSize = 11.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = colors.onSurfaceVariant
                                         )
                                         Text(
                                             text = "Combien d'icônes météo et vent par jour (1 = léger, 3 = détaillé)",
-                                            fontSize = 10.sp,
+                                            fontSize = 11.5.sp,
                                             color = colors.onSurfaceVariant.copy(alpha = 0.8f)
                                         )
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -410,7 +416,7 @@ fun SurfPreferencesDialog(
                                                     Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                         Text(
                                                             text = d.toString(),
-                                                            fontSize = 11.sp,
+                                                            fontSize = 12.sp,
                                                             fontWeight = FontWeight.Bold,
                                                             color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
                                                         )
@@ -423,7 +429,7 @@ fun SurfPreferencesDialog(
 
                                         Text(
                                             text = "Indicateurs vent",
-                                            fontSize = 11.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = colors.onSurfaceVariant
                                         )
@@ -440,7 +446,7 @@ fun SurfPreferencesDialog(
                                                     Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                         Text(
                                                             text = label,
-                                                            fontSize = 9.5.sp,
+                                                            fontSize = 11.sp,
                                                             fontWeight = FontWeight.Bold,
                                                             color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
                                                             maxLines = 1
@@ -502,9 +508,18 @@ fun SurfPreferencesDialog(
                                 shape = pillShape,
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
                             ) {
-                                Text(text = "Épingler le Widget d'accueil", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "Épingler le Widget d'accueil", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                         }
+                    }
+
+                    if (page == "forecast" && onBeachFacingChanged != null && spotName.isNotEmpty()) {
+                        BeachFacingCard(
+                            spotName = spotName,
+                            facing = beachFacing,
+                            defaultFacing = defaultBeachFacing,
+                            onChange = onBeachFacingChanged
+                        )
                     }
 
                     if (page == "forecast") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -527,10 +542,10 @@ fun SurfPreferencesDialog(
                                 }
                             }
 
-                            Text(text = "⚡ Court terme (J+0 / J+1)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                            Text(text = "⚡ Court terme (J+0 / J+1)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
 
                             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(text = "Vent :", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
+                                Text(text = "Vent :", fontSize = 12.sp, color = colors.onSurfaceVariant)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -547,7 +562,7 @@ fun SurfPreferencesDialog(
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = model,
-                                                    fontSize = 11.sp,
+                                                    fontSize = 12.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
                                                 )
@@ -558,7 +573,7 @@ fun SurfPreferencesDialog(
                             }
 
                             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(text = "Vagues :", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
+                                Text(text = "Vagues :", fontSize = 12.sp, color = colors.onSurfaceVariant)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -575,7 +590,7 @@ fun SurfPreferencesDialog(
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = model,
-                                                    fontSize = 11.sp,
+                                                    fontSize = 12.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
                                                 )
@@ -587,10 +602,10 @@ fun SurfPreferencesDialog(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            Text(text = "📅 Long terme (J+2 / J+7)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                            Text(text = "📅 Long terme (J+2 / J+7)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
 
                             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(text = "Vent :", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
+                                Text(text = "Vent :", fontSize = 12.sp, color = colors.onSurfaceVariant)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -607,7 +622,7 @@ fun SurfPreferencesDialog(
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = model,
-                                                    fontSize = 11.sp,
+                                                    fontSize = 12.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
                                                 )
@@ -618,7 +633,7 @@ fun SurfPreferencesDialog(
                             }
 
                             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(text = "Vagues :", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
+                                Text(text = "Vagues :", fontSize = 12.sp, color = colors.onSurfaceVariant)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -635,7 +650,7 @@ fun SurfPreferencesDialog(
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Text(
                                                     text = model,
-                                                    fontSize = 11.sp,
+                                                    fontSize = 12.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
                                                 )
@@ -653,32 +668,36 @@ fun SurfPreferencesDialog(
                                 shape = pillShape,
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
                             ) {
-                                Text("Voir les logs d'actualisation", fontSize = 11.5.sp, color = colors.onBackground)
+                                Text("Voir les logs d'actualisation", fontSize = 12.sp, color = colors.onBackground)
                             }
                         }
                     }
+                    if (page == "help") {
+                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
+                    }
+                    if (page == "guide") ForecastGuideContent()
                     if (page == "help" && onShowTour != null) {
                     TextButton(onClick = onShowTour, modifier = Modifier.fillMaxWidth()) {
-                        Text("🧭 Revoir la visite guidée de l'écran", fontSize = 11.5.sp)
+                        Text("🧭 Revoir la visite guidée de l'écran", fontSize = 12.sp)
                     }
                 }
 
                     if (page == "help" && onShowIntro != null) {
                     TextButton(onClick = onShowIntro, modifier = Modifier.fillMaxWidth()) {
-                        Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 11.5.sp)
+                        Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 12.sp)
                     }
                 }
 
                     if (page == "journal" && backup != null) {
                     var importMessage by remember { mutableStateOf<String?>(null) }
-                    Text("Journal de bord", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
+                    Text("Journal de bord", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { backup.export() },
                             modifier = Modifier.weight(1f),
                             shape = pillShape,
                             colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
-                        ) { Text("⬇ Sauvegarder", fontSize = 11.5.sp, color = colors.onBackground) }
+                        ) { Text("⬇ Sauvegarder", fontSize = 12.sp, color = colors.onBackground) }
                         Button(
                             onClick = {
                                 backup.import { ok ->
@@ -688,15 +707,15 @@ fun SurfPreferencesDialog(
                             modifier = Modifier.weight(1f),
                             shape = pillShape,
                             colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
-                        ) { Text("⬆ Restaurer", fontSize = 11.5.sp, color = colors.onBackground) }
+                        ) { Text("⬆ Restaurer", fontSize = 12.sp, color = colors.onBackground) }
                     }
-                    importMessage?.let { Text(it, fontSize = 11.sp, color = colors.onBackground) }
+                    importMessage?.let { Text(it, fontSize = 12.sp, color = colors.onBackground) }
                 }
 
                     if (page == "app" && install != null && (!install.isInstalled() || install.platform == "android")) {
                     var showIosGuide by remember { mutableStateOf(false) }
                     var showAndroidInstall by remember { mutableStateOf(false) }
-                    Text("Appli", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
+                    Text("Appli", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
                     when (install.platform) {
                         "android" -> {
                             Button(
@@ -704,7 +723,7 @@ fun SurfPreferencesDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = pillShape,
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
-                            ) { Text("📲 Installer l'appli", fontSize = 11.5.sp, color = colors.onBackground) }
+                            ) { Text("📲 Installer l'appli", fontSize = 12.sp, color = colors.onBackground) }
                         }
                         "ios" -> {
                             Button(
@@ -712,7 +731,7 @@ fun SurfPreferencesDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = pillShape,
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
-                            ) { Text("📲 Ajouter à l'écran d'accueil", fontSize = 11.5.sp, color = colors.onBackground) }
+                            ) { Text("📲 Ajouter à l'écran d'accueil", fontSize = 12.sp, color = colors.onBackground) }
                         }
                     }
                     if (showIosGuide) IosInstallGuideDialog(onDismiss = { showIosGuide = false })
@@ -735,11 +754,11 @@ fun SurfPreferencesDialog(
                                     .padding(12.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text("Recommandé sur Android", fontSize = 11.sp, color = colors.primary)
+                                Text("Recommandé sur Android", fontSize = 12.sp, color = colors.primary)
                                 Text("Télécharger l'appli (APK)", fontSize = 13.sp, color = colors.onBackground)
                                 Text(
                                     "Plus complète que le site : photos et vidéos dans le journal de bord, et un widget pour l'écran d'accueil.",
-                                    fontSize = 10.5.sp,
+                                    fontSize = 12.sp,
                                     color = colors.onBackground.copy(alpha = 0.75f)
                                 )
                                 Image(
@@ -750,7 +769,7 @@ fun SurfPreferencesDialog(
                                 )
                                 Text(
                                     "Le widget affiche la marée, la houle et le vent, et prévient quand le vent forcit ou tourne.",
-                                    fontSize = 10.5.sp,
+                                    fontSize = 12.sp,
                                     color = colors.onBackground.copy(alpha = 0.75f)
                                 )
                                 Button(
@@ -758,26 +777,26 @@ fun SurfPreferencesDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = pillShape,
                                     colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
-                                ) { Text("⬇ Télécharger l'APK", fontSize = 11.5.sp, color = colors.onPrimary) }
+                                ) { Text("⬇ Télécharger l'APK", fontSize = 12.sp, color = colors.onPrimary) }
                                 Text(
                                     "Android demandera d'autoriser l'installation depuis le navigateur. Le journal du site et celui de l'appli sont séparés : sauvegarde puis restaure pour transférer.",
-                                    fontSize = 10.sp,
+                                    fontSize = 11.5.sp,
                                     color = colors.onBackground.copy(alpha = 0.6f)
                                 )
                             }
 
-                                    if (!install.isInstalled()) Text("Ou garder uniquement le site, sans télécharger :", fontSize = 10.5.sp, color = colors.onBackground.copy(alpha = 0.6f))
+                                    if (!install.isInstalled()) Text("Ou garder uniquement le site, sans télécharger :", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.6f))
                                     if (!install.isInstalled()) Button(
                                 onClick = { install.prompt() },
                                 enabled = install.canPrompt(),
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = pillShape,
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
-                                    ) { Text("Ajouter le raccourci du site", fontSize = 11.5.sp, color = colors.onBackground) }
+                                    ) { Text("Ajouter le raccourci du site", fontSize = 12.sp, color = colors.onBackground) }
                                     if (!install.isInstalled() && !install.canPrompt()) {
                                 Text(
                                     "Si le bouton est grisé : menu ⋮ de Chrome → « Installer l'application » (ou « Ajouter à l'écran d'accueil »).",
-                                    fontSize = 10.5.sp,
+                                    fontSize = 12.sp,
                                     color = colors.onBackground.copy(alpha = 0.6f)
                                 )
                             }
@@ -848,7 +867,7 @@ fun ModelDescItem(name: String, desc: String) {
     val colors = MaterialTheme.colorScheme
     Column(modifier = Modifier.padding(bottom = 6.dp)) {
         Text(text = "• $name", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        Text(text = desc, fontSize = 11.5.sp, color = colors.onSurfaceVariant, lineHeight = 15.sp, modifier = Modifier.padding(start = 10.dp))
+        Text(text = desc, fontSize = 12.sp, color = colors.onSurfaceVariant, lineHeight = 15.sp, modifier = Modifier.padding(start = 10.dp))
     }
 }
 
@@ -896,7 +915,7 @@ private fun PrefMenuRow(icon: String, title: String, subtitle: String, onClick: 
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
-            Text(subtitle, fontSize = 11.sp, color = colors.onSurfaceVariant)
+            Text(subtitle, fontSize = 12.sp, color = colors.onSurfaceVariant)
         }
         Text("›", fontSize = 22.sp, color = colors.onSurfaceVariant)
     }

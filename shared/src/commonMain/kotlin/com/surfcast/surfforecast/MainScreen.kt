@@ -171,6 +171,10 @@ fun MainScreen(
                 showPreferencesDialog = false
                 viewModel.showOnboardingAgain()
             },
+            spotName = (uiState as? SurfUiState.Success)?.spotName ?: "",
+            beachFacing = (uiState as? SurfUiState.Success)?.spotName?.let { viewModel.facingFor(it) },
+            defaultBeachFacing = (uiState as? SurfUiState.Success)?.spotName?.let { viewModel.defaultFacingFor(it) },
+            onBeachFacingChanged = (uiState as? SurfUiState.Success)?.spotName?.let { name -> { deg: Int? -> viewModel.setFacing(name, deg) } },
             onShowTour = {
                 showPreferencesDialog = false
                 viewModel.showHomeTourAgain()
@@ -285,7 +289,7 @@ fun MainScreen(
 
                 // Point 3 : angle de houle ideal du spot actif (peut etre null si pas encore renseigne)
                 // et meilleur creneau du jour selectionne, pour le bandeau "Statut Flash".
-                val idealSwellDirection = SurfDatabase.findSpotByName(state.spotName)?.idealSwellDirection
+                val idealSwellDirection = viewModel.facingFor(state.spotName)
                 val bestSlot = selectedDate?.let { date ->
                     findBestSlot(
                         dailyHours = daylightHoursFor(date, groupedByDate, state.dailySunInfo),
@@ -401,14 +405,14 @@ fun MainScreen(
                                             Column {
                                                 Text(
                                                     text = "${bestSlotDayPrefix}Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (score ${bestSlot.averageScore})",
-                                                    fontSize = 10.5.sp,
+                                                    fontSize = 12.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = onSurfaceColor.copy(alpha = 0.75f),
                                                     maxLines = 1
                                                 )
                                                 Text(
                                                     text = bestSlot.recap,
-                                                    fontSize = 9.5.sp,
+                                                    fontSize = 11.sp,
                                                     color = onSurfaceColor.copy(alpha = 0.55f),
                                                     maxLines = 1
                                                 )
@@ -438,7 +442,7 @@ fun MainScreen(
                                                         text = "${spot.name} : " +
                                                             windows.joinToString(", ") { "${it.first}h–${it.last + 1}h" } +
                                                             " (${spot.profileSummary()})",
-                                                        fontSize = 10.5.sp,
+                                                        fontSize = 12.sp,
                                                         fontWeight = FontWeight.SemiBold,
                                                         color = onSurfaceColor.copy(alpha = 0.75f),
                                                         maxLines = 2
@@ -470,7 +474,7 @@ fun MainScreen(
                                                 text = "Pattern repéré $matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour}h : " +
                                                     "match ${bestPatternMatch.score}% avec ta session du $refDateFormatted à " +
                                                     "${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model})",
-                                                fontSize = 10.5.sp,
+                                                fontSize = 12.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = onSurfaceColor.copy(alpha = 0.75f),
                                                 maxLines = 2
@@ -652,12 +656,22 @@ fun MainScreen(
                                         )
                                     }
 
+                                    viewModel.offlineSinceMillis?.let { ms ->
+                                        val dt = epochMillisToLocalDateTime(ms)
+                                        Text(
+                                            text = "📴 Pas de réseau : prévisions du ${dt.dayOfMonth}/${dt.monthNumber} à ${dt.hour}h${dt.minute.toString().padStart(2, '0')}",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+
                                     run {
                                         val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime}" else ""
                                         val version = appVersion?.let { "v$it" }.orEmpty()
                                         Text(
                                             text = listOf(updated, version).filter { it.isNotEmpty() }.joinToString(" · "),
-                                            fontSize = 9.sp,
+                                            fontSize = 10.5.sp,
                                             color = onSurfaceColor.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                         )
@@ -821,7 +835,7 @@ fun FavoritesHeaderRow(
             ) {
                 Text(
                     text = spotName ?: "",
-                    fontSize = 9.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else onSurfaceColor,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
@@ -836,7 +850,7 @@ fun FavoritesHeaderRow(
         ) {
             Text(
                 text = "...",
-                fontSize = 9.sp,
+                fontSize = 10.5.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)

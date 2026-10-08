@@ -41,7 +41,7 @@ fun WeatherCardComponent(
 
     // Remplace le Paint Android (non multiplateforme) : même taille, même graisse.
     val textMeasurer = rememberTextMeasurer()
-    val timeTextPaint = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+    val timeTextPaint = TextStyle(color = onSurfaceColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
     Card(
         modifier = modifier

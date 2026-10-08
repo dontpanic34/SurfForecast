@@ -176,13 +176,13 @@ fun QuiverScreen(
                                         text = boardFamilyLabel(board.family) +
                                             (if (board.lengthLitrage.isNotBlank()) " · ${board.lengthLitrage}" else "") +
                                             (if (board.finSetup.isNotBlank()) " · ${board.finSetup}" else ""),
-                                        fontSize = 11.sp,
+                                        fontSize = 12.sp,
                                         color = colors.onSurface.copy(alpha = 0.65f)
                                     )
                                 }
                                 Text(
                                     text = "Supprimer",
-                                    fontSize = 11.sp,
+                                    fontSize = 12.sp,
                                     color = AppColors.WindHigh,
                                     modifier = Modifier
                                         .clip(CircleShape)
