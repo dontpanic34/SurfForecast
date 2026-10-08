@@ -994,30 +994,6 @@ fun DynamicCardsSection(
     }
 
     val orderedKeys = renderableCardKeys()
-                val currentIndex = orderedKeys.indexOf(cardKey)
-
-                if (currentIndex != -1) {
-                    if (dragOffsetY > 0f && currentIndex < orderedKeys.size - 1) {
-                        val nextKey = orderedKeys[currentIndex + 1]
-                        val nextHeight = (itemHeights[nextKey] ?: itemHeights[cardKey] ?: 0).toFloat()
-                        if (nextHeight > 0f && dragOffsetY > nextHeight / 2f) {
-                            viewModel.moveCardDown(cardKey)
-                            dragOffsetY -= nextHeight
-                        }
-                    } else if (dragOffsetY < 0f && currentIndex > 0) {
-                        val prevKey = orderedKeys[currentIndex - 1]
-                        val prevHeight = (itemHeights[prevKey] ?: itemHeights[cardKey] ?: 0).toFloat()
-                        if (prevHeight > 0f && -dragOffsetY > prevHeight / 2f) {
-                            viewModel.moveCardUp(cardKey)
-                            dragOffsetY += prevHeight
-                        }
-                    }
-                }
-            }
-        )
-    }
-
-    val orderedKeys = renderableCardKeys()
 
     Column(modifier = Modifier.fillMaxWidth()) {
         orderedKeys.forEach { cardKey ->

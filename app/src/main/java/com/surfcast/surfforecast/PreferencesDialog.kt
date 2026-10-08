@@ -453,17 +453,15 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    // Bouton d'épinglage du widget d'accueil (Android).
-                    if (onPinWidget != null) {
-                        item {
-                            OutlinedButton(
-                                onClick = onPinWidget,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = pillShape,
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
-                            ) {
-                                Text(text = "Épingler le Widget d'accueil", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                            }
+                    // Bouton d'épinglage du widget d'accueil.
+                    item {
+                        OutlinedButton(
+                            onClick = { SurfOverlayWidgetProvider.pinWidget(context) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = pillShape,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = colors.primary)
+                        ) {
+                            Text(text = "Épingler le Widget d'accueil", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
