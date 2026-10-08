@@ -311,6 +311,9 @@ fun MainScreen(viewModel: SurfViewModel) {
 
                 // Journal de session : meilleur "Pattern repere" dans les previsions a 7 jours
                 // par rapport aux sessions passees notees >= 4/5.
+                // Fiches des bancs du spot : créneaux du jour sélectionné où la fiche est respectée.
+                val spotMicroSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
+                    .collectAsState(initial = emptyList())
                 val referenceSessions by viewModel.referenceSessions.collectAsState()
                 val bestPatternMatch = remember(state.hourlyForecast, state.dailyTides, idealSwellDirection, referenceSessions) {
                     viewModel.computePatternMatches(state.hourlyForecast, state.dailyTides, idealSwellDirection)
@@ -437,6 +440,38 @@ fun MainScreen(viewModel: SurfViewModel) {
                                                     color = onSurfaceColor.copy(alpha = 0.55f),
                                                     maxLines = 1
                                                 )
+                                            }
+                                        }
+                                    }
+
+                                    // Fiches de bancs : « Le banc magique : 16h–18h (descendant · 1,0–1,6 m) ».
+                                    run {
+                                        val day = selectedDate ?: availableDates.firstOrNull()
+                                        val dayHours = day?.let { daylightHoursFor(it, groupedByDate, state.dailySunInfo) }.orEmpty()
+                                        spotMicroSpots.filter { it.hasProfile }.forEach { spot ->
+                                            val windows = spot.matchingWindows(dayHours, day?.let { state.dailyTides[it] })
+                                            if (windows.isNotEmpty()) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 10.dp, vertical = 2.dp)
+                                                        .padding(bottom = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Canvas(modifier = Modifier.size(6.dp)) {
+                                                        drawCircle(color = AppColors.WindMid, radius = size.minDimension / 2f)
+                                                    }
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = "${spot.name} : " +
+                                                            windows.joinToString(", ") { "${it.first}h–${it.last + 1}h" } +
+                                                            " (${spot.profileSummary()})",
+                                                        fontSize = 10.5.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                                                        maxLines = 2
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -622,6 +657,7 @@ fun MainScreen(viewModel: SurfViewModel) {
                                             quiverBoards = quiverBoards,
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
+                                            onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },
                                             availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
                                             onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
                                                 val past = pastConditions[dayOffset]
@@ -1238,6 +1274,9 @@ fun WeeklyForecastCard(
                     dailyHeights = dailyHeights,
                     dailyFeelsLike = dailyFeelsLike,
                     dailyWaterTemps = dailyWaterTemps,
+                    dailyEnergies = availableDates.map { date ->
+                        daylightHoursFor(date, groupedByDate, dailySunInfo).maxOfOrNull { it.energyKj } ?: 0
+                    },
                     maxScale = fixedMaxScale,
                     daysCount = availableDates.size,
                     selectedIndex = selectedIndex,
@@ -1342,6 +1381,8 @@ fun ContinuousWaveCanvas(
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
     dailyWaterTemps: List<Int>,
+    // Énergie de la houle au pic de chaque jour (kJ) : petite valeur discrète sous la période.
+    dailyEnergies: List<Int> = emptyList(),
     maxScale: Float,
     daysCount: Int,
     selectedIndex: Int,
@@ -1369,6 +1410,13 @@ fun ContinuousWaveCanvas(
 
     // Etiquette neutre (pas de code couleur impose) : suit onSurface, lisible nativement
     // dans les deux themes sans besoin de chip.
+    val energyTextPaint = remember(density) {
+        Paint().apply {
+            textSize = with(density) { 7.5.sp.toPx() }
+            isAntiAlias = true
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+    }
     val periodTextPaint = remember(density, onSurfaceColor) {
         Paint().apply {
             color = onSurfaceColor.copy(alpha = 0.55f).toArgb()
@@ -1565,6 +1613,19 @@ fun ContinuousWaveCanvas(
             val pY = baseY - 3.dp.toPx()
 
             drawContext.canvas.nativeCanvas.drawText(pText, targetX - pTextW / 2f, pY, periodTextPaint)
+
+            // Énergie : discrète, juste au-dessus de la période, teinte selon la puissance.
+            val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 }
+            if (energy != null) {
+                val eText = "${energy}kJ"
+                val eW = energyTextPaint.measureText(eText)
+                energyTextPaint.color = when {
+                    energy >= 400 -> 0xFFE53935.toInt()
+                    energy >= 150 -> 0xFFFB8C00.toInt()
+                    else -> 0xFF78909C.toInt()
+                }
+                drawContext.canvas.nativeCanvas.drawText(eText, targetX - eW / 2f, pY - 11.dp.toPx(), energyTextPaint)
+            }
         }
     }
 }

@@ -207,6 +207,7 @@ fun SessionLogEntryDialog(
     quiverBoards: List<QuiverBoard>,
     microSpots: List<MicroSpot>,
     onAddMicroSpot: (name: String) -> Unit,
+    onUpdateMicroSpot: (MicroSpot) -> Unit = {},
     onSave: (dayOffset: Int, startHour: Int, endHour: Int, microSpotId: Long, quiverId: Long, rating: Int, comment: String?, mediaUri: String?) -> Unit,
     onDismiss: () -> Unit,
     // Jours proposes : 0 = aujourd'hui, 1 = hier, 2 = avant-hier (seulement si l'app a
@@ -225,6 +226,7 @@ fun SessionLogEntryDialog(
     var comment by remember { mutableStateOf("") }
     var mediaUri by remember { mutableStateOf<Uri?>(null) }
     var pendingMicroSpotName by remember { mutableStateOf<String?>(null) }
+    var showSpotSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(microSpots, pendingMicroSpotName) {
         val pending = pendingMicroSpotName
@@ -337,6 +339,18 @@ fun SessionLogEntryDialog(
                     onSurfaceColor = colors.onBackground,
                     primaryColor = colors.primary
                 )
+                microSpots.firstOrNull { it.id == selectedMicroSpotId }?.let { selected ->
+                    val summary = selected.profileSummary()
+                    TextButton(onClick = { showSpotSheet = true }) {
+                        Text(
+                            if (summary.isEmpty()) "📋 Fiche du banc (marée, hauteur, notes)" else "📋 Fiche : $summary",
+                            fontSize = 12.sp
+                        )
+                    }
+                    if (showSpotSheet) {
+                        MicroSpotSheetDialog(spot = selected, onSave = onUpdateMicroSpot, onDismiss = { showSpotSheet = false })
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 PillSelector(

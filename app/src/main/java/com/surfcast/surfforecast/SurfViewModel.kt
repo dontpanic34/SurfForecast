@@ -520,6 +520,10 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateMicroSpot(spot: MicroSpot) {
+        viewModelScope.launch { sessionLogDao.updateMicroSpot(spot) }
+    }
+
     fun logSurfSession(
         date: LocalDate,
         startHour: Int,
@@ -541,7 +545,8 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
                 windSpeedKmh = hourlyModel.windSpeedKmh,
                 windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
                 tideCoeff = tideInfo?.coefficient,
-                isNearHighTide = isNearHighTide(hourlyModel, tideInfo)
+                isNearHighTide = isNearHighTide(hourlyModel, tideInfo),
+                tidePhase = tidePhaseAt(hourlyModel.rawTime.toLocalTime(), tideInfo)
             )
             sessionLogDao.logSession(
                 startTime = date.atTime(startHour, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
