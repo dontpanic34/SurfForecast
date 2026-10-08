@@ -739,12 +739,13 @@ fun MainScreen(
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(
-                        "settings", "🏄 Commence par ton profil",
-                        "C'est le réglage qui change le plus l'appli. Dis-lui ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou règle-le à ta sauce : " +
-                            "l'énergie de vague que tu cherches, ta tolérance au vent, aux rafales et au clapot. Les scores, le meilleur créneau et le « trop gros » " +
-                            "(violet) sont alors calculés pour toi, pas pour un surfeur moyen. Tu peux aussi y ranger tes planches, avec leur volume : elles " +
-                            "te serviront dans le journal de bord. Ça prend une minute.",
-                        actionLabel = "Renseigner mon profil",
+                        "settings", "⭐ L'appli de surf qui s'adapte à ton niveau",
+                        "Pour que ça marche vraiment, renseigne ton profil : c'est LE réglage à faire en premier, et c'est ce qui change tout. " +
+                            "Sans lui, les notes sont celles d'un surfeur moyen. Avec lui, elles sont calculées pour toi : ton niveau (Débutant, Intermédiaire, " +
+                            "Confirmé, Expert) ou ton propre réglage (l'énergie de vague que tu cherches, ta tolérance au vent, aux rafales et au clapot). " +
+                            "Le meilleur créneau, les couleurs et le « trop gros » (violet) deviennent les tiens. " +
+                            "Ajoute aussi tes planches avec leur volume : tu les retrouveras dans le journal de bord. Une minute suffit, ne passe pas à côté.",
+                        actionLabel = "Renseigner mon profil maintenant",
                         onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
                     ),
                     CoachStep("journal", "📓 Le journal de bord", "Note tes sessions ici : l'appli remplit les conditions toute seule et repère dans quelles conditions tu surfes le mieux."),
