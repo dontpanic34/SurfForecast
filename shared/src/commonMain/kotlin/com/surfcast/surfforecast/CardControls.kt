@@ -73,52 +73,35 @@ fun CardControlsRow(
 }
 
 /**
- * Poignée de déplacement bien visible : pastille arrondie avec une flèche vers le haut, quatre
- * petits carrés et une flèche vers le bas. On la touche et on glisse pour déplacer l'encart.
+ * Poignée de déplacement : deux petits chevrons empilés (⌃ au-dessus de ⌄), sans fond. Discrète mais
+ * explicite (ça monte, ça descend), avec une zone de toucher confortable autour.
  */
 @Composable
 fun CardGrip(modifier: Modifier = Modifier) {
-    val tint = MaterialTheme.colorScheme.onSurface
+    val tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
     Box(
-        modifier = modifier
-            .size(width = 32.dp, height = 36.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(tint.copy(alpha = 0.10f)),
+        modifier = modifier.size(width = 30.dp, height = 36.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Tout est dessiné autour de la même ligne centrale (cx) : flèche haut, trois traits, flèche bas.
-        Canvas(modifier = Modifier.size(width = 16.dp, height = 26.dp)) {
+        Canvas(modifier = Modifier.size(width = 14.dp, height = 20.dp)) {
             val w = size.width
             val h = size.height
-            val cx = w / 2f
-            val color = tint.copy(alpha = 0.75f)
-            drawPath(
-                Path().apply {
-                    moveTo(cx, 0f)
-                    lineTo(w, h * 0.24f)
-                    lineTo(0f, h * 0.24f)
-                    close()
-                },
-                color
+            val style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = 2.dp.toPx(),
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                join = androidx.compose.ui.graphics.StrokeJoin.Round
             )
-            val stroke = 1.8.dp.toPx()
-            listOf(0.38f, 0.50f, 0.62f).forEach { fy ->
-                drawLine(
-                    color = color,
-                    start = Offset(0f, h * fy),
-                    end = Offset(w, h * fy),
-                    strokeWidth = stroke,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Butt
-                )
-            }
             drawPath(
                 Path().apply {
-                    moveTo(cx, h)
-                    lineTo(w, h * 0.76f)
-                    lineTo(0f, h * 0.76f)
-                    close()
+                    moveTo(w * 0.05f, h * 0.38f); lineTo(w * 0.5f, h * 0.05f); lineTo(w * 0.95f, h * 0.38f)
                 },
-                color
+                color = tint, style = style
+            )
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.05f, h * 0.62f); lineTo(w * 0.5f, h * 0.95f); lineTo(w * 0.95f, h * 0.62f)
+                },
+                color = tint, style = style
             )
         }
     }

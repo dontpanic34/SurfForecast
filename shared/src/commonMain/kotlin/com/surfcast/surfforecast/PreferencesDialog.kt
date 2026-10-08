@@ -696,7 +696,7 @@ fun SurfPreferencesDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = pillShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.WindMid)
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                 ) {
                     Text("Enregistrer et fermer", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
