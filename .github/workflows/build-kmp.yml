@@ -99,12 +99,14 @@ jobs:
             echo "SURFLOG_KEY_PASSWORD=${{ secrets.SURFLOG_KEY_PASSWORD }}" >> "$GITHUB_ENV"
           fi
 
+      # Un échec de l'APK ne doit jamais bloquer la publication du site.
       - name: Build APK and add it to the site
+        continue-on-error: true
         working-directory: apk-src
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-          cp app/build/outputs/apk/debug/app-debug.apk ../shared/build/dist/wasmJs/productionExecutable/surflog.apk
+          ./gradlew assembleRelease --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk ../shared/build/dist/wasmJs/productionExecutable/surflog.apk
           printf '{"versionCode":%s,"versionName":"1.0.%s"}\n' ${{ github.run_number }} ${{ github.run_number }} > ../shared/build/dist/wasmJs/productionExecutable/apk-version.json
 
       - name: Screenshot in headless Chrome
