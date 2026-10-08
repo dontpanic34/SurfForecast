@@ -74,6 +74,38 @@ jobs:
         run: |
           bash scripts/web-release.sh shared/build/dist/wasmJs/productionExecutable ${{ github.run_number }}
 
+      # APK Android téléchargeable depuis le site (surflog.fr/surflog.apk), construit depuis la branche de l'appli.
+      - name: Checkout Android app branch
+        uses: actions/checkout@v4
+        with:
+          ref: main-26mfzy
+          path: apk-src
+
+      - name: Accept Android SDK licenses
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMANAGER=$(find "$SDK_ROOT" -maxdepth 4 -type f -name sdkmanager 2>/dev/null | head -1)
+          if [ -n "$SDKMANAGER" ]; then yes | "$SDKMANAGER" --licenses > /dev/null || true; fi
+
+      - name: Fixed signing key (if secrets are set)
+        env:
+          KS_B64: ${{ secrets.SURFLOG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/surflog.jks"
+            echo "SURFLOG_KEYSTORE_PATH=$RUNNER_TEMP/surflog.jks" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEYSTORE_PASSWORD=${{ secrets.SURFLOG_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEY_ALIAS=${{ secrets.SURFLOG_KEY_ALIAS }}" >> "$GITHUB_ENV"
+            echo "SURFLOG_KEY_PASSWORD=${{ secrets.SURFLOG_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APK and add it to the site
+        working-directory: apk-src
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../shared/build/dist/wasmJs/productionExecutable/surflog.apk
+
       - name: Screenshot in headless Chrome
         continue-on-error: true
         timeout-minutes: 5

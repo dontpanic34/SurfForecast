@@ -14,6 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import com.surfcast.surfforecast.resources.Res
+import com.surfcast.surfforecast.resources.widget_preview
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -648,19 +654,59 @@ fun SurfPreferencesDialog(
                     importMessage?.let { Text(it, fontSize = 11.sp, color = colors.onBackground) }
                 }
 
-                if (install != null && !install.isInstalled()) {
+                if (install != null && (!install.isInstalled() || install.platform == "android")) {
                     var showIosGuide by remember { mutableStateOf(false) }
                     Text("Appli", fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.7f))
                     when (install.platform) {
                         "android" -> {
-                            Button(
+                            val apkUri = LocalUriHandler.current
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(colors.primary.copy(alpha = 0.10f))
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text("Recommandé sur Android", fontSize = 11.sp, color = colors.primary)
+                                Text("Télécharger l'appli (APK)", fontSize = 13.sp, color = colors.onBackground)
+                                Text(
+                                    "Plus complète que le site : photos et vidéos dans le journal de bord, et un widget pour l'écran d'accueil.",
+                                    fontSize = 10.5.sp,
+                                    color = colors.onBackground.copy(alpha = 0.75f)
+                                )
+                                Image(
+                                    painter = painterResource(Res.drawable.widget_preview),
+                                    contentDescription = "Le widget : marée, houle et vent, avec les changements prévus",
+                                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)),
+                                    contentScale = ContentScale.FillWidth
+                                )
+                                Text(
+                                    "Le widget affiche la marée, la houle et le vent, et prévient quand le vent forcit ou tourne.",
+                                    fontSize = 10.5.sp,
+                                    color = colors.onBackground.copy(alpha = 0.75f)
+                                )
+                                Button(
+                                    onClick = { apkUri.openUri("https://surflog.fr/surflog.apk") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = pillShape,
+                                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                                ) { Text("⬇ Télécharger l'APK", fontSize = 11.5.sp, color = colors.onPrimary) }
+                                Text(
+                                    "Android demandera d'autoriser l'installation depuis le navigateur. Le journal du site et celui de l'appli sont séparés : sauvegarde puis restaure pour transférer.",
+                                    fontSize = 10.sp,
+                                    color = colors.onBackground.copy(alpha = 0.6f)
+                                )
+                            }
+                            if (!install.isInstalled()) Text("Ou garder uniquement le site :", fontSize = 10.5.sp, color = colors.onBackground.copy(alpha = 0.6f))
+                            if (!install.isInstalled()) Button(
                                 onClick = { install.prompt() },
                                 enabled = install.canPrompt(),
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = pillShape,
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceVariant)
                             ) { Text("📲 Installer l'appli", fontSize = 11.5.sp, color = colors.onBackground) }
-                            if (!install.canPrompt()) {
+                            if (!install.isInstalled() && !install.canPrompt()) {
                                 Text(
                                     "Si le bouton est grisé : menu ⋮ de Chrome → « Installer l'application » (ou « Ajouter à l'écran d'accueil »).",
                                     fontSize = 10.5.sp,
