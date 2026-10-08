@@ -38,13 +38,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -93,7 +87,12 @@ private fun Context.findActivity(): Activity? {
 fun LiveCamOverlayScreen(
     currentSpotName: String,
     onClose: () -> Unit,
-    onSwitchSpot: (String) -> Unit = {}
+    onSwitchSpot: (String) -> Unit = {},
+    // Bandeau "conditions actuelles" par-dessus la webcam (même bandeau que l'écran principal),
+    // pour comparer ce qu'on voit avec la prévision.
+    showLiveOverlay: Boolean = true,
+    windUnit: String = "kmh",
+    loadLiveConditions: suspend (String) -> LiveConditions? = { null }
 ) {
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() }
@@ -387,7 +386,7 @@ fun LiveCamOverlayScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Warning,
+                                imageVector = SurfIcons.Warning,
                                 contentDescription = null,
                                 tint = AppColors.WindMid,
                                 modifier = Modifier.size(30.dp)
@@ -402,7 +401,7 @@ fun LiveCamOverlayScreen(
                             )
                             Text(
                                 text = "La page affiche « ${mismatchTitle ?: ""} » au lieu de ${currentSpotNameState.value}.",
-                                fontSize = 11.5.sp,
+                                fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.6f),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(top = 6.dp, bottom = 16.dp)
@@ -440,7 +439,7 @@ fun LiveCamOverlayScreen(
                                 .size(28.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Close,
+                                imageVector = SurfIcons.Close,
                                 contentDescription = "Ignorer",
                                 tint = Color.White.copy(alpha = 0.5f),
                                 modifier = Modifier.size(18.dp)
@@ -468,7 +467,7 @@ fun LiveCamOverlayScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Warning,
+                            imageVector = SurfIcons.Warning,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(32.dp)
@@ -533,7 +532,7 @@ fun LiveCamOverlayScreen(
                         Text(
                             text = "DIRECT • ${spotWebcams.spotDisplayName}",
                             color = Color.White,
-                            fontSize = 10.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -570,12 +569,12 @@ fun LiveCamOverlayScreen(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
                         if (showLinkSuccess) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+                            Icon(SurfIcons.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                         }
                         Text(
                             text = if (showLinkSuccess) "Lien enregistré !" else "🔗 Lier cette page à ${activeCamera.camName}",
-                            fontSize = 10.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (showLinkSuccess) Color.White else AppColors.WindMid
                         )
@@ -590,7 +589,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = "Source : $title",
-                            fontSize = 8.5.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.6f),
                             maxLines = 1,
@@ -635,7 +634,7 @@ fun LiveCamOverlayScreen(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = cam.camName,
-                                            fontSize = 10.5.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                                             color = Color.White,
                                             maxLines = 1
@@ -675,7 +674,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = name,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
                             color = if (isActive) AppColors.WindMid else Color.White,
                             maxLines = 1,
@@ -683,6 +682,28 @@ fun LiveCamOverlayScreen(
                         )
                     }
                 }
+            }
+        }
+
+        // Conditions actuelles du spot de la webcam (houle, marée, vent), au-dessus des spots proches.
+        // Se recharge à chaque changement de spot ; rien tant que les données ne sont pas là.
+        val liveConditions by produceState<LiveConditions?>(initialValue = null, currentSpotName) {
+            value = null
+            value = loadLiveConditions(currentSpotName)
+        }
+        if (showLiveOverlay && !manualNavigation) {
+            liveConditions?.let { c ->
+                SurfLiveStripOverlay(
+                    hourlyModel = c.hour,
+                    tideInfo = c.tide,
+                    windUnit = windUnit,
+                    onOpenCam = {},
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 92.dp)
+                        .fillMaxWidth(0.7f)
+                        .widthIn(max = 460.dp)
+                )
             }
         }
 
@@ -697,7 +718,7 @@ fun LiveCamOverlayScreen(
                 .background(Color.Black.copy(alpha = 0.7f))
         ) {
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = SurfIcons.Close,
                 contentDescription = "Fermer",
                 tint = Color.White,
                 modifier = Modifier.size(22.dp)
@@ -720,7 +741,7 @@ fun LiveCamOverlayScreen(
             if (!manualNavigation) {
                 Text(
                     text = "FAVORIS",
-                    fontSize = 9.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.5f),
                     modifier = Modifier.padding(bottom = 2.dp, end = 4.dp)
@@ -745,7 +766,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = favName ?: "＋",
-                            fontSize = 10.5.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (favName != null) Color.White else Color.White.copy(alpha = 0.4f),
                             maxLines = 1,

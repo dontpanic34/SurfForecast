@@ -9,14 +9,15 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.CancellationException
-import java.time.LocalDate
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.plus
 import java.util.concurrent.TimeUnit
 
 /**
  * Rafraîchit le widget d'écran d'accueil en arrière-plan, même appli fermée. Sans ça,
- * WidgetDataCache n'est alimenté que quand SurfViewModel charge des données (donc à
+ * WidgetDataCache n'est alimenté que quand SurfController charge des données (donc à
  * l'ouverture de l'appli) — le widget peut alors afficher des données vieilles de
- * plusieurs heures. Refait le même appel réseau que SurfViewModel.loadSpotInternal()
+ * plusieurs heures. Refait le même appel réseau que SurfController.loadSpotInternal()
  * pour le spot favori (fav_0) et pousse le résultat vers WidgetDataCache.
  */
 class WidgetRefreshWorker(
@@ -33,21 +34,22 @@ class WidgetRefreshWorker(
             // le nom ne matchera de toute façon jamais fav_0 dans WidgetDataCache.push().
             val spot = SurfDatabase.findSpotByName(spotName) ?: return Result.success()
             val windUnit = prefs.getString("wind_unit", "kmh") ?: "kmh"
-            val engineConfig = loadEngineConfigFromPrefs(prefs)
+            val store = SharedPreferencesStore(prefs)
+            val engineConfig = loadEngineConfigFromPrefs(store)
 
             val repository = SurfRepository()
             val forecastResult = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig)
             val forecast = forecastResult.hourly
-            val grouped = forecast.groupBy { it.rawTime.toLocalDate() }
+            val grouped = forecast.groupBy { it.rawTime.date }
 
-            val fromDate = grouped.keys.minOrNull()?.toString() ?: LocalDate.now().toString()
-            val toDate = grouped.keys.maxOrNull()?.toString() ?: LocalDate.now().plusDays(7).toString()
+            val fromDate = grouped.keys.minOrNull()?.toString() ?: nowLocalDateTime().date.toString()
+            val toDate = grouped.keys.maxOrNull()?.toString() ?: nowLocalDateTime().date.plus(7, DateTimeUnit.DAY).toString()
             val tidesBundle = repository.getTides(spot.latitude, spot.longitude, fromDate, toDate)
 
             // Le rafraichissement en arriere-plan alimente aussi le journal des previsions
             // (et donc les conditions J-1/J-2 du journal de bord), meme sans ouvrir l'app.
             runCatching {
-                ForecastHistoryStore.record(applicationContext, spot.name, engineConfig, forecast, tidesBundle.dailyByDate)
+                ForecastHistoryStore(store).record(spot.name, engineConfig, forecast, tidesBundle.dailyByDate)
             }
 
             WidgetDataCache.push(

@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)
 }
 
 android {
@@ -23,12 +22,34 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Clé fixe (secrets GitHub) : l'APK publié se met à jour par-dessus l'ancien. Sans secrets, clé debug.
+    val keystorePath = System.getenv("SURFLOG_KEYSTORE_PATH")
+    val hasFixedKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
+    if (hasFixedKey) {
+        fun com.android.build.api.dsl.ApkSigningConfig.useFixedKey() {
+            storeFile = file(keystorePath!!)
+            storePassword = System.getenv("SURFLOG_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SURFLOG_KEY_ALIAS")
+            keyPassword = System.getenv("SURFLOG_KEY_PASSWORD")
+        }
+        signingConfigs.getByName("debug").useFixedKey()
+        signingConfigs.create("release").useFixedKey()
+    }
+
     buildTypes {
         release {
+            // APK publié : version « release » (non déboguable). Même clé que le debug quand les
+            // secrets sont là (mises à jour par-dessus), sinon clé debug pour rester installable.
+            signingConfig = signingConfigs.getByName(if (hasFixedKey) "release" else "debug")
             optimization {
                 enable = false
             }
         }
+    }
+    lint {
+        // Le contrôle lint tourne déjà en local ; il ne doit pas bloquer la publication.
+        checkReleaseBuilds = false
+        abortOnError = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -54,9 +75,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // Réseau (Retrofit + Gson)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // Toute l'interface et la logique : module partagé (même app que le site).
+    implementation(project(":shared"))
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -64,10 +87,7 @@ dependencies {
     // DataStore (Sauvegarde des favoris)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
-    // Room (Journal de session)
-    implementation("androidx.room:room-runtime:2.8.5")
-    implementation("androidx.room:room-ktx:2.8.5")
-    ksp("androidx.room:room-compiler:2.8.5")
+    // Room : le journal de bord vit dans le module partagé (session_log.db), rien à déclarer ici.
 
     // Coil (affichage des photos du journal de session)
     implementation("io.coil-kt:coil-compose:2.7.0")

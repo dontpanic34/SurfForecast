@@ -48,6 +48,9 @@ data class DailySummaryUiModel(
  * mêmes règles. Le journal de sessions (Room), le cache hors ligne et le widget restent
  * pour l'instant côté Android ; [onForecastLoaded] permet à l'hôte de s'y brancher.
  */
+/** Conditions « maintenant » d'un spot (heure la plus proche + marée du jour) : lecteur webcam, bandeau. */
+data class LiveConditions(val hour: HourlyUiModel, val tide: DailyTideInfo?)
+
 class SurfController(
     private val scope: CoroutineScope,
     private val prefs: KeyValueStore,
@@ -314,6 +317,51 @@ class SurfController(
      * À chaque retour de l'appli au premier plan : recharge si les prévisions ont plus de
      * 15 min, pour ne plus afficher un "maintenant" vieux de plusieurs heures.
      */
+    private val liveConditionsCache = mutableMapOf<String, Pair<Long, LiveConditions>>()
+
+    /** Conditions actuelles d'un spot (spot affiché : déjà chargées ; autre spot : appel réseau, gardé 15 min). */
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    suspend fun liveConditionsFor(spotName: String): LiveConditions? {
+        val now = nowLocalDateTime()
+        val nowMs = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        (_uiState.value as? SurfUiState.Success)?.takeIf { it.spotName == spotName }?.let {
+            return currentLiveConditions(it.hourlyForecast, it.dailyTides, now)
+        }
+        liveConditionsCache[spotName]?.takeIf { nowMs - it.first < LIVE_CACHE_MS }?.let { return it.second }
+        val spot = SurfDatabase.findSpotByName(spotName) ?: return null
+        return try {
+            val forecast = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig).hourly
+            val today = now.date
+            val tides = try {
+                repository.getTides(spot.latitude, spot.longitude, today.toString(), today.plus(1, DateTimeUnit.DAY).toString()).dailyByDate
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyMap()
+            }
+            currentLiveConditions(forecast, tides, now)?.also { liveConditionsCache[spotName] = nowMs to it }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun currentLiveConditions(
+        hours: List<HourlyUiModel>,
+        tides: Map<LocalDate, DailyTideInfo>,
+        now: LocalDateTime
+    ): LiveConditions? {
+        val today = now.date
+        // Heure pleine la plus proche (10h44 -> 11h), comme le bandeau de l'écran principal.
+        val nearestHour = if (now.minute >= 30) (now.hour + 1) % 24 else now.hour
+        val hour = hours.filter { it.rawTime.date == today }
+            .minByOrNull { kotlin.math.abs(it.rawTime.hour - nearestHour) }
+            ?: hours.firstOrNull()
+            ?: return null
+        return LiveConditions(hour, tides[today] ?: tides.values.firstOrNull())
+    }
+
     fun onAppResumed() {
         if (isRefreshing) return
         val loadedAt = lastLoadedAt ?: return
@@ -586,6 +634,7 @@ class SurfController(
 
     companion object {
         private const val RESUME_REFRESH_AFTER_MINUTES = 15
+        const val LIVE_CACHE_MS = 15 * 60 * 1000L
         const val DEFAULT_COLLAPSED_CARDS = "surf,wind,windSea,weather,hourly"
         val DEFAULT_CARDS_ORDER = listOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
     }

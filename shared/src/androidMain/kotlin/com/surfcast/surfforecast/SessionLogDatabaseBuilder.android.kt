@@ -11,3 +11,6 @@ fun sessionLogDatabase(context: Context): SessionLogDatabase {
         name = appContext.getDatabasePath(SESSION_LOG_DB_NAME).absolutePath
     ).buildSessionLogDatabase()
 }
+
+/** Journal de bord prêt à l'emploi pour l'appli Android (évite d'exposer Room à l'hôte). */
+fun createSessionLogStore(context: Context): SessionLogStore = SessionLogRoomStore(sessionLogDatabase(context).sessionLogDao())

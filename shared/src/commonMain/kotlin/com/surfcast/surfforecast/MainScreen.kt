@@ -56,8 +56,14 @@ fun MainScreen(
     // Sauvegarde du journal dans un fichier (version web seulement).
     backup: SessionLogBackup? = null,
     // Installation du site comme appli (version web seulement).
-    install: AppInstall? = null
+    install: AppInstall? = null,
+    // Hôte (Android) : lecteur webcam intégré. null = on ouvre la page de la webcam dans le navigateur.
+    liveCamOverlay: (@Composable (LiveCamContext) -> Unit)? = null,
+    // Hôte (Android) : bandeau « nouvelle version disponible » (APK).
+    updateBanner: (@Composable () -> Unit)? = null
 ) {
+    var showLiveCam by remember { mutableStateOf(false) }
+    var directWebcamSpot by remember { mutableStateOf<String?>(null) }
     // "clock" = heure pleine la plus proche (10h44 -> 11h), qui avance toute seule : avant,
     // "maintenant" n'était calculé qu'au chargement.
     var clock by remember { mutableStateOf(nearestHourLocalDateTime()) }
@@ -87,6 +93,11 @@ fun MainScreen(
     // la page de la webcam dans le navigateur, sur Android comme sur iOS.
     val uriHandler = LocalUriHandler.current
     fun openLiveCam(spotName: String) {
+        if (liveCamOverlay != null) {
+            directWebcamSpot = spotName
+            showLiveCam = true
+            return
+        }
         SurfWebcamHelper.getCamerasForSpot(spotName).cameras.firstOrNull()?.let { uriHandler.openUri(SurfWebcamHelper.liveCamUrl(spotName, it)) }
     }
 
@@ -224,7 +235,12 @@ fun MainScreen(
                                             .clip(RoundedCornerShape(6.dp))
                                             .clickable {
                                                 showWebcamDirectoryDialog = false
-                                                uriHandler.openUri(SurfWebcamHelper.liveCamUrl(spotEntry.spotDisplayName, cam))
+                                                if (liveCamOverlay != null) {
+                                                    directWebcamSpot = spotEntry.spotDisplayName
+                                                    showLiveCam = true
+                                                } else {
+                                                    uriHandler.openUri(SurfWebcamHelper.liveCamUrl(spotEntry.spotDisplayName, cam))
+                                                }
                                             },
                                         color = MaterialTheme.colorScheme.surfaceVariant
                                     ) {
@@ -656,6 +672,8 @@ fun MainScreen(
                                         )
                                     }
 
+                                    updateBanner?.invoke()
+
                                     viewModel.offlineSinceMillis?.let { ms ->
                                         val dt = epochMillisToLocalDateTime(ms)
                                         Text(
@@ -719,6 +737,21 @@ fun MainScreen(
             }
         }
             }
+        }
+        if (showLiveCam && liveCamOverlay != null) {
+            liveCamOverlay(
+                LiveCamContext(
+                    spotName = directWebcamSpot ?: ((uiState as? SurfUiState.Success)?.spotName ?: ""),
+                    onClose = {
+                        showLiveCam = false
+                        directWebcamSpot = null
+                    },
+                    onSwitchSpot = { newSpot -> directWebcamSpot = newSpot },
+                    showLiveOverlay = viewModel.showLiveOverlay,
+                    windUnit = viewModel.windUnit,
+                    loadLiveConditions = { spot -> viewModel.liveConditionsFor(spot) }
+                )
+            )
         }
         // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
         if (viewModel.showHomeTour && !viewModel.showOnboarding) {

@@ -118,6 +118,14 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
             val provider = ComponentName(context, SurfOverlayWidgetProvider::class.java)
             if (appWidgetManager.isRequestPinAppWidgetSupported) {
                 appWidgetManager.requestPinAppWidget(provider, null, null)
+            } else {
+                // Certains lanceurs (Xiaomi, Oppo, Huawei...) refusent l'ajout automatique : on l'explique
+                // au lieu de ne rien faire.
+                android.widget.Toast.makeText(
+                    context,
+                    "Ton écran d'accueil ne permet pas l'ajout automatique. Appui long sur l'accueil > Widgets > Surf Log.",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
             }
         }
     }

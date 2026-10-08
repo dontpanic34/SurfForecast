@@ -7,6 +7,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.surfcast.surfforecast.ui.theme.SurfForecastTheme
 
+/** Ce que reçoit le lecteur webcam de l'hôte (Android) : spot, fermeture, changement de spot, réglages. */
+class LiveCamContext(
+    val spotName: String,
+    val onClose: () -> Unit,
+    val onSwitchSpot: (String) -> Unit,
+    val showLiveOverlay: Boolean,
+    val windUnit: String,
+    val loadLiveConditions: suspend (String) -> LiveConditions?
+)
+
 /**
  * Racine de l'app partagée : équivalent de MainActivity.setContent côté Android
  * (même choix de thème clair/sombre/système, même MainScreen).
@@ -19,10 +29,18 @@ fun SurfLogApp(
     onPinWidget: (() -> Unit)? = null,
     appVersion: String? = null,
     backup: SessionLogBackup? = null,
-    install: AppInstall? = null
+    install: AppInstall? = null,
+    // Hôte (Android) : branchement du widget d'écran d'accueil sur chaque prévision chargée.
+    onForecastLoaded: (SurfUiState.Success, SurfRepository.TidesBundle) -> Unit = { _, _ -> },
+    // Hôte (Android) : lecteur webcam intégré (spot, fermeture, changement de spot) ; null = page web.
+    liveCamOverlay: (@Composable (LiveCamContext) -> Unit)? = null,
+    // Hôte (Android) : bandeau « nouvelle version disponible ».
+    updateBanner: (@Composable () -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
-    val controller = remember(prefs) { SurfController(scope = scope, prefs = prefs, sessionLogStore = sessionLogStore) }
+    val controller = remember(prefs) {
+        SurfController(scope = scope, prefs = prefs, onForecastLoaded = onForecastLoaded, sessionLogStore = sessionLogStore)
+    }
     LaunchedEffect(controller) {
         AppForeground.events.collect { controller.onAppResumed() }
     }
@@ -34,6 +52,14 @@ fun SurfLogApp(
     }
 
     SurfForecastTheme(useDarkTheme = useDarkTheme) {
-        MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install)
+        MainScreen(
+            viewModel = controller,
+            onPinWidget = onPinWidget,
+            appVersion = appVersion,
+            backup = backup,
+            install = install,
+            liveCamOverlay = liveCamOverlay,
+            updateBanner = updateBanner
+        )
     }
 }

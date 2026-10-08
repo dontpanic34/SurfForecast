@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - web
+      - unified
   workflow_dispatch: {}
 
 permissions:
@@ -74,8 +75,10 @@ jobs:
         run: |
           bash scripts/web-release.sh shared/build/dist/wasmJs/productionExecutable ${{ github.run_number }}
 
-      # APK Android téléchargeable depuis le site (surflog.fr/surflog.apk), construit depuis la branche de l'appli.
+      # APK Android téléchargeable depuis le site (surflog.fr/surflog.apk). Branche web : construit depuis la
+      # branche de l'appli ; branche unified : l'appli est dans ce même dépôt (module partagé).
       - name: Checkout Android app branch
+        if: github.ref_name != 'unified'
         uses: actions/checkout@v4
         with:
           ref: main-26mfzy
@@ -102,12 +105,15 @@ jobs:
       # Un échec de l'APK ne doit jamais bloquer la publication du site.
       - name: Build APK and add it to the site
         continue-on-error: true
-        working-directory: apk-src
+        env:
+          APK_DIR: ${{ github.ref_name == 'unified' && '.' || 'apk-src' }}
         run: |
+          DIST="$GITHUB_WORKSPACE/shared/build/dist/wasmJs/productionExecutable"
+          cd "$APK_DIR"
           chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk ../shared/build/dist/wasmJs/productionExecutable/surflog.apk
-          printf '{"versionCode":%s,"versionName":"1.0.%s"}\n' ${{ github.run_number }} ${{ github.run_number }} > ../shared/build/dist/wasmJs/productionExecutable/apk-version.json
+          ./gradlew :app:assembleRelease --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk "$DIST/surflog.apk"
+          printf '{"versionCode":%s,"versionName":"1.0.%s"}\n' ${{ github.run_number }} ${{ github.run_number }} > "$DIST/apk-version.json"
 
       - name: Screenshot in headless Chrome
         continue-on-error: true
@@ -147,4 +153,4 @@ jobs:
         if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         run: >
           npx --yes wrangler@4 pages deploy shared/build/dist/wasmJs/productionExecutable
-          --project-name=surflog --branch=main --commit-dirty=true
+          --project-name=surflog --branch=${{ github.ref_name == 'web' && 'main' || github.ref_name }} --commit-dirty=true

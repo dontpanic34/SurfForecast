@@ -12,6 +12,14 @@ import androidx.compose.ui.unit.dp
  * Multiplatform, et ceci évite de dépendre d'elle pour 5 icônes.
  */
 object SurfIcons {
+    val Warning: ImageVector by lazy {
+        materialIcon("Warning", "M1,21h22L12,2 1,21zM13,18h-2v-2h2v2zM13,14h-2v-4h2v4z")
+    }
+
+    val Check: ImageVector by lazy {
+        materialIcon("Check", "M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z")
+    }
+
     val Close: ImageVector by lazy {
         materialIcon("Close", "M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12z")
     }

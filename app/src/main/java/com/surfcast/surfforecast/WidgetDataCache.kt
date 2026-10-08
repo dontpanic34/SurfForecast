@@ -4,10 +4,11 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import androidx.core.content.edit
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.plus
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -37,14 +38,14 @@ data class WidgetSnapshot(
 )
 
 /**
- * Cache partagé par les widgets d'écran d'accueil : SurfViewModel y écrit le même
+ * Cache partagé par les widgets d'écran d'accueil : SurfController y écrit le même
  * instantané que celui affiché par SurfLiveStripOverlay dès que le spot favori (fav_0)
  * a des données fraîches. Les widgets se contentent de relire ce cache, sans jamais
  * faire leur propre appel réseau depuis onUpdate().
  */
 object WidgetDataCache {
     private const val PREFS = "surf_prefs"
-    private val TIME_FMT = DateTimeFormatter.ofPattern("HH:mm")
+    private fun hhmm(t: LocalDateTime) = "%02d:%02d".format(t.hour, t.minute)
     // Ecart angulaire reel entre deux directions (0-180°), plutot qu'un decoupage en
     // quartiers fixes : un decoupage par quartier range SSE et SSO dans le meme bloc
     // "Sud" alors qu'ils sont a 45° l'un de l'autre (de part et d'autre du sud), donc
@@ -110,11 +111,11 @@ object WidgetDataCache {
         val widgetSpot = prefs.getString("fav_0", "Montalivet") ?: "Montalivet"
         if (widgetSpot != spotName) return
 
-        val now = LocalDateTime.now()
-        val today = now.toLocalDate()
+        val now = nowLocalDateTime()
+        val today = now.date
         val currentHour = now.hour
 
-        val todayHours = forecast.filter { it.rawTime.toLocalDate() == today }
+        val todayHours = forecast.filter { it.rawTime.date == today }
         val closestIdx = todayHours.indices.minByOrNull { abs(todayHours[it].rawTime.hour - currentHour) }
         val hourly = closestIdx?.let { todayHours[it] } ?: forecast.firstOrNull() ?: return
 
@@ -150,20 +151,20 @@ object WidgetDataCache {
             // pour ne pas perdre l'info quand la prochaine marée est une basse mer.
             val dayCoef = extrema.firstOrNull { it.type == "PM" }?.coef ?: extrema.firstNotNullOfOrNull { it.coef }
             return extrema.mapNotNull { e ->
-                runCatching { LocalDateTime.of(date, LocalTime.parse(e.time, TIME_FMT)) }.getOrNull()
+                runCatching { LocalDateTime(date, LocalTime.parse(e.time)) }.getOrNull()
                     ?.let { Candidate(e.type == "PM", e.time, e.coef ?: dayCoef, it) }
             }
         }
 
-        val nextTide = (candidatesFor(today) + candidatesFor(today.plusDays(1)))
-            .filter { it.at.isAfter(now) }
+        val nextTide = (candidatesFor(today) + candidatesFor(today.plus(1, DateTimeUnit.DAY)))
+            .filter { it.at > now }
             .minByOrNull { it.at }
 
         prefs.edit {
             putFloat("widget_wave_height", hourly.waveHeight.toFloat())
             putString("widget_wave_trend", waveTrend.name)
             if (waveChangeHour != null) {
-                putString("widget_wave_change_time", waveChangeHour.rawTime.format(TIME_FMT))
+                putString("widget_wave_change_time", hhmm(waveChangeHour.rawTime))
                 putFloat("widget_wave_change_height", waveChangeHour.waveHeight.toFloat())
             } else {
                 remove("widget_wave_change_time")
@@ -172,7 +173,7 @@ object WidgetDataCache {
             putInt("widget_wave_period", hourly.wavePeriod.roundToInt())
             putString("widget_period_trend", periodTrend.name)
             if (periodChangeHour != null) {
-                putString("widget_period_change_time", periodChangeHour.rawTime.format(TIME_FMT))
+                putString("widget_period_change_time", hhmm(periodChangeHour.rawTime))
                 putInt("widget_period_change_value", periodChangeHour.wavePeriod.roundToInt())
             } else {
                 remove("widget_period_change_time")
@@ -185,7 +186,7 @@ object WidgetDataCache {
             putString("widget_wind_speed_trend", windSpeedTrend.name)
             if (rotationHour != null) {
                 putString("widget_wind_rotation_to", SurfUnitsHelper.formatCardinalFr(rotationHour.windDirectionStr))
-                putString("widget_wind_rotation_time", rotationHour.rawTime.format(TIME_FMT))
+                putString("widget_wind_rotation_time", hhmm(rotationHour.rawTime))
                 putInt("widget_wind_rotation_speed_kmh", rotationHour.windSpeedKmh)
             } else {
                 remove("widget_wind_rotation_to")
@@ -201,7 +202,7 @@ object WidgetDataCache {
                 remove("widget_next_tide_time")
                 remove("widget_next_tide_coef")
             }
-            putString("widget_last_update", now.format(TIME_FMT))
+            putString("widget_last_update", hhmm(now))
             putBoolean("widget_has_data", true)
         }
 
