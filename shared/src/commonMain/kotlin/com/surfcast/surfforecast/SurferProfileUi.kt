@@ -23,9 +23,9 @@ import kotlin.math.roundToInt
 private val LEVELS = listOf("beginner", "intermediate", "confirmed", "expert")
 private val MIN_ENERGIES = listOf(30.0, 80.0, 150.0, 250.0, 450.0, 700.0, 1500.0)
 private val MAX_ENERGIES = listOf(150.0, 250.0, 450.0, 700.0, 1000.0, 1500.0, 3500.0, SurfProfile.NO_CAP)
-private val ONSHORE_CHOICES = listOf(5.0 to "Aucun · 5 km/h", 12.0 to "Léger · 12 km/h", 20.0 to "Tolérant · 20 km/h")
-private val GUST_CHOICES = listOf(15.0 to "15 km/h · Sensible", 25.0 to "25 km/h · Normal", 35.0 to "35 km/h · Tolérant")
-private val CHOP_CHOICES = listOf(0.15 to "0,15 m · Sensible", 0.3 to "0,3 m · Normal", 0.6 to "0,6 m · Tolérant")
+private val ONSHORE_CHOICES = listOf(5.0 to "Aucun\n5\u00A0km/h", 12.0 to "Léger\n12\u00A0km/h", 20.0 to "Tolérant\n20\u00A0km/h")
+private val GUST_CHOICES = listOf(15.0 to "Sensible\n15\u00A0km/h", 25.0 to "Normal\n25\u00A0km/h", 35.0 to "Tolérant\n35\u00A0km/h")
+private val CHOP_CHOICES = listOf(0.15 to "Sensible\n0,15\u00A0m", 0.3 to "Normal\n0,3\u00A0m", 0.6 to "Tolérant\n0,6\u00A0m")
 
 private fun energyName(w: Double) = when {
     w >= SurfProfile.NO_CAP -> "Aucune limite"
@@ -119,7 +119,8 @@ private fun ChoiceRow(choices: List<Pair<Double, String>>, current: Double, onPi
             ) {
                 Box(modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp), contentAlignment = Alignment.Center) {
                     Text(
-                        label, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                        label, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = if (selected) colors.onPrimary else colors.onSurfaceVariant
                     )
                 }
@@ -267,7 +268,7 @@ fun SurferProfileSection(
                 Slider(
                     value = profile.minPeriod.toFloat(),
                     onValueChange = { update(profile.copy(minPeriod = it.roundToInt().toDouble())) },
-                    valueRange = 6f..14f, steps = 7
+                    valueRange = 4f..14f, steps = 9
                 )
             }
             SettingBlock("Vent", "${profile.windTolerance.roundToInt()} km/h", "Force de vent bien tolérée (offshore et de travers).") {
