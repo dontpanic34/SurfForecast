@@ -182,7 +182,7 @@ class SurfController(
     var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
         private set
 
-    var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 3).coerceIn(1, 3))
+    var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
         private set
 
     var weeklyWindMode by mutableStateOf(prefs.getString("weekly_wind_mode", "both") ?: "both")
