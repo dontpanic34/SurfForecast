@@ -46,8 +46,13 @@ class BoardVolumeTest {
         assertNull(volumeRatio(null, 75))
         assertEquals("beginner", levelForRatio(0.75))
         assertEquals("intermediate", levelForRatio(0.5))
-        assertEquals("confirmed", levelForRatio(0.4))
+        assertEquals("confirmed", levelForRatio(0.39))
         assertEquals("expert", levelForRatio(0.33))
+        // Xero Gravity 31,5 L pour 81 kg (≈ 0,39 L/kg) : un ratio de confirmé.
+        assertEquals("confirmed", levelForRatio(31.5 / 81))
+        val range = volumeRangeFor("confirmed", 80)
+        assertEquals(28.0, range.start, 0.01)
+        assertEquals(34.4, range.endInclusive, 0.01)
     }
 
     @Test

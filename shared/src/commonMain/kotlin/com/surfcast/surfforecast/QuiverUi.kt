@@ -229,6 +229,10 @@ fun GearContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        VolumeGuideCard(weightKg = weightKg, boards = quiverBoards)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         if (!showAddForm) {
             OutlinedButton(onClick = { showAddForm = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("+ Ajouter une planche")
@@ -410,6 +414,60 @@ fun QuiverScreen(
                 GearContent(quiverBoards, age, heightCm, weightKg, onBodyChanged, onAddBoard, onDeleteBoard)
                 Spacer(modifier = Modifier.height(16.dp))
             }
+        }
+    }
+}
+
+/** Volume et niveau : combien de litres par kilo selon le profil, et ce que ça donne pour ton poids. */
+@Composable
+fun VolumeGuideCard(weightKg: Int, boards: List<QuiverBoard>) {
+    val colors = MaterialTheme.colorScheme
+    val boardLevels = boards.mapNotNull { volumeRatio(it.volumeL, weightKg) }.map { levelForRatio(it) }.toSet()
+    val why = mapOf(
+        "beginner" to "Stabilité, rame et take-off faciles",
+        "intermediate" to "On tourne, on perd un peu de flottaison",
+        "confirmed" to "Rame et take-off acquis",
+        "expert" to "Planche performante, rame efficace"
+    )
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text("Volume et niveau", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+        Text(
+            "Plus on surfe bien, moins on a besoin de volume. Repères indicatifs en litres par kilo, pour un adulte en forme : " +
+                "à adapter à ton âge, ta condition, ta pratique et tes vagues.",
+            fontSize = 11.5.sp, color = colors.onSurface.copy(alpha = 0.7f)
+        )
+        listOf("beginner", "intermediate", "confirmed", "expert").forEach { level ->
+            val r = ratioRangeFor(level)
+            val mine = level in boardLevels
+            Column(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                    .background(if (mine) colors.primary.copy(alpha = 0.15f) else colors.background)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(levelLabel(level) + if (mine) " · Une de mes planches" else "", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                    Text(
+                        (if (level == "beginner") "${formatFr(r.start, 2)} et +" else "${formatFr(r.start, 2)} – ${formatFr(r.endInclusive, 2)}") + " L/kg",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary
+                    )
+                }
+                val litres = if (weightKg > 0) {
+                    val v = volumeRangeFor(level, weightKg)
+                    (if (level == "beginner") "${v.start.toInt()} L et plus" else "${v.start.toInt()} à ${v.endInclusive.toInt()} L") + " pour $weightKg kg · "
+                } else ""
+                Text(litres + why.getValue(level), fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.7f))
+            }
+        }
+        Text(
+            "Plus de volume : âge ou moins de sessions, vagues petites et molles (Oléron, Montalivet). " +
+                "Moins de volume : vagues puissantes, qui font le travail.",
+            fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.6f)
+        )
+        if (weightKg <= 0) {
+            Text("Renseigne ton poids plus haut pour voir les litres correspondants.", fontSize = 11.sp, color = colors.primary)
         }
     }
 }

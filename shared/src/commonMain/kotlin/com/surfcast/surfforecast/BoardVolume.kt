@@ -29,8 +29,8 @@ private fun parseFractionOrNumber(part: String): Double? {
     return if (d == 0.0) null else n / d
 }
 
-/** Coefficient volume / (longueur x largeur x épaisseur) : 0,57 retrouve à 1 % près la grille de volumes d'un shortboard moderne. */
-const val VOLUME_FILL_FACTOR = 0.57
+/** Coefficient volume / (longueur x largeur x épaisseur) : 0,56 est la moyenne de plusieurs sources (grille d'un modèle réel, planche mesurée, calculateurs de boutiques), à ±1,5 L près. */
+const val VOLUME_FILL_FACTOR = 0.56
 
 /**
  * Volume estimé (litres) depuis les cotes : longueur x largeur x épaisseur x [VOLUME_FILL_FACTOR]. Ordre de
@@ -49,11 +49,25 @@ fun estimateVolumeL(lengthFeet: Double, lengthInches: Double, widthIn: Double, t
 fun volumeRatio(volumeL: Double?, weightKg: Int): Double? =
     if (volumeL == null || volumeL <= 0.0 || weightKg <= 0) null else volumeL / weightKg
 
+/** Fourchette de ratio L/kg par profil (repères de boutiques, adulte en forme) : [min, max]. */
+fun ratioRangeFor(level: String): ClosedFloatingPointRange<Double> = when (level) {
+    "beginner" -> 0.58..0.80
+    "intermediate" -> 0.43..0.58
+    "confirmed" -> 0.35..0.43
+    else -> 0.28..0.35
+}
+
+/** Volume (L) correspondant à un profil pour ce poids : fourchette min-max. */
+fun volumeRangeFor(level: String, weightKg: Int): ClosedFloatingPointRange<Double> {
+    val r = ratioRangeFor(level)
+    return (r.start * weightKg)..(r.endInclusive * weightKg)
+}
+
 /** Profil que suggère un ratio L/kg (repère indicatif, pas un jugement de niveau). */
 fun levelForRatio(ratio: Double): String = when {
-    ratio >= 0.6 -> "beginner"
-    ratio >= 0.45 -> "intermediate"
-    ratio >= 0.38 -> "confirmed"
+    ratio >= 0.58 -> "beginner"
+    ratio >= 0.43 -> "intermediate"
+    ratio >= 0.35 -> "confirmed"
     else -> "expert"
 }
 
