@@ -142,8 +142,6 @@ class SurfRepository(
         }
     }
 
-    private val apiMareeToken = "0093ca14ffeffadcf739be7cc77f4738"
-
     private suspend fun httpGet(url: String): JsonObject {
         val text = getTextWithFallback(url) {
             val response = httpClient.get(url)
@@ -564,14 +562,16 @@ class SurfRepository(
 
     private val mareeJson = Json { ignoreUnknownKeys = true }
 
-    /** Réponse du service de marées : relais Cloudflare d'abord (jeton côté serveur), sinon appel direct. */
+    /**
+     * Réponse du service de marées : par le relais Cloudflare (le jeton api-maree.fr reste côté serveur, variable
+     * MAREE_TOKEN du projet Pages). Seule la liste des sites, publique, a un appel direct de secours.
+     */
     private suspend fun mareeText(path: String, params: List<Pair<String, String>>, ttlMillis: Long): String {
         val query = params.joinToString("&") { (k, v) -> "$k=$v" }
         val suffix = if (query.isEmpty()) "" else "?$query"
         val relayUrl = mareeRelayBase?.let { "$it/$path$suffix" }
-        // /sites est public ; les marées demandent le jeton.
-        val directUrl = "https://api-maree.fr/$path$suffix" +
-            (if (path == "sites") "" else (if (query.isEmpty()) "?" else "&") + "key=$apiMareeToken")
+        // /sites est public : appel direct possible. Les marées demandent le jeton, qui n'est plus dans l'appli.
+        val directUrl = if (path == "sites") "https://api-maree.fr/$path$suffix" else null
         val cacheId = "maree:$path?$query"
         return cachedText(cacheId, ttlMillis) {
             val relayResult = relayUrl?.let { url ->
@@ -582,6 +582,7 @@ class SurfRepository(
                 }.getOrNull()
             }
             relayResult ?: run {
+                if (directUrl == null) error("relais des marées indisponible")
                 val response = httpClient.get(directUrl)
                 if (response.status.value !in 200..299) error("api-maree ${response.status.value}")
                 response.bodyAsText()
