@@ -461,25 +461,24 @@ class SurfRepository {
         toDate: String
     ): TidesBundle = withContext(Dispatchers.IO) {
         try {
-            val sitesRes = RetrofitClient.apiService.getMareeSites()
-            val closest = sitesRes.sites?.minByOrNull { site ->
-                val dLat = site.latitude - lat
-                val dLon = site.longitude - lon
-                dLat * dLat + dLon * dLon
+            val sites = mareeSites()
+            val closest = sites.minByOrNull { distanceKm(lat, lon, it.latitude, it.longitude) }
+            val distance = closest?.let { distanceKm(lat, lon, it.latitude, it.longitude) }
+            val days: List<MareeDayData> = if (closest == null || (distance ?: 0.0) <= MAX_FRENCH_TIDE_KM) {
+                mareeExtrema(closest?.siteId ?: "cordouan", fromDate, toDate)
+            } else {
+                // Hors France : horaires estimes (hauteur d'eau Open-Meteo), coefficient repris de la
+                // France (indice defini au port de Brest par le SHOM, valable sur toute la cote atlantique).
+                val reference = sites.firstOrNull { it.siteName.contains("brest", ignoreCase = true) || it.siteId.equals("brest", true) }
+                    ?: closest
+                val french = runCatching { mareeExtrema(reference.siteId, fromDate, toDate) }.getOrDefault(emptyList())
+                estimatedTideDays(lat, lon, french)
             }
-            val targetSiteId = closest?.siteId ?: "cordouan"
-
-            val extremaRes = RetrofitClient.apiService.getTideExtrema(
-                site = targetSiteId,
-                from = fromDate,
-                to = toDate,
-                key = apiMareeToken
-            )
 
             val dailyMap = mutableMapOf<LocalDate, DailyTideInfo>()
             val rawMap = mutableMapOf<LocalDate, List<MareeExtremum>>()
 
-            extremaRes.data?.forEach { dayData ->
+            days.forEach { dayData ->
                 val parsedDate = LocalDate.parse(dayData.date)
                 val extrema = dayData.extrema ?: emptyList()
                 rawMap[parsedDate] = extrema
@@ -500,5 +499,114 @@ class SurfRepository {
         } catch (e: Exception) {
             TidesBundle(emptyMap(), emptyMap())
         }
+    }
+
+    // Relais Cloudflare d'abord (jeton cote serveur + cache), appel direct en repli.
+    private suspend fun mareeSites(): List<MareeSite> {
+        val viaRelay = runCatching { RetrofitClient.apiService.getMareeSites("$MAREE_RELAY_BASE/sites") }.getOrNull()?.sites
+        if (!viaRelay.isNullOrEmpty()) return viaRelay
+        return RetrofitClient.apiService.getMareeSites().sites ?: emptyList()
+    }
+
+    private suspend fun mareeExtrema(siteId: String, from: String, to: String): List<MareeDayData> {
+        val viaRelay = runCatching {
+            RetrofitClient.apiService.getTideExtrema(url = "$MAREE_RELAY_BASE/tide-extrema", site = siteId, from = from, to = to, key = "")
+        }.getOrNull()?.data
+        if (viaRelay != null) return viaRelay
+        return RetrofitClient.apiService.getTideExtrema(site = siteId, from = from, to = to, key = apiMareeToken).data ?: emptyList()
+    }
+
+    private suspend fun estimatedTideDays(lat: Double, lon: Double, french: List<MareeDayData>): List<MareeDayData> {
+        val url = "https://marine-api.open-meteo.com/v1/marine?latitude=$lat&longitude=$lon" +
+            "&hourly=sea_level_height_msl&past_days=1&forecast_days=8&timezone=auto"
+        val hourly = JSONObject(httpGet(url)).optJSONObject("hourly") ?: return emptyList()
+        val timeArr = hourly.getJSONArray("time")
+        val levels = hourly.optJSONArray("sea_level_height_msl") ?: return emptyList()
+        val times = (0 until timeArr.length()).map { LocalDateTime.parse(timeArr.getString(it)) }
+        val heights = (0 until timeArr.length()).map { if (it < levels.length() && !levels.isNull(it)) levels.getDouble(it) else null }
+        val frenchCoefs = french.flatMap { day ->
+            day.extrema.orEmpty().filter { it.type == "PM" && it.coef != null }.map { Triple(day.date, it.time, it.coef!!) }
+        }
+        return tideDaysFromSeaLevel(times, heights, frenchCoefs)
+    }
+}
+
+/** Relais Cloudflare des marees : jeton cote serveur + cache. Repli : appel direct. */
+const val MAREE_RELAY_BASE = "https://surflog.fr/api/maree"
+
+/** Au-dela, le site de maree francais n'est plus representatif du spot : on estime. */
+const val MAX_FRENCH_TIDE_KM = 80.0
+
+/** Distance approximative (km) entre deux points, suffisante pour choisir un port. */
+internal fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val r = 6371.0
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    return 2 * r * Math.asin(Math.sqrt(a))
+}
+
+/**
+ * Pleines et basses mers deduites d'une serie horaire de hauteur d'eau (Open-Meteo, maree comprise) :
+ * maximums et minimums locaux, affines par une parabole sur 3 points (~15 min). Chaque PM recoit le
+ * coefficient francais de la meme date le plus proche en heure. Hauteurs relatives (0 = plus basse mer).
+ */
+internal fun tideDaysFromSeaLevel(
+    times: List<LocalDateTime>,
+    heights: List<Double?>,
+    frenchCoefs: List<Triple<String, String, Int>>
+): List<MareeDayData> {
+    class Raw(val date: LocalDate, val minutes: Int, val isHigh: Boolean, val height: Double)
+    val raws = mutableListOf<Raw>()
+    for (i in 1 until times.size - 1) {
+        val a = heights[i - 1] ?: continue
+        val b = heights[i] ?: continue
+        val c = heights[i + 1] ?: continue
+        val isHigh = b >= a && b > c
+        val isLow = b <= a && b < c
+        if (!isHigh && !isLow) continue
+        val denom = a - 2 * b + c
+        val offsetHours = if (denom != 0.0) (0.5 * (a - c) / denom).coerceIn(-0.5, 0.5) else 0.0
+        val peak = b - 0.25 * (a - c) * offsetHours
+        var minutes = times[i].hour * 60 + times[i].minute + (offsetHours * 60).roundToInt()
+        var date = times[i].toLocalDate()
+        if (minutes < 0) { minutes += 1440; date = date.minusDays(1) }
+        if (minutes >= 1440) { minutes -= 1440; date = date.plusDays(1) }
+        raws.add(Raw(date, minutes, isHigh, peak))
+    }
+    val alternating = mutableListOf<Raw>()
+    for (r in raws) {
+        val last = alternating.lastOrNull()
+        if (last != null && last.isHigh == r.isHigh) {
+            val better = if (r.isHigh) r.height > last.height else r.height < last.height
+            if (better) alternating[alternating.size - 1] = r
+        } else {
+            alternating.add(r)
+        }
+    }
+    if (alternating.isEmpty()) return emptyList()
+    val floor = alternating.minOf { it.height }
+    fun hhmm(minutes: Int) = "%02d:%02d".format(minutes / 60, minutes % 60)
+    fun minutesOf(text: String): Int {
+        val parts = text.split(':')
+        return (parts.getOrNull(0)?.toIntOrNull() ?: 0) * 60 + (parts.getOrNull(1)?.toIntOrNull() ?: 0)
+    }
+    return alternating.groupBy { it.date }.entries.sortedBy { it.key }.map { (date, list) ->
+        MareeDayData(
+            date = date.toString(),
+            extrema = list.sortedBy { it.minutes }.map { r ->
+                val coef = if (r.isHigh) {
+                    frenchCoefs.filter { it.first == date.toString() }
+                        .minByOrNull { Math.abs(minutesOf(it.second) - r.minutes) }?.third
+                } else null
+                MareeExtremum(
+                    type = if (r.isHigh) "PM" else "BM",
+                    time = hhmm(r.minutes),
+                    height = ((r.height - floor) * 100).roundToInt() / 100.0,
+                    coef = coef
+                )
+            }
+        )
     }
 }
