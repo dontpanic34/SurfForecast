@@ -98,6 +98,8 @@ fun MainScreen(
             onWindUnitSelected = { viewModel.changeWindUnit(it) },
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
+            themeMode = viewModel.themeMode,
+            onThemeModeChanged = { viewModel.changeThemeMode(it) },
             engineConfig = viewModel.engineConfig,
             onDone = { viewModel.dismissOnboarding() }
         )

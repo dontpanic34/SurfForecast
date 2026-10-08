@@ -39,6 +39,8 @@ fun OnboardingDialog(
     onWindUnitSelected: (String) -> Unit,
     surferLevel: String,
     onSurferLevelChanged: (String) -> Unit,
+    themeMode: String,
+    onThemeModeChanged: (String) -> Unit,
     engineConfig: ForecastEngineConfig,
     onDone: () -> Unit
 ) {
@@ -69,7 +71,7 @@ fun OnboardingDialog(
                 ) {
                     Text("Bienvenue sur Surf Log 🏄", fontSize = 19.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                     Text(
-                        "Deux réglages et trois lignes à lire, puis c'est parti. Tout se change plus tard dans ⚙ Paramètres.",
+                        "Trois réglages et trois lignes à lire, puis c'est parti. Tout se change plus tard dans ⚙ Paramètres.",
                         fontSize = 12.sp,
                         color = colors.onSurfaceVariant
                     )
@@ -102,7 +104,20 @@ fun OnboardingDialog(
                         )
                     }
 
-                    OnboardingSection(title = "3. D'où viennent les prévisions") {
+                    OnboardingSection(title = "3. Thème") {
+                        PillChoice(
+                            options = listOf("light" to "☀️ Clair", "dark" to "🌙 Sombre", "system" to "Auto"),
+                            selected = themeMode,
+                            onSelect = onThemeModeChanged
+                        )
+                        Text(
+                            "L'apparence de l'appli. « Auto » suit le réglage de ton téléphone.",
+                            fontSize = 11.5.sp,
+                            color = colors.onSurfaceVariant
+                        )
+                    }
+
+                    OnboardingSection(title = "4. D'où viennent les prévisions") {
                         Bullet(
                             lead = "Aujourd'hui et demain",
                             text = "les modèles les plus fins : vent $shortWind, vagues ${engineConfig.shortTermWave.displayName}. " +
