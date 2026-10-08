@@ -120,6 +120,14 @@ fun waveEnergyKj(heightM: Double, periodS: Double): Double = 1.962 * heightM * h
 /** Hauteur (m) qui donne cette énergie pour une période donnée : l'inverse de [waveEnergyKj]. */
 fun heightForEnergy(energyKj: Double, periodS: Double): Double = kotlin.math.sqrt(energyKj / (1.962 * periodS * periodS))
 
+/** Zone d'une énergie pour un profil : 0 = sous le minimum, 1 = dans la zone idéale, 2 = au-dessus de la zone, 3 = trop gros. */
+fun energyZone(energyKj: Double, profile: SurfProfile): Int = when {
+    energyKj > profile.cap -> 3
+    energyKj > profile.idealMax -> 2
+    energyKj >= profile.idealMin -> 1
+    else -> 0
+}
+
 fun isCustomLevel(level: String) = level.startsWith(SurfProfile.CUSTOM_PREFIX)
 
 private fun profileFor(level: String) = SurfProfile.fromLevel(level)

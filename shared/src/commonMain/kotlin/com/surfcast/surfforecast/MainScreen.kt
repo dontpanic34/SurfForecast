@@ -1032,6 +1032,7 @@ fun DynamicCardsSection(
                                 dailySunInfo = dailySunInfo,
                                 fixedMaxScale = fixedMaxScale,
                                 selectedIndex = selectedIndex,
+                                surferLevel = surferLevel,
                                 windUnit = viewModel.windUnit,
                                 weeklyDensity = viewModel.weeklyDensity,
                                 weeklyWindMode = viewModel.weeklyWindMode,

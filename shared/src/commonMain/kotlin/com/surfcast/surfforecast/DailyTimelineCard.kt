@@ -516,7 +516,20 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
  * Les paliers en quart de metre (0.25 / 0.75...) gardent 2 decimales pour rester
  * exacts : arrondir "%.1f" en HALF_UP afficherait a tort "0,3" pour 0.25.
  */
-private fun formatAxisHeight(value: Double): String {
+/**
+ * Échelle des hauteurs de houle (axe de gauche), commune au déroulé de la journée et à la vue semaine : palier de 0,25 m
+ * doublé jusqu'à environ 4 lignes, avec toujours un peu de marge au-dessus du pic. Renvoie (maximum, valeurs des lignes).
+ */
+internal fun swellAxisScale(rawMax: Double): Pair<Double, List<Double>> {
+    var step = 0.25
+    while (rawMax / step > 4.0) step *= 2.0
+    var niceMax = kotlin.math.ceil(rawMax / step) * step
+    if (niceMax - rawMax < step * 0.2) niceMax += step
+    val gridValues = generateSequence(step) { it + step }.takeWhile { it <= niceMax + step * 0.01 }.toList()
+    return niceMax to gridValues
+}
+
+internal fun formatAxisHeight(value: Double): String {
     val hundredths = (value * 100).roundToLong()
     return when {
         hundredths % 100 == 0L -> (hundredths / 100).toString()
@@ -559,11 +572,7 @@ private fun DailyTimelineSwellCanvas(
         // Echelle de l'axe : un pas "rond" (0,25 / 0,5 / 1 / 2 m...) choisi pour obtenir
         // environ 4 lignes, et toujours un peu de marge au-dessus du pic du jour.
         val rawMax = (hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
-        var step = 0.25
-        while (rawMax / step > 4.0) step *= 2.0
-        var niceMax = kotlin.math.ceil(rawMax / step) * step
-        if (niceMax - rawMax < step * 0.2) niceMax += step
-        val gridValues = generateSequence(step) { it + step }.takeWhile { it <= niceMax + step * 0.01 }.toList()
+        val (niceMax, gridValues) = swellAxisScale(rawMax)
 
         val axisLabels = gridValues.map { formatAxisHeight(it) }
         val axisW = (axisLabels.maxOfOrNull { textMeasurer.measure(it, axisTextStyle).size.width.toFloat() } ?: 0f) + 6.dp.toPx()

@@ -323,4 +323,25 @@ class SurfScoringTest {
         assertEquals(100, calculateSlotScore(nine, null, "intermediate", false, "falling", null))
         assertEquals(1.0, tidePreferenceFactor("any", "low"))
     }
+
+    @Test
+    fun energyZonesFollowTheProfile() {
+        val confirmed = SurfProfile.preset("confirmed")
+        assertEquals(0, energyZone(40.0, confirmed))
+        assertEquals(1, energyZone(283.0, confirmed))
+        assertEquals(2, energyZone(600.0, confirmed))
+        assertEquals(3, energyZone(723.0, confirmed))
+        // Le même jour n'a pas la même couleur pour tout le monde ; l'expert n'a jamais de « trop gros ».
+        assertEquals(3, energyZone(723.0, SurfProfile.preset("intermediate")))
+        assertEquals(1, energyZone(723.0, SurfProfile.preset("expert")))
+    }
+
+    @Test
+    fun swellAxisAdaptsToTheForecast() {
+        val (smallMax, smallGrid) = swellAxisScale(0.7)
+        val (bigMax, bigGrid) = swellAxisScale(3.2)
+        assertTrue(smallMax < bigMax)
+        assertTrue(smallMax >= 0.7 && bigMax >= 3.2)
+        assertTrue(smallGrid.size in 2..5 && bigGrid.size in 2..5)
+    }
 }
