@@ -137,13 +137,14 @@ fun MainScreen(
         )
     }
 
-    // Mise à jour « Mon profil » : écran obligatoire pour tout le monde, une fois l'écran de bienvenue passé.
-    if (!viewModel.profileSetupDone && !viewModel.showOnboarding) {
+    // Mise à jour « Mon profil » : proposé à tout le monde (fortement encouragé, « Plus tard » possible).
+    if (viewModel.showProfileSetup && !viewModel.showOnboarding) {
         ProfileSetupDialog(
             surferLevel = viewModel.surferLevel,
             onLevelChanged = { viewModel.changeSurferLevel(it) },
             body = viewModel.body,
             onBodyChanged = { viewModel.changeBody(it) },
+            onLater = { viewModel.skipProfileSetup() },
             onDone = { openGear ->
                 viewModel.completeProfileSetup()
                 if (openGear) {
@@ -749,7 +750,7 @@ fun MainScreen(
             }
         }
         // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
-        if (viewModel.showHomeTour && !viewModel.showOnboarding && viewModel.profileSetupDone) {
+        if (viewModel.showHomeTour && !viewModel.showOnboarding && !viewModel.showProfileSetup) {
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(

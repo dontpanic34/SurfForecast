@@ -473,10 +473,21 @@ class SurfController(
         prefs.putInt("volume_level_idx", newBody.volumeLevel)
     }
 
-    // Mise à jour « Mon profil » : tout le monde, nouveaux comme anciens utilisateurs, doit renseigner son profil
-    // (niveau, poids, âge) une fois ; l'écran est obligatoire tant que ce n'est pas fait.
+    // Mise à jour « Mon profil » : tout le monde, nouveaux comme anciens utilisateurs, se voit proposer de renseigner
+    // son profil (niveau, poids, âge) ; fortement encouragé, jamais imposé.
     var profileSetupDone by mutableStateOf(prefs.getBoolean("profile_setup_v2_done", false))
         private set
+
+    // « Plus tard » : l'écran revient aux prochaines ouvertures, trois fois au plus ; le badge « Recommandé » reste ensuite.
+    private var profileSetupSkips by mutableStateOf(prefs.getInt("profile_setup_skips", 0))
+    private var profileSetupDismissed by mutableStateOf(false)
+    val showProfileSetup: Boolean get() = !profileSetupDone && profileSetupSkips < 3 && !profileSetupDismissed
+
+    fun skipProfileSetup() {
+        profileSetupDismissed = true
+        profileSetupSkips += 1
+        prefs.putInt("profile_setup_skips", profileSetupSkips)
+    }
 
     fun completeProfileSetup() {
         profileSetupDone = true

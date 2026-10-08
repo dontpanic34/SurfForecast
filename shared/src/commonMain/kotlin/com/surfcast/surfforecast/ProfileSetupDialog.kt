@@ -20,9 +20,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 /**
- * Écran obligatoire de la mise à jour « Mon profil » : montré une fois à tout le monde (anciens comme nouveaux
- * utilisateurs), impossible à fermer sans valider. Il faut le niveau, l'âge et le poids ; la taille et la forme
- * physique sont facultatives. Ensuite, on propose d'aller ajouter son matériel.
+ * Écran de la mise à jour « Mon profil » : montré à tout le monde (anciens comme nouveaux utilisateurs) pour
+ * encourager fortement à renseigner son profil, sans jamais l'imposer : « Plus tard » est toujours là (l'écran
+ * revient alors aux prochaines ouvertures, trois fois au plus). Le poids suffit pour valider ; l'âge, la taille
+ * et la forme physique affinent le volume recommandé. Ensuite, on propose d'aller ajouter son matériel.
  */
 @Composable
 fun ProfileSetupDialog(
@@ -30,16 +31,17 @@ fun ProfileSetupDialog(
     onLevelChanged: (String) -> Unit,
     body: BodyState,
     onBodyChanged: (BodyState) -> Unit,
-    onDone: (openGear: Boolean) -> Unit
+    onDone: (openGear: Boolean) -> Unit,
+    onLater: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
     val levels = listOf("beginner", "intermediate", "confirmed", "expert")
-    val ready = body.ageYears > 0 && body.weightKg > 0
+    val ready = body.weightKg > 0
 
     Dialog(
-        onDismissRequest = { /* obligatoire : on ne ferme pas sans valider */ },
-        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false, usePlatformDefaultWidth = false)
+        onDismissRequest = onLater,
+        properties = DialogProperties(dismissOnClickOutside = false, usePlatformDefaultWidth = false)
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(0.94f).fillMaxHeight(0.92f).clip(RoundedCornerShape(16.dp)),
@@ -60,7 +62,7 @@ fun ProfileSetupDialog(
                         fontSize = 12.5.sp, color = colors.onSurfaceVariant
                     )
 
-                    Text("1. Ton niveau (obligatoire)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                    Text("1. Ton niveau", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                     PillRow(levels.map { levelLabel(it) }, levels.indexOf(surferLevel)) { onLevelChanged(levels[it]) }
                     Text(
                         text = when (surferLevel) {
@@ -73,7 +75,7 @@ fun ProfileSetupDialog(
                         fontSize = 12.sp, color = colors.onSurfaceVariant
                     )
 
-                    Text("2. Toi (âge et poids obligatoires)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                    Text("2. Toi (le poids suffit, le reste affine)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         var ageText by remember { mutableStateOf(if (body.ageYears > 0) body.ageYears.toString() else "") }
                         var heightText by remember { mutableStateOf(if (body.heightCm > 0) body.heightCm.toString() else "") }
@@ -111,7 +113,7 @@ fun ProfileSetupDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
                 if (!ready) {
-                    Text("Il manque ton âge et ton poids pour continuer.", fontSize = 12.sp, color = colors.error)
+                    Text("Renseigne au moins ton poids pour valider.", fontSize = 12.sp, color = colors.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(6.dp))
                 }
                 Button(onClick = { onDone(true) }, enabled = ready, modifier = Modifier.fillMaxWidth()) {
@@ -119,6 +121,9 @@ fun ProfileSetupDialog(
                 }
                 TextButton(onClick = { onDone(false) }, enabled = ready, modifier = Modifier.fillMaxWidth()) {
                     Text("Valider, j'ajouterai mon matériel plus tard")
+                }
+                TextButton(onClick = onLater, modifier = Modifier.fillMaxWidth()) {
+                    Text("Plus tard", fontSize = 12.sp, color = colors.onSurfaceVariant)
                 }
             }
         }
