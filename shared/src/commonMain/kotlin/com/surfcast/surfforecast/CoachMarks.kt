@@ -26,7 +26,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Une étape de la visite guidée : l'élément à éclairer (clé enregistrée par [coachTarget]) + son explication. */
-data class CoachStep(val key: String, val title: String, val text: String)
+data class CoachStep(
+    val key: String,
+    val title: String,
+    val text: String,
+    // Bouton d'action facultatif (ex. « Renseigner mon profil ») : ferme la visite puis exécute l'action.
+    val actionLabel: String? = null,
+    val onAction: (() -> Unit)? = null
+)
 
 /** Enregistre la position à l'écran de cet élément pour que la visite guidée puisse l'éclairer. */
 fun Modifier.coachTarget(key: String, targets: MutableMap<String, Rect>): Modifier =
@@ -106,6 +113,10 @@ fun CoachMarkOverlay(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(step.text, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f))
                 Spacer(modifier = Modifier.height(8.dp))
+                if (step.actionLabel != null && step.onAction != null) {
+                    Button(onClick = { onFinish(); step.onAction.invoke() }, modifier = Modifier.fillMaxWidth()) { Text(step.actionLabel) }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "${index.coerceIn(0, visible.lastIndex) + 1}/${visible.size}",

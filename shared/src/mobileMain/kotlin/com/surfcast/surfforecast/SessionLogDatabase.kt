@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
  */
 @Database(
     entities = [QuiverBoardEntity::class, MicroSpotEntity::class, ConditionSnapshotEntity::class, SurfSessionEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @ConstructedBy(SessionLogDatabaseConstructor::class)
@@ -45,14 +45,22 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+/** v3 → v4 : volume des planches (quiver structuré). Les planches existantes sont conservées. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE quiver ADD COLUMN volumeL REAL")
+        connection.execSQL("ALTER TABLE quiver ADD COLUMN volumeEstimated INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 const val SESSION_LOG_DB_NAME = "session_log.db"
 
 /** Fin de configuration commune : le builder vient de la plateforme (chemin du fichier). */
 fun RoomDatabase.Builder<SessionLogDatabase>.buildSessionLogDatabase(): SessionLogDatabase =
     setDriver(BundledSQLiteDriver())
-        .addMigrations(MIGRATION_2_3)
         .setQueryCoroutineContext(Dispatchers.Default)
         // Fonctionnalité en cours de développement, pas de migrations écrites :
         // un changement de schéma recrée la base plutôt que de planter.
+        .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
         .fallbackToDestructiveMigration(true)
         .build()

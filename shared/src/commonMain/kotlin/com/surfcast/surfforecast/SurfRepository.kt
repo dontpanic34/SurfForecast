@@ -142,8 +142,6 @@ class SurfRepository(
         }
     }
 
-    private val apiMareeToken = "0093ca14ffeffadcf739be7cc77f4738"
-
     private suspend fun httpGet(url: String): JsonObject {
         val text = getTextWithFallback(url) {
             val response = httpClient.get(url)
@@ -258,6 +256,24 @@ class SurfRepository(
 
         return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs)
     }
+
+    /**
+     * Température de la mer par heure (°C), sans modèle de vagues imposé : appel isolé, un échec ou une
+     * donnée absente (point trop côtier) laisse simplement la température inconnue.
+     */
+    private suspend fun fetchSeaTemperature(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Double> = runCatching {
+        val url = "https://marine-api.open-meteo.com/v1/marine?" +
+            "latitude=$lat&longitude=$lon&hourly=sea_surface_temperature&forecast_days=$days&timezone=auto"
+        val hourly = httpGet(url).getValue("hourly").jsonObject
+        val timeArr = hourly.getValue("time").jsonArray
+        val tempArr = hourly.optArray("sea_surface_temperature")
+        buildMap {
+            for (i in timeArr.indices) {
+                val t = tempArr.doubleAt(i) ?: continue
+                put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), t)
+            }
+        }
+    }.getOrDefault(emptyMap())
 
     private suspend fun fetchWeatherBlock(
         lat: Double,
@@ -405,11 +421,14 @@ class SurfRepository(
                 fetchWeatherBlock(lat, lon, config.longTermWeather, 7, includeDailySun = true)
             }
 
+            val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
+
             val shortMarine = shortMarineDeferred.await()
             val longMarine = longMarineDeferred.await()
             val shortWeather = shortWeatherDeferred.await()
             val longWeather = longWeatherDeferred.await()
             val aromeHdWind = aromeHdWindDeferred.await()
+            val seaTemps = seaTempDeferred.await()
 
             val marineMapShort = shortMarine.times.indices.associateBy { shortMarine.times[it] }
             val weatherMapShort = shortWeather.times.indices.associateBy { shortWeather.times[it] }
@@ -485,7 +504,8 @@ class SurfRepository(
                         cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 },
                         feelsLike = wData.apparentTemperatures.getOrElse(wIndex) {
                             wData.temperatures.getOrElse(wIndex) { 20.0 }
-                        }.roundToInt()
+                        }.roundToInt(),
+                        seaTemperature = seaTemps[t]
                     )
                 )
             }
@@ -564,14 +584,16 @@ class SurfRepository(
 
     private val mareeJson = Json { ignoreUnknownKeys = true }
 
-    /** Réponse du service de marées : relais Cloudflare d'abord (jeton côté serveur), sinon appel direct. */
+    /**
+     * Réponse du service de marées : par le relais Cloudflare (le jeton api-maree.fr reste côté serveur, variable
+     * MAREE_TOKEN du projet Pages). Seule la liste des sites, publique, a un appel direct de secours.
+     */
     private suspend fun mareeText(path: String, params: List<Pair<String, String>>, ttlMillis: Long): String {
         val query = params.joinToString("&") { (k, v) -> "$k=$v" }
         val suffix = if (query.isEmpty()) "" else "?$query"
         val relayUrl = mareeRelayBase?.let { "$it/$path$suffix" }
-        // /sites est public ; les marées demandent le jeton.
-        val directUrl = "https://api-maree.fr/$path$suffix" +
-            (if (path == "sites") "" else (if (query.isEmpty()) "?" else "&") + "key=$apiMareeToken")
+        // /sites est public : appel direct possible. Les marées demandent le jeton, qui n'est plus dans l'appli.
+        val directUrl = if (path == "sites") "https://api-maree.fr/$path$suffix" else null
         val cacheId = "maree:$path?$query"
         return cachedText(cacheId, ttlMillis) {
             val relayResult = relayUrl?.let { url ->
@@ -582,6 +604,7 @@ class SurfRepository(
                 }.getOrNull()
             }
             relayResult ?: run {
+                if (directUrl == null) error("relais des marées indisponible")
                 val response = httpClient.get(directUrl)
                 if (response.status.value !in 200..299) error("api-maree ${response.status.value}")
                 response.bodyAsText()

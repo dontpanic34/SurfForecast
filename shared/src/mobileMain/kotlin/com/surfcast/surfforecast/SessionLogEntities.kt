@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 // Tables Room du journal de bord (Android/iOS), identiques à celles de l'app Android :
 // même noms de tables et de colonnes, le fichier session_log.db existant reste lisible.
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -15,7 +16,9 @@ data class QuiverBoardEntity(
     val model: String,
     val family: String,
     val lengthLitrage: String,
-    val finSetup: String
+    val finSetup: String,
+    val volumeL: Double? = null,
+    @ColumnInfo(defaultValue = "0") val volumeEstimated: Boolean = false
 )
 
 @Entity(tableName = "micro_spots")
@@ -64,8 +67,8 @@ data class SurfSessionEntity(
     val mediaUri: String? = null
 )
 
-internal fun QuiverBoardEntity.toModel() = QuiverBoard(id, model, family, lengthLitrage, finSetup)
-internal fun QuiverBoard.toEntity() = QuiverBoardEntity(id, model, family, lengthLitrage, finSetup)
+internal fun QuiverBoardEntity.toModel() = QuiverBoard(id, model, family, lengthLitrage, finSetup, volumeL, volumeEstimated)
+internal fun QuiverBoard.toEntity() = QuiverBoardEntity(id, model, family, lengthLitrage, finSetup, volumeL, volumeEstimated)
 internal fun MicroSpotEntity.toModel() = MicroSpot(id, parentSpotName, name, tidePhase, minHeight, maxHeight, notes)
 internal fun MicroSpot.toEntity() = MicroSpotEntity(id, parentSpotName, name, tidePhase, minHeight, maxHeight, notes)
 internal fun ConditionSnapshotEntity.toModel() = ConditionSnapshot(

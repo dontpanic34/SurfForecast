@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +63,30 @@ fun BeachFacingCard(
             fontSize = 12.sp,
             color = colors.onSurfaceVariant
         )
+        // Où trouver l'orientation d'une plage.
+        val uriHandler = LocalUriHandler.current
+        Column(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(colors.background).padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text("🔎 Où trouver l'orientation ?", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+            Text(
+                "• Sur Google Maps en vue satellite : regarde vers où la plage fait face à la mer (face à l'ouest ≈ 270°, au nord ≈ 0°).\n" +
+                    "• Sur Google, tape « orientation plage $spotName » ou « $spotName beach facing ».\n" +
+                    "• Sur place, boussole du téléphone face à la mer : elle donne l'orientation en degrés.",
+                fontSize = 11.5.sp, color = colors.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { uriHandler.openUri("https://www.google.com/search?q=" + SurfWebcamHelper.percentEncode("orientation plage $spotName surf")) },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Google", fontSize = 12.sp) }
+                OutlinedButton(
+                    onClick = { uriHandler.openUri("https://www.google.com/maps/search/" + SurfWebcamHelper.percentEncode(spotName)) },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Google Maps", fontSize = 12.sp) }
+            }
+        }
         compassPoints.chunked(4).forEach { rowPoints ->
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                 rowPoints.forEach { (label, deg) ->

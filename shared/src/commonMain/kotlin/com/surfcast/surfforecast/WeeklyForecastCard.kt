@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -75,10 +76,11 @@ fun WeeklyForecastCard(
     dailyPeriods: List<Int>,
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
-    dailyWaterTemps: List<Int>,
+    dailyWaterTemps: List<Int?>,
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     fixedMaxScale: Float,
     selectedIndex: Int,
+    surferLevel: String,
     windUnit: String,
     weeklyDensity: Int,
     weeklyWindMode: String,
@@ -110,6 +112,7 @@ fun WeeklyForecastCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Spacer(modifier = Modifier.width(WEEK_AXIS_W))
                 val today = nowLocalDateTime().date
                 availableDates.forEachIndexed { index, date ->
                     val dayNum = date.dayOfMonth.toString()
@@ -153,6 +156,7 @@ fun WeeklyForecastCard(
                     .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Spacer(modifier = Modifier.width(WEEK_AXIS_W))
                 availableDates.forEach { date ->
                     val dailyData = groupedByDate[date] ?: emptyList()
                     val isSelected = date == selectedDate
@@ -180,6 +184,7 @@ fun WeeklyForecastCard(
                     .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Spacer(modifier = Modifier.width(WEEK_AXIS_W))
                 availableDates.forEach { date ->
                     val dailyData = groupedByDate[date] ?: emptyList()
                     val isSelected = date == selectedDate
@@ -213,18 +218,17 @@ fun WeeklyForecastCard(
                     allHourlyData = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) },
                     dailyPeriods = dailyPeriods,
                     dailyHeights = dailyHeights,
-                    dailyFeelsLike = dailyFeelsLike,
-                    dailyWaterTemps = dailyWaterTemps,
+                    surferLevel = surferLevel,
                     dailyEnergies = availableDates.map { date ->
                         daylightHoursFor(date, groupedByDate, dailySunInfo).maxOfOrNull { it.energyKj } ?: 0
                     },
-                    maxScale = fixedMaxScale,
                     daysCount = availableDates.size,
                     selectedIndex = selectedIndex,
                     modifier = Modifier.fillMaxSize()
                 )
 
                 Row(modifier = Modifier.fillMaxSize()) {
+                    Spacer(modifier = Modifier.width(WEEK_AXIS_W))
                     availableDates.forEach { date ->
                         val isSelected = date == selectedDate
                         Box(
@@ -238,34 +242,6 @@ fun WeeklyForecastCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                availableDates.forEach { date ->
-                    val isSelected = date == selectedDate
-                    val tideInfo = dailyTides[date]
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
-                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
-                            .clickable { onSelectDate(date) }
-                            .padding(vertical = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        DailyTideCanvas(
-                            tideInfo = tideInfo,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(26.dp)
-                        )
-                    }
-                }
-            }
             }
         }
     }
@@ -294,11 +270,11 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
                 Text(text = emoji, fontSize = 13.sp)
                 Text(
                     text = "${slot.temperature}°",
-                    fontSize = 6.5.sp,
+                    fontSize = 8.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    lineHeight = 8.sp
+                    lineHeight = 9.sp
                 )
             }
         }
@@ -312,88 +288,77 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
  * isSystemInDarkTheme(), qui ignorerait un theme force manuellement par l'utilisateur.
  */
 @Composable
-private fun isDarkSurfaceTheme(): Boolean =
+internal fun isDarkSurfaceTheme(): Boolean =
     MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+/** Largeur de la colonne de l'échelle des hauteurs (à gauche), commune à toutes les lignes de la vue semaine. */
+internal val WEEK_AXIS_W = 30.dp
 
 @Composable
 fun ContinuousWaveCanvas(
     allHourlyData: List<HourlyUiModel>,
     dailyPeriods: List<Int>,
     dailyHeights: List<Double>,
-    dailyFeelsLike: List<Int>,
-    dailyWaterTemps: List<Int>,
-    // Énergie de la houle au pic de chaque jour (kJ) : petite valeur discrète sous la période.
+    surferLevel: String,
+    // Énergie de la houle au pic de chaque jour (kJ) : sous la courbe, colorée d'après le profil.
     dailyEnergies: List<Int> = emptyList(),
-    maxScale: Float,
     daysCount: Int,
     selectedIndex: Int,
     modifier: Modifier = Modifier
 ) {
     if (allHourlyData.isEmpty()) return
 
-    val density = LocalDensity.current
-    // Remplace les Paint Android (non multiplateformes) : mêmes tailles, graisses et positions.
     val textMeasurer = rememberTextMeasurer()
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    // Texte simple, sans fond ni ombre : on choisit la variante claire ou foncee de
-    // chaque couleur maree selon le theme actif, pour rester lisible sur fond blanc
-    // comme sur fond quasi noir sans alterer l'identite de la couleur elle-meme.
     val isDarkTheme = isDarkSurfaceTheme()
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
+    val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
 
-    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-
-    // Etiquette neutre (pas de code couleur impose) : suit onSurface, lisible nativement
-    // dans les deux themes sans besoin de chip.
-    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-
-    val feelsTextPaint = TextStyle(color = AppColors.WindAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-
-    val waterTextPaint = TextStyle(color = tideLineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    // Période juste au-dessus de la courbe : neutre, lisible dans les deux thèmes.
+    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.7f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp)
 
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        val padY = 8.dp.toPx()
-        val usableH = h - (2 * padY)
-        val baseY = padY + usableH
+        val axisW = WEEK_AXIS_W.toPx()
+        val plotLeft = axisW
+        val plotW = (w - plotLeft).coerceAtLeast(1f)
+        val padTop = 16.dp.toPx()
+        val padBottom = 16.dp.toPx()
+        val usableH = h - padTop - padBottom
+        val baseY = padTop + usableH
 
-        var meter = 0f
-        while (meter <= maxScale + 0.01f) {
-            val y = padY + usableH * (1f - (meter / maxScale))
-            val rem = meter % 1f
-            val isInteger = rem !in 0.05f..0.95f
+        // Échelle des hauteurs à gauche, qui s'adapte aux prévisions de la semaine (comme le déroulé de la journée).
+        val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
+        val (niceMax, gridValues) = swellAxisScale(rawMax)
+        gridValues.forEach { value ->
+            val y = padTop + usableH * (1f - (value / niceMax).toFloat())
             drawLine(
-                color = Color.Gray.copy(alpha = if (isInteger) 0.3f else 0.15f),
-                start = Offset(0f, y),
+                color = onSurfaceColor.copy(alpha = 0.10f),
+                start = Offset(plotLeft, y),
                 end = Offset(w, y),
-                strokeWidth = if (isInteger) 0.9f else 0.5f
+                strokeWidth = 0.8.dp.toPx()
             )
-            meter += 0.5f
+            val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
+            drawText(layout, topLeft = Offset(plotLeft - 5.dp.toPx() - layout.size.width, y + 3.dp.toPx() - layout.firstBaseline))
         }
 
-        val dayWidth = w / daysCount.toFloat()
-        if (daysCount > 1) {
-            for (i in 1 until daysCount) {
-                val x = i * dayWidth
-                drawLine(
-                    color = Color.Gray.copy(alpha = 0.3f),
-                    start = Offset(x, 0f),
-                    end = Offset(x, h),
-                    strokeWidth = 0.8.dp.toPx()
-                )
-            }
+        val dayWidth = plotW / daysCount.toFloat()
+        for (i in 1 until daysCount) {
+            val x = plotLeft + i * dayWidth
+            drawLine(color = Color.Gray.copy(alpha = 0.3f), start = Offset(x, 0f), end = Offset(x, h), strokeWidth = 0.8.dp.toPx())
         }
 
-        val stepX = w / (allHourlyData.size - 1).coerceAtLeast(1).toFloat()
+        val stepX = plotW / (allHourlyData.size - 1).coerceAtLeast(1).toFloat()
         val points = allHourlyData.mapIndexed { index, item ->
-            val ratio = (item.waveHeight.toFloat() / maxScale).coerceIn(0f, 1f)
-            val y = padY + usableH * (1f - ratio)
-            Offset(index * stepX, y)
+            val ratio = (item.waveHeight / niceMax).coerceIn(0.0, 1.0).toFloat()
+            Offset(plotLeft + index * stepX, padTop + usableH * (1f - ratio))
         }
 
         val fillPath = Path().apply {
-            moveTo(0f, baseY)
+            moveTo(plotLeft, baseY)
             lineTo(points.first().x, points.first().y)
             for (i in 1 until points.size) {
                 val prev = points[i - 1]
@@ -404,7 +369,6 @@ fun ContinuousWaveCanvas(
             lineTo(w, baseY)
             close()
         }
-
         drawPath(path = fillPath, color = AppColors.TideHigh.copy(alpha = 0.3f))
 
         val strokePath = Path().apply {
@@ -416,121 +380,52 @@ fun ContinuousWaveCanvas(
                 cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
             }
         }
-
         drawPath(path = strokePath, color = tideLineColor, style = Stroke(width = 2.5.dp.toPx()))
 
         for (i in 0 until daysCount) {
-            val colLeft = i * dayWidth + 3.dp.toPx()
-            val feels = dailyFeelsLike.getOrNull(i) ?: 20
-            val water = dailyWaterTemps.getOrNull(i) ?: 18
-
-            val thX = colLeft + 2.5.dp.toPx()
-            val thTop = padY + 1.5.dp.toPx()
-            val thBottom = padY + 8.7.dp.toPx()
-            val tubeW = 2.7.dp.toPx()
-
-            drawRoundRect(
-                color = AppColors.WindAccent.copy(alpha = 0.35f),
-                topLeft = Offset(thX - tubeW / 2f, thTop),
-                size = Size(tubeW, thBottom - thTop),
-                cornerRadius = CornerRadius(tubeW / 2f, tubeW / 2f)
-            )
-            drawRoundRect(
-                color = AppColors.WindAccent,
-                topLeft = Offset(thX - tubeW / 2f, thTop),
-                size = Size(tubeW, thBottom - thTop),
-                cornerRadius = CornerRadius(tubeW / 2f, tubeW / 2f),
-                style = Stroke(width = 0.7.dp.toPx())
-            )
-            drawCircle(
-                color = AppColors.WindAccent,
-                radius = 2.4.dp.toPx(),
-                center = Offset(thX, thBottom + 1.2.dp.toPx())
-            )
-
-            drawTextAtBaseline(textMeasurer, "$feels°", feelsTextPaint, colLeft + 9.dp.toPx(), padY + 9.3.dp.toPx())
-
-            val dropCenterX = colLeft + 2.5.dp.toPx()
-            val dropTop = padY + 15.dp.toPx()
-            val dropBottom = padY + 22.7.dp.toPx()
-            val dropW = 2.9.dp.toPx()
-
-            val dropPath = Path().apply {
-                moveTo(dropCenterX, dropTop)
-                cubicTo(
-                    dropCenterX + dropW * 0.3f, dropTop + 2.24.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 3.48.dp.toPx(),
-                    dropCenterX + dropW, dropBottom - 1.74.dp.toPx()
-                )
-                quadraticBezierTo(
-                    dropCenterX + dropW, dropBottom,
-                    dropCenterX, dropBottom
-                )
-                quadraticBezierTo(
-                    dropCenterX - dropW, dropBottom,
-                    dropCenterX - dropW, dropBottom - 1.74.dp.toPx()
-                )
-                cubicTo(
-                    dropCenterX - dropW, dropBottom - 3.48.dp.toPx(),
-                    dropCenterX - dropW * 0.3f, dropTop + 2.24.dp.toPx(),
-                    dropCenterX, dropTop
-                )
-                close()
-            }
-
-            drawPath(path = dropPath, color = tideLineColor.copy(alpha = 0.25f))
-            drawPath(path = dropPath, color = tideLineColor, style = Stroke(width = 0.85.dp.toPx()))
-
-            drawTextAtBaseline(textMeasurer, "$water°", waterTextPaint, colLeft + 9.dp.toPx(), padY + 21.9.dp.toPx())
-        }
-
-        for (i in 0 until daysCount) {
-            val targetX = (i + 0.5f) * dayWidth
+            val targetX = plotLeft + (i + 0.5f) * dayWidth
             val closestPoint = points.minByOrNull { abs(it.x - targetX) } ?: continue
-            val waveHeight = dailyHeights.getOrNull(i) ?: 0.0
 
-            val hText = "${formatDecimal(waveHeight, 1)}m"
-            val hTextW = textMeasurer.measure(hText, heightTextPaint).size.width.toFloat()
-            val textY = (closestPoint.y - 5.dp.toPx()).coerceAtLeast(padY + 26.dp.toPx())
-
+            val pText = dailyPeriods.getOrNull(i)?.let { "${it}s" }
             if (i == selectedIndex) {
+                // Jour sélectionné : un seul repère, sur la courbe, avec « hauteur période » au-dessus (rien dessous,
+                // pour ne pas chevaucher la courbe).
                 drawCircle(color = Color.White, radius = 4.4.dp.toPx(), center = closestPoint)
                 drawCircle(color = tideLineColor, radius = 2.8.dp.toPx(), center = closestPoint)
-            }
-
-            // Taille de la houle au-dessus de la courbe, période juste à côté (le tout centré).
-            val period = dailyPeriods.getOrNull(i)
-            val pText = period?.let { "${it}s" }
-            val gap = 3.dp.toPx()
-            val pTextW = pText?.let { textMeasurer.measure(it, periodTextPaint).size.width.toFloat() } ?: 0f
-            val totalW = hTextW + if (pText != null) gap + pTextW else 0f
-            val startX = targetX - totalW / 2f
-            drawTextAtBaseline(textMeasurer, hText, heightTextPaint, startX, textY)
-            if (pText != null) {
-                drawTextAtBaseline(textMeasurer, pText, periodTextPaint, startX + hTextW + gap, textY)
+                val hText = "${formatDecimal(dailyHeights.getOrNull(i) ?: 0.0, 1)}m".replace('.', ',')
+                val hW = textMeasurer.measure(hText, heightTextPaint).size.width.toFloat()
+                val pW = pText?.let { textMeasurer.measure(it, periodTextPaint).size.width.toFloat() } ?: 0f
+                val gap = 3.dp.toPx()
+                val totalW = hW + if (pText != null) gap + pW else 0f
+                val baseline = (closestPoint.y - 9.dp.toPx()).coerceAtLeast(10.dp.toPx())
+                drawTextAtBaseline(textMeasurer, hText, heightTextPaint, targetX - totalW / 2f, baseline)
+                if (pText != null) drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - totalW / 2f + hW + gap, baseline)
+            } else if (pText != null) {
+                // Autres jours : la période seule, juste au-dessus de la courbe.
+                val pW = textMeasurer.measure(pText, periodTextPaint).size.width.toFloat()
+                drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - pW / 2f, (closestPoint.y - 5.dp.toPx()).coerceAtLeast(10.dp.toPx()))
             }
         }
 
-        // Énergie de la houle au pic du jour, à l'ancienne place de la période (bas de la courbe).
+        // Énergie de la houle au pic du jour, sous la courbe ; la couleur suit le profil de l'utilisateur :
+        // gris (sous le minimum), vert (zone idéale), orange (au-dessus), violet (trop gros).
         for (i in 0 until daysCount) {
-            val targetX = (i + 0.5f) * dayWidth
+            val targetX = plotLeft + (i + 0.5f) * dayWidth
             val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
             val eText = "${energy}kJ"
-            val eStyle = energyTextPaint(energy)
+            val eStyle = TextStyle(color = energyZoneColor(energyZone(energy.toDouble(), profile)), fontSize = 9.sp, fontWeight = FontWeight.Bold)
             val eW = textMeasurer.measure(eText, eStyle).size.width.toFloat()
-            drawTextAtBaseline(textMeasurer, eText, eStyle, targetX - eW / 2f, baseY - 3.dp.toPx())
+            drawTextAtBaseline(textMeasurer, eText, eStyle, targetX - eW / 2f, h - 3.dp.toPx())
         }
     }
 }
 
-// Teinte de l'énergie de houle : faible (neutre), moyenne (orange), forte (rouge).
-private fun energyTextPaint(energyKj: Int): TextStyle {
-    val color = when {
-        energyKj >= 400 -> Color(0xFFE53935)
-        energyKj >= 150 -> Color(0xFFFB8C00)
-        else -> Color(0xFF78909C)
-    }
-    return TextStyle(color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+/** Couleur d'une zone d'énergie : gris, vert, orange, violet (« trop gros », comme le score). */
+internal fun energyZoneColor(zone: Int): Color = when (zone) {
+    0 -> Color(0xFF78909C)
+    1 -> Color(0xFF26A69A)
+    2 -> Color(0xFFFB8C00)
+    else -> Color(0xFF9D4EDD)
 }
 
 @Composable
@@ -756,22 +651,22 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
         if (showText) {
         Text(
             text = dirFr,
-            fontSize = if (dirFr.length >= 3) 6.sp else 7.sp,
+            fontSize = if (dirFr.length >= 3) 7.5.sp else 8.sp,
             fontWeight = FontWeight.Bold,
             color = if (windMode == "text") arrowColor else onSurfaceColor,
             maxLines = 1,
-            lineHeight = 8.sp
+            lineHeight = 9.sp
         )
         }
 
         if (showText) {
         Text(
             text = formattedSpeed,
-            fontSize = 6.5.sp,
+            fontSize = 8.sp,
             fontWeight = FontWeight.SemiBold,
             color = if (windMode == "text") arrowColor else onSurfaceColor.copy(alpha = 0.7f),
             maxLines = 1,
-            lineHeight = 8.sp
+            lineHeight = 9.sp
         )
         }
     }

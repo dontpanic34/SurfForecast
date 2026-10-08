@@ -185,7 +185,7 @@ object SurfWebcamHelper {
     @Suppress("UNUSED_PARAMETER")
     fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String = camera.pageUrl
 
-    private fun percentEncode(text: String): String = buildString {
+    internal fun percentEncode(text: String): String = buildString {
         for (b in text.encodeToByteArray()) {
             val c = b.toInt() and 0xFF
             val plain = c in 'a'.code..'z'.code || c in 'A'.code..'Z'.code || c in '0'.code..'9'.code || c == '-'.code || c == '_'.code || c == '.'.code

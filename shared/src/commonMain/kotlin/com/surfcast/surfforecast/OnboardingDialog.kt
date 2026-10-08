@@ -71,6 +71,12 @@ fun OnboardingDialog(
                 ) {
                     Text("Bienvenue sur Surf Log 🏄", fontSize = 19.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                     Text(
+                        "L'appli de surf qui s'adapte à ton niveau !",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.primary
+                    )
+                    Text(
                         "Trois réglages et trois lignes à lire, puis c'est parti. Tout se change plus tard dans ⚙ Paramètres.",
                         fontSize = 12.sp,
                         color = colors.onSurfaceVariant
@@ -99,7 +105,8 @@ fun OnboardingDialog(
                         Text(
                             "Il règle la note du « Meilleur créneau », pas les prévisions. Débutant : les mousses et les petites vagues douces. " +
                                 "Intermédiaire : commence à aller au large et à suivre les vagues. Confirmé : autonome dans l'eau, surfe seul. " +
-                                "Expert : plein potentiel de la vague, cherche la puissance. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde.",
+                                "Expert : plein potentiel de la vague, cherche la puissance. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde. " +
+                                "Pour aller plus loin (énergie de vague, vent, rafales, clapot, tes planches), tu pourras compléter ton profil dans ⚙ Paramètres › Mon profil.",
                             fontSize = 12.sp,
                             color = colors.onSurfaceVariant
                         )

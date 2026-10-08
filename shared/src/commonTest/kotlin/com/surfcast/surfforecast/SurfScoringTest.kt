@@ -36,7 +36,7 @@ class SurfScoringTest {
 
     @Test
     fun perfectIntermediateConditionsScore100() {
-        // 1.962 x 1² x 10² = 196.2 kJ, dans la cible 150-300 ; vent offshore faible -> x1.
+        // 1.962 x 1² x 10² = 196.2 kJ, dans la cible 80-220 ; vent offshore faible -> x1.
         assertEquals(100, calculateSlotScore(hour(10), null, "intermediate", false))
     }
 
@@ -48,16 +48,18 @@ class SurfScoringTest {
 
     @Test
     fun beginnerPenalties() {
-        // 1.962 x 1.44 x 144 = 406.84 kJ (sous le plafond débutant de 450) -> fit 200/406.84 = 0.4916 -> 49.16
-        // x0.85 (marée haute) = 41.8 -> 42
-        assertEquals(42, calculateSlotScore(hour(10, height = 1.2, period = 12.0), null, "beginner", true))
+        // 1.962 x 0.81 x 144 = 228.9 kJ (sous le plafond débutant de 250) -> fit 110/228.9 = 0.4806 -> 48.1
+        // x0.85 (marée haute) = 40.8 -> 41
+        assertEquals(41, calculateSlotScore(hour(10, height = 0.9, period = 12.0), null, "beginner", true))
     }
 
     @Test
     fun swellDirectionAndCrossWind() {
         // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent N 10 km/h (travers) x0.9 ;
-        // ; houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 ; l'écart exact de la direction donne 75 au total.
-        assertEquals(75, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // ; vent de travers N 10 km/h pour un intermédiaire (tolérance 25) : 0.943 ; houle de travers :
+        // facteur 1 - 0.3 x 60/90 = 0.8 ; la direction compte à 80 % pour un intermédiaire : 1 - 0.057 x 0.8 = 0.954 ;
+        // 100 x 0.954 x 0.8 = 76.3 -> 76.
+        assertEquals(76, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -81,25 +83,23 @@ class SurfScoringTest {
 
     @Test
     fun scoreBandsHaveSixShadesPlusTooBig() {
-        assertEquals(ScoreBand.RED, scoreBand(19))
-        assertEquals(ScoreBand.ORANGE, scoreBand(20))
-        assertEquals(ScoreBand.YELLOW, scoreBand(40))
-        assertEquals(ScoreBand.LIGHT_GREEN, scoreBand(55))
-        assertEquals(ScoreBand.GREEN, scoreBand(70))
+        assertEquals(ScoreBand.AVOID, scoreBand(19))
+        assertEquals(ScoreBand.POOR, scoreBand(20))
+        assertEquals(ScoreBand.FAIR, scoreBand(40))
+        assertEquals(ScoreBand.GOOD, scoreBand(55))
+        assertEquals(ScoreBand.VERY_GOOD, scoreBand(70))
         assertEquals(ScoreBand.EXCELLENT, scoreBand(85))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(-1))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(50, tooBig = true))
     }
 
     @Test
-    fun bigDayIsGoodForConfirmedAndTooBigForIntermediate() {
+    fun bigDayIsTooBigForConfirmedButGoodForExpert() {
         val big = hour(10, height = 2.5, period = 14.0, windKmh = 10, windDir = "E")
-        val confirmed = calculateSlotRating(big, 275, "confirmed", false)
-        assertFalse(confirmed.tooBig)
-        assertTrue(confirmed.score >= 70, "2,5 m 14 s offshore pour un confirmé : ${confirmed.score}")
-        val intermediate = calculateSlotRating(big, 275, "intermediate", false)
-        assertTrue(intermediate.tooBig)
-        assertEquals(0, intermediate.score)
+        assertTrue(calculateSlotRating(big, 275, "confirmed", false).tooBig)
+        val expert = calculateSlotRating(big, 275, "expert", false)
+        assertFalse(expert.tooBig)
+        assertTrue(expert.score >= 70, "2,5 m 14 s offshore pour un expert : ${expert.score}")
     }
 
     @Test
@@ -195,5 +195,153 @@ class SurfScoringTest {
         val expert = calculateSlotRating(big, 275, "expert", false)
         assertFalse(expert.tooBig)
         assertTrue(expert.score >= 60, "3,2 m 14 s pour un expert : ${expert.score}")
+    }
+
+    // --- Profils : plafonds par niveau, profil personnalisé ---
+
+    @Test
+    fun capsPerLevelMatchTheDefinitions() {
+        // 1,2 m à 10 s ≈ 283 kJ : trop gros pour un débutant (plafond 250), pas pour un intermédiaire (450).
+        val day = hour(10, height = 1.2, period = 10.0, windKmh = 6, windDir = "E")
+        assertTrue(calculateSlotRating(day, 275, "beginner", false).tooBig)
+        assertFalse(calculateSlotRating(day, 275, "intermediate", false).tooBig)
+        // 1,8 m à 10 s ≈ 636 kJ : trop gros pour un intermédiaire, pas pour un confirmé (plafond 700).
+        val big = hour(10, height = 1.8, period = 10.0, windKmh = 6, windDir = "E")
+        assertTrue(calculateSlotRating(big, 275, "intermediate", false).tooBig)
+        assertFalse(calculateSlotRating(big, 275, "confirmed", false).tooBig)
+        // 2 m à 12 s ≈ 1130 kJ : trop gros pour un confirmé.
+        val bigger = hour(10, height = 2.0, period = 12.0, windKmh = 6, windDir = "E")
+        assertTrue(calculateSlotRating(bigger, 275, "confirmed", false).tooBig)
+        // L'expert surfe tout : jamais « trop gros ».
+        val huge = hour(10, height = 6.0, period = 18.0, windKmh = 6, windDir = "E")
+        assertFalse(calculateSlotRating(huge, 275, "expert", false).tooBig)
+    }
+
+    @Test
+    fun customProfileRoundTripsThroughTheLevelString() {
+        val confirmed = SurfProfile.preset("confirmed")
+        val level = confirmed.serialize()
+        assertTrue(isCustomLevel(level))
+        assertEquals(confirmed, SurfProfile.fromLevel(level))
+        val expert = SurfProfile.preset("expert")
+        assertFalse(SurfProfile.fromLevel(expert.serialize()).hasCap)
+        // Un profil personnalisé identique à un préréglage donne exactement les mêmes notes.
+        val hours = listOf(hour(10), hour(11, height = 2.0, period = 12.0, windKmh = 12, windDir = "O", gustKmh = 25))
+        hours.forEach { h ->
+            assertEquals(calculateSlotRating(h, 275, "confirmed", false), calculateSlotRating(h, 275, level, false))
+        }
+        // Texte invalide : retombe sur Intermédiaire plutôt que de planter.
+        assertEquals(SurfProfile.preset("intermediate"), SurfProfile.fromLevel("custom:n'importe quoi"))
+    }
+
+    @Test
+    fun customToleranceChangesTheScore() {
+        val windy = hour(10, windKmh = 18, windDir = "O", gustKmh = 18)
+        val strict = SurfProfile.preset("confirmed").copy(onshoreMax = 5.0).serialize()
+        val tolerant = SurfProfile.preset("confirmed").copy(onshoreMax = 20.0).serialize()
+        assertTrue(
+            calculateSlotScore(windy, 275, tolerant, false) > calculateSlotScore(windy, 275, strict, false),
+            "un surfeur qui tolère l'onshore note mieux ce jour-là"
+        )
+        val shortPeriod = hour(10, height = 1.5, period = 7.0)
+        val noMinimum = SurfProfile.preset("confirmed").copy(minPeriod = 6.0).serialize()
+        val longOnly = SurfProfile.preset("confirmed").copy(minPeriod = 12.0).serialize()
+        assertTrue(calculateSlotScore(shortPeriod, 275, noMinimum, false) > calculateSlotScore(shortPeriod, 275, longOnly, false))
+    }
+
+    @Test
+    fun theHigherTheLevelTheMoreChopAndOnshoreWeigh() {
+        // Un expert cherche le plein potentiel de la vague : le clapot et l'onshore le pénalisent plus qu'un débutant.
+        val choppy = hour(10, height = 0.9, period = 9.0, windKmh = 10, windDir = "E", chop = 0.5)
+        val beginner = calculateSlotScore(choppy, 275, "beginner", false)
+        val expert = calculateSlotScore(choppy, 275, "expert", false)
+        assertTrue(beginner > expert, "clapot 0,5 m : débutant ($beginner) > expert ($expert)")
+        val onshore = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "O")
+        assertTrue(
+            calculateSlotScore(onshore, 275, "beginner", false) > calculateSlotScore(onshore, 275, "expert", false),
+            "onshore 15 km/h : le débutant s'en accommode mieux"
+        )
+        // Période courte : le débutant (mousse) s'en moque plus que l'expert.
+        val shortPeriod = hour(10, height = 0.9, period = 5.0, windKmh = 5, windDir = "E")
+        assertTrue(calculateSlotScore(shortPeriod, 275, "beginner", false) > calculateSlotScore(shortPeriod, 275, "expert", false))
+    }
+
+    @Test
+    fun offshoreIsForConfirmedAndExpertNotForBeginners() {
+        val offshore = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "E")
+        val cross = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "N")
+        // Débutant : la direction ne change presque rien.
+        val begDiff = calculateSlotScore(offshore, 275, "beginner", false) - calculateSlotScore(cross, 275, "beginner", false)
+        assertTrue(begDiff in 0..6, "débutant offshore - travers : $begDiff")
+        // Confirmé : l'offshore est nettement mieux que le travers.
+        val confDiff = calculateSlotScore(offshore, 275, "confirmed", false) - calculateSlotScore(cross, 275, "confirmed", false)
+        assertTrue(confDiff >= 12, "confirmé offshore - travers : $confDiff")
+        // Offshore soutenu (20 km/h) : creux et rapide, mieux noté par un confirmé que par un intermédiaire.
+        val strong = hour(10, height = 0.9, period = 9.0, windKmh = 20, windDir = "E")
+        assertTrue(calculateSlotScore(strong, 275, "confirmed", false) > calculateSlotScore(strong, 275, "intermediate", false))
+    }
+
+    @Test
+    fun oldCustomProfilesWithoutDirectionSettingsStillLoad() {
+        val legacy = "custom:80.0;500.0;700.0;0.85;250.0;7.0;25.0;8.0;25.0;0.2;0.0"
+        val profile = SurfProfile.fromLevel(legacy)
+        assertEquals(700.0, profile.cap)
+        assertEquals(1.0, profile.directionMatters)
+        assertEquals(1.0, profile.offshoreMinFactor)
+    }
+
+    @Test
+    fun bestSlotsAreSplitBetweenMorningAndAfternoon() {
+        val hours = (7..18).map { h ->
+            // Matin : houle propre ; après-midi : onshore costaud qui dégrade tout.
+            if (h < 13) hour(h) else hour(h, windKmh = 28, windDir = "O")
+        }
+        val slots = findBestSlotsOfDay(hours, null, "intermediate", null)
+        val morning = slots.morning
+        assertNotNull(morning)
+        assertTrue(morning.endHour < 13)
+        assertEquals(100, morning.averageScore)
+        // L'après-midi n'a aucun bon créneau : il est soit absent, soit nettement moins bon.
+        val afternoon = slots.afternoon
+        assertTrue(afternoon == null || afternoon.averageScore < 30)
+        // Un jour qui n'a que des heures de l'après-midi : pas de créneau du matin.
+        val onlyAfternoon = findBestSlotsOfDay(listOf(hour(14), hour(15), hour(16)), null, "intermediate", null)
+        assertTrue(onlyAfternoon.morning == null && onlyAfternoon.afternoon != null)
+    }
+
+    @Test
+    fun preferredTidePhaseMatchesTheScore() {
+        // Basse mer à 6 h, pleine mer à 12 h : à 9 h la marée monte.
+        val tide = DailyTideInfo(highTideTime = "12:00", lowTideTime = "06:00")
+        val nine = hour(9)
+        assertEquals("rising", tidePhaseAt(nine.rawTime.time, tide))
+        assertEquals(100, calculateSlotScore(nine, null, "intermediate", false, "rising", tide))
+        assertEquals(100, calculateSlotScore(nine, null, "intermediate", false, "any", tide))
+        assertEquals(85, calculateSlotScore(nine, null, "intermediate", false, "high", tide))
+        assertEquals(70, calculateSlotScore(nine, null, "intermediate", false, "falling", tide))
+        // Sans horaires de marée connus : aucun effet.
+        assertEquals(100, calculateSlotScore(nine, null, "intermediate", false, "falling", null))
+        assertEquals(1.0, tidePreferenceFactor("any", "low"))
+    }
+
+    @Test
+    fun energyZonesFollowTheProfile() {
+        val confirmed = SurfProfile.preset("confirmed")
+        assertEquals(0, energyZone(40.0, confirmed))
+        assertEquals(1, energyZone(283.0, confirmed))
+        assertEquals(2, energyZone(600.0, confirmed))
+        assertEquals(3, energyZone(723.0, confirmed))
+        // Le même jour n'a pas la même couleur pour tout le monde ; l'expert n'a jamais de « trop gros ».
+        assertEquals(3, energyZone(723.0, SurfProfile.preset("intermediate")))
+        assertEquals(1, energyZone(723.0, SurfProfile.preset("expert")))
+    }
+
+    @Test
+    fun swellAxisAdaptsToTheForecast() {
+        val (smallMax, smallGrid) = swellAxisScale(0.7)
+        val (bigMax, bigGrid) = swellAxisScale(3.2)
+        assertTrue(smallMax < bigMax)
+        assertTrue(smallMax >= 0.7 && bigMax >= 3.2)
+        assertTrue(smallGrid.size in 2..5 && bigGrid.size in 2..5)
     }
 }

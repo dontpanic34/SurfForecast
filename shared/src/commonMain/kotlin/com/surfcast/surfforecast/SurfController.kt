@@ -40,7 +40,8 @@ sealed class SurfUiState {
 
 data class DailySummaryUiModel(
     val avgFeelsLike: Int,
-    val avgWaterTemp: Int
+    // Température de la mer moyenne du jour (°C), null si le service ne la fournit pas.
+    val avgWaterTemp: Int?
 )
 
 /**
@@ -184,7 +185,7 @@ class SurfController(
     var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
         private set
 
-    var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 3).coerceIn(1, 3))
+    var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
         private set
 
     var weeklyWindMode by mutableStateOf(prefs.getString("weekly_wind_mode", "both") ?: "both")
@@ -419,7 +420,10 @@ class SurfController(
 
             val summaries = grouped.mapValues { (_, hours) ->
                 val avgTemp = if (hours.isNotEmpty()) hours.map { it.temperature }.average().roundToInt() else 20
-                DailySummaryUiModel(avgFeelsLike = avgTemp, avgWaterTemp = 19)
+                DailySummaryUiModel(
+                    avgFeelsLike = avgTemp,
+                    avgWaterTemp = hours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()
+                )
             }
 
             val today = nowLocalDateTime().date
@@ -489,6 +493,67 @@ class SurfController(
         prefs.putString("weekly_wind_mode", mode)
     }
 
+    // Mon profil : le badge « Recommandé » reste tant que l'utilisateur n'a rien réglé dans sa page.
+    var profileReviewed by mutableStateOf(prefs.getBoolean("profile_reviewed_v1", false))
+        private set
+
+    fun markProfileReviewed() {
+        if (profileReviewed) return
+        profileReviewed = true
+        prefs.putBoolean("profile_reviewed_v1", true)
+    }
+
+    // Mon matériel : âge, taille (cm), poids (kg), forme physique et niveau du calcul de volume (0 = non renseigné).
+    // Restent sur l'appareil.
+    var body by mutableStateOf(
+        BodyState(
+            ageYears = prefs.getInt("body_age", 0),
+            heightCm = prefs.getInt("body_height_cm", 0),
+            weightKg = prefs.getInt("body_weight_kg", 0),
+            fitness = prefs.getInt("body_fitness", 0),
+            volumeLevel = prefs.getInt("volume_level_idx", -1)
+        )
+    )
+        private set
+
+    fun changeBody(newBody: BodyState) {
+        body = newBody
+        prefs.putInt("body_age", newBody.ageYears)
+        prefs.putInt("body_height_cm", newBody.heightCm)
+        prefs.putInt("body_weight_kg", newBody.weightKg)
+        prefs.putInt("body_fitness", newBody.fitness)
+        prefs.putInt("volume_level_idx", newBody.volumeLevel)
+    }
+
+    // Tant que le profil n'est pas renseigné, un message cliquable remplace le « Meilleur créneau » de l'écran
+    // principal. « Plus tard » le masque pour la session ; il revient à l'ouverture suivante.
+    private var profileNudgeHidden by mutableStateOf(false)
+    val showProfileNudge: Boolean get() = !profileReviewed && !profileNudgeHidden
+
+    fun hideProfileNudge() {
+        profileNudgeHidden = true
+    }
+
+    // Marée préférée : "any", "rising" (montant), "falling" (descendant), "high" (pleine mer), "low" (basse mer).
+    var tidePreference by mutableStateOf(prefs.getString("tide_preference", "any") ?: "any")
+        private set
+
+    fun changeTidePreference(preference: String) {
+        tidePreference = preference
+        prefs.putString("tide_preference", preference)
+    }
+
+    // Profil Personnalisé gardé à part : passer sur Débutant (pour montrer à un élève) ne l'efface pas.
+    var customProfile by mutableStateOf(
+        (prefs.getString("custom_profile", "") ?: "").ifBlank { if (isCustomLevel(surferLevel)) surferLevel else "" }
+    )
+        private set
+
+    fun saveCustomProfile(serialized: String) {
+        customProfile = serialized
+        prefs.putString("custom_profile", serialized)
+    }
+
     fun changeSurferLevel(level: String) {
         surferLevel = level
         prefs.putString("surfer_level", level)
@@ -551,10 +616,22 @@ class SurfController(
     fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
         runCatching { history.conditionsFor(spotName, date) }.getOrNull()
 
-    fun addQuiverBoard(model: String, family: String, lengthLitrage: String, finSetup: String) {
+    fun addQuiverBoard(
+        model: String,
+        family: String,
+        lengthLitrage: String,
+        finSetup: String,
+        volumeL: Double? = null,
+        volumeEstimated: Boolean = false
+    ) {
         val dao = sessionLogStore ?: return
         scope.launch {
-            dao.insertQuiverBoard(QuiverBoard(model = model, family = family, lengthLitrage = lengthLitrage, finSetup = finSetup))
+            dao.insertQuiverBoard(
+                QuiverBoard(
+                    model = model, family = family, lengthLitrage = lengthLitrage, finSetup = finSetup,
+                    volumeL = volumeL, volumeEstimated = volumeEstimated
+                )
+            )
         }
     }
 

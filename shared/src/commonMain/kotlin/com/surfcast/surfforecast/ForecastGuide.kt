@@ -2,13 +2,20 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -33,8 +40,8 @@ private val guideSections = listOf(
     GuideSection(
         "⚡ L'énergie (en kJ)",
         "Elle résume hauteur et période en un chiffre : la force réelle de la houle. Repères : 0,8 m à 9 s ≈ 100 kJ (ça ouvre, pour " +
-            "tout le monde) ; 1,2 m à 11 s ≈ 285 ; 2 m à 12 s ≈ 1100 ; 2,5 m à 14 s ≈ 2400. Chaque niveau a son plafond : " +
-            "au-delà, la note est « trop gros » (violet)."
+            "tout le monde) ; 1,2 m à 11 s ≈ 285 ; 2 m à 12 s ≈ 1100 ; 2,5 m à 14 s ≈ 2400. Chaque profil a son plafond : " +
+            "au-delà, la note est « trop gros » (violet). Dans Paramètres › Mon profil, tu peux régler ton énergie minimum et maximum."
     ),
     GuideSection(
         "🧭 La direction",
@@ -59,9 +66,9 @@ private val guideSections = listOf(
     GuideSection(
         "🎯 Le score et le meilleur créneau",
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (avec rafales) et clapot. " +
-            "Les couleurs : rouge = à éviter, orange = médiocre, jaune = correct, vert clair = bon, vert = très bon, vert vif = excellent. " +
+            "Les couleurs : gris = à éviter, rouge = médiocre, orange = correct, jaune = bon, vert = très bon, vert fluo = excellent. " +
             "Violet = trop gros pour ton niveau : ce n'est pas mauvais, c'est simplement au-dessus de ce que ton niveau gère " +
-            "(plafond d'énergie : débutant 450 kJ, intermédiaire 1100, confirmé 3500, expert 8000). " +
+            "(plafond d'énergie : débutant 250 kJ, intermédiaire 450, confirmé 700, expert aucun). Le profil règle aussi l'importance de l'offshore (il creuse la vague et fait les tubes : réservé surtout aux confirmés et experts) et la tolérance au vent, aux rafales, au clapot et à la période (plus on cherche la qualité de la vague, plus ces défauts pèsent : un expert est plus exigeant qu'un débutant), et le profil Personnalisé te laisse tout ajuster. " +
             "Le meilleur créneau est la fenêtre de 2 à 3 heures avec la meilleure moyenne. " +
             "La note ne connaît pas ton spot (bancs de sable, courants) : c'est à toi de juger s'il marche. Regarde la webcam avant de partir."
     ),
@@ -73,7 +80,7 @@ private val guideSections = listOf(
     GuideSection(
         "📡 D'où viennent les données",
         "Prévisions de houle et de vent : Open-Meteo.com (licence CC BY 4.0), à partir des modèles Météo-France (AROME, ARPEGE, MFWAM) " +
-            "et ECMWF. Marées et coefficients en France : api-maree.fr (données SHOM). Hors de France : estimation Open-Meteo."
+            "et ECMWF. Marées et coefficients en France : api-maree.fr, à partir des composantes harmoniques Ifremer / PREVIMER (licence CC BY 4.0) ; ce sont des prévisions calculées, à vérifier avant de partir. Hors de France : estimation Open-Meteo. Température de la mer : Open-Meteo Marine."
     )
 )
 
@@ -81,18 +88,26 @@ private val guideSections = listOf(
 @Composable
 fun ForecastGuideContent() {
     val colors = MaterialTheme.colorScheme
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Touche un titre pour lire l'explication.", fontSize = 12.5.sp, color = colors.onSurfaceVariant)
         guideSections.forEach { section ->
+            var open by remember { mutableStateOf(false) }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(colors.surfaceVariant)
+                    .clickable { open = !open }
                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(section.title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-                Text(section.text, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(section.title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground, modifier = Modifier.weight(1f))
+                    Text(if (open) "⌃" else "⌄", fontSize = 18.sp, color = colors.primary)
+                }
+                if (open) {
+                    Text(section.text, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+                }
             }
         }
     }
