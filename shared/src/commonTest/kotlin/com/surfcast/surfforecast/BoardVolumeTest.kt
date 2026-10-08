@@ -127,4 +127,11 @@ class BoardVolumeTest {
         assertTrue(fillFactorFor("fish") > fillFactorFor("shortboard"))
         assertTrue(isLongFamily("mid-length") && !isLongFamily("shortboard"))
     }
+
+    @Test
+    fun volumeRangeIsWholeLitresPlusOrMinusFivePercent() {
+        assertEquals("27–29", volumeRangeText(28.0))
+        assertEquals("31–34", volumeRangeText(32.15))
+        assertEquals("52–57", volumeRangeText(54.4))
+    }
 }

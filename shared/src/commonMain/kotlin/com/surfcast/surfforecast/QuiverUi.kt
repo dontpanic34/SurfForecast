@@ -463,7 +463,7 @@ fun VolumeTableCard(weightKg: Int, levelIndex: Int, body: BodyState) {
     ) {
         Text("Correspondances niveau × poids", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
         Text(
-            (if (personal) "Volume (L) pour une planche courte, calculé pour ton âge et ta forme physique." else "Volume (L) pour une planche courte, adulte de moins de 30 ans en excellente forme.") +
+            (if (personal) "Fourchette de volume (L, ± 5 %) pour une planche courte, calculée pour ton âge et ta forme physique." else "Fourchette de volume (L, ± 5 %) pour une planche courte, adulte de moins de 30 ans en excellente forme.") +
                 " Ta ligne et ta colonne sont surlignées. Repères indicatifs : seul le shaper connaît le volume exact, et le bon volume dépend aussi de tes vagues et de ta pratique.",
             fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.65f)
         )
@@ -487,7 +487,7 @@ fun VolumeTableCard(weightKg: Int, levelIndex: Int, body: BodyState) {
                 weights.forEach { w ->
                     val hl = weightKg > 0 && kotlin.math.abs(w - weightKg) < 5
                     Text(
-                        formatFr(volumeTableValue(i, w) * factor, 1), fontSize = 10.5.sp,
+                        volumeRangeText(volumeTableValue(i, w) * factor), fontSize = 10.sp, maxLines = 1,
                         fontWeight = if (hl || rowOn) FontWeight.Bold else FontWeight.Normal,
                         color = if (hl) colors.primary else colors.onSurface, modifier = Modifier.weight(1f)
                     )

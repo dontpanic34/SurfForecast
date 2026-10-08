@@ -1,5 +1,7 @@
 package com.surfcast.surfforecast
 
+import kotlin.math.roundToInt
+
 // Volume d'une planche : lecture des cotes (décimal ou fraction, comme écrit sur la planche) et estimation.
 
 /**
@@ -200,3 +202,6 @@ fun formatLengthFeet(totalInches: Int): String = "${totalInches / 12}'${totalInc
 /** Cotes lues sur les curseurs, telles qu'on les écrit sur une planche : « 5'8 x 20 3/8 x 2 1/2 ». */
 fun formatSliderDimensions(lengthInches: Int, widthEighths: Int, thicknessSixteenths: Int): String =
     "${formatLengthFeet(lengthInches)} x ${formatInchesFraction(widthEighths, 8)} x ${formatInchesFraction(thicknessSixteenths, 16)}"
+
+/** Fourchette de volume en litres entiers, ± 5 % : 28,0 -> « 27–29 ». Plus honnête qu'un chiffre unique. */
+fun volumeRangeText(volumeL: Double): String = "${(volumeL * 0.95).roundToInt()}–${(volumeL * 1.05).roundToInt()}"
