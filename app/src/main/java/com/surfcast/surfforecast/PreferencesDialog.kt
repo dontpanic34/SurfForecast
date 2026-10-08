@@ -248,15 +248,12 @@ fun SurfPreferencesDialog(
                         fontWeight = FontWeight.Bold,
                         color = colors.onBackground
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                    DonationButton()
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Fermer",
                             tint = colors.onSurfaceVariant
                         )
-                    }
                     }
                 }
 
@@ -631,6 +628,8 @@ fun SurfPreferencesDialog(
                         Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 11.5.sp)
                     }
                 }
+
+                DonationSection()
 
                 Spacer(modifier = Modifier.height(10.dp))
 
