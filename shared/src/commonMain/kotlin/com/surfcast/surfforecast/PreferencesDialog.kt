@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -92,8 +93,21 @@ fun SurfPreferencesDialog(
     var showModelsInfo by remember { mutableStateOf(false) }
     var infoTab by remember { mutableStateOf("France") }
     var showScoreInfo by remember { mutableStateOf(false) }
+    // Modèle de prévision dont on affiche la fiche (petit « i » à côté de chaque modèle).
+    var modelInfo by remember { mutableStateOf<String?>(null) }
     // Page ouverte : null = menu des Paramètres, sinon "display", "forecast", "journal", "app" ou "help".
     var page by remember { mutableStateOf(startPage) }
+
+    modelInfo?.let { name ->
+        val info = forecastModelInfo(name)
+        AlertDialog(
+            onDismissRequest = { modelInfo = null },
+            containerColor = colors.background,
+            title = { Text(text = info.first, color = colors.onBackground, fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+            text = { Text(text = info.second, color = colors.onSurfaceVariant, fontSize = 13.sp, lineHeight = 18.sp) },
+            confirmButton = { TextButton(onClick = { modelInfo = null }) { Text("Compris", color = colors.primary, fontWeight = FontWeight.Bold) } }
+        )
+    }
 
     if (showScoreInfo) {
         AlertDialog(
@@ -349,10 +363,41 @@ fun SurfPreferencesDialog(
                         )
                     }
 
+                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "1. Unité du vent",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary
+                            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("kmh" to "km/h", "knots" to "Nœuds", "bft" to "Beaufort").forEach { (key, label) ->
+                                    val isSelected = windUnit == key
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(pillShape)
+                                            .clickable { onWindUnitSelected(key) },
+                                        color = if (isSelected) colors.primary else colors.surfaceVariant
+                                    ) {
+                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = label,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                text = "1. Personnalisation",
+                                text = "2. Encarts de l'écran principal",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = colors.primary
@@ -456,37 +501,6 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "2. Unité du vent",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf("kmh" to "km/h", "knots" to "Nœuds", "bft" to "Beaufort").forEach { (key, label) ->
-                                    val isSelected = windUnit == key
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(pillShape)
-                                            .clickable { onWindUnitSelected(key) },
-                                        color = if (isSelected) colors.primary else colors.surfaceVariant
-                                    ) {
-                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = label,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     // Bouton d'épinglage du widget : Android seulement (rien à afficher sur le site).
                     if (page == "app" && onPinWidget != null) {
                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -548,12 +562,20 @@ fun SurfPreferencesDialog(
                                             color = if (isSelected) colors.primary else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = model,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = model,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        SurfIcons.Info, contentDescription = "À quoi correspond $model",
+                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -576,12 +598,20 @@ fun SurfPreferencesDialog(
                                             color = if (isSelected) colors.primary else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = model,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = model,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        SurfIcons.Info, contentDescription = "À quoi correspond $model",
+                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -608,12 +638,20 @@ fun SurfPreferencesDialog(
                                             color = if (isSelected) colors.primary else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = model,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = model,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        SurfIcons.Info, contentDescription = "À quoi correspond $model",
+                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -636,12 +674,20 @@ fun SurfPreferencesDialog(
                                             color = if (isSelected) colors.primary else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    text = model,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = model,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        SurfIcons.Info, contentDescription = "À quoi correspond $model",
+                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -916,4 +962,25 @@ private fun PrefMenuRow(icon: String, title: String, subtitle: String, badge: St
         }
         Text("›", fontSize = 22.sp, color = colors.onSurfaceVariant)
     }
+}
+
+
+/** Fiche d'un modèle de prévision : (titre, explication) pour les curieux. */
+private fun forecastModelInfo(model: String): Pair<String, String> = when (model) {
+    "AROME" -> "AROME (Météo-France)" to
+        "Modèle de vent à maille très fine (1,3 km sur la France) : il voit les brises côtières, les thermiques et les effets du relief. " +
+        "C'est le plus précis pour le vent d'aujourd'hui et de demain. Il ne regarde que 2 à 3 jours devant."
+    "ARPEGE" -> "ARPEGE (Météo-France)" to
+        "Modèle global de Météo-France, plus grossier (11 km sur l'Europe) mais qui voit plus loin (environ 4 jours). " +
+        "Un bon repli quand AROME ne couvre pas la date ou le spot."
+    "ECMWF" -> "ECMWF IFS (centre européen)" to
+        "Le modèle du Centre européen de prévision à moyen terme (9 km), l'un des meilleurs au monde. Très stable, il prévoit jusqu'à 10 jours. " +
+        "Moins fin que AROME sur les brises locales."
+    "MF-WAM" -> "MF-WAM (Météo-France)" to
+        "Modèle de vagues de Météo-France (8 km). Bon sur les côtes françaises : il tient compte des fonds et des effets côtiers, " +
+        "donc de la houle telle qu'elle arrive près du rivage."
+    "ECMWF Wave" -> "ECMWF Wave (WAM, centre européen)" to
+        "Modèle de vagues du Centre européen (14 km). La référence pour la houle du grand large, les longues périodes et l'énergie océanique. " +
+        "Moins précis tout près de la côte."
+    else -> model to "Modèle de prévision."
 }

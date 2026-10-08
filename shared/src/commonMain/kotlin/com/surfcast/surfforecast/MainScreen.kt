@@ -750,6 +750,8 @@ fun MainScreen(
                     CoachStep(
                         "settings", "⭐ L'appli de surf qui s'adapte à ton niveau",
                         "Pour que ça marche vraiment, renseigne ton profil : c'est LE réglage à faire en premier, et c'est ce qui change tout. " +
+                            "Important : les meilleurs créneaux (matin et après-midi) ne sont calculés pour toi qu'une fois ton profil rempli ; " +
+                            "tant qu'il ne l'est pas, ils sont remplacés par un message qui t'y renvoie. " +
                             "Sans lui, les notes sont celles d'un surfeur moyen. Avec lui, elles sont calculées pour toi : ton niveau (Débutant, Intermédiaire, " +
                             "Confirmé, Expert) ou ton propre réglage (l'énergie de vague que tu cherches, ta tolérance au vent, aux rafales et au clapot). " +
                             "Le meilleur créneau, les couleurs et le « trop gros » (violet) deviennent les tiens. " +
