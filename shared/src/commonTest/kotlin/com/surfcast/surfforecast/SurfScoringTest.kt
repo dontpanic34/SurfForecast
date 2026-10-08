@@ -56,9 +56,9 @@ class SurfScoringTest {
     @Test
     fun swellDirectionAndCrossWind() {
         // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent N 10 km/h (travers) x0.9 ;
-        // ; vent de travers N 10 km/h pour un intermédiaire (tolérance 20) : 0.871 ; houle de travers :
-        // facteur 1 - 0.3 x 60/90 = 0.8 ; 100 x 0.871 x 0.8 = 69.7 -> 70.
-        assertEquals(70, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // ; vent de travers N 10 km/h pour un intermédiaire (tolérance 25) : 0.943 ; houle de travers :
+        // facteur 1 - 0.3 x 60/90 = 0.8 ; 100 x 0.943 x 0.8 = 75.4 -> 75.
+        assertEquals(75, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -246,5 +246,22 @@ class SurfScoringTest {
         val noMinimum = SurfProfile.preset("confirmed").copy(minPeriod = 6.0).serialize()
         val longOnly = SurfProfile.preset("confirmed").copy(minPeriod = 12.0).serialize()
         assertTrue(calculateSlotScore(shortPeriod, 275, noMinimum, false) > calculateSlotScore(shortPeriod, 275, longOnly, false))
+    }
+
+    @Test
+    fun theHigherTheLevelTheMoreChopAndOnshoreWeigh() {
+        // Un expert cherche le plein potentiel de la vague : le clapot et l'onshore le pénalisent plus qu'un débutant.
+        val choppy = hour(10, height = 0.9, period = 9.0, windKmh = 10, windDir = "E", chop = 0.5)
+        val beginner = calculateSlotScore(choppy, 275, "beginner", false)
+        val expert = calculateSlotScore(choppy, 275, "expert", false)
+        assertTrue(beginner > expert, "clapot 0,5 m : débutant ($beginner) > expert ($expert)")
+        val onshore = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "O")
+        assertTrue(
+            calculateSlotScore(onshore, 275, "beginner", false) > calculateSlotScore(onshore, 275, "expert", false),
+            "onshore 15 km/h : le débutant s'en accommode mieux"
+        )
+        // Période courte : le débutant (mousse) s'en moque plus que l'expert.
+        val shortPeriod = hour(10, height = 0.9, period = 5.0, windKmh = 5, windDir = "E")
+        assertTrue(calculateSlotScore(shortPeriod, 275, "beginner", false) > calculateSlotScore(shortPeriod, 275, "expert", false))
     }
 }

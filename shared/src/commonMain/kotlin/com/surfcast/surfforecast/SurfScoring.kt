@@ -71,18 +71,24 @@ data class SurfProfile(
         const val NO_CAP = 1e9
         const val CUSTOM_PREFIX = "custom:"
 
-        /** Les 4 profils de départ. Le niveau ne se résume pas à l'énergie : vent, rafales et clapot suivent. */
+        /**
+         * Les 4 profils de départ. Le niveau ne se résume pas à l'énergie, et tout ce qui dégrade la vague (clapot,
+         * onshore, rafales, période courte) ne pèse pas pareil : un expert cherche le plein potentiel de la vague et
+         * y est donc le plus sensible ; un débutant qui prend de la mousse s'en moque presque.
+         */
         fun preset(level: String): SurfProfile = when (level) {
-            // Débutant : les mousses, les petites vagues douces ; peu de vent toléré.
-            "beginner" -> SurfProfile(30.0, 110.0, 250.0, minPeriod = 6.0, windTolerance = 15.0, onshoreMax = 5.0,
-                gustThreshold = 15.0, chopThreshold = 0.15, beginnerExtras = true)
+            // Débutant : les mousses, les petites vagues douces ; la qualité de la vague compte peu.
+            "beginner" -> SurfProfile(30.0, 110.0, 250.0, minPeriod = 5.0, windTolerance = 30.0, onshoreMax = 20.0,
+                gustThreshold = 30.0, chopThreshold = 0.6, beginnerExtras = true)
             // Intermédiaire : commence à aller au large et à suivre les vagues.
-            "intermediate" -> SurfProfile(80.0, 220.0, 450.0, minPeriod = 7.0, windTolerance = 20.0)
-            // Confirmé : autonome, surfe seul, préfère un peu de puissance.
-            "confirmed" -> SurfProfile(80.0, 500.0, 700.0, rampStartFit = 0.85, rampEnd = 250.0, minPeriod = 8.0)
-            // Expert : tout surfer, plein potentiel de la vague, pas de limite de taille.
+            "intermediate" -> SurfProfile(80.0, 220.0, 450.0, minPeriod = 6.0, windTolerance = 25.0, onshoreMax = 12.0,
+                gustThreshold = 25.0, chopThreshold = 0.3)
+            // Confirmé : autonome, surfe seul, préfère un peu de puissance et de la vague propre.
+            "confirmed" -> SurfProfile(80.0, 500.0, 700.0, rampStartFit = 0.85, rampEnd = 250.0, minPeriod = 7.0,
+                windTolerance = 25.0, onshoreMax = 8.0, gustThreshold = 25.0, chopThreshold = 0.2)
+            // Expert : plein potentiel de la vague, pas de limite de taille, mais le plus exigeant sur la qualité.
             "expert" -> SurfProfile(80.0, 4000.0, NO_CAP, rampStartFit = 0.65, rampEnd = 400.0, minPeriod = 8.0,
-                windTolerance = 35.0, onshoreMax = 20.0, chopThreshold = 0.6)
+                windTolerance = 20.0, onshoreMax = 5.0, gustThreshold = 20.0, chopThreshold = 0.15)
             else -> preset("intermediate")
         }
 
