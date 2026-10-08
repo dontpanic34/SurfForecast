@@ -4,7 +4,6 @@ package com.surfcast.surfforecast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -73,6 +72,8 @@ fun SurfPreferencesDialog(
     var showModelsInfo by remember { mutableStateOf(false) }
     var infoTab by remember { mutableStateOf("France") }
     var showScoreInfo by remember { mutableStateOf(false) }
+    // Page ouverte : null = menu des Paramètres, sinon "display", "forecast", "journal", "app" ou "help".
+    var page by remember { mutableStateOf<String?>(null) }
 
     if (showScoreInfo) {
         AlertDialog(
@@ -242,14 +243,18 @@ fun SurfPreferencesDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Paramètres",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.onBackground
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                    DonationButton()
+                    if (page == null) {
+                        Text(
+                            text = "Paramètres",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onBackground
+                        )
+                    } else {
+                        TextButton(onClick = { page = null }) {
+                            Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
+                        }
+                    }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -257,18 +262,41 @@ fun SurfPreferencesDialog(
                             tint = colors.onSurfaceVariant
                         )
                     }
-                    }
+                }
+                page?.let { current ->
+                    Text(
+                        text = when (current) {
+                            "display" -> "Affichage"
+                            "forecast" -> "Prévisions"
+                            "journal" -> "Journal de bord"
+                            "app" -> "Appli"
+                            else -> "Aide"
+                        },
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onBackground
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                LazyColumn(
+                val scrollState = rememberScrollState()
+                LaunchedEffect(page) { scrollState.scrollTo(0) }
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    item {
+                    if (page == null) {
+                        PrefMenuRow("🎛️", "Affichage", "Niveau, unité du vent, encarts") { page = "display" }
+                        PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
+                        PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
+                        if (onShowTour != null || onShowIntro != null) PrefMenuRow("💡", "Aide", "Visite guidée, introduction") { page = "help" }
+                    }
+
+                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "1. Personnalisation",
@@ -425,7 +453,7 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    item {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "2. Unité du vent",
                                 fontSize = 13.sp,
@@ -457,7 +485,7 @@ fun SurfPreferencesDialog(
                     }
 
                     // Bouton d'épinglage du widget d'accueil.
-                    item {
+                    if (page == "app") Column(modifier = Modifier.fillMaxWidth()) {
                         OutlinedButton(
                             onClick = { SurfOverlayWidgetProvider.pinWidget(context) },
                             modifier = Modifier.fillMaxWidth(),
@@ -468,7 +496,7 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    item {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (page == "forecast") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -618,25 +646,30 @@ fun SurfPreferencesDialog(
                             }
                         }
                     }
-                }
-
-                if (onShowTour != null) {
+                    if (page == "help" && onShowTour != null) {
                     TextButton(onClick = onShowTour, modifier = Modifier.fillMaxWidth()) {
                         Text("🧭 Revoir la visite guidée de l'écran", fontSize = 11.5.sp)
                     }
                 }
 
-                if (onShowIntro != null) {
+                    if (page == "help" && onShowIntro != null) {
                     TextButton(onClick = onShowIntro, modifier = Modifier.fillMaxWidth()) {
                         Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 11.5.sp)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                }
 
-                Button(
-                    onClick = {
-                        val newConfig = ForecastEngineConfig(
+                if (page == null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    DonationButton(modifier = Modifier.fillMaxWidth())
+                }
+                if (page == "forecast") {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = {
+                            val newConfig = ForecastEngineConfig(
                             shortTermWeather = weatherModelFromLabel(shortTermWind),
                             shortTermWave = waveModelFromLabel(shortTermWave),
                             longTermWeather = weatherModelFromLabel(longTermWind),
@@ -650,7 +683,8 @@ fun SurfPreferencesDialog(
                     shape = pillShape,
                     colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                 ) {
-                    Text("Enregistrer et fermer", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Appliquer et fermer", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
                 }
             }
         }
@@ -709,3 +743,32 @@ private fun waveModelLabel(model: WaveModel): String = when (model) {
 
 private fun waveModelFromLabel(label: String): WaveModel =
     if (label == "ECMWF Wave") WaveModel.ECMWF_WAM else WaveModel.MFWAM
+
+
+@Composable
+private fun PrefMenuRow(icon: String, title: String, subtitle: String, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.surfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(colors.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) { Text(icon, fontSize = 18.sp) }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+            Text(subtitle, fontSize = 11.sp, color = colors.onSurfaceVariant)
+        }
+        Text("›", fontSize = 22.sp, color = colors.onSurfaceVariant)
+    }
+}
