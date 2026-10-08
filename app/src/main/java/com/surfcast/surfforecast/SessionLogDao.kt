@@ -19,10 +19,11 @@ private const val SESSION_WITH_RELATIONS_SELECT = """
     SELECT
         s.*,
         m.id AS spot_id, m.parentSpotName AS spot_parentSpotName, m.name AS spot_name,
+        m.tidePhase AS spot_tidePhase, m.minHeight AS spot_minHeight, m.maxHeight AS spot_maxHeight, m.notes AS spot_notes,
         q.id AS quiver_id, q.model AS quiver_model, q.family AS quiver_family, q.lengthLitrage AS quiver_lengthLitrage, q.finSetup AS quiver_finSetup,
         c.id AS cond_id, c.energyKj AS cond_energyKj, c.waveHeight AS cond_waveHeight, c.wavePeriod AS cond_wavePeriod,
         c.waveDirection AS cond_waveDirection, c.windSpeedKmh AS cond_windSpeedKmh, c.windDirection AS cond_windDirection,
-        c.tideCoeff AS cond_tideCoeff, c.isNearHighTide AS cond_isNearHighTide
+        c.tideCoeff AS cond_tideCoeff, c.isNearHighTide AS cond_isNearHighTide, c.tidePhase AS cond_tidePhase
     FROM sessions s
     INNER JOIN micro_spots m ON m.id = s.microSpotId
     INNER JOIN quiver q ON q.id = s.quiverId
