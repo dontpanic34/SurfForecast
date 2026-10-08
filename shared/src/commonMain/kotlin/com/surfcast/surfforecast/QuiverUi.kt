@@ -433,7 +433,7 @@ fun GearContent(
             }
         }
 
-        VolumeTableCard(weightKg = body.weightKg, levelIndex = levelIdx)
+        VolumeTableCard(weightKg = body.weightKg, levelIndex = levelIdx, body = body)
     }
 
     boardPendingDelete?.let { board ->
@@ -451,17 +451,20 @@ fun GearContent(
 
 /** Correspondances niveau x poids (litres, planche courte, adulte de moins de 30 ans en excellente forme). */
 @Composable
-fun VolumeTableCard(weightKg: Int, levelIndex: Int) {
+fun VolumeTableCard(weightKg: Int, levelIndex: Int, body: BodyState) {
     val colors = MaterialTheme.colorScheme
     val weights = listOf(40, 50, 60, 70, 80, 90, 100, 110)
+    // Le tableau suit ton âge et ta forme physique, pour rester cohérent avec ton volume recommandé.
+    val personal = body.ageYears > 0 || body.fitness > 0
+    val factor = ageFactor(body.ageYears) * FITNESS_LEVELS[body.fitness.coerceIn(0, FITNESS_LEVELS.lastIndex)].second
     Column(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text("Correspondances niveau × poids", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
         Text(
-            "Volume (L) pour une planche courte, adulte de moins de 30 ans en excellente forme. Ta ligne et ta colonne sont surlignées. " +
-                "Repères indicatifs : seul le shaper connaît le volume exact, et le bon volume dépend aussi de tes vagues et de ta pratique.",
+            (if (personal) "Volume (L) pour une planche courte, calculé pour ton âge et ta forme physique." else "Volume (L) pour une planche courte, adulte de moins de 30 ans en excellente forme.") +
+                " Ta ligne et ta colonne sont surlignées. Repères indicatifs : seul le shaper connaît le volume exact, et le bon volume dépend aussi de tes vagues et de ta pratique.",
             fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.65f)
         )
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -484,7 +487,7 @@ fun VolumeTableCard(weightKg: Int, levelIndex: Int) {
                 weights.forEach { w ->
                     val hl = weightKg > 0 && kotlin.math.abs(w - weightKg) < 5
                     Text(
-                        formatFr(volumeTableValue(i, w), 1), fontSize = 10.5.sp,
+                        formatFr(volumeTableValue(i, w) * factor, 1), fontSize = 10.5.sp,
                         fontWeight = if (hl || rowOn) FontWeight.Bold else FontWeight.Normal,
                         color = if (hl) colors.primary else colors.onSurface, modifier = Modifier.weight(1f)
                     )
