@@ -525,10 +525,10 @@ class SurfRepository(
                 val days: List<MareeDayData> = if (nearest == null || (distance ?: 0.0) <= MAX_FRENCH_TIDE_KM) {
                     fetchMareeExtrema(nearest?.siteId ?: "cordouan", fromDate, toDate)
                 } else {
-                    // Hors France : le coefficient (indice de vives-eaux / mortes-eaux défini au port de
-                    // Brest par le SHOM) vaut pour toute la côte atlantique. On le lit chez un port français.
-                    val referenceSite = sites.firstOrNull { it.siteId.contains("brest", ignoreCase = true) || it.siteName.contains("brest", ignoreCase = true) }
-                        ?: nearest
+                    // Hors France : on lit le coefficient chez le port français le plus proche (même date,
+                    // PM la plus proche en heure). Le SHOM le définit à partir de Brest, mais chaque port
+                    // le publie rattaché à sa propre marée : le port voisin est le plus fidèle.
+                    val referenceSite = nearest
                     val french = runCatching { fetchMareeExtrema(referenceSite.siteId, fromDate, toDate) }.getOrDefault(emptyList())
                     estimatedTideDays(lat, lon, french)
                 }
