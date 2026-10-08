@@ -312,7 +312,7 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
  * isSystemInDarkTheme(), qui ignorerait un theme force manuellement par l'utilisateur.
  */
 @Composable
-private fun isDarkSurfaceTheme(): Boolean =
+internal fun isDarkSurfaceTheme(): Boolean =
     MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
 @Composable
