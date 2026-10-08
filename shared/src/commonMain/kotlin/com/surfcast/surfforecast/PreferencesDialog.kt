@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import com.surfcast.surfforecast.resources.Res
 import com.surfcast.surfforecast.resources.widget_preview
+import com.surfcast.surfforecast.resources.wero_qr
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -726,7 +727,7 @@ fun SurfPreferencesDialog(
                     if (showIosGuide) IosInstallGuideDialog(onDismiss = { showIosGuide = false })
                 }
 
-                DonationSection()
+                DonationSection(weroQr = { Image(painter = painterResource(Res.drawable.wero_qr), contentDescription = "QR code Wero", modifier = Modifier.fillMaxWidth(), contentScale = ContentScale.FillWidth) })
 
                 Spacer(modifier = Modifier.height(10.dp))
 
