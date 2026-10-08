@@ -35,7 +35,8 @@ class SurfControllerTest {
 
     @Test
     fun cardMovesAndCollapseArePersistedWithAndroidKeys() = runTest {
-        val prefs = InMemoryKeyValueStore()
+        // Aucun encart replié au départ (par défaut, certains le sont : voir le test suivant).
+        val prefs = InMemoryKeyValueStore().apply { putString("collapsed_cards", "") }
         val c = controller(prefs)
         c.moveCardUp("dailyTimeline")
         c.toggleCardCollapsed("wind")
@@ -43,6 +44,14 @@ class SurfControllerTest {
         assertEquals("wind", prefs.getString("collapsed_cards", null))
         assertTrue(c.isCardCollapsed("wind"))
         assertFalse(c.isCardCollapsed("surf"))
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun detailCardsAreCollapsedByDefaultOnFirstUse() = runTest {
+        val c = controller(InMemoryKeyValueStore())
+        listOf("surf", "wind", "windSea", "weather", "hourly").forEach { assertTrue(c.isCardCollapsed(it), it) }
+        listOf("weekly", "dailyTimeline").forEach { assertFalse(c.isCardCollapsed(it), it) }
         advanceUntilIdle()
     }
 
