@@ -92,13 +92,14 @@ fun OnboardingDialog(
 
                     OnboardingSection(title = "2. Ton niveau") {
                         PillChoice(
-                            options = listOf("beginner" to "Débutant", "intermediate" to "Intermédiaire", "confirmed" to "Confirmé"),
+                            options = listOf("beginner" to "Débutant", "intermediate" to "Interméd.", "confirmed" to "Confirmé", "expert" to "Expert"),
                             selected = surferLevel,
                             onSelect = onSurferLevelChanged
                         )
                         Text(
-                            "Il règle la note du « Meilleur créneau », pas les prévisions. Débutant : vagues petites et douces " +
-                                "(≈ 1 m max). Confirmé : plus de puissance, et vent de terre (offshore) exigé. Intermédiaire : entre les deux.",
+                            "Il règle la note du « Meilleur créneau », pas les prévisions. Débutant : les mousses et les petites vagues douces. " +
+                                "Intermédiaire : commence à aller au large et à suivre les vagues. Confirmé : autonome dans l'eau, surfe seul. " +
+                                "Expert : plein potentiel de la vague, cherche la puissance. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde.",
                             fontSize = 12.sp,
                             color = colors.onSurfaceVariant
                         )

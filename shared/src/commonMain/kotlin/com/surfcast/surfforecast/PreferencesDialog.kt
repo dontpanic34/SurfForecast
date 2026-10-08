@@ -107,16 +107,20 @@ fun SurfPreferencesDialog(
                         lineHeight = 16.sp
                     )
                     ModelDescItem(
-                        name = "1. Energie de la houle",
-                        desc = "Plus la houle est grosse et longue (periode), plus l'energie est elevee. Une houle plate (< 0,4 m) ou une energie trop forte (> 1000 kJ, ca casse en vrac) donne directement 0."
+                        name = "1. Énergie de la houle",
+                        desc = "Plus la houle est grosse et longue (période), plus l'énergie est élevée. Une houle plate (< 0,4 m) donne 0. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde. Au-delà du plafond de ton niveau, c'est « trop gros » (violet), pas « mauvais »."
                     )
                     ModelDescItem(
                         name = "2. Vent",
-                        desc = "Un vent de terre (offshore) est presque toujours bon. Un vent de mer (onshore) penalise, de plus en plus fort au-dela de 25 km/h ou il elimine le creneau."
+                        desc = "Offshore (de la terre) : le meilleur. Onshore (de la mer) : presque aussi bon quand il y a très peu de vent, puis de plus en plus mauvais. Les rafales comptent : de fortes rafales gâchent la session quelle que soit la direction."
                     )
                     ModelDescItem(
-                        name = "3. Ton niveau",
-                        desc = "Debutant : vise une houle douce (0,4-0,8 m environ), penalisee si trop grosse, trop longue en periode, ou a maree haute. Tolere un peu de vent de mer.\nIntermediaire : vise une houle moyenne, penalise si le vent de mer depasse 15 km/h.\nConfirme : vise une houle plus costaude, veut du vent de terre ou pas de vent, penalise sur les micro-houles."
+                        name = "3. Direction et clapot",
+                        desc = "Une houle de face est mieux notée qu'une houle de travers. Un clapot (mer de vent) important par rapport à la houle baisse la note."
+                    )
+                    ModelDescItem(
+                        name = "4. Ton niveau",
+                        desc = "Débutant : les mousses et les petites vagues douces (plafond 450 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (plafond 1100).\nConfirmé : autonome dans l'eau, surfe seul, préfère un peu de puissance (plafond 3500).\nExpert : plein potentiel de la vague, cherche la puissance (plafond 8000)."
                     )
                 }
             },
@@ -354,7 +358,7 @@ fun SurfPreferencesDialog(
                                     }
                                 }
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("beginner" to "Débutant", "intermediate" to "Intermédiaire", "confirmed" to "Confirmé").forEach { (key, label) ->
+                                    listOf("beginner" to "Débutant", "intermediate" to "Interméd.", "confirmed" to "Confirmé", "expert" to "Expert").forEach { (key, label) ->
                                         val isSelected = surferLevel == key
                                         Surface(
                                             modifier = Modifier

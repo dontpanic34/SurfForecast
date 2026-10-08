@@ -55,9 +55,9 @@ class SurfScoringTest {
 
     @Test
     fun swellDirectionAndCrossWind() {
-        // Écart 60° -> cos = 0.5 -> 98.1 kJ -> fit 0.654 -> 65.4 ; vent N 10 km/h (travers) x0.9 ;
-        // ; houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 ; l'écart exact de la direction donne 49 au total.
-        assertEquals(49, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent N 10 km/h (travers) x0.9 ;
+        // ; houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 ; l'écart exact de la direction donne 75 au total.
+        assertEquals(75, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -175,5 +175,25 @@ class SurfScoringTest {
         val missing = SurfDatabase.getAllSpots().filter { it.idealSwellDirection == null }.map { it.name }
         assertTrue(missing.isEmpty(), "spots sans orientation : $missing")
         assertTrue(SurfDatabase.getAllSpots().all { it.idealSwellDirection in 0..359 })
+    }
+
+    @Test
+    fun smallCleanDayOpensForEveryLevel() {
+        // 0,8 m à 9 s, vent léger offshore : ça ouvre, du débutant à l'expert.
+        val small = hour(10, height = 0.8, period = 9.0, windKmh = 6, windDir = "E")
+        listOf("beginner", "intermediate", "confirmed", "expert").forEach { level ->
+            val rating = calculateSlotRating(small, 275, level, false)
+            assertFalse(rating.tooBig)
+            assertTrue(rating.score >= 60, "0,8 m 9 s pour $level : ${rating.score}")
+        }
+    }
+
+    @Test
+    fun expertPrefersPowerButBigDaysAreNotTooBigForThem() {
+        val big = hour(10, height = 3.2, period = 14.0, windKmh = 8, windDir = "E")
+        assertTrue(calculateSlotRating(big, 275, "confirmed", false).tooBig)
+        val expert = calculateSlotRating(big, 275, "expert", false)
+        assertFalse(expert.tooBig)
+        assertTrue(expert.score >= 60, "3,2 m 14 s pour un expert : ${expert.score}")
     }
 }
