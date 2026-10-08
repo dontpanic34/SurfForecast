@@ -256,6 +256,19 @@ fun findBestSlot(
     return best
 }
 
+/** Meilleurs créneaux d'un jour : un le matin (avant 13 h), un l'après-midi (13 h et après). */
+data class BestSlotsOfDay(val morning: BestSlotResult?, val afternoon: BestSlotResult?)
+
+fun findBestSlotsOfDay(
+    dailyHours: List<HourlyUiModel>,
+    idealSwellDirection: Int?,
+    surferLevel: String,
+    dailyTide: DailyTideInfo?
+): BestSlotsOfDay = BestSlotsOfDay(
+    morning = findBestSlot(dailyHours.filter { it.rawTime.hour < 13 }, idealSwellDirection, surferLevel, dailyTide),
+    afternoon = findBestSlot(dailyHours.filter { it.rawTime.hour >= 13 }, idealSwellDirection, surferLevel, dailyTide)
+)
+
 fun angularDifference(a: Double, b: Double): Double {
     var diff = abs(a - b) % 360.0
     if (diff > 180.0) diff = 360.0 - diff

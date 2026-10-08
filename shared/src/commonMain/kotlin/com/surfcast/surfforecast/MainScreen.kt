@@ -299,8 +299,8 @@ fun MainScreen(
                 // Point 3 : angle de houle ideal du spot actif (peut etre null si pas encore renseigne)
                 // et meilleur creneau du jour selectionne, pour le bandeau "Statut Flash".
                 val idealSwellDirection = viewModel.facingFor(state.spotName)
-                val bestSlot = selectedDate?.let { date ->
-                    findBestSlot(
+                val bestSlots = selectedDate?.let { date ->
+                    findBestSlotsOfDay(
                         dailyHours = daylightHoursFor(date, groupedByDate, state.dailySunInfo),
                         idealSwellDirection = idealSwellDirection,
                         surferLevel = viewModel.surferLevel,
@@ -396,40 +396,44 @@ fun MainScreen(
                                         )
                                     } else
                                     // Point 3 : "Statut Flash" - meilleur creneau du jour selectionne.
-                                    if (bestSlot != null) {
-                                        val flashBand = scoreBand(bestSlot.averageScore)
-                                        val flashColor = flashBand.color()
+                                    if (bestSlots != null && (bestSlots.morning != null || bestSlots.afternoon != null)) {
                                         // Le créneau suit le jour sélectionné : on le dit quand ce n'est pas aujourd'hui
-                                        // ("Sam. 10 · Meilleur créneau : ..."), sinon on croirait que c'est pour aujourd'hui.
+                                        // ("Sam. 10 · Matin : ..."), sinon on croirait que c'est pour aujourd'hui.
                                         val bestSlotDayPrefix = selectedDate?.takeIf { it != today }?.let { d ->
                                             "${frenchShortDayName(d)} ${d.day}".replaceFirstChar { it.uppercase() } + " · "
                                         }.orEmpty()
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .coachTarget("bestSlot", coachTargets)
-                                                .padding(horizontal = 10.dp, vertical = 2.dp)
-                                                .padding(bottom = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Canvas(modifier = Modifier.size(6.dp)) {
-                                                drawCircle(color = flashColor, radius = size.minDimension / 2f)
-                                            }
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Column {
-                                                Text(
-                                                    text = "${bestSlotDayPrefix}Meilleur créneau : ${bestSlot.startHour}h-${bestSlot.endHour}h (${flashBand.label} · ${bestSlot.averageScore})",
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = onSurfaceColor.copy(alpha = 0.75f),
-                                                    maxLines = 1
-                                                )
-                                                Text(
-                                                    text = bestSlot.recap,
-                                                    fontSize = 11.sp,
-                                                    color = onSurfaceColor.copy(alpha = 0.55f),
-                                                    maxLines = 1
-                                                )
+                                        val slots = listOf("Matin" to bestSlots.morning, "Après-midi" to bestSlots.afternoon)
+                                            .mapNotNull { (label, slot) -> slot?.let { label to it } }
+                                        slots.forEachIndexed { index, (label, slot) ->
+                                            val flashBand = scoreBand(slot.averageScore)
+                                            val flashColor = flashBand.color()
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .let { if (index == 0) it.coachTarget("bestSlot", coachTargets) else it }
+                                                    .padding(horizontal = 10.dp, vertical = 2.dp)
+                                                    .padding(bottom = if (index == slots.lastIndex) 6.dp else 0.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Canvas(modifier = Modifier.size(6.dp)) {
+                                                    drawCircle(color = flashColor, radius = size.minDimension / 2f)
+                                                }
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Column {
+                                                    Text(
+                                                        text = "${if (index == 0) bestSlotDayPrefix else ""}$label : ${slot.startHour}h-${slot.endHour}h (${flashBand.label} · ${slot.averageScore})",
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = onSurfaceColor.copy(alpha = 0.75f),
+                                                        maxLines = 1
+                                                    )
+                                                    Text(
+                                                        text = slot.recap,
+                                                        fontSize = 11.sp,
+                                                        color = onSurfaceColor.copy(alpha = 0.55f),
+                                                        maxLines = 1
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -754,7 +758,7 @@ fun MainScreen(
                         onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
                     ),
                     CoachStep("journal", "📓 Le journal de bord", "Note tes sessions ici : l'appli remplit les conditions toute seule et repère dans quelles conditions tu surfes le mieux."),
-                    CoachStep("bestSlot", "🎯 Le meilleur créneau", "L'heure conseillée pour le jour sélectionné, calculée selon ton niveau. Touche un autre jour dans la semaine pour le changer."),
+                    CoachStep("bestSlot", "🎯 Les meilleurs créneaux", "Le meilleur moment du matin et de l'après-midi pour le jour sélectionné, calculés selon ton profil. Touche un autre jour dans la semaine pour le changer."),
                     CoachStep("weekCard", "📅 Les encarts", "Touche un jour pour le détailler. Chaque encart se déplace, se replie ou se masque (Paramètres) : compose ton écran."),
                     CoachStep("settings", "⚙️ Les paramètres", "Mon profil, modèles de prévision, unités, sauvegarde… Tu peux aussi rejouer cette visite ici.")
                 ),

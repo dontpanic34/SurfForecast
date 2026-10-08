@@ -289,4 +289,23 @@ class SurfScoringTest {
         assertEquals(1.0, profile.directionMatters)
         assertEquals(1.0, profile.offshoreMinFactor)
     }
+
+    @Test
+    fun bestSlotsAreSplitBetweenMorningAndAfternoon() {
+        val hours = (7..18).map { h ->
+            // Matin : houle propre ; après-midi : onshore costaud qui dégrade tout.
+            if (h < 13) hour(h) else hour(h, windKmh = 28, windDir = "O")
+        }
+        val slots = findBestSlotsOfDay(hours, null, "intermediate", null)
+        val morning = slots.morning
+        assertNotNull(morning)
+        assertTrue(morning.endHour < 13)
+        assertEquals(100, morning.averageScore)
+        // L'après-midi n'a aucun bon créneau : il est soit absent, soit nettement moins bon.
+        val afternoon = slots.afternoon
+        assertTrue(afternoon == null || afternoon.averageScore < 30)
+        // Un jour qui n'a que des heures de l'après-midi : pas de créneau du matin.
+        val onlyAfternoon = findBestSlotsOfDay(listOf(hour(14), hour(15), hour(16)), null, "intermediate", null)
+        assertTrue(onlyAfternoon.morning == null && onlyAfternoon.afternoon != null)
+    }
 }
