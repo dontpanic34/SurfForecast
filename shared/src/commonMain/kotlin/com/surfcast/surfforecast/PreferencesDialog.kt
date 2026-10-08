@@ -726,6 +726,8 @@ fun SurfPreferencesDialog(
                     if (showIosGuide) IosInstallGuideDialog(onDismiss = { showIosGuide = false })
                 }
 
+                DonationSection()
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Button(
