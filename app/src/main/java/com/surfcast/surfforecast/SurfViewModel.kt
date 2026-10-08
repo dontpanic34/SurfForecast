@@ -119,6 +119,30 @@ class SurfViewModel(application: Application) : AndroidViewModel(application) {
 
     // Visite guidée de la première utilisation (accueil) et astuces du journal : une seule fois,
     // rouvrable depuis les Paramètres.
+    // Orientation des plages corrigee par l'utilisateur (Parametres > Previsions) : spot -> degres.
+    private val facingOverrides = androidx.compose.runtime.mutableStateMapOf<String, Int>().also { map ->
+        SurfDatabase.getAllSpots().forEach { spot ->
+            val key = "spot_facing_${spot.name}"
+            if (prefs.contains(key)) map[spot.name] = prefs.getInt(key, 270)
+        }
+    }
+
+    fun defaultFacingFor(spotName: String): Int? = SurfDatabase.findSpotByName(spotName)?.idealSwellDirection
+
+    /** Orientation utilisee pour le score : celle de l'utilisateur, sinon celle du catalogue. */
+    fun facingFor(spotName: String): Int? = facingOverrides[spotName] ?: defaultFacingFor(spotName)
+
+    /** [degrees] null = revenir a la valeur par defaut du catalogue. */
+    fun setFacing(spotName: String, degrees: Int?) {
+        if (degrees == null) {
+            facingOverrides.remove(spotName)
+            prefs.edit { remove("spot_facing_$spotName") }
+        } else {
+            facingOverrides[spotName] = degrees
+            prefs.edit { putInt("spot_facing_$spotName", degrees) }
+        }
+    }
+
     var showHomeTour by mutableStateOf(!prefs.getBoolean("coach_home_v1_done", false))
         private set
 

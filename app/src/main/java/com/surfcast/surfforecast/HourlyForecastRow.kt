@@ -161,7 +161,7 @@ fun HourlyForecastRow(
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = "${hourlyData.temperature}°",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = onSurfaceColor,
                 maxLines = 1
@@ -182,7 +182,7 @@ fun HourlyForecastRow(
         // Col 4 : Période
         Text(
             text = "${hourlyData.wavePeriod.roundToInt()}s",
-            fontSize = 11.5.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = if (isSelected || isCurrentHour) primaryColor else Color.Gray,
             maxLines = 1,
@@ -193,7 +193,7 @@ fun HourlyForecastRow(
         // Col 5 : Énergie
         Text(
             text = "${hourlyData.energyKj}kJ",
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF8F6300),
             textAlign = TextAlign.Center,
@@ -240,7 +240,7 @@ fun HourlyForecastRow(
         // Col 8 : Vitesse du vent
         Text(
             text = "$speedFormatted $unitSymbol",
-            fontSize = 11.5.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = windColor,
             textAlign = TextAlign.End,

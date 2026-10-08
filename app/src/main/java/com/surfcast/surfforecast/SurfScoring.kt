@@ -25,8 +25,11 @@ fun calculateSlotScore(
 ): Int {
     val h = hourlyModel.waveHeight
     val t = hourlyModel.wavePeriod
-    val windKmh = hourlyModel.windSpeedKmh.toDouble()
-    val windCategory = windCategoryFor(hourlyModel.windDirectionStr)
+    // Vent « ressenti » sur l'eau : les rafales comptent à moitié (un vent de 15 avec rafales
+    // à 35 gâche la surface autant qu'un vent de 25 régulier).
+    val windKmh = effectiveWindKmh(hourlyModel)
+    // idealSwellDirection = orientation de la plage : elle définit aussi offshore / onshore.
+    val windCategory = windCategoryFor(hourlyModel.windDirectionStr, idealSwellDirection)
 
     if (windCategory == "onshore" && windKmh > 25.0) return 0
     if (h < 0.4) return 0
@@ -58,6 +61,9 @@ fun calculateSlotScore(
 
     var score = fit * 100.0
 
+    // Clapot (mer de vent) : une houle propre coiffée de clapot est moins bonne qu'une houle seule.
+    score *= chopFactor(h, hourlyModel.windWaveHeight)
+
     val windPercent = windMatrixPercent(windKmh, windCategory)
     score *= windPercent
 
@@ -80,6 +86,23 @@ fun calculateSlotScore(
     }
 
     return score.roundToInt().coerceIn(0, 100)
+}
+
+/** Vent pris en compte : vent moyen + la moitié de l'écart avec les rafales. */
+fun effectiveWindKmh(hourly: HourlyUiModel): Double {
+    val wind = hourly.windSpeedKmh.toDouble()
+    val gust = hourly.windGustKmh.toDouble()
+    return if (gust > wind) wind + 0.5 * (gust - wind) else wind
+}
+
+/**
+ * Facteur (0.4 à 1) lié au clapot : 1 sous 0,3 m de mer de vent, puis baisse avec le rapport
+ * clapot / houle (clapot de 0,6 m sur 1,2 m de houle : environ 0,8 ; égal à la houle : 0,4).
+ */
+fun chopFactor(swellHeight: Double, windWaveHeight: Double): Double {
+    if (windWaveHeight <= 0.3) return 1.0
+    val ratio = (windWaveHeight - 0.3) / maxOf(swellHeight, 0.5)
+    return (1.0 - ratio * 0.8).coerceIn(0.4, 1.0)
 }
 
 fun findBestSlot(
@@ -111,7 +134,7 @@ fun findBestSlot(
                     startHour = sorted[start].rawTime.hour,
                     endHour = sorted[start + windowSize - 1].rawTime.hour,
                     averageScore = avg.roundToInt(),
-                    recap = buildSlotRecap(windowHours)
+                    recap = buildSlotRecap(windowHours, idealSwellDirection)
                 )
             }
         }
@@ -134,16 +157,23 @@ fun angularDifference(a: Double, b: Double): Double {
     return diff
 }
 
-fun windCategoryFor(directionStr: String): String {
+fun windCategoryFor(directionStr: String, beachFacing: Int? = null): String {
     val dirFr = SurfUnitsHelper.formatCardinalFr(directionStr)
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
-    return windCategoryFromDegrees(degrees)
+    return windCategoryFromDegrees(degrees, beachFacing)
 }
 
-fun windCategoryFromDegrees(degrees: Float): String {
-    return when (degrees) {
-        in 45f..135f -> "offshore"
-        in 225f..315f -> "onshore"
+/**
+ * [degrees] : direction d'où vient le vent. [beachFacing] : direction vers laquelle regarde la
+ * plage. Vent venant de la mer (écart <= 45 degrés avec l'orientation) = onshore, venant de
+ * derrière la plage (>= 135 degrés) = offshore, sinon travers. Sans orientation connue, ancienne
+ * règle : plage orientée plein ouest (270).
+ */
+fun windCategoryFromDegrees(degrees: Float, beachFacing: Int? = null): String {
+    val diff = angularDifference(degrees.toDouble(), (beachFacing ?: 270).toDouble())
+    return when {
+        diff >= 135.0 -> "offshore"
+        diff <= 45.0 -> "onshore"
         else -> "cross"
     }
 }
@@ -169,12 +199,12 @@ private fun windMatrixPercent(windKmh: Double, category: String): Double {
 }
 
 // Recap court des conditions attendues sur un creneau, ex: "1.0m / 10s - vent leger offshore".
-private fun buildSlotRecap(windowHours: List<HourlyUiModel>): String {
+private fun buildSlotRecap(windowHours: List<HourlyUiModel>, beachFacing: Int?): String {
     val avgHeight = windowHours.map { it.waveHeight }.average()
     val avgPeriod = windowHours.map { it.wavePeriod }.average()
     val avgWindKmh = windowHours.map { it.windSpeedKmh }.average().roundToInt()
     val midHour = windowHours[windowHours.size / 2]
-    val windCategory = windCategoryFor(midHour.windDirectionStr)
+    val windCategory = windCategoryFor(midHour.windDirectionStr, beachFacing)
 
     val windIntensity = when {
         avgWindKmh < 8 -> "léger"

@@ -113,7 +113,7 @@ fun WeatherDetailScreen(
                     Text(
                         text = "Mise à jour : $updateTime",
                         color = Color.White.copy(alpha = 0.65f),
-                        fontSize = 11.sp
+                        fontSize = 12.sp
                     )
                 }
             }
@@ -316,7 +316,7 @@ private fun HourlyStripCard(
                     Text(
                         text = "$dirFr $windSpeed $windUnitSymbol",
                         color = windColor,
-                        fontSize = 10.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1
                     )
@@ -324,7 +324,7 @@ private fun HourlyStripCard(
                     Text(
                         text = if (isNow) "Maintenant" else hourly.rawTime.format(hourFormatter),
                         color = Color.White.copy(alpha = if (isNow) 1f else 0.7f),
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontWeight = if (isNow) FontWeight.Bold else FontWeight.Medium
                     )
                 }
@@ -405,22 +405,22 @@ private fun DailyStripCard(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(text = "$maxT°", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "$minT°", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+                        Text(text = "$minT°", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(representative), fontSize = 18.sp)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "$rainPct %",
                             color = Color(0xFF80D8FF),
-                            fontSize = 10.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text(text = dayLabel, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(text = dayLabel, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Text(
                             text = date.format(dateFormatter),
                             color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 9.sp
+                            fontSize = 10.5.sp
                         )
                     }
                 }

@@ -92,6 +92,7 @@ class SurfRepository {
         val weatherCodes: List<Int>,
         val windSpeeds: List<Double>,
         val windDirections: List<Double>,
+        val windGusts: List<Double>,
         val cloudCovers: List<Int>,
         val apparentTemperatures: List<Double> = emptyList(),
         val sunriseByDate: Map<LocalDate, LocalTime> = emptyMap(),
@@ -200,7 +201,7 @@ class SurfRepository {
 
         val url = "https://api.open-meteo.com/v1/forecast?" +
                 "latitude=$lat&longitude=$lon" +
-                "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,cloudcover,apparent_temperature" +
+                "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover,apparent_temperature" +
                 modelParam +
                 dailyParam +
                 "&forecast_days=$safeDays" +
@@ -228,6 +229,7 @@ class SurfRepository {
         val codeArr = getArray("weather_code")
         val windSpeedArr = getArray("wind_speed_10m")
         val windDirArr = getArray("wind_direction_10m")
+        val windGustArr = getArray("wind_gusts_10m")
         val cloudArr = getArray("cloudcover")
         val apparentArr = getArray("apparent_temperature")
 
@@ -236,6 +238,7 @@ class SurfRepository {
         val codes = mutableListOf<Int>()
         val windSpeeds = mutableListOf<Double>()
         val windDirs = mutableListOf<Double>()
+        val windGusts = mutableListOf<Double>()
         val clouds = mutableListOf<Int>()
         val apparentTemps = mutableListOf<Double>()
 
@@ -250,6 +253,7 @@ class SurfRepository {
             // modele, au lieu d'inventer un vent (ancien defaut : 10 km/h de Nord).
             windSpeeds.add(if (i < windSpeedArr.length() && !windSpeedArr.isNull(i)) windSpeedArr.getDouble(i) else Double.NaN)
             windDirs.add(if (i < windDirArr.length() && !windDirArr.isNull(i)) windDirArr.getDouble(i) else Double.NaN)
+            windGusts.add(if (i < windGustArr.length() && !windGustArr.isNull(i)) windGustArr.getDouble(i) else Double.NaN)
             clouds.add(if (i < cloudArr.length() && !cloudArr.isNull(i)) cloudArr.getInt(i) else 0)
             // Repli sur la temperature de l'air si le ressenti n'est pas dispo pour cette
             // heure (plutot que 20.0 par defaut, qui n'a pas de sens comme "ressenti").
@@ -278,7 +282,7 @@ class SurfRepository {
             }
         }
 
-        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, clouds, apparentTemps, sunriseByDate, sunsetByDate)
+        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, windGusts, clouds, apparentTemps, sunriseByDate, sunsetByDate)
     }
 
     /**
@@ -381,6 +385,15 @@ class SurfRepository {
             val primaryDir = wData.windDirections.getOrElse(wIndex) { Double.NaN }
             val longSpeed = longIndex?.let { longWeather.windSpeeds.getOrElse(it) { Double.NaN } } ?: Double.NaN
             val longDir = longIndex?.let { longWeather.windDirections.getOrElse(it) { Double.NaN } } ?: Double.NaN
+            // Rafales : celles du modele meteo de l'heure, sinon du long terme ; jamais
+            // inferieures au vent moyen affiche.
+            val primaryGust = wData.windGusts.getOrElse(wIndex) { Double.NaN }
+            val longGust = longIndex?.let { longWeather.windGusts.getOrElse(it) { Double.NaN } } ?: Double.NaN
+            val gustRaw = when {
+                !primaryGust.isNaN() -> primaryGust
+                !longGust.isNaN() -> longGust
+                else -> Double.NaN
+            }
             val (windSpeedRaw, windDirDeg, windSource) = when {
                 hd != null -> Triple(hd.first, hd.second, "AROME HD")
                 !primarySpeed.isNaN() && !primaryDir.isNaN() ->
@@ -402,6 +415,7 @@ class SurfRepository {
                     windWaveDirection = windWaveDir,
                     energyKj = calculateWaveEnergyReal(h, p),
                     windSpeedKmh = windKmh,
+                    windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),
                     windDirectionStr = getCardinalDirection(windDirDeg),
                     windSource = windSource,
                     weatherCode = wData.weatherCodes.getOrElse(wIndex) { 0 },

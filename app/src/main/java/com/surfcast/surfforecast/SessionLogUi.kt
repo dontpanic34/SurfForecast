@@ -80,7 +80,7 @@ private fun PillSelector(
         Spacer(modifier = Modifier.height(4.dp))
 
         if (options.isEmpty() && onAddNew == null && emptyHint != null) {
-            Text(text = emptyHint, fontSize = 11.sp, color = onSurfaceColor.copy(alpha = 0.5f))
+            Text(text = emptyHint, fontSize = 12.sp, color = onSurfaceColor.copy(alpha = 0.5f))
         }
 
         Row(
@@ -322,7 +322,7 @@ fun SessionLogEntryDialog(
                 if (availableDayOffsets.size < 3) {
                     Text(
                         text = "Hier / avant-hier : dispo seulement si l'app avait chargé les prévisions ce jour-là.",
-                        fontSize = 10.sp,
+                        fontSize = 11.5.sp,
                         color = colors.onBackground.copy(alpha = 0.5f),
                         modifier = Modifier.padding(top = 4.dp)
                     )

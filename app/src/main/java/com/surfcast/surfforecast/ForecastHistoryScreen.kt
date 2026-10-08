@@ -65,7 +65,7 @@ fun ForecastHistoryScreen(
             }
             Text(
                 text = "Ce que l'app annonçait à chaque actualisation (gardé 2 jours).",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = colors.onSurfaceVariant
             )
             if (currentSpotName != null) {
@@ -102,11 +102,11 @@ fun ForecastHistoryScreen(
                             fontWeight = FontWeight.Bold,
                             color = colors.onSurface
                         )
-                        Text(text = snap.models, fontSize = 10.5.sp, color = colors.onSurfaceVariant)
+                        Text(text = snap.models, fontSize = 12.sp, color = colors.onSurfaceVariant)
                         if (missing > 0) {
                             Text(
                                 text = "⚠ Vent manquant sur $missing h",
-                                fontSize = 10.5.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = AppColors.WindHigh
                             )
@@ -138,7 +138,7 @@ private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Text(
         text = label,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         color = if (selected) colors.onPrimary else colors.onSurfaceVariant,
         modifier = Modifier
@@ -156,26 +156,26 @@ private fun HistoryHourRow(h: ForecastHistoryStore.HourEntry) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
         Text(
             text = "${h.time.hour.toString().padStart(2, '0')}h",
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             color = colors.onSurfaceVariant,
             modifier = Modifier.width(34.dp)
         )
         Text(
             text = if (isMissing) "vent : manquant" else "${h.windDir} ${h.windKmh} km/h",
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = if (isMissing) AppColors.WindHigh else colors.onSurface,
             modifier = Modifier.width(96.dp)
         )
         Text(
             text = h.windSource.ifEmpty { "?" },
-            fontSize = 10.sp,
+            fontSize = 11.5.sp,
             color = colors.onSurfaceVariant,
             modifier = Modifier.width(72.dp)
         )
         Text(
             text = String.format(Locale.US, "%.1fm %ds %d°", h.waveHeight, h.wavePeriod.toInt(), h.waveDirection.toInt()),
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             color = colors.onSurface
         )
     }

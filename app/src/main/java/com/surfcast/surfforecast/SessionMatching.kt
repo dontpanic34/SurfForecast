@@ -30,7 +30,7 @@ fun sessionVectorFromCondition(condition: ConditionSnapshot, idealSwellDirection
     return SessionVector(
         energyKj = condition.energyKj,
         windSpeedKmh = condition.windSpeedKmh,
-        windCategory = windCategoryFromDegrees(condition.windDirection.toFloat()),
+        windCategory = windCategoryFromDegrees(condition.windDirection.toFloat(), idealSwellDirection),
         waveDirDelta = waveDirDelta,
         tideCoeff = condition.tideCoeff
     )
@@ -43,7 +43,7 @@ fun sessionVectorFromForecast(hourlyModel: HourlyUiModel, idealSwellDirection: I
     return SessionVector(
         energyKj = hourlyModel.energyKj,
         windSpeedKmh = hourlyModel.windSpeedKmh,
-        windCategory = windCategoryFor(hourlyModel.windDirectionStr),
+        windCategory = windCategoryFor(hourlyModel.windDirectionStr, idealSwellDirection),
         waveDirDelta = waveDirDelta,
         tideCoeff = tideCoeff
     )

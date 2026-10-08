@@ -408,7 +408,7 @@ fun LiveCamOverlayScreen(
                             )
                             Text(
                                 text = "La page affiche « ${mismatchTitle ?: ""} » au lieu de ${currentSpotNameState.value}.",
-                                fontSize = 11.5.sp,
+                                fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.6f),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(top = 6.dp, bottom = 16.dp)
@@ -539,7 +539,7 @@ fun LiveCamOverlayScreen(
                         Text(
                             text = "DIRECT • ${spotWebcams.spotDisplayName}",
                             color = Color.White,
-                            fontSize = 10.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -581,7 +581,7 @@ fun LiveCamOverlayScreen(
                         }
                         Text(
                             text = if (showLinkSuccess) "Lien enregistré !" else "🔗 Lier cette page à ${activeCamera.camName}",
-                            fontSize = 10.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (showLinkSuccess) Color.White else AppColors.WindMid
                         )
@@ -596,7 +596,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = "Source : $title",
-                            fontSize = 8.5.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White.copy(alpha = 0.6f),
                             maxLines = 1,
@@ -641,7 +641,7 @@ fun LiveCamOverlayScreen(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = cam.camName,
-                                            fontSize = 10.5.sp,
+                                            fontSize = 12.sp,
                                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                                             color = Color.White,
                                             maxLines = 1
@@ -681,7 +681,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = name,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
                             color = if (isActive) AppColors.WindMid else Color.White,
                             maxLines = 1,
@@ -748,7 +748,7 @@ fun LiveCamOverlayScreen(
             if (!manualNavigation) {
                 Text(
                     text = "FAVORIS",
-                    fontSize = 9.sp,
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.5f),
                     modifier = Modifier.padding(bottom = 2.dp, end = 4.dp)
@@ -773,7 +773,7 @@ fun LiveCamOverlayScreen(
                     ) {
                         Text(
                             text = favName ?: "＋",
-                            fontSize = 10.5.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (favName != null) Color.White else Color.White.copy(alpha = 0.4f),
                             maxLines = 1,

@@ -61,7 +61,7 @@ fun CardControlsRow(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = title,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor.copy(alpha = 0.55f),
                 maxLines = 1

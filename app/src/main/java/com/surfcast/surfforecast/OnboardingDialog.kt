@@ -85,7 +85,7 @@ fun OnboardingDialog(
                         Text(
                             "Ne change que l'affichage du vent (cartes, bandeau, widget) : les prévisions et le score restent " +
                                 "identiques. Repère : 15 km/h ≈ 8 nœuds ≈ 3 Beaufort (brise légère).",
-                            fontSize = 11.5.sp,
+                            fontSize = 12.sp,
                             color = colors.onSurfaceVariant
                         )
                     }
@@ -99,7 +99,7 @@ fun OnboardingDialog(
                         Text(
                             "Il règle la note du « Meilleur créneau », pas les prévisions. Débutant : vagues petites et douces " +
                                 "(≈ 1 m max). Confirmé : plus de puissance, et vent de terre (offshore) exigé. Intermédiaire : entre les deux.",
-                            fontSize = 11.5.sp,
+                            fontSize = 12.sp,
                             color = colors.onSurfaceVariant
                         )
                     }
@@ -112,7 +112,7 @@ fun OnboardingDialog(
                         )
                         Text(
                             "L'apparence de l'appli. « Auto » suit le réglage de ton téléphone.",
-                            fontSize = 11.5.sp,
+                            fontSize = 12.sp,
                             color = colors.onSurfaceVariant
                         )
                     }
@@ -193,7 +193,7 @@ private fun Bullet(lead: String, text: String) {
                 append(" ")
                 append(text)
             },
-            fontSize = 11.5.sp,
+            fontSize = 12.sp,
             color = colors.onSurfaceVariant
         )
     }
