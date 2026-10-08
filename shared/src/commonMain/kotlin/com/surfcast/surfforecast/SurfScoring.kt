@@ -37,13 +37,30 @@ internal fun interpolate(x: Double, points: List<Pair<Double, Double>>): Double 
     return points.last().second
 }
 
-/** Énergie (kJ) : zone idéale [min, max] et plafond au-delà duquel c'est « trop gros » pour ce niveau. */
-private class LevelProfile(val idealMin: Double, val idealMax: Double, val cap: Double)
+/**
+ * Énergie (kJ) par niveau : [idealMin] = à partir de quand « ça ouvre » (0,8 m à 9 s ≈ 100 kJ ouvre pour
+ * tout le monde), [idealMax] = au-delà la note baisse, [cap] = au-delà c'est « trop gros » pour ce niveau.
+ * Entre [idealMin] et [rampEnd], la note monte de [rampStartFit] à 1 : les niveaux qui cherchent de la
+ * puissance (confirmé, expert) préfèrent les jours costauds, sans pour autant bouder un petit jour propre.
+ */
+private class LevelProfile(
+    val idealMin: Double,
+    val idealMax: Double,
+    val cap: Double,
+    val rampStartFit: Double = 1.0,
+    val rampEnd: Double = idealMin
+)
 
 private fun profileFor(level: String) = when (level) {
-    "beginner" -> LevelProfile(50.0, 200.0, 450.0)
-    "confirmed" -> LevelProfile(250.0, 2000.0, 3500.0)
-    else -> LevelProfile(150.0, 450.0, 1100.0)
+    // Débutant : les mousses, les petites vagues douces.
+    "beginner" -> LevelProfile(30.0, 200.0, 450.0)
+    // Intermédiaire : commence à aller au large et à suivre les vagues.
+    "intermediate" -> LevelProfile(80.0, 450.0, 1100.0)
+    // Confirmé : autonome, surfe seul.
+    "confirmed" -> LevelProfile(80.0, 2000.0, 3500.0, rampStartFit = 0.85, rampEnd = 250.0)
+    // Expert : plein potentiel de la vague, cherche la puissance.
+    "expert" -> LevelProfile(80.0, 4000.0, 8000.0, rampStartFit = 0.65, rampEnd = 400.0)
+    else -> LevelProfile(80.0, 450.0, 1100.0)
 }
 
 fun calculateSlotScore(
@@ -83,9 +100,11 @@ fun calculateSlotRating(
     if (energyKj > profile.cap) return SlotRating(0, true)
 
     val fit = when {
-        energyKj in profile.idealMin..profile.idealMax -> 1.0
         energyKj < profile.idealMin -> (energyKj / profile.idealMin).coerceIn(0.0, 1.0)
-        else -> (profile.idealMax / energyKj).coerceIn(0.0, 1.0)
+        energyKj > profile.idealMax -> (profile.idealMax / energyKj).coerceIn(0.0, 1.0)
+        energyKj < profile.rampEnd ->
+            profile.rampStartFit + (1.0 - profile.rampStartFit) * (energyKj - profile.idealMin) / (profile.rampEnd - profile.idealMin)
+        else -> 1.0
     }
 
     var score = fit * 100.0
