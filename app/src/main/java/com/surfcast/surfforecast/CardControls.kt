@@ -81,38 +81,41 @@ fun CardGrip(modifier: Modifier = Modifier) {
     val tint = MaterialTheme.colorScheme.onSurface
     Box(
         modifier = modifier
-            .size(width = 30.dp, height = 32.dp)
+            .size(width = 32.dp, height = 36.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(tint.copy(alpha = 0.10f)),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.size(width = 14.dp, height = 22.dp)) {
+        // Tout est dessiné autour de la même ligne centrale (cx) : flèche haut, trois traits, flèche bas.
+        Canvas(modifier = Modifier.size(width = 16.dp, height = 26.dp)) {
             val w = size.width
             val h = size.height
-            val color = tint.copy(alpha = 0.7f)
-            // Flèche vers le haut
+            val cx = w / 2f
+            val color = tint.copy(alpha = 0.75f)
             drawPath(
                 Path().apply {
-                    moveTo(w * 0.5f, 0f)
-                    lineTo(w, h * 0.22f)
-                    lineTo(0f, h * 0.22f)
+                    moveTo(cx, 0f)
+                    lineTo(w, h * 0.24f)
+                    lineTo(0f, h * 0.24f)
                     close()
                 },
                 color
             )
-            // Quatre petits carrés
-            val sq = w * 0.34f
-            listOf(w * 0.08f, w * 0.58f).forEach { x ->
-                listOf(h * 0.36f, h * 0.55f).forEach { y ->
-                    drawRect(color = color, topLeft = Offset(x, y), size = androidx.compose.ui.geometry.Size(sq, sq))
-                }
+            val stroke = 1.8.dp.toPx()
+            listOf(0.38f, 0.50f, 0.62f).forEach { fy ->
+                drawLine(
+                    color = color,
+                    start = Offset(0f, h * fy),
+                    end = Offset(w, h * fy),
+                    strokeWidth = stroke,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Butt
+                )
             }
-            // Flèche vers le bas
             drawPath(
                 Path().apply {
-                    moveTo(w * 0.5f, h)
-                    lineTo(w, h * 0.78f)
-                    lineTo(0f, h * 0.78f)
+                    moveTo(cx, h)
+                    lineTo(w, h * 0.76f)
+                    lineTo(0f, h * 0.76f)
                     close()
                 },
                 color
