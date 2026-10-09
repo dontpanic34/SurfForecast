@@ -48,10 +48,18 @@ class SurfControllerTest {
     }
 
     @Test
-    fun detailCardsAreCollapsedByDefaultOnFirstUse() = runTest {
+    fun detailCardsAreHiddenByDefaultOnFirstUse() = runTest {
+        // Plus de bouton « réduire » : les encarts de détail, réduits par défaut avant, sont masqués (réglables
+        // dans Paramètres › Affichage) ; la semaine et le déroulé de la journée restent visibles.
         val c = controller(InMemoryKeyValueStore())
-        listOf("surf", "wind", "windSea", "weather", "hourly").forEach { assertTrue(c.isCardCollapsed(it), it) }
-        listOf("weekly", "dailyTimeline").forEach { assertFalse(c.isCardCollapsed(it), it) }
+        assertFalse(c.showSurfCard)
+        assertFalse(c.showWindCard)
+        assertFalse(c.showWindSeaCard)
+        assertFalse(c.showWeatherCard)
+        assertFalse(c.showHourlyCard)
+        assertTrue(c.showWeeklyCard)
+        assertTrue(c.showDailyTimelineCard)
+        listOf("weekly", "dailyTimeline", "surf", "wind").forEach { assertFalse(c.isCardCollapsed(it), it) }
         advanceUntilIdle()
     }
 

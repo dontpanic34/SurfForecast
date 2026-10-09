@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.IconButton
@@ -50,26 +51,15 @@ fun CardControlsRow(
 ) {
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Poignée : on glisse l'encart par là (le titre reste libre pour faire défiler la page).
-            CardGrip(modifier = dragHandleModifier)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = onSurfaceColor.copy(alpha = 0.55f),
-                maxLines = 1
-            )
-        }
-
-        CardCollapseButton(isCollapsed = isCollapsed, onToggle = onToggleCollapse)
-    }
+    // Titre seul : réduire, masquer et réordonner les encarts se fait dans Paramètres › Affichage.
+    Text(
+        text = title,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        color = onSurfaceColor.copy(alpha = 0.55f),
+        maxLines = 1,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)
+    )
 }
 
 /**

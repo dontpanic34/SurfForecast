@@ -99,13 +99,12 @@ fun WeeklyForecastCard(
         colors = CardDefaults.cardColors(containerColor = surfaceColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
             CardControlsRow(
                 title = "Prévisions de la semaine",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
-                modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp)
             )
 
             if (!isCollapsed) {
