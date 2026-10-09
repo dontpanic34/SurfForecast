@@ -180,11 +180,13 @@ object SurfWebcamHelper {
     }
 
     /**
-     * Lien webcam d'une caméra du catalogue : sa page directe (comme dans l'appli Android).
-     * La recherche ci-dessus ne sert que pour un spot sans caméra connue.
+     * Lien webcam d'une caméra du catalogue : recherche « !ducky » (jamais périmée). Le nom de la
+     * caméra n'est ajouté que si le spot en a plusieurs.
      */
-    @Suppress("UNUSED_PARAMETER")
-    fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String = camera.pageUrl
+    fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String {
+        val multiple = (catalog[spotName]?.cameras?.size ?: 0) > 1
+        return liveCamUrl(spotName, if (multiple) camera.camName else null)
+    }
 
     internal fun percentEncode(text: String): String = buildString {
         for (b in text.encodeToByteArray()) {
