@@ -365,32 +365,7 @@ fun MainScreen(
                                         }.orEmpty()
                                         val slots = listOf("Matin" to bestSlots.morning, "Après-midi" to bestSlots.afternoon)
                                             .mapNotNull { (label, slot) -> slot?.let { label to it } }
-                                        val simple = viewModel.viewMode == "simple"
-                                        val collapsedSimple = simple && !viewModel.bestSlotsOpen
-                                        if (simple) {
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .coachTarget("bestSlot", coachTargets)
-                                                    .clickable { viewModel.toggleBestSlotsOpen() }
-                                                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                val first = slots.firstOrNull()
-                                                Text(
-                                                    text = if (collapsedSimple && first != null) {
-                                                        "🎯 Meilleurs créneaux · ${first.first} ${first.second.startHour}h-${first.second.endHour}h (${scoreBand(first.second.averageScore).label})"
-                                                    } else "🎯 Meilleurs créneaux",
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = onSurfaceColor,
-                                                    maxLines = 1,
-                                                    modifier = Modifier.weight(1f)
-                                                )
-                                                Text(if (collapsedSimple) "⌄" else "⌃", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
-                                            }
-                                        }
-                                        if (!collapsedSimple) slots.forEachIndexed { index, (label, slot) ->
+                                        slots.forEachIndexed { index, (label, slot) ->
                                             val flashBand = scoreBand(slot.averageScore)
                                             val flashColor = flashBand.color()
                                             Row(
@@ -540,31 +515,6 @@ fun MainScreen(
                                 color = surfaceColor
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
-                                    val viewSelector: @Composable () -> Unit = {
-                                        Row(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(50))
-                                                .background(onSurfaceColor.copy(alpha = 0.08f))
-                                                .padding(2.dp)
-                                        ) {
-                                            listOf("simple" to "Simple", "detailed" to "Détaillé").forEach { (key, label) ->
-                                                val on = viewModel.viewMode == key
-                                                Text(
-                                                    text = label,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    maxLines = 1,
-                                                    softWrap = false,
-                                                    color = if (on) MaterialTheme.colorScheme.onPrimary else onSurfaceColor.copy(alpha = 0.7f),
-                                                    modifier = Modifier
-                                                        .clip(RoundedCornerShape(50))
-                                                        .background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent)
-                                                        .clickable { viewModel.changeViewMode(key) }
-                                                        .padding(horizontal = 9.dp, vertical = 4.dp)
-                                                )
-                                            }
-                                        }
-                                    }
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -593,11 +543,6 @@ fun MainScreen(
                                             )
                                         }
                                         Spacer(modifier = Modifier.weight(1f))
-                                        // Vue simple / détaillée : sur la ligne du spot en taille normale, sinon dessous (place).
-                                        if (viewModel.displaySize == "normal") {
-                                            viewSelector()
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                        }
                                         // Taille de l'affichage : « Aa » + son nom, comme « Thème », pour que tout le monde comprenne.
                                         Column(
                                             modifier = Modifier
@@ -630,9 +575,6 @@ fun MainScreen(
                                             )
                                             Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 1, softWrap = false)
                                         }
-                                    }
-                                    if (viewModel.displaySize != "normal") {
-                                        Box(modifier = Modifier.padding(start = 10.dp, bottom = 6.dp)) { viewSelector() }
                                     }
                                 }
                             }
@@ -1059,8 +1001,6 @@ fun DynamicCardsSection(
     val itemHeights = remember { mutableStateMapOf<String, Int>() }
 
     fun renderableCardKeys(): List<String> = viewModel.cardsOrder.filter { key ->
-        // Vue simple : seulement la semaine et le déroulé de la journée.
-        if (viewModel.viewMode == "simple" && key != "weekly" && key != "dailyTimeline") return@filter false
         when (key) {
             "weekly" -> viewModel.showWeeklyCard
             "dailyTimeline" -> viewModel.showDailyTimelineCard
@@ -1160,7 +1100,7 @@ fun DynamicCardsSection(
                                 surferLevel = surferLevel,
                                 windUnit = viewModel.windUnit,
                                 weeklyDensity = viewModel.weeklyDensity,
-                                weeklyWindMode = if (viewModel.viewMode == "simple" && viewModel.weeklyWindMode == "both") "arrow" else viewModel.weeklyWindMode,
+                                weeklyWindMode = viewModel.weeklyWindMode,
                                 primaryColor = primaryColor,
                                 surfaceColor = surfaceColor,
                                 onSurfaceColor = onSurfaceColor,
@@ -1181,7 +1121,6 @@ fun DynamicCardsSection(
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
                                 tidePreference = tidePreference,
-                                compact = viewModel.viewMode == "simple",
                                 selectedHour = selectedHourlyItem,
                                 onHourSelected = { selectedHourlyItem = it },
                                 isCollapsed = isCollapsed,
