@@ -285,7 +285,7 @@ fun DailyTimelineCard(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
-                if (!compact || legendOpen) Row(
+                if (!compact || legendOpen) @OptIn(ExperimentalLayoutApi::class) FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {

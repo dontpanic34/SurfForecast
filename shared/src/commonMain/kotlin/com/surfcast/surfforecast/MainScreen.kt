@@ -29,7 +29,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -527,11 +530,41 @@ fun MainScreen(
                                 .fillMaxSize()
                                 .systemBarsPadding()
                         ) {
+                            // L'en-tête (nom du spot, boutons) et le bandeau « temps réel » grandissent moins que le reste
+                            // en « Très grand » : sinon les boutons s'écrasent (« Thème » lettre par lettre) et l'en-tête mange l'écran.
+                            val headerScale = displayScaleFor(viewModel.displaySize).let { if (it > 1.12f) 1.12f / it else 1f }
+                            val headerDensity = LocalDensity.current.let { Density(it.density * headerScale, it.fontScale) }
+                            CompositionLocalProvider(LocalDensity provides headerDensity) {
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 color = surfaceColor
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
+                                    val viewSelector: @Composable () -> Unit = {
+                                        Row(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(50))
+                                                .background(onSurfaceColor.copy(alpha = 0.08f))
+                                                .padding(2.dp)
+                                        ) {
+                                            listOf("simple" to "Simple", "detailed" to "Détaillé").forEach { (key, label) ->
+                                                val on = viewModel.viewMode == key
+                                                Text(
+                                                    text = label,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    maxLines = 1,
+                                                    softWrap = false,
+                                                    color = if (on) MaterialTheme.colorScheme.onPrimary else onSurfaceColor.copy(alpha = 0.7f),
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(50))
+                                                        .background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                                        .clickable { viewModel.changeViewMode(key) }
+                                                        .padding(horizontal = 9.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -544,7 +577,8 @@ fun MainScreen(
                                             fontWeight = FontWeight.Bold,
                                             color = onSurfaceColor,
                                             maxLines = 1,
-                                            modifier = Modifier.padding(end = 6.dp)
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false).padding(end = 6.dp)
                                         )
                                         val spotHasCam = SurfWebcamHelper.hasCamera(state.spotName)
                                         IconButton(
@@ -559,29 +593,11 @@ fun MainScreen(
                                             )
                                         }
                                         Spacer(modifier = Modifier.weight(1f))
-                                        // Vue simple / détaillée.
-                                        Row(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(50))
-                                                .background(onSurfaceColor.copy(alpha = 0.08f))
-                                                .padding(2.dp)
-                                        ) {
-                                            listOf("simple" to "Simple", "detailed" to "Détaillé").forEach { (key, label) ->
-                                                val on = viewModel.viewMode == key
-                                                Text(
-                                                    text = label,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (on) MaterialTheme.colorScheme.onPrimary else onSurfaceColor.copy(alpha = 0.7f),
-                                                    modifier = Modifier
-                                                        .clip(RoundedCornerShape(50))
-                                                        .background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent)
-                                                        .clickable { viewModel.changeViewMode(key) }
-                                                        .padding(horizontal = 9.dp, vertical = 4.dp)
-                                                )
-                                            }
+                                        // Vue simple / détaillée : sur la ligne du spot en taille normale, sinon dessous (place).
+                                        if (viewModel.displaySize == "normal") {
+                                            viewSelector()
+                                            Spacer(modifier = Modifier.width(4.dp))
                                         }
-                                        Spacer(modifier = Modifier.width(4.dp))
                                         // Taille de l'affichage : « Aa » + son nom, comme « Thème », pour que tout le monde comprenne.
                                         Column(
                                             modifier = Modifier
@@ -590,8 +606,8 @@ fun MainScreen(
                                                 .padding(horizontal = 6.dp, vertical = 2.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            Text("Aa", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor)
-                                            Text("Taille", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
+                                            Text("Aa", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1, softWrap = false)
+                                            Text("Taille", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 1, softWrap = false)
                                         }
                                         // Thème clair / sombre, à portée de main sur la ligne du spot.
                                         val isDarkActive = when (viewModel.themeMode) {
@@ -612,11 +628,14 @@ fun MainScreen(
                                                 iconColor = onSurfaceColor,
                                                 modifier = Modifier.size(16.dp)
                                             )
-                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
+                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 1, softWrap = false)
                                         }
                                     }
-
+                                    if (viewModel.displaySize != "normal") {
+                                        Box(modifier = Modifier.padding(start = 10.dp, bottom = 6.dp)) { viewSelector() }
+                                    }
                                 }
+                            }
                             }
 
                             run {
@@ -627,7 +646,7 @@ fun MainScreen(
                                 val closestHourModel = todayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) }
                                     ?: state.hourlyForecast.firstOrNull()
 
-                                if (viewModel.showLiveOverlay && closestHourModel != null) {
+                                if (viewModel.showLiveOverlay && closestHourModel != null) CompositionLocalProvider(LocalDensity provides headerDensity) {
                                     SurfLiveStripOverlay(
                                         hourlyModel = closestHourModel,
                                         tideInfo = currentTideInfo,
