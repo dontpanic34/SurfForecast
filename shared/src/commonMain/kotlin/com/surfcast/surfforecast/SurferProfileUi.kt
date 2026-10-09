@@ -376,7 +376,7 @@ fun ProfileBenefitsCard() {
         )
         listOf(
             "🎯 Des scores faits pour toi : l'énergie qui te convient, et « trop gros » (violet) quand ça dépasse ton niveau, sans que ce soit « mauvais ».",
-            "💨 Ta tolérance au vent, aux rafales, au clapot et aux houles courtes : le meilleur créneau tient compte de tout ça.",
+            "💨 Ta tolérance au vent, aux rafales, au clapot et aux houles courtes : les scores et les étoiles en tiennent compte.",
             "🏄 Ton matériel : tes planches avec leur volume et leur ratio litres par kilo, pour voir d'un coup d'œil ce que tu peux surfer.",
             "📓 Le journal de bord : tu choisis ta planche en un geste, et l'appli retient avec quoi tu surfes le mieux."
         ).forEach { Text(it, fontSize = 12.sp, color = colors.onBackground) }
@@ -397,7 +397,7 @@ fun ProfileNudgeCard(onOpen: () -> Unit, onLater: () -> Unit, modifier: Modifier
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text("⭐ Ton meilleur créneau, calculé pour toi", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        Text("⭐ Des prévisions calculées pour toi", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         Text(
             "Renseigne ton profil (niveau, vent, poids, planches) : sans lui, la note est celle d'un surfeur moyen. Une minute suffit.",
             fontSize = 11.5.sp, color = colors.onSurfaceVariant
