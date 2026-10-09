@@ -68,7 +68,7 @@ fun DailyTimelineCard(
     idealSwellDirection: Int?,
     surferLevel: String,
     tidePreference: String = "any",
-    // Vue simple : une heure sur deux, légende des couleurs repliée.
+    // Vue simple : une heure sur deux (la légende des couleurs reste toujours visible).
     compact: Boolean = false,
     selectedHour: HourlyUiModel?,
     onHourSelected: (HourlyUiModel) -> Unit,
@@ -272,20 +272,7 @@ fun DailyTimelineCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                var legendOpen by remember { mutableStateOf(false) }
-                if (compact) {
-                    Text(
-                        text = if (legendOpen) "ⓘ Couleurs ⌃" else "ⓘ Couleurs",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .clickable { legendOpen = !legendOpen }
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-                if (!compact || legendOpen) @OptIn(ExperimentalLayoutApi::class) FlowRow(
+                @OptIn(ExperimentalLayoutApi::class) FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
