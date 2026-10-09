@@ -554,6 +554,9 @@ fun MainScreen(
                                                 hourlyModel = closest,
                                                 tideInfo = currentTideInfo,
                                                 windUnit = viewModel.windUnit,
+                                                seaTemperature = (closest.seaTemperature
+                                                    ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
+                                                    ?.let { kotlin.math.round(it).toInt() },
                                                 modifier = Modifier.padding(horizontal = 2.dp, vertical = 4.dp)
                                             )
                                         }
