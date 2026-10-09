@@ -393,6 +393,28 @@ fun MainScreen(
                                             )
                                         }
                                         Spacer(modifier = Modifier.weight(1f))
+                                        // Langue : le drapeau de la langue choisie, un menu pour en changer.
+                                        var showLanguageMenu by remember { mutableStateOf(false) }
+                                        Box {
+                                            Column(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clickable { showLanguageMenu = true }
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Text(appLanguage(viewModel.language).flag, fontSize = 15.sp, lineHeight = 17.sp)
+                                                Text("Langue", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
+                                            }
+                                            DropdownMenu(expanded = showLanguageMenu, onDismissRequest = { showLanguageMenu = false }) {
+                                                APP_LANGUAGES.forEach { lang ->
+                                                    DropdownMenuItem(
+                                                        text = { Text("${lang.flag}  ${lang.name}" + if (lang.code == viewModel.language) "  ✓" else "") },
+                                                        onClick = { viewModel.changeLanguage(lang.code); showLanguageMenu = false }
+                                                    )
+                                                }
+                                            }
+                                        }
                                         // Thème clair / sombre, à portée de main sur la ligne du spot.
                                         val isDarkActive = when (viewModel.themeMode) {
                                             "light" -> false

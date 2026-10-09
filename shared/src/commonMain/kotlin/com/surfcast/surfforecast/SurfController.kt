@@ -415,7 +415,7 @@ class SurfController(
         }
     }
 
-    // Langue de l'appli (seul le français est traduit pour l'instant ; les autres langues viendront).
+    // Langue de l'appli (voir APP_LANGUAGES ; seul le français est traduit pour l'instant ; les autres langues viendront).
     var language by mutableStateOf(prefs.getString("app_language", "fr") ?: "fr")
         private set
 

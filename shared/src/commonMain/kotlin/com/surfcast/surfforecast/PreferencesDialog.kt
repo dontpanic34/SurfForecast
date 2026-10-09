@@ -383,7 +383,7 @@ fun SurfPreferencesDialog(
                                 color = colors.primary
                             )
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf("fr" to "🇫🇷 FR", "en" to "🇬🇧 EN", "es" to "🇪🇸 ES", "pt" to "🇵🇹 PT").forEach { (code, label) ->
+                                APP_LANGUAGES.map { it.code to "${it.flag} ${it.code.uppercase()}" }.forEach { (code, label) ->
                                     val isSelected = language == code
                                     Surface(
                                         modifier = Modifier
