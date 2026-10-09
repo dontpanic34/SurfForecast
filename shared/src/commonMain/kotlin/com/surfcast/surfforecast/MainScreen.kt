@@ -110,8 +110,6 @@ fun MainScreen(
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
             themeMode = viewModel.themeMode,
-            language = viewModel.language,
-            onLanguageChanged = { viewModel.changeLanguage(it) },
             onThemeModeChanged = { viewModel.changeThemeMode(it) },
             engineConfig = viewModel.engineConfig,
             onDone = { viewModel.dismissOnboarding() }
@@ -170,6 +168,8 @@ fun MainScreen(
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it); viewModel.markProfileReviewed() },
             themeMode = viewModel.themeMode,
+            language = viewModel.language,
+            onLanguageChanged = { viewModel.changeLanguage(it) },
             onThemeModeChanged = { viewModel.changeThemeMode(it) },
             customProfile = viewModel.customProfile,
             onCustomProfileSaved = { viewModel.saveCustomProfile(it) },
