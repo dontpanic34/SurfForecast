@@ -67,6 +67,7 @@ class SurfRepositoryTest {
     // AROME HD indisponible par défaut : la prévision doit retomber sur AROME standard.
     private val openMeteoEngine = MockEngine { request ->
         val model = request.url.parameters["models"]
+        if (model == "ncep_gfswave016") return@MockEngine respondError(HttpStatusCode.InternalServerError)
         if (model == "meteofrance_arome_france_hd") return@MockEngine respondError(HttpStatusCode.InternalServerError)
         val body = when (request.url.host) {
             "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else longMarine
@@ -81,6 +82,7 @@ class SurfRepositoryTest {
         // pour cette heure ; puis un second cas où HD a une valeur et passe devant.
         fun engine(hdSpeed: String) = MockEngine { request ->
             val model = request.url.parameters["models"]
+            if (model == "ncep_gfswave016") return@MockEngine respondError(HttpStatusCode.InternalServerError)
             val body = when {
                 request.url.host == "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else longMarine
                 model == "meteofrance_arome_france_hd" ->
@@ -146,6 +148,7 @@ class SurfRepositoryTest {
         """.trimIndent()
         val engine = MockEngine { request ->
             val model = request.url.parameters["models"]
+            if (model == "ncep_gfswave016") return@MockEngine respondError(HttpStatusCode.InternalServerError)
             val body = when {
                 request.url.host == "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else ecmwf
                 model == "meteofrance_arome_france" -> shortWeather
@@ -155,6 +158,28 @@ class SurfRepositoryTest {
         }
         val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
         assertEquals(11.0, hourly.last().wavePeriod)
+    }
+
+    @Test
+    fun referenceGfsWavePeakPeriodWinsWhenAvailable() = runTest {
+        val gfs = """{"hourly":{"time":["2026-01-01T10:00","2026-01-04T10:00"],"wave_period":[9.0,null],"wave_peak_period":[11.0,13.0]}}"""
+        val engine = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            val body = when {
+                request.url.host == "marine-api.open-meteo.com" -> when (model) {
+                    "ncep_gfswave016" -> gfs
+                    "meteofrance_wave" -> shortMarine
+                    else -> longMarine
+                }
+                model == "meteofrance_arome_france" -> shortWeather
+                else -> longWeather
+            }
+            respondJson(body)
+        }
+        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        assertEquals(11.0, hourly[0].wavePeriod)
+        assertEquals(13.0, hourly[1].wavePeriod)
+        assertEquals(calculateWaveEnergyReal(1.5, 11.0), hourly[0].energyKj)
     }
 
     @Test
@@ -272,6 +297,7 @@ class SurfRepositoryTest {
     fun seaTemperatureComesFromItsOwnMarineRequestAndMayBeMissing() = runTest {
         val engine = MockEngine { request ->
             val model = request.url.parameters["models"]
+            if (model == "ncep_gfswave016") return@MockEngine respondError(HttpStatusCode.InternalServerError)
             val body = when {
                 request.url.host == "marine-api.open-meteo.com" && request.url.parameters["hourly"] == "sea_surface_temperature" ->
                     """{"hourly":{"time":["2026-01-01T10:00","2026-01-04T10:00"],"sea_surface_temperature":[14.4,null]}}"""

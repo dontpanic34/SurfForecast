@@ -78,6 +78,9 @@ const val WIND_SOURCE_MISSING = "manquant"
 /** Rapport approximatif période de pic / période moyenne d'une houle (spectre type). */
 private const val MEAN_TO_PEAK_PERIOD = 1.2
 
+/** Modèle de vagues dont on affiche la période (même source que Windguru, Windy, Surf-Forecast). */
+private const val REFERENCE_WAVE_MODEL = "ncep_gfswave016"
+
 class SurfRepository(
     private val httpClient: HttpClient,
     // Cache hors réseau (navigateur) : la dernière réponse de chaque appel sert de repli quand le réseau
@@ -283,6 +286,30 @@ class SurfRepository(
         }
     }.getOrDefault(emptyMap())
 
+    /**
+     * Période « de référence » par heure : la période de pic de GFS Wave 0,16°, celle qu'affichent Windguru,
+     * Windy ou Surf-Forecast. On la préfère à celle de MFWAM/ECMWF, souvent plus courte de 1 à 3 s, pour que
+     * les surfeurs lisent ici les mêmes secondes qu'ailleurs. Échec ou donnée absente : on garde le modèle
+     * de base (map vide).
+     */
+    private suspend fun fetchReferencePeriods(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Double> = runCatching {
+        val url = "https://marine-api.open-meteo.com/v1/marine?" +
+            "latitude=$lat&longitude=$lon&hourly=wave_period,wave_peak_period&models=$REFERENCE_WAVE_MODEL" +
+            "&forecast_days=$days&timezone=auto"
+        val hourly = httpGet(url).getValue("hourly").jsonObject
+        val timeArr = hourly.getValue("time").jsonArray
+        val peakArr = hourly.optArray("wave_peak_period")
+        val meanArr = hourly.optArray("wave_period")
+        buildMap {
+            for (i in timeArr.indices) {
+                val peak = peakArr.doubleAt(i)?.takeIf { it > 0.0 }
+                    ?: meanArr.doubleAt(i)?.takeIf { it > 0.0 }?.let { it * MEAN_TO_PEAK_PERIOD }
+                    ?: continue
+                put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), peak)
+            }
+        }
+    }.getOrDefault(emptyMap())
+
     private suspend fun fetchWeatherBlock(
         lat: Double,
         lon: Double,
@@ -430,6 +457,7 @@ class SurfRepository(
             }
 
             val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
+            val referencePeriodsDeferred = async { fetchReferencePeriods(lat, lon, 7) }
 
             val shortMarine = shortMarineDeferred.await()
             val longMarine = longMarineDeferred.await()
@@ -437,6 +465,7 @@ class SurfRepository(
             val longWeather = longWeatherDeferred.await()
             val aromeHdWind = aromeHdWindDeferred.await()
             val seaTemps = seaTempDeferred.await()
+            val referencePeriods = referencePeriodsDeferred.await()
 
             val marineMapShort = shortMarine.times.indices.associateBy { shortMarine.times[it] }
             val weatherMapShort = shortWeather.times.indices.associateBy { shortWeather.times[it] }
@@ -463,7 +492,7 @@ class SurfRepository(
                 }
 
                 val h = mData.waveHeights[mIndex]
-                val p = mData.wavePeriods[mIndex]
+                val p = referencePeriods[t] ?: mData.wavePeriods[mIndex]
                 // Vent : AROME HD en court terme si dispo, sinon le modèle météo de cette
                 // heure, sinon le long terme. Jamais de valeur inventée.
                 val longIndex = weatherMapLong[t]
