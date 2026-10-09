@@ -355,3 +355,14 @@ class StarsTest {
         kotlin.test.assertEquals(5f, starsForScore(100))
     }
 }
+
+class StarsOffsetTest {
+    @kotlin.test.Test
+    fun offsetShiftsTheScale() {
+        kotlin.test.assertEquals(3.5f, starsForScore(70, 0))
+        kotlin.test.assertEquals(3f, starsForScore(70, -10))
+        kotlin.test.assertEquals(4f, starsForScore(70, 10))
+        kotlin.test.assertEquals("3,5", starsText(3.5f))
+        kotlin.test.assertEquals("4", starsText(4f))
+    }
+}

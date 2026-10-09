@@ -34,6 +34,8 @@ fun SurfPreferencesDialog(
     onToggleLiveOverlay: (Boolean) -> Unit,
     showWeeklyCard: Boolean,
     onToggleWeeklyCard: (Boolean) -> Unit,
+    starsOffset: Int,
+    onStarsOffsetChanged: (Int) -> Unit,
     weeklyDensity: Int,
     onWeeklyDensityChanged: (Int) -> Unit,
     weeklyWindMode: String,
@@ -530,6 +532,42 @@ fun SurfPreferencesDialog(
                                                     Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                         Text(
                                                             text = d.toString(),
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(2.dp))
+
+                                        Text(
+                                            text = "Étoiles des jours",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = "Plus c'est exigeant, plus il faut un bon score pour avoir des étoiles. " +
+                                                "Exemple : un score de 70 donne ${starsText(starsForScore(70, starsOffset))} ★.",
+                                            fontSize = 11.5.sp,
+                                            color = colors.onSurfaceVariant.copy(alpha = 0.8f)
+                                        )
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            listOf(-10 to "Exigeant", 0 to "Normal", 10 to "Indulgent").forEach { (value, label) ->
+                                                val isSelected = starsOffset == value
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clip(pillShape)
+                                                        .clickable { onStarsOffsetChanged(value) },
+                                                    color = if (isSelected) colors.primary else colors.background
+                                                ) {
+                                                    Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+                                                        Text(
+                                                            text = label,
                                                             fontSize = 12.sp,
                                                             fontWeight = FontWeight.Bold,
                                                             color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant

@@ -19,7 +19,13 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** Score 0-100 → étoiles par demi-étoile, de 0,5 à 5. */
-fun starsForScore(score: Int): Float = ((score.coerceIn(0, 100) / 10.0).roundToInt() / 2f).coerceIn(0.5f, 5f)
+fun starsForScore(score: Int, offset: Int = StarsSettings.offset): Float =
+    (((score + offset).coerceIn(0, 100) / 10.0).roundToInt() / 2f).coerceIn(0.5f, 5f)
+
+/** Réglage « sévérité des étoiles » : points ajoutés au score avant conversion (+ = indulgent, − = exigeant). */
+object StarsSettings {
+    var offset: Int = 0
+}
 
 private fun starPath(cx: Float, cy: Float, r: Float): Path {
     val path = Path()
@@ -64,3 +70,7 @@ fun StarsRow(
         drawStarsRow(value, filled, empty)
     }
 }
+
+/** « 3,5 » / « 4 » : virgule française, sans zéro inutile. */
+fun starsText(value: Float): String =
+    if (value % 1f == 0f) value.toInt().toString() else value.toString().replace('.', ',')

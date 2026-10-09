@@ -149,6 +149,8 @@ fun MainScreen(
             onToggleLiveOverlay = { viewModel.toggleLiveOverlay(it) },
             showWeeklyCard = viewModel.showWeeklyCard,
             onToggleWeeklyCard = { viewModel.toggleWeeklyCard(it) },
+            starsOffset = viewModel.starsOffset,
+            onStarsOffsetChanged = { viewModel.changeStarsOffset(it) },
             weeklyDensity = viewModel.weeklyDensity,
             onWeeklyDensityChanged = { viewModel.changeWeeklyDensity(it) },
             weeklyWindMode = viewModel.weeklyWindMode,

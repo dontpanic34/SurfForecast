@@ -182,6 +182,8 @@ class SurfController(
     var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
         private set
 
+    var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
+        private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
         private set
 
@@ -442,6 +444,12 @@ class SurfController(
     fun toggleDailyTimelineCard(show: Boolean) {
         showDailyTimelineCard = show
         prefs.putBoolean("show_daily_timeline_card", show)
+    }
+
+    fun changeStarsOffset(offset: Int) {
+        starsOffset = offset.coerceIn(-15, 15)
+        StarsSettings.offset = starsOffset
+        prefs.putInt("stars_offset", starsOffset)
     }
 
     fun changeWeeklyDensity(density: Int) {
