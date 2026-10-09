@@ -490,16 +490,13 @@ fun MainScreen(
 
                         val dailyStars = availableDates.map { date ->
                             val hours = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
-                            val tide = state.dailyTides[date]
-                            val ratings = hours.map {
-                                calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel, isNearHighTide(it, tide), viewModel.tidePreference, tide)
-                            }
-                            val slots = findBestSlotsOfDay(hours, idealSwellDirection, viewModel.surferLevel, tide, viewModel.tidePreference)
-                            val best = listOfNotNull(slots.morning, slots.afternoon).maxOfOrNull { it.averageScore }
-                            when {
-                                ratings.isNotEmpty() && ratings.all { it.tooBig } -> null
-                                else -> starsForScore(best ?: 0)
-                            }
+                            // Nuit offshore : soirée de la veille (21 h et après) + petit matin (avant 7 h).
+                            val night = groupedByDate[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 21 } +
+                                groupedByDate[date].orEmpty().filter { it.rawTime.hour < 7 }
+                            dayQualityScore(
+                                hours, idealSwellDirection, viewModel.surferLevel, state.dailyTides[date], viewModel.tidePreference,
+                                offshoreNight = hasOffshoreNight(night, idealSwellDirection)
+                            )?.let { starsForScore(it) }
                         }
 
                         val dailyFeelsLike = availableDates.map { date ->

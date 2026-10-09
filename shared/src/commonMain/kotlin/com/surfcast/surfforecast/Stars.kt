@@ -18,9 +18,13 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/** Score 0-100 → étoiles par demi-étoile, de 0,5 à 5. */
-fun starsForScore(score: Int, offset: Int = StarsSettings.offset): Float =
-    (((score + offset).coerceIn(0, 100) / 10.0).roundToInt() / 2f).coerceIn(0.5f, 5f)
+/** Score 0-100 → étoiles par demi-étoile, de 0,5 à 5 (voir la courbe ci-dessous). */
+fun starsForScore(score: Int, offset: Int = StarsSettings.offset): Float {
+    // Étalé de 30 (0,5 ★) à 100 (5 ★) : un bon jour courant fait 3 ★, 4,5 à 5 ★ sont réservés aux vrais grands jours.
+    val v = (score + offset).coerceIn(0, 100)
+    val raw = 0.5 + (v - 30).coerceAtLeast(0) / 70.0 * 4.5
+    return ((raw * 2).roundToInt() / 2f).coerceIn(0.5f, 5f)
+}
 
 /** Réglage « sévérité des étoiles » : points ajoutés au score avant conversion (+ = indulgent, − = exigeant). */
 object StarsSettings {
