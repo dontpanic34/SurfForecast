@@ -182,6 +182,12 @@ class SurfController(
     var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
         private set
 
+    // Taille de l'affichage : "normal", "large" ou "xlarge". Nouveau (introduction pas encore faite) : « large ».
+    var displaySize by mutableStateOf(
+        (prefs.getString("display_size", null) ?: (if (prefs.getBoolean("onboarding_v1_done", false)) "normal" else "large"))
+            .also { if (prefs.getString("display_size", null) == null) prefs.putString("display_size", it) }
+    )
+        private set
     var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
         private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
