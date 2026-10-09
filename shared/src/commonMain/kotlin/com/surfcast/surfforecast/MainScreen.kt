@@ -847,8 +847,6 @@ fun MainScreen(
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
                                 onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
-                                language = viewModel.language,
-                                onLanguageChanged = { viewModel.changeLanguage(it) },
                                 coachTargets = coachTargets
                             )
                         }
@@ -1302,8 +1300,6 @@ private fun BottomNavBar(
     onJournal: () -> Unit,
     onWeather: () -> Unit,
     onSettings: () -> Unit,
-    language: String,
-    onLanguageChanged: (String) -> Unit,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
 ) {
     val colors = MaterialTheme.colorScheme
@@ -1340,25 +1336,6 @@ private fun BottomNavBar(
                 Item("Météo", false, onWeather) { WeatherIcon("🌤️", 22.dp) }
                 Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
-                }
-                // Langue : juste le drapeau, tout à droite ; un menu pour en changer.
-                var showLanguageMenu by remember { mutableStateOf(false) }
-                Box(modifier = Modifier.padding(horizontal = 10.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { showLanguageMenu = true }
-                            .padding(6.dp),
-                        contentAlignment = Alignment.Center
-                    ) { FlagIcon(language, 18.dp) }
-                    DropdownMenu(expanded = showLanguageMenu, onDismissRequest = { showLanguageMenu = false }) {
-                        APP_LANGUAGES.forEach { lang ->
-                            DropdownMenuItem(
-                                text = { Row(verticalAlignment = Alignment.CenterVertically) { FlagIcon(lang.code, 14.dp); Spacer(modifier = Modifier.width(10.dp)); Text(lang.name + if (lang.code == language) "  ✓" else "") } },
-                                onClick = { onLanguageChanged(lang.code); showLanguageMenu = false }
-                            )
-                        }
-                    }
                 }
             }
         }
