@@ -110,6 +110,16 @@ fun MainScreen(
         SurfWebcamHelper.getCamerasForSpot(spotName).cameras.firstOrNull()?.let { uriHandler.openUri(SurfWebcamHelper.liveCamUrl(spotName, it)) }
     }
 
+    var showNoWebcam by remember { mutableStateOf(false) }
+    if (showNoWebcam) {
+        AlertDialog(
+            onDismissRequest = { showNoWebcam = false },
+            title = { Text("Pas de webcam", fontWeight = FontWeight.Bold) },
+            text = { Text("Ce spot n'a pas encore de webcam dans l'appli. Choisis un autre spot pour voir sa caméra en direct.") },
+            confirmButton = { TextButton(onClick = { showNoWebcam = false }) { Text("OK") } }
+        )
+    }
+
     val backgroundColor = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
@@ -521,102 +531,6 @@ fun MainScreen(
                                 .fillMaxSize()
                                 .systemBarsPadding()
                         ) {
-                            // L'en-tête (nom du spot, boutons) et le bandeau « temps réel » grandissent moins que le reste
-                            // en « Très grand » : sinon les boutons s'écrasent (« Thème » lettre par lettre) et l'en-tête mange l'écran.
-                            val headerScale = displayScaleFor(viewModel.displaySize).let { if (it > 1.12f) 1.12f / it else 1f }
-                            val headerDensity = LocalDensity.current.let { Density(it.density * headerScale, it.fontScale) }
-                            CompositionLocalProvider(LocalDensity provides headerDensity) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = surfaceColor
-                            ) {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = state.spotName,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = onSurfaceColor,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f, fill = false).padding(end = 6.dp)
-                                        )
-                                        val spotHasCam = SurfWebcamHelper.hasCamera(state.spotName)
-                                        IconButton(
-                                            onClick = {
-                                                if (spotHasCam) openLiveCam(state.spotName)
-                                            },
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            WebcamIcon(
-                                                tint = if (spotHasCam) AppColors.WindMid else onSurfaceColor.copy(alpha = 0.3f),
-                                                size = 15.dp
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        // Taille de l'affichage : « Aa » + son nom, comme « Thème », pour que tout le monde comprenne.
-                                        Column(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable { viewModel.cycleDisplaySize() }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Text("Aa", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1, softWrap = false)
-                                            Text("Taille", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 1, softWrap = false)
-                                        }
-                                        // Thème clair / sombre, à portée de main sur la ligne du spot.
-                                        val isDarkActive = when (viewModel.themeMode) {
-                                            "light" -> false
-                                            "dark" -> true
-                                            else -> isSystemInDarkTheme()
-                                        }
-                                        Column(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable { viewModel.changeThemeMode(if (isDarkActive) "light" else "dark") }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            ThemeToggleIcon(
-                                                isDarkActive = isDarkActive,
-                                                backgroundColor = surfaceColor,
-                                                iconColor = onSurfaceColor,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 1, softWrap = false)
-                                        }
-                                    }
-                                }
-                            }
-                            }
-
-                            run {
-                                // Bandeau "temps réel" : toujours AUJOURD'HUI à l'heure actuelle (houle, vent,
-                                // température et marée du même moment), quel que soit le jour sélectionné plus bas.
-                                val todayHours = groupedByDate[today].orEmpty()
-                                val currentHourNow = clock.hour
-                                val closestHourModel = todayHours.minByOrNull { abs(it.rawTime.hour - currentHourNow) }
-                                    ?: state.hourlyForecast.firstOrNull()
-
-                                if (viewModel.showLiveOverlay && closestHourModel != null) CompositionLocalProvider(LocalDensity provides headerDensity) {
-                                    SurfLiveStripOverlay(
-                                        hourlyModel = closestHourModel,
-                                        tideInfo = currentTideInfo,
-                                        windUnit = viewModel.windUnit,
-                                        onOpenCam = { openLiveCam(state.spotName) },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 6.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-
                             LazyColumn(
                                 state = mainListState,
                                 modifier = Modifier
@@ -644,6 +558,21 @@ fun MainScreen(
                                             modifier = Modifier.weight(1f)
                                         )
 
+                                    }
+
+                                    // « Maintenant » + marée, lisibles d'un coup d'œil (réglable : Paramètres › Affichage).
+                                    run {
+                                        val todayHours = groupedByDate[today].orEmpty()
+                                        val closest = todayHours.minByOrNull { abs(it.rawTime.hour - clock.hour) }
+                                            ?: state.hourlyForecast.firstOrNull()
+                                        if (viewModel.showLiveOverlay && closest != null) {
+                                            NowTideCard(
+                                                hourlyModel = closest,
+                                                tideInfo = currentTideInfo,
+                                                windUnit = viewModel.windUnit,
+                                                modifier = Modifier.padding(horizontal = 2.dp, vertical = 4.dp)
+                                            )
+                                        }
                                     }
 
                                     if (showSessionLogDialog) {
@@ -807,6 +736,8 @@ fun MainScreen(
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
                                 onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
+                                hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
+                                onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
                                 coachTargets = coachTargets
                             )
                         }
@@ -1272,6 +1203,8 @@ private fun BottomNavBar(
     onJournal: () -> Unit,
     onWeather: () -> Unit,
     onSettings: () -> Unit,
+    hasWebcam: Boolean,
+    onWebcam: () -> Unit,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
 ) {
     val colors = MaterialTheme.colorScheme
@@ -1302,6 +1235,9 @@ private fun BottomNavBar(
                     }
                 }
                 Item("Prévisions", true, onForecast) { WaveIcon(color = waterTempColor(), modifier = Modifier.size(20.dp)) }
+                Item("Webcam", false, onWebcam) {
+                    WebcamIcon(tint = if (hasWebcam) AppColors.WindMid else colors.onSurface.copy(alpha = 0.35f), size = 20.dp)
+                }
                 Item("Journal", false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
                 }
