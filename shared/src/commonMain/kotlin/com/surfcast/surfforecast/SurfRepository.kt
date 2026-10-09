@@ -240,9 +240,10 @@ class SurfRepository(
             // Si le modèle (ECMWF) ne donne que des périodes MOYENNES, plus courtes d'environ 20 %,
             // on les convertit en période de pic : sinon l'appli afficherait 6 s là où tout le monde lit 10.
             val totalPeak = totalPeakArr.doubleAt(i) ?: Double.NaN
-            val peakCandidates = listOf(swellPeak, totalPeak).filter { !it.isNaN() && it > 0.0 }
             val finalP = when {
-                peakCandidates.isNotEmpty() -> maxOf(peakCandidates.max(), if (!swellP.isNaN()) swellP else 0.0)
+                // Cas habituel (MFWAM) : la période de pic de la houle, comme avant.
+                !swellPeak.isNaN() && swellPeak > 0.0 -> swellPeak
+                !totalPeak.isNaN() && totalPeak > 0.0 -> maxOf(totalPeak, if (!swellP.isNaN()) swellP else 0.0)
                 !swellP.isNaN() && swellP > 0.0 -> swellP * MEAN_TO_PEAK_PERIOD
                 else -> totalP * MEAN_TO_PEAK_PERIOD
             }
@@ -492,7 +493,8 @@ class SurfRepository(
                 }
 
                 val h = mData.waveHeights[mIndex]
-                val p = referencePeriods[t] ?: mData.wavePeriods[mIndex]
+                // Aujourd'hui : la période du modèle côtier (MFWAM), vérifiée sur l'eau. Dès demain : GFS Wave.
+                val p = (if (t.date > today) referencePeriods[t] else null) ?: mData.wavePeriods[mIndex]
                 // Vent : AROME HD en court terme si dispo, sinon le modèle météo de cette
                 // heure, sinon le long terme. Jamais de valeur inventée.
                 val longIndex = weatherMapLong[t]

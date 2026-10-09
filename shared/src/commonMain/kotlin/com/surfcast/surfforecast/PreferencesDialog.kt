@@ -35,6 +35,8 @@ fun SurfPreferencesDialog(
     onToggleLiveOverlay: (Boolean) -> Unit,
     showWeeklyCard: Boolean,
     onToggleWeeklyCard: (Boolean) -> Unit,
+    displaySize: String = "normal",
+    onDisplaySizeChanged: (String) -> Unit = {},
     starsOffset: Int,
     onStarsOffsetChanged: (Int) -> Unit,
     weeklyDensity: Int,
@@ -390,6 +392,35 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "Taille de l'affichage",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary
+                            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                DISPLAY_SIZE_CHOICES.forEach { (key, label) ->
+                                    val isSelected = displaySize == key
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(pillShape)
+                                            .clickable { onDisplaySizeChanged(key) },
+                                        color = if (isSelected) colors.primary else colors.surfaceVariant
+                                    ) {
+                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = label,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Thème",
                                 fontSize = 13.sp,

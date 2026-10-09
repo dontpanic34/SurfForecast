@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -67,6 +68,8 @@ fun DailyTimelineCard(
     idealSwellDirection: Int?,
     surferLevel: String,
     tidePreference: String = "any",
+    // Vue simple : une heure sur deux, légende des couleurs repliée.
+    compact: Boolean = false,
     selectedHour: HourlyUiModel?,
     onHourSelected: (HourlyUiModel) -> Unit,
     isCollapsed: Boolean,
@@ -198,6 +201,10 @@ fun DailyTimelineCard(
                 // --- Haut : vent (vitesse + direction abrégée) + météo ---
                 Row(modifier = Modifier.fillMaxWidth()) {
                     timelineItems.forEachIndexed { index, hourly ->
+                        if (compact && index % 2 == 1 && index != selectedIndex) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            return@forEachIndexed
+                        }
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
                         val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
                         val rotationAngle = (degrees + 180f) % 360f
@@ -265,7 +272,20 @@ fun DailyTimelineCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                Row(
+                var legendOpen by remember { mutableStateOf(false) }
+                if (compact) {
+                    Text(
+                        text = if (legendOpen) "ⓘ Couleurs ⌃" else "ⓘ Couleurs",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clickable { legendOpen = !legendOpen }
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+                if (!compact || legendOpen) Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -295,6 +315,10 @@ fun DailyTimelineCard(
                 // --- Bas : heures, lever/coucher exacts aux deux extremites ---
                 Row(modifier = Modifier.fillMaxWidth()) {
                     timelineItems.forEachIndexed { index, hourly ->
+                        if (compact && index % 2 == 1 && index != selectedIndex) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            return@forEachIndexed
+                        }
                         val isFirst = index == 0
                         val isLast = index == timelineItems.lastIndex
                         val isSelected = index == selectedIndex

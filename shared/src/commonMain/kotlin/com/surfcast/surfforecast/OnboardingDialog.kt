@@ -34,6 +34,8 @@ import androidx.compose.ui.window.DialogProperties
  */
 @Composable
 fun OnboardingDialog(
+    displaySize: String,
+    onDisplaySizeChanged: (String) -> Unit,
     surferLevel: String,
     onSurferLevelChanged: (String) -> Unit,
     onDone: () -> Unit
@@ -65,6 +67,33 @@ fun OnboardingDialog(
                         fontWeight = FontWeight.SemiBold,
                         color = colors.primary
                     )
+
+                    OnboardingSection(title = "Taille de l'affichage") {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("normal" to 18, "large" to 26, "xlarge" to 36).forEach { (key, letter) ->
+                                val on = displaySize == key
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .clickable { onDisplaySizeChanged(key) },
+                                    color = if (on) colors.primary else colors.surfaceVariant
+                                ) {
+                                    Box(modifier = Modifier.padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+                                        Text(
+                                            "A", fontSize = letter.sp, fontWeight = FontWeight.Bold,
+                                            color = if (on) colors.onPrimary else colors.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Text(
+                            "Touche la taille qui te va : tout l'écran grandit. Tu pourras la changer avec le bouton « Aa » sur l'écran principal.",
+                            fontSize = 12.sp,
+                            color = colors.onSurfaceVariant
+                        )
+                    }
 
                     OnboardingSection(title = "Ton niveau") {
                         PillChoice(
