@@ -35,6 +35,9 @@ fun SurfPreferencesDialog(
     onToggleLiveOverlay: (Boolean) -> Unit,
     showWeeklyCard: Boolean,
     onToggleWeeklyCard: (Boolean) -> Unit,
+    cardsOrder: List<String> = emptyList(),
+    onMoveCardUp: (String) -> Unit = {},
+    onMoveCardDown: (String) -> Unit = {},
     displaySize: String = "normal",
     onDisplaySizeChanged: (String) -> Unit = {},
     starsOffset: Int,
@@ -659,6 +662,52 @@ fun SurfPreferencesDialog(
                                 CardVisibilityRow("Mer de vent", showWindSeaCard, onToggleWindSeaCard, colors)
                                 CardVisibilityRow("Météo", showWeatherCard, onToggleWeatherCard, colors)
                                 CardVisibilityRow("Prévision heure par heure", showHourlyCard, onToggleHourlyCard, colors)
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Ordre des encarts",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary
+                            )
+                            Text(
+                                text = "Touche ▲ ▼ pour monter ou descendre un encart sur l'écran principal (les encarts masqués restent dans la liste).",
+                                fontSize = 11.5.sp,
+                                color = colors.onSurfaceVariant
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(colors.surfaceVariant)
+                            ) {
+                                val labels = mapOf(
+                                    "weekly" to "Prévision semaine", "dailyTimeline" to "Déroulé de la journée",
+                                    "surf" to "Vagues & Houle", "wind" to "Vent", "windSea" to "Mer de vent",
+                                    "weather" to "Météo", "hourly" to "Prévision heure par heure"
+                                )
+                                val visible = mapOf(
+                                    "weekly" to showWeeklyCard, "dailyTimeline" to showDailyTimelineCard, "surf" to showSurfCard,
+                                    "wind" to showWindCard, "windSea" to showWindSeaCard, "weather" to showWeatherCard, "hourly" to showHourlyCard
+                                )
+                                val keys = cardsOrder.filter { it in labels }
+                                keys.forEachIndexed { index, key ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = labels.getValue(key),
+                                            fontSize = 12.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = colors.onBackground.copy(alpha = if (visible[key] == true) 1f else 0.4f),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        TextButton(onClick = { onMoveCardUp(key) }, enabled = index > 0) { Text("▲", fontSize = 16.sp) }
+                                        TextButton(onClick = { onMoveCardDown(key) }, enabled = index < keys.lastIndex) { Text("▼", fontSize = 16.sp) }
+                                    }
+                                }
                             }
                         }
                     }

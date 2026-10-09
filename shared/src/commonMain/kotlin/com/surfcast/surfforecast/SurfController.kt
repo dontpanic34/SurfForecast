@@ -259,7 +259,23 @@ class SurfController(
         // ensuite mémorisé).
         val savedCollapsed = prefs.getString("collapsed_cards", null) ?: DEFAULT_COLLAPSED_CARDS
         collapsedCards.clear()
-        savedCollapsed.split(",")
+        // Plus de bouton « réduire » sur les encarts : un encart réduit devient un encart masqué (réglable dans
+        // Paramètres › Affichage). La semaine et le déroulé de la journée restent toujours visibles.
+        if (!prefs.getBoolean("cards_collapse_migrated_v1", false)) {
+            savedCollapsed.split(",").map { it.trim() }.forEach { key ->
+                when (key) {
+                    "surf" -> toggleSurfCard(false)
+                    "wind" -> toggleWindCard(false)
+                    "windSea" -> toggleWindSeaCard(false)
+                    "weather" -> toggleWeatherCard(false)
+                    "hourly" -> toggleHourlyCard(false)
+                }
+            }
+            prefs.putString("collapsed_cards", "")
+            prefs.putBoolean("cards_collapse_migrated_v1", true)
+        }
+        val savedCollapsedNow = prefs.getString("collapsed_cards", null) ?: ""
+        savedCollapsedNow.split(",")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .forEach { collapsedCards[it] = true }

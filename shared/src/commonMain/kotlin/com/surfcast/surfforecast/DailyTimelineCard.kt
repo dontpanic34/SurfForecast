@@ -130,30 +130,15 @@ fun DailyTimelineCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-            // --- En-tete : poignee + titre + marees + controle de reduction, sur la meme ligne ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CardGrip(modifier = dragHandleModifier)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Déroulé de la journée",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = onSurfaceColor.copy(alpha = 0.55f),
-                        maxLines = 1
-                    )
-
-                }
-
-                CardCollapseButton(isCollapsed = isCollapsed, onToggle = onToggleCollapse)
-            }
+            // --- En-tête : titre seul (réduire / déplacer : Paramètres › Affichage) ---
+            Text(
+                text = "Déroulé de la journée",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor.copy(alpha = 0.55f),
+                maxLines = 1,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+            )
 
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(4.dp))
