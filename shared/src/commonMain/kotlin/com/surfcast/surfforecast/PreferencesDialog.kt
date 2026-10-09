@@ -54,6 +54,8 @@ fun SurfPreferencesDialog(
     onSurferLevelChanged: (String) -> Unit,
     // Thème clair / sombre / auto (déplacé de l'écran principal vers Affichage).
     themeMode: String = "system",
+    language: String = "fr",
+    onLanguageChanged: (String) -> Unit = {},
     onThemeModeChanged: (String) -> Unit = {},
     customProfile: String = "",
     onCustomProfileSaved: (String) -> Unit = {},
@@ -340,7 +342,7 @@ fun SurfPreferencesDialog(
                 ) {
                     if (page == null) {
                         PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
-                        PrefMenuRow("🎛️", "Affichage", "Thème, unité du vent, encarts") { page = "display" }
+                        PrefMenuRow("🎛️", "Affichage", "Langue, thème, unité du vent, encarts") { page = "display" }
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
                         if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
@@ -374,6 +376,41 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "Langue",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary
+                            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("fr" to "🇫🇷 FR", "en" to "🇬🇧 EN", "es" to "🇪🇸 ES", "pt" to "🇵🇹 PT").forEach { (code, label) ->
+                                    val isSelected = language == code
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(pillShape)
+                                            .clickable { onLanguageChanged(code) },
+                                        color = if (isSelected) colors.primary else colors.surfaceVariant
+                                    ) {
+                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = label,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            if (language != "fr") {
+                                Text(
+                                    "La traduction arrive bientôt : pour l'instant l'appli reste en français.",
+                                    fontSize = 11.5.sp,
+                                    color = colors.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Thème",
                                 fontSize = 13.sp,

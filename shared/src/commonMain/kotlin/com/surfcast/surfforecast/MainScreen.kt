@@ -110,6 +110,8 @@ fun MainScreen(
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
             themeMode = viewModel.themeMode,
+            language = viewModel.language,
+            onLanguageChanged = { viewModel.changeLanguage(it) },
             onThemeModeChanged = { viewModel.changeThemeMode(it) },
             engineConfig = viewModel.engineConfig,
             onDone = { viewModel.dismissOnboarding() }
@@ -389,6 +391,28 @@ fun MainScreen(
                                                 tint = if (spotHasCam) AppColors.WindMid else onSurfaceColor.copy(alpha = 0.3f),
                                                 size = 15.dp
                                             )
+                                        }
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        // Thème clair / sombre, à portée de main sur la ligne du spot.
+                                        val isDarkActive = when (viewModel.themeMode) {
+                                            "light" -> false
+                                            "dark" -> true
+                                            else -> isSystemInDarkTheme()
+                                        }
+                                        Column(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { viewModel.changeThemeMode(if (isDarkActive) "light" else "dark") }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            ThemeToggleIcon(
+                                                isDarkActive = isDarkActive,
+                                                backgroundColor = surfaceColor,
+                                                iconColor = onSurfaceColor,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
                                         }
                                     }
 

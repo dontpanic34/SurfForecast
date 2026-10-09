@@ -415,6 +415,15 @@ class SurfController(
         }
     }
 
+    // Langue de l'appli (seul le français est traduit pour l'instant ; les autres langues viendront).
+    var language by mutableStateOf(prefs.getString("app_language", "fr") ?: "fr")
+        private set
+
+    fun changeLanguage(code: String) {
+        language = code
+        prefs.putString("app_language", code)
+    }
+
     fun changeThemeMode(mode: String) {
         themeMode = mode
         prefs.putString("theme_mode", mode)
