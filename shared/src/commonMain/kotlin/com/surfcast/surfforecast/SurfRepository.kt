@@ -288,25 +288,22 @@ class SurfRepository(
     }.getOrDefault(emptyMap())
 
     /**
-     * Période « de référence » par heure : la période de pic de GFS Wave 0,16°, celle qu'affichent Windguru,
-     * Windy ou Surf-Forecast. On la préfère à celle de MFWAM/ECMWF, souvent plus courte de 1 à 3 s, pour que
-     * les surfeurs lisent ici les mêmes secondes qu'ailleurs. Échec ou donnée absente : on garde le modèle
-     * de base (map vide).
+     * Période « de référence » par heure : la période de GFS Wave 0,16° (NOAA WW3), exactement celle que lisent les
+     * surfeurs sur Windguru, Windy, Surf-Forecast et sur la partie NOAA de Yadusurf. On la préfère à celle de
+     * MFWAM / ECMWF, plus courte de 1 à 3 s. Échec ou donnée absente : on garde le modèle de base (map vide).
+     * (Open-Meteo ne fournit pas de période de pic pour ce modèle : `wave_period` EST la valeur de Windguru.)
      */
     private suspend fun fetchReferencePeriods(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Double> = runCatching {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
-            "latitude=$lat&longitude=$lon&hourly=wave_period,wave_peak_period&models=$REFERENCE_WAVE_MODEL" +
+            "latitude=$lat&longitude=$lon&hourly=wave_period&models=$REFERENCE_WAVE_MODEL" +
             "&forecast_days=$days&timezone=auto"
         val hourly = httpGet(url).getValue("hourly").jsonObject
         val timeArr = hourly.getValue("time").jsonArray
-        val peakArr = hourly.optArray("wave_peak_period")
-        val meanArr = hourly.optArray("wave_period")
+        val periodArr = hourly.optArray("wave_period")
         buildMap {
             for (i in timeArr.indices) {
-                val peak = peakArr.doubleAt(i)?.takeIf { it > 0.0 }
-                    ?: meanArr.doubleAt(i)?.takeIf { it > 0.0 }?.let { it * MEAN_TO_PEAK_PERIOD }
-                    ?: continue
-                put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), peak)
+                val period = periodArr.doubleAt(i)?.takeIf { it > 0.0 } ?: continue
+                put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), period)
             }
         }
     }.getOrDefault(emptyMap())
@@ -493,8 +490,10 @@ class SurfRepository(
                 }
 
                 val h = mData.waveHeights[mIndex]
-                // Aujourd'hui : la période du modèle côtier (MFWAM), vérifiée sur l'eau. Dès demain : GFS Wave.
-                val p = (if (t.date > today) referencePeriods[t] else null) ?: mData.wavePeriods[mIndex]
+                // Période : celle de GFS Wave (comme Windguru / Yadusurf / Surf-Forecast) ; à défaut, le modèle de la façade.
+                val basePeriod = mData.wavePeriods[mIndex]
+                val refPeriod = referencePeriods[t]
+                val p = refPeriod ?: basePeriod
                 // Vent : AROME HD en court terme si dispo, sinon le modèle météo de cette
                 // heure, sinon le long terme. Jamais de valeur inventée.
                 val longIndex = weatherMapLong[t]

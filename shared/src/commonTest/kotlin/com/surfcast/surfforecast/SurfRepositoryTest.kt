@@ -162,7 +162,7 @@ class SurfRepositoryTest {
 
     @Test
     fun referenceGfsWavePeakPeriodWinsWhenAvailable() = runTest {
-        val gfs = """{"hourly":{"time":["2026-01-01T10:00","2026-01-04T10:00"],"wave_period":[9.0,null],"wave_peak_period":[11.0,13.0]}}"""
+        val gfs = """{"hourly":{"time":["2026-01-01T10:00","2026-01-04T10:00"],"wave_period":[11.0,13.0]}}"""
         val engine = MockEngine { request ->
             val model = request.url.parameters["models"]
             val body = when {
@@ -177,10 +177,10 @@ class SurfRepositoryTest {
             respondJson(body)
         }
         val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
-        // Aujourd'hui : MFWAM (12 s) ; les jours suivants : GFS Wave.
-        assertEquals(12.0, hourly[0].wavePeriod)
-        assertEquals(13.0, hourly[1].wavePeriod)
-        assertEquals(calculateWaveEnergyReal(1.5, 12.0), hourly[0].energyKj)
+        // La période de GFS Wave l'emporte sur celle du modèle de la façade (12 s pour MFWAM, 11 s pour GFS).
+        assertEquals(11.0, hourly[0].wavePeriod, 1e-9)
+        assertEquals(13.0, hourly[1].wavePeriod, 1e-9)
+        assertEquals(calculateWaveEnergyReal(1.5, 11.0), hourly[0].energyKj)
     }
 
     @Test
