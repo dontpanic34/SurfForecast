@@ -68,6 +68,8 @@ fun DailyTimelineCard(
     idealSwellDirection: Int?,
     surferLevel: String,
     tidePreference: String = "any",
+    // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
+    scaleRawMax: Double? = null,
     // Vue simple : une heure sur deux (la légende des couleurs reste toujours visible).
     compact: Boolean = false,
     selectedHour: HourlyUiModel?,
@@ -241,9 +243,10 @@ fun DailyTimelineCard(
                     nowIndex = nowIndex,
                     selectedIndex = selectedIndex,
                     onSurfaceColor = onSurfaceColor,
+                    scaleRawMax = scaleRawMax,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(96.dp)
+                        .height(WEEK_CANVAS_H)
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -538,6 +541,8 @@ private fun DailyTimelineSwellCanvas(
     nowIndex: Int,
     selectedIndex: Int,
     onSurfaceColor: Color,
+    // Plus grosse houle de la semaine : la même échelle que la vue semaine (mêmes hauteurs, mêmes graduations).
+    scaleRawMax: Double? = null,
     modifier: Modifier = Modifier
 ) {
     if (hours.size < 2) {
@@ -554,15 +559,16 @@ private fun DailyTimelineSwellCanvas(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        val padY = 8.dp.toPx()
+        val padY = 16.dp.toPx()
 
         // Echelle de l'axe : un pas "rond" (0,25 / 0,5 / 1 / 2 m...) choisi pour obtenir
         // environ 4 lignes, et toujours un peu de marge au-dessus du pic du jour.
-        val rawMax = (hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
+        val rawMax = maxOf(scaleRawMax ?: 0.0, hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
         val (niceMax, gridValues) = swellAxisScale(rawMax)
 
         val axisLabels = gridValues.map { formatAxisHeight(it) }
-        val axisW = (axisLabels.maxOfOrNull { textMeasurer.measure(it, axisTextStyle).size.width.toFloat() } ?: 0f) + 6.dp.toPx()
+        // Graduations DANS la courbe (pas de colonne vide à gauche) : marges gauche et droite identiques.
+        val axisW = 0f
 
         val usableH = h - (2 * padY)
         val baseY = padY + usableH
@@ -579,12 +585,8 @@ private fun DailyTimelineSwellCanvas(
                 end = Offset(w, y),
                 strokeWidth = 0.8.dp.toPx()
             )
-            // Alignement à droite sur plotLeft - 5dp, ligne de base à y + 3dp (comme Paint.Align.RIGHT).
             val axisLayout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
-            drawText(
-                axisLayout,
-                topLeft = Offset(plotLeft - 5.dp.toPx() - axisLayout.size.width, y + 3.dp.toPx() - axisLayout.firstBaseline)
-            )
+            drawText(axisLayout, topLeft = Offset(4.dp.toPx(), y - axisLayout.size.height - 1.dp.toPx()))
         }
 
         val points = hours.mapIndexed { index, item ->

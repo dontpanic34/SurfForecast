@@ -118,9 +118,9 @@ fun WeeklyForecastCard(
             // 4 jours bien lisibles : les suivants s'atteignent en glissant sur le côté. L'échelle des
             // hauteurs reste fixe à gauche ; on voit « un bout » du jour suivant pour montrer qu'il y a une suite.
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val dayW = (maxWidth - WEEK_AXIS_W) / WEEK_VISIBLE_DAYS
+                val dayW = maxWidth / WEEK_VISIBLE_DAYS
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(start = WEEK_AXIS_W).horizontalScroll(scrollState)) {
+                    Column(modifier = Modifier.horizontalScroll(scrollState)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             availableDates.forEachIndexed { index, date ->
                                 val dayNum = date.dayOfMonth.toString()
@@ -339,7 +339,8 @@ internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifi
         gridValues.forEach { value ->
             val y = padTop + usableH * (1f - (value / niceMax).toFloat())
             val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
-            drawText(layout, topLeft = Offset(size.width - 5.dp.toPx() - layout.size.width, y + 3.dp.toPx() - layout.firstBaseline))
+            // Graduations DANS la courbe, collées à gauche : mêmes marges à gauche et à droite, comme le déroulé.
+            drawText(layout, topLeft = Offset(4.dp.toPx(), y - layout.size.height - 1.dp.toPx()))
         }
     }
 }
