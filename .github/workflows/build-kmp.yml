@@ -81,7 +81,7 @@ jobs:
         if: github.ref_name != 'unified'
         uses: actions/checkout@v4
         with:
-          ref: main-26mfzy
+          ref: unified
           path: apk-src
 
       - name: Accept Android SDK licenses

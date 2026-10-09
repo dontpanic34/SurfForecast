@@ -342,16 +342,6 @@ fun MainScreen(
                 // Point 3 : angle de houle ideal du spot actif (peut etre null si pas encore renseigne)
                 // et meilleur creneau du jour selectionne, pour le bandeau "Statut Flash".
                 val idealSwellDirection = viewModel.facingFor(state.spotName)
-                val bestSlots = selectedDate?.let { date ->
-                    findBestSlotsOfDay(
-                        dailyHours = daylightHoursFor(date, groupedByDate, state.dailySunInfo),
-                        idealSwellDirection = idealSwellDirection,
-                        surferLevel = viewModel.surferLevel,
-                        dailyTide = state.dailyTides[date],
-                        tidePreference = viewModel.tidePreference
-                    )
-                }
-
                 // Journal de session : meilleur "Pattern repere" dans les previsions a 7 jours
                 // par rapport aux sessions passees notees >= 4/5.
                 val referenceSessions by viewModel.referenceSessions.collectAsState()
@@ -364,7 +354,7 @@ fun MainScreen(
                 val spotMicroSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
                     .collectAsState(initial = emptyList())
 
-                // Meilleurs créneaux, invitation au profil, bancs et « pattern » : après le déroulé de la journée,
+                // Invitation au profil, bancs et « pattern » : après le déroulé de la journée,
                 // pour que les vagues (semaine, journée) soient la première chose qu'on voit.
                 val bestInfo: @Composable () -> Unit = {
                     Column(
@@ -374,55 +364,13 @@ fun MainScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(surfaceColor)
                     ) {
-                                    // Profil pas encore renseigné : un message cliquable remplace le meilleur créneau.
+                                    // Profil pas encore renseigné : un message cliquable l'invite à le remplir.
                                     if (viewModel.showProfileNudge) {
                                         ProfileNudgeCard(
                                             onOpen = { preferencesStartPage = "profile"; showPreferencesDialog = true },
                                             onLater = { viewModel.hideProfileNudge() },
                                             modifier = Modifier.coachTarget("bestSlot", coachTargets).padding(horizontal = 10.dp, vertical = 2.dp).padding(bottom = 6.dp)
                                         )
-                                    } else
-                                    // Point 3 : "Statut Flash" - meilleur creneau du jour selectionne.
-                                    if (bestSlots != null && (bestSlots.morning != null || bestSlots.afternoon != null)) {
-                                        // Le créneau suit le jour sélectionné : on le dit quand ce n'est pas aujourd'hui
-                                        // ("Sam. 10 · Matin : ..."), sinon on croirait que c'est pour aujourd'hui.
-                                        val bestSlotDayPrefix = selectedDate?.takeIf { it != today }?.let { d ->
-                                            "${frenchShortDayName(d)} ${d.day}".replaceFirstChar { it.uppercase() } + " · "
-                                        }.orEmpty()
-                                        val slots = listOf("Matin" to bestSlots.morning, "Après-midi" to bestSlots.afternoon)
-                                            .mapNotNull { (label, slot) -> slot?.let { label to it } }
-                                        slots.forEachIndexed { index, (label, slot) ->
-                                            val flashBand = scoreBand(slot.averageScore)
-                                            val flashColor = flashBand.color()
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .let { if (index == 0) it.coachTarget("bestSlot", coachTargets) else it }
-                                                    .padding(horizontal = 10.dp, vertical = 2.dp)
-                                                    .padding(bottom = if (index == slots.lastIndex) 6.dp else 0.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Canvas(modifier = Modifier.size(6.dp)) {
-                                                    drawCircle(color = flashColor, radius = size.minDimension / 2f)
-                                                }
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Column {
-                                                    Text(
-                                                        text = "${if (index == 0) bestSlotDayPrefix else ""}$label : ${slot.startHour}h-${slot.endHour}h (${flashBand.label} · ${slot.averageScore})",
-                                                        fontSize = 12.sp,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color = onSurfaceColor.copy(alpha = 0.75f),
-                                                        maxLines = 1
-                                                    )
-                                                    Text(
-                                                        text = slot.recap,
-                                                        fontSize = 11.sp,
-                                                        color = onSurfaceColor.copy(alpha = 0.55f),
-                                                        maxLines = 1
-                                                    )
-                                                }
-                                            }
-                                        }
                                     }
 
                                     // Fiches de bancs : « Le banc magique : 16h–18h (descendant · 1,0–1,6 m) ».
@@ -769,16 +717,15 @@ fun MainScreen(
                     CoachStep(
                         "settings", "⭐ Des prévisions 100 % sur-mesure",
                         "Renseigner ton profil est LE réglage à faire en premier.\n" +
-                            "• Sans profil : les notes sont celles d'un surfeur moyen, et les meilleurs créneaux sont remplacés par un message qui t'y renvoie.\n" +
+                            "• Sans profil : les notes sont celles d'un surfeur moyen, et un message t'invite à remplir ton profil.\n" +
                             "• Avec ton profil : les scores, les couleurs et la limite violette « trop gros » sont calculés pour toi.\n" +
                             "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou ton réglage personnalisé (énergie de vague, tolérance au vent, aux rafales, au clapot).\n" +
                             "• Tes planches : ajoute-les avec leur volume, tu les retrouveras dans le journal.\n" +
-                            "Une minute suffit, et ça débloque tes meilleurs créneaux du matin et de l'après-midi.",
+                            "Une minute suffit, et les scores, les étoiles et le « trop gros » deviennent les tiens.",
                         actionLabel = "Renseigner mon profil maintenant",
                         onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
                     ),
                     CoachStep("journal", "📓 Le journal de bord", "Note tes sessions en quelques secondes : l'appli enregistre toute seule la houle, le vent et la marée, et compare ce qu'elle avait prévu avec ton ressenti (tes étoiles). Au fil du temps, tu vois dans quelles conditions tu surfes le mieux."),
-                    CoachStep("bestSlot", "🎯 Les meilleurs créneaux", "Le meilleur moment du matin et de l'après-midi pour le jour sélectionné, selon ton profil. Touche un autre jour dans la semaine pour voir ses créneaux."),
                     CoachStep(
                         "weekCard", "📅 Un écran à ta façon",
                         "Touche un jour de la semaine pour le détailler. Chaque encart (semaine, déroulé, vagues, vent, météo…) s'adapte à toi :\n" +
