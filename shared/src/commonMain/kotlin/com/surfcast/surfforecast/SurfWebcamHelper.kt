@@ -22,6 +22,7 @@ object SurfWebcamHelper {
         "Montalivet" to SpotWebcams(
             "Montalivet",
             listOf(
+                SurfWebcamOption("Plage Centrale (GoSurf)", "https://gosurf.fr/webcam/fr/57/Montalivet-Plage-Centrale"),
                 SurfWebcamOption("Webcam Médoc Atlantique", "https://medoc-atlantique.com/webcams/webcam-montalivet/")
             )
         ),
