@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 const val DONATION_URL = "https://www.paypal.me/othmanmiara"
 
 /** Page Ko-fi pour payer par carte bancaire (vide = bouton masqué tant que le lien n'est pas fourni). */
-const val KOFI_URL = ""
+const val KOFI_URL = "https://ko-fi.com/othmanmiara"
 
 /** Lien de paiement Lydia (vide = bouton masqué tant que le lien n'est pas fourni). */
 const val LYDIA_URL = ""
