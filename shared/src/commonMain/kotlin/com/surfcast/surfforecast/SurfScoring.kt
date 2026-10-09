@@ -21,10 +21,11 @@ data class SlotRating(val score: Int, val tooBig: Boolean)
 
 /** Courbes du facteur vent (de 0 à 1) selon la vitesse effective (km/h) : offshore, travers, onshore. */
 private val windCurves: Map<String, List<Pair<Double, Double>>> = mapOf(
-    "offshore" to listOf(0.0 to 1.0, 15.0 to 1.0, 25.0 to 0.8, 40.0 to 0.5, 55.0 to 0.3),
-    "cross" to listOf(0.0 to 1.0, 8.0 to 1.0, 15.0 to 0.8, 25.0 to 0.45, 40.0 to 0.2, 55.0 to 0.1),
-    // Onshore très faible (quasi pas de vent) : presque aussi bon que l'offshore.
-    "onshore" to listOf(0.0 to 0.95, 8.0 to 0.95, 12.0 to 0.75, 18.0 to 0.4, 25.0 to 0.15, 30.0 to 0.0)
+    "offshore" to listOf(0.0 to 1.0, 15.0 to 1.0, 25.0 to 0.75, 35.0 to 0.45, 45.0 to 0.25, 55.0 to 0.15),
+    // Vent de travers : plus sévère qu'avant (Surf-Forecast / Yadusurf le pénalisent tôt) ; 12 km/h ≈ 0,8.
+    "cross" to listOf(0.0 to 1.0, 6.0 to 1.0, 12.0 to 0.8, 20.0 to 0.5, 30.0 to 0.25, 45.0 to 0.1),
+    // Onshore : il abîme la vague dès 10 km/h et la détruit au-delà de 25 ; quasi pas de vent = presque comme l'offshore.
+    "onshore" to listOf(0.0 to 0.95, 6.0 to 0.9, 10.0 to 0.65, 15.0 to 0.35, 20.0 to 0.12, 25.0 to 0.0)
 )
 
 internal fun interpolate(x: Double, points: List<Pair<Double, Double>>): Double {
@@ -247,6 +248,44 @@ fun chopFactor(swellHeight: Double, windWaveHeight: Double, threshold: Double = 
     if (windWaveHeight <= threshold) return 1.0
     val ratio = (windWaveHeight - threshold) / maxOf(swellHeight, 0.5)
     return (1.0 - ratio * 0.8).coerceIn(0.4, 1.0)
+}
+
+/**
+ * Vrai si le vent a soufflé offshore (et pas trop fort) pendant la nuit : la mer est alors lisse et les vagues
+ * mieux formées le matin. [nightHours] = soirée de la veille et début de matinée ; il en faut au moins 4, offshore à 60 %.
+ */
+fun hasOffshoreNight(nightHours: List<HourlyUiModel>, beachFacing: Int?): Boolean {
+    if (nightHours.size < 4 || beachFacing == null) return false
+    val offshore = nightHours.count {
+        it.windSpeedKmh in 2..30 && windCategoryFor(it.windDirectionStr, beachFacing) == "offshore"
+    }
+    return offshore >= nightHours.size * 0.6
+}
+
+/**
+ * Qualité d'une JOURNÉE (0-100) : 60 % du meilleur créneau + 40 % de la moyenne des heures de jour (une heure
+ * excellente au milieu d'une journée de vent ne fait pas une bonne journée), plus 5 points si le vent a soufflé
+ * offshore la nuit. Null = trop gros pour le profil toute la journée, ou pas de données.
+ */
+fun dayQualityScore(
+    daylightHours: List<HourlyUiModel>,
+    idealSwellDirection: Int?,
+    surferLevel: String,
+    dailyTide: DailyTideInfo?,
+    tidePreference: String = "any",
+    offshoreNight: Boolean = false
+): Int? {
+    if (daylightHours.isEmpty()) return null
+    val ratings = daylightHours.map {
+        calculateSlotRating(it, idealSwellDirection, surferLevel, isNearHighTide(it, dailyTide), tidePreference, dailyTide)
+    }
+    if (ratings.all { it.tooBig }) return null
+    val scores = ratings.map { if (it.tooBig) 0 else it.score }
+    val slots = findBestSlotsOfDay(daylightHours, idealSwellDirection, surferLevel, dailyTide, tidePreference)
+    val best = listOfNotNull(slots.morning, slots.afternoon).maxOfOrNull { it.averageScore } ?: scores.max()
+    var day = 0.6 * best + 0.4 * scores.average()
+    if (offshoreNight && best > 0) day += 5.0
+    return day.roundToInt().coerceIn(0, 100)
 }
 
 fun findBestSlot(

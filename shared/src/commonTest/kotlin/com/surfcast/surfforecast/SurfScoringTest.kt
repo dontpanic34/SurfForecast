@@ -35,6 +35,33 @@ class SurfScoringTest {
     )
 
     @Test
+    fun crossWindFromTwelveKmhIsClearlyPenalized() {
+        val calm = calculateSlotScore(hour(10, windKmh = 4, windDir = "N"), 270, "confirmed", false)
+        val cross12 = calculateSlotScore(hour(10, windKmh = 12, windDir = "N"), 270, "confirmed", false)
+        assertTrue(cross12 < calm * 0.88, "travers 12 km/h : $cross12 contre $calm sans vent")
+    }
+
+    @Test
+    fun dayScoreRewardsAWholeGoodDayOverASingleGoodHour() {
+        val goodAllDay = (8..18).map { hour(it, windKmh = 5, windDir = "E") }
+        val oneGoodHour = (8..18).map { if (it == 11) hour(it, windKmh = 5, windDir = "E") else hour(it, windKmh = 24, windDir = "O") }
+        val whole = dayQualityScore(goodAllDay, 270, "confirmed", null)!!
+        val single = dayQualityScore(oneGoodHour, 270, "confirmed", null)!!
+        assertTrue(whole - single >= 25, "journée propre $whole contre une seule bonne heure $single")
+    }
+
+    @Test
+    fun offshoreNightGivesAFewPointsAndNeedsEnoughHours() {
+        val night = (0..5).map { hour(it, windKmh = 8, windDir = "E") }
+        assertTrue(hasOffshoreNight(night, 270))
+        assertFalse(hasOffshoreNight(night.take(3), 270))
+        assertFalse(hasOffshoreNight((0..5).map { hour(it, windKmh = 8, windDir = "O") }, 270))
+        val day = (8..18).map { hour(it, windKmh = 12, windDir = "N") }
+        val base = dayQualityScore(day, 270, "confirmed", null, offshoreNight = false)!!
+        assertEquals(base + 5, dayQualityScore(day, 270, "confirmed", null, offshoreNight = true))
+    }
+
+    @Test
     fun perfectIntermediateConditionsScore100() {
         // 1.962 x 1² x 10² = 196.2 kJ, dans la cible 80-220 ; vent offshore faible -> x1.
         assertEquals(100, calculateSlotScore(hour(10), null, "intermediate", false))
@@ -55,11 +82,11 @@ class SurfScoringTest {
 
     @Test
     fun swellDirectionAndCrossWind() {
-        // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent N 10 km/h (travers) x0.9 ;
-        // ; vent de travers N 10 km/h pour un intermédiaire (tolérance 25) : 0.943 ; houle de travers :
-        // facteur 1 - 0.3 x 60/90 = 0.8 ; la direction compte à 80 % pour un intermédiaire : 1 - 0.057 x 0.8 = 0.954 ;
-        // 100 x 0.954 x 0.8 = 76.3 -> 76.
-        assertEquals(76, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent de travers N 10 km/h pour un
+        // intermédiaire (tolérance 25) : courbe travers 6 km/h = 1, 12 km/h = 0.8 -> 0.867 ; la direction compte à 80 % :
+        // 1 - 0.133 x 0.8 = 0.893 ; houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 ;
+        // 100 x 0.893 x 0.8 = 71.5 -> 71.
+        assertEquals(71, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -113,7 +140,7 @@ class SurfScoringTest {
     @Test
     fun lightOnshoreIsNearlyAsGoodAsOffshore() {
         val calmOnshore = calculateSlotScore(hour(10, windKmh = 6, windDir = "O"), 275, "intermediate", false)
-        assertTrue(calmOnshore >= 90, "onshore faible : $calmOnshore")
+        assertTrue(calmOnshore >= 85, "onshore faible : $calmOnshore")
     }
 
     // --- Orientation de la plage, rafales, clapot ---
@@ -349,19 +376,19 @@ class SurfScoringTest {
 class StarsTest {
     @kotlin.test.Test
     fun scoreMapsToHalfStars() {
-        kotlin.test.assertEquals(0.5f, starsForScore(0))
-        kotlin.test.assertEquals(2.5f, starsForScore(50))
-        kotlin.test.assertEquals(4.5f, starsForScore(85))
-        kotlin.test.assertEquals(5f, starsForScore(100))
+        kotlin.test.assertEquals(0.5f, starsForScore(0, 0))
+        kotlin.test.assertEquals(2f, starsForScore(50, 0))
+        kotlin.test.assertEquals(4f, starsForScore(85, 0))
+        kotlin.test.assertEquals(5f, starsForScore(100, 0))
     }
 }
 
 class StarsOffsetTest {
     @kotlin.test.Test
     fun offsetShiftsTheScale() {
-        kotlin.test.assertEquals(3.5f, starsForScore(70, 0))
-        kotlin.test.assertEquals(3f, starsForScore(70, -10))
-        kotlin.test.assertEquals(4f, starsForScore(70, 10))
+        kotlin.test.assertEquals(3f, starsForScore(70, 0))
+        kotlin.test.assertEquals(2.5f, starsForScore(70, -10))
+        kotlin.test.assertEquals(3.5f, starsForScore(70, 10))
         kotlin.test.assertEquals("3,5", starsText(3.5f))
         kotlin.test.assertEquals("4", starsText(4f))
     }
