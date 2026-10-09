@@ -1002,6 +1002,8 @@ fun DynamicCardsSection(
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
                                 tidePreference = tidePreference,
+                                scaleRawMax = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) }
+                                    .maxOfOrNull { it.waveHeight },
                                 selectedHour = selectedHourlyItem,
                                 onHourSelected = { selectedHourlyItem = it },
                                 isCollapsed = isCollapsed,
