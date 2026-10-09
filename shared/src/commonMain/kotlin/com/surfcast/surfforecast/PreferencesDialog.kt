@@ -22,6 +22,7 @@ import com.surfcast.surfforecast.resources.widget_preview
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.surfcast.surfforecast.ui.theme.AppColors
@@ -57,6 +58,7 @@ fun SurfPreferencesDialog(
     // Thème clair / sombre / auto (déplacé de l'écran principal vers Affichage).
     themeMode: String = "system",
     language: String = "fr",
+    appVersion: String? = null,
     onLanguageChanged: (String) -> Unit = {},
     onThemeModeChanged: (String) -> Unit = {},
     customProfile: String = "",
@@ -300,8 +302,8 @@ fun SurfPreferencesDialog(
                             color = colors.onBackground
                         )
                     } else {
-                        TextButton(onClick = { page = if (page == "guide") "help" else null }) {
-                            Text(if (page == "guide") "‹ Aide" else "‹ Paramètres", fontSize = 13.sp, color = colors.primary)
+                        TextButton(onClick = { page = null }) {
+                            Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
                         }
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
@@ -346,9 +348,19 @@ fun SurfPreferencesDialog(
                         PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
                         PrefMenuRow("🎛️", "Affichage", "Thème, unité du vent, encarts") { page = "display" }
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
+                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
+                        if (onShowTour != null || onShowIntro != null) PrefMenuRow("💡", "Aide", "Visite guidée, introduction") { page = "help" }
                         if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
-                        PrefMenuRow("💡", "Aide", "Comprendre les prévisions, visite guidée") { page = "help" }
+                        if (!appVersion.isNullOrEmpty()) {
+                            Text(
+                                text = "Surf Log v$appVersion",
+                                fontSize = 11.sp,
+                                color = colors.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
 
                     if (page == "profile") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -785,7 +797,6 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "help") {
-                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (onShowTour != null) {
                             PrefMenuRow("🧭", "Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", onClick = onShowTour)
                         }

@@ -143,6 +143,7 @@ fun MainScreen(
 
     if (showPreferencesDialog) {
         SurfPreferencesDialog(
+            appVersion = appVersion,
             windUnit = viewModel.windUnit,
             onWindUnitSelected = { newUnit -> viewModel.changeWindUnit(newUnit) },
             showLiveOverlay = viewModel.showLiveOverlay,
@@ -723,9 +724,8 @@ fun MainScreen(
 
                                     run {
                                         val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime}" else ""
-                                        val version = appVersion?.let { "v$it" }.orEmpty()
                                         Text(
-                                            text = listOf(updated, version).filter { it.isNotEmpty() }.joinToString(" · "),
+                                            text = updated,
                                             fontSize = 10.5.sp,
                                             color = onSurfaceColor.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
