@@ -52,6 +52,9 @@ fun SurfPreferencesDialog(
     onToggleHourlyCard: (Boolean) -> Unit,
     surferLevel: String,
     onSurferLevelChanged: (String) -> Unit,
+    // Thème clair / sombre / auto (déplacé de l'écran principal vers Affichage).
+    themeMode: String = "system",
+    onThemeModeChanged: (String) -> Unit = {},
     customProfile: String = "",
     onCustomProfileSaved: (String) -> Unit = {},
     tidePreference: String = "any",
@@ -337,7 +340,7 @@ fun SurfPreferencesDialog(
                 ) {
                     if (page == null) {
                         PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
-                        PrefMenuRow("🎛️", "Affichage", "Unité du vent, encarts") { page = "display" }
+                        PrefMenuRow("🎛️", "Affichage", "Thème, unité du vent, encarts") { page = "display" }
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
                         if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
@@ -371,6 +374,34 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "Thème",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary
+                            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                listOf("light" to "☀️ Clair", "dark" to "🌙 Sombre", "system" to "Auto").forEach { (key, label) ->
+                                    val isSelected = themeMode == key
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(pillShape)
+                                            .clickable { onThemeModeChanged(key) },
+                                        color = if (isSelected) colors.primary else colors.surfaceVariant
+                                    ) {
+                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = label,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "1. Unité du vent",
                                 fontSize = 13.sp,

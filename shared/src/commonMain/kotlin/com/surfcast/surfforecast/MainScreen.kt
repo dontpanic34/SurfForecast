@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.surfcast.surfforecast.ui.theme.AppColors
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
@@ -83,6 +85,8 @@ fun MainScreen(
     // Page des Paramètres à ouvrir directement (« profile » depuis la visite guidée).
     var preferencesStartPage by remember { mutableStateOf<String?>(null) }
     var showWeatherDetail by remember { mutableStateOf(false) }
+    val mainListState = rememberLazyListState()
+    val navScope = rememberCoroutineScope()
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var showForecastHistory by remember { mutableStateOf(false) }
     // Le lecteur webcam intégré (WebView côté Android) n'est pas encore porté : on ouvre
@@ -163,6 +167,8 @@ fun MainScreen(
             onToggleHourlyCard = { viewModel.toggleHourlyCard(it) },
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it); viewModel.markProfileReviewed() },
+            themeMode = viewModel.themeMode,
+            onThemeModeChanged = { viewModel.changeThemeMode(it) },
             customProfile = viewModel.customProfile,
             onCustomProfileSaved = { viewModel.saveCustomProfile(it) },
             tidePreference = viewModel.tidePreference,
@@ -523,6 +529,7 @@ fun MainScreen(
                             }
 
                             LazyColumn(
+                                state = mainListState,
                                 modifier = Modifier
                                     .weight(1f)
                                     .fillMaxWidth()
@@ -548,46 +555,6 @@ fun MainScreen(
                                             modifier = Modifier.weight(1f)
                                         )
 
-                                        val systemDark = isSystemInDarkTheme()
-                                        val isDarkActive = when (viewModel.themeMode) {
-                                            "light" -> false
-                                            "dark" -> true
-                                            else -> systemDark
-                                        }
-
-                                        IconButton(
-                                            onClick = {
-                                                viewModel.changeThemeMode(if (isDarkActive) "light" else "dark")
-                                            },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            ThemeToggleIcon(
-                                                isDarkActive = isDarkActive,
-                                                backgroundColor = backgroundColor,
-                                                iconColor = onSurfaceColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-
-                                        IconButton(onClick = { showSessionLogDialog = true }, modifier = Modifier.size(32.dp).coachTarget("journal", coachTargets)) {
-                                            JournalIcon(
-                                                color = onSurfaceColor,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-
-                                        IconButton(onClick = { showWeatherDetail = true }, modifier = Modifier.size(32.dp)) {
-                                            Text(text = "🌤️", fontSize = 18.sp)
-                                        }
-
-                                        IconButton(onClick = { preferencesStartPage = null; showPreferencesDialog = true }, modifier = Modifier.size(32.dp).coachTarget("settings", coachTargets)) {
-                                            Icon(
-                                                imageVector = SurfIcons.Settings,
-                                                contentDescription = "Paramètres",
-                                                tint = onSurfaceColor,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
                                     }
 
                                     if (showSessionLogDialog) {
@@ -736,6 +703,16 @@ fun MainScreen(
                                     }
                                 }
                             }
+
+                            // Barre du bas : Prévisions, Journal, Météo, Réglages (toujours visible, à portée de pouce).
+                            // Journal et Météo s'ouvrent depuis le haut de la liste : on y remonte d'abord.
+                            BottomNavBar(
+                                onForecast = { navScope.launch { mainListState.animateScrollToItem(0) } },
+                                onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
+                                onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
+                                onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
+                                coachTargets = coachTargets
+                            )
                         }
                     }
                 }
@@ -1161,5 +1138,55 @@ fun DynamicCardsSection(
             }
         }
         Spacer(modifier = Modifier.height(6.dp))
+    }
+}
+
+
+/** Barre de navigation du bas : l'écran des prévisions, le journal, la météo détaillée et les réglages, avec leur nom. */
+@Composable
+private fun BottomNavBar(
+    onForecast: () -> Unit,
+    onJournal: () -> Unit,
+    onWeather: () -> Unit,
+    onSettings: () -> Unit,
+    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
+) {
+    val colors = MaterialTheme.colorScheme
+    Surface(color = colors.surface, modifier = Modifier.fillMaxWidth()) {
+        Column {
+            HorizontalDivider(color = colors.onSurface.copy(alpha = 0.1f))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                @Composable
+                fun Item(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, icon: @Composable () -> Unit) {
+                    Column(
+                        modifier = modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable(onClick = onClick)
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(modifier = Modifier.height(22.dp), contentAlignment = Alignment.Center) { icon() }
+                        Text(
+                            label, fontSize = 10.5.sp, maxLines = 1,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (selected) colors.primary else colors.onSurface.copy(alpha = 0.75f)
+                        )
+                    }
+                }
+                Item("Prévisions", true, onForecast) { Text("🌊", fontSize = 18.sp) }
+                Item("Journal", false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
+                    JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
+                }
+                Item("Météo", false, onWeather) { Text("🌤️", fontSize = 18.sp) }
+                Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
+                    Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
+                }
+            }
+        }
     }
 }
