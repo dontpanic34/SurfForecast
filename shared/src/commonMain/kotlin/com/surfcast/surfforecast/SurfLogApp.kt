@@ -2,6 +2,9 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -34,6 +37,20 @@ fun SurfLogApp(
     }
 
     SurfForecastTheme(useDarkTheme = useDarkTheme) {
-        MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install)
+        // Taille de l'affichage : on agrandit dp et sp ensemble (textes, étoiles, icônes), comme un vrai zoom.
+        val base = LocalDensity.current
+        val scale = displayScaleFor(controller.displaySize)
+        CompositionLocalProvider(LocalDensity provides Density(base.density * scale, base.fontScale)) {
+            MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install)
+        }
     }
 }
+
+/** Facteur de zoom de l'affichage : Normal, Grand, Très grand. */
+fun displayScaleFor(size: String): Float = when (size) {
+    "large" -> 1.18f
+    "xlarge" -> 1.38f
+    else -> 1f
+}
+
+val DISPLAY_SIZE_CHOICES = listOf("normal" to "Normal", "large" to "Grand", "xlarge" to "Très grand")

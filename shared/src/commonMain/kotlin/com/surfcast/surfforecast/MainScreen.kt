@@ -105,6 +105,8 @@ fun MainScreen(
     // pour ne pas masquer l'écran de démarrage).
     if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
         OnboardingDialog(
+            displaySize = viewModel.displaySize,
+            onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
             onDone = { viewModel.dismissOnboarding() }
@@ -145,6 +147,8 @@ fun MainScreen(
             onToggleLiveOverlay = { viewModel.toggleLiveOverlay(it) },
             showWeeklyCard = viewModel.showWeeklyCard,
             onToggleWeeklyCard = { viewModel.toggleWeeklyCard(it) },
+            displaySize = viewModel.displaySize,
+            onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
             starsOffset = viewModel.starsOffset,
             onStarsOffsetChanged = { viewModel.changeStarsOffset(it) },
             weeklyDensity = viewModel.weeklyDensity,
@@ -577,7 +581,18 @@ fun MainScreen(
                                                 )
                                             }
                                         }
-                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        // Taille de l'affichage : « Aa » + son nom, comme « Thème », pour que tout le monde comprenne.
+                                        Column(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { viewModel.cycleDisplaySize() }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text("Aa", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor)
+                                            Text("Taille", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
+                                        }
                                         // Thème clair / sombre, à portée de main sur la ligne du spot.
                                         val isDarkActive = when (viewModel.themeMode) {
                                             "light" -> false
@@ -1128,7 +1143,7 @@ fun DynamicCardsSection(
                                 surferLevel = surferLevel,
                                 windUnit = viewModel.windUnit,
                                 weeklyDensity = viewModel.weeklyDensity,
-                                weeklyWindMode = viewModel.weeklyWindMode,
+                                weeklyWindMode = if (viewModel.viewMode == "simple" && viewModel.weeklyWindMode == "both") "arrow" else viewModel.weeklyWindMode,
                                 primaryColor = primaryColor,
                                 surfaceColor = surfaceColor,
                                 onSurfaceColor = onSurfaceColor,
@@ -1149,6 +1164,7 @@ fun DynamicCardsSection(
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
                                 tidePreference = tidePreference,
+                                compact = viewModel.viewMode == "simple",
                                 selectedHour = selectedHourlyItem,
                                 onHourSelected = { selectedHourlyItem = it },
                                 isCollapsed = isCollapsed,
