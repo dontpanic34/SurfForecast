@@ -22,8 +22,7 @@ object SurfWebcamHelper {
         "Montalivet" to SpotWebcams(
             "Montalivet",
             listOf(
-                // Pas de webcam GoSurf à Montalivet : la caméra View Surf, via sa page surf-forecast, puis l'office de tourisme.
-                SurfWebcamOption("View Surf Montalivet", "https://www.surf-forecast.com/breaks/Montalivetles-Bains/webcams/latest"),
+                SurfWebcamOption("Plage Centrale (GoSurf)", "https://gosurf.fr/webcam/fr/57/Montalivet-Plage-Centrale"),
                 SurfWebcamOption("Webcam Médoc Atlantique", "https://medoc-atlantique.com/webcams/webcam-montalivet/")
             )
         ),
