@@ -347,103 +347,16 @@ fun MainScreen(
                 val spotMicroSpots by remember(state.spotName) { viewModel.microSpotsFor(state.spotName) }
                     .collectAsState(initial = emptyList())
 
-                Box(modifier = Modifier.fillMaxSize()) {
-                    run {
-                        val selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0)
-                        val fixedMaxScale = 4.0f
-
-                        val dailyPeriods = availableDates.map { date ->
-                            val dailyData = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
-                            dailyData.maxByOrNull { it.waveHeight }?.wavePeriod?.roundToInt() ?: 10
-                        }
-
-                        val dailyHeights = availableDates.map { date ->
-                            val dailyData = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
-                            dailyData.maxByOrNull { it.waveHeight }?.waveHeight ?: 0.0
-                        }
-
-                        val dailyStars = availableDates.map { date ->
-                            val hours = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
-                            val tide = state.dailyTides[date]
-                            val ratings = hours.map {
-                                calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel, isNearHighTide(it, tide), viewModel.tidePreference, tide)
-                            }
-                            val slots = findBestSlotsOfDay(hours, idealSwellDirection, viewModel.surferLevel, tide, viewModel.tidePreference)
-                            val best = listOfNotNull(slots.morning, slots.afternoon).maxOfOrNull { it.averageScore }
-                            when {
-                                ratings.isNotEmpty() && ratings.all { it.tooBig } -> null
-                                else -> starsForScore(best ?: 0)
-                            }
-                        }
-
-                        val dailyFeelsLike = availableDates.map { date ->
-                            state.dailySummaries[date]?.avgFeelsLike ?: 20
-                        }
-
-                        val dailyWaterTemps = availableDates.map { date ->
-                            state.dailySummaries[date]?.avgWaterTemp
-                        }
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .systemBarsPadding()
-                        ) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = surfaceColor
-                            ) {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = state.spotName,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = onSurfaceColor,
-                                            maxLines = 1,
-                                            modifier = Modifier.padding(end = 6.dp)
-                                        )
-                                        val spotHasCam = SurfWebcamHelper.hasCamera(state.spotName)
-                                        IconButton(
-                                            onClick = {
-                                                if (spotHasCam) openLiveCam(state.spotName)
-                                            },
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            WebcamIcon(
-                                                tint = if (spotHasCam) AppColors.WindMid else onSurfaceColor.copy(alpha = 0.3f),
-                                                size = 15.dp
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        // Thème clair / sombre, à portée de main sur la ligne du spot.
-                                        val isDarkActive = when (viewModel.themeMode) {
-                                            "light" -> false
-                                            "dark" -> true
-                                            else -> isSystemInDarkTheme()
-                                        }
-                                        Column(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable { viewModel.changeThemeMode(if (isDarkActive) "light" else "dark") }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            ThemeToggleIcon(
-                                                isDarkActive = isDarkActive,
-                                                backgroundColor = surfaceColor,
-                                                iconColor = onSurfaceColor,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
-                                        }
-                                    }
-
+                // Meilleurs créneaux, invitation au profil, bancs et « pattern » : après le déroulé de la journée,
+                // pour que les vagues (semaine, journée) soient la première chose qu'on voit.
+                val bestInfo: @Composable () -> Unit = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(surfaceColor)
+                    ) {
                                     // Profil pas encore renseigné : un message cliquable remplace le meilleur créneau.
                                     if (viewModel.showProfileNudge) {
                                         ProfileNudgeCard(
@@ -461,7 +374,32 @@ fun MainScreen(
                                         }.orEmpty()
                                         val slots = listOf("Matin" to bestSlots.morning, "Après-midi" to bestSlots.afternoon)
                                             .mapNotNull { (label, slot) -> slot?.let { label to it } }
-                                        slots.forEachIndexed { index, (label, slot) ->
+                                        val simple = viewModel.viewMode == "simple"
+                                        val collapsedSimple = simple && !viewModel.bestSlotsOpen
+                                        if (simple) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .coachTarget("bestSlot", coachTargets)
+                                                    .clickable { viewModel.toggleBestSlotsOpen() }
+                                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                val first = slots.firstOrNull()
+                                                Text(
+                                                    text = if (collapsedSimple && first != null) {
+                                                        "🎯 Meilleurs créneaux · ${first.first} ${first.second.startHour}h-${first.second.endHour}h (${scoreBand(first.second.averageScore).label})"
+                                                    } else "🎯 Meilleurs créneaux",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = onSurfaceColor,
+                                                    maxLines = 1,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Text(if (collapsedSimple) "⌄" else "⌃", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                        if (!collapsedSimple) slots.forEachIndexed { index, (label, slot) ->
                                             val flashBand = scoreBand(slot.averageScore)
                                             val flashColor = flashBand.color()
                                             Row(
@@ -556,6 +494,129 @@ fun MainScreen(
                                             )
                                         }
                                     }
+                    }
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    run {
+                        val selectedIndex = availableDates.indexOf(selectedDate).coerceAtLeast(0)
+                        val fixedMaxScale = 4.0f
+
+                        val dailyPeriods = availableDates.map { date ->
+                            val dailyData = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
+                            dailyData.maxByOrNull { it.waveHeight }?.wavePeriod?.roundToInt() ?: 10
+                        }
+
+                        val dailyHeights = availableDates.map { date ->
+                            val dailyData = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
+                            dailyData.maxByOrNull { it.waveHeight }?.waveHeight ?: 0.0
+                        }
+
+                        val dailyStars = availableDates.map { date ->
+                            val hours = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
+                            val tide = state.dailyTides[date]
+                            val ratings = hours.map {
+                                calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel, isNearHighTide(it, tide), viewModel.tidePreference, tide)
+                            }
+                            val slots = findBestSlotsOfDay(hours, idealSwellDirection, viewModel.surferLevel, tide, viewModel.tidePreference)
+                            val best = listOfNotNull(slots.morning, slots.afternoon).maxOfOrNull { it.averageScore }
+                            when {
+                                ratings.isNotEmpty() && ratings.all { it.tooBig } -> null
+                                else -> starsForScore(best ?: 0)
+                            }
+                        }
+
+                        val dailyFeelsLike = availableDates.map { date ->
+                            state.dailySummaries[date]?.avgFeelsLike ?: 20
+                        }
+
+                        val dailyWaterTemps = availableDates.map { date ->
+                            state.dailySummaries[date]?.avgWaterTemp
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .systemBarsPadding()
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = surfaceColor
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = state.spotName,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = onSurfaceColor,
+                                            maxLines = 1,
+                                            modifier = Modifier.padding(end = 6.dp)
+                                        )
+                                        val spotHasCam = SurfWebcamHelper.hasCamera(state.spotName)
+                                        IconButton(
+                                            onClick = {
+                                                if (spotHasCam) openLiveCam(state.spotName)
+                                            },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            WebcamIcon(
+                                                tint = if (spotHasCam) AppColors.WindMid else onSurfaceColor.copy(alpha = 0.3f),
+                                                size = 15.dp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.weight(1f))
+                                        // Vue simple / détaillée.
+                                        Row(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(50))
+                                                .background(onSurfaceColor.copy(alpha = 0.08f))
+                                                .padding(2.dp)
+                                        ) {
+                                            listOf("simple" to "Simple", "detailed" to "Détaillé").forEach { (key, label) ->
+                                                val on = viewModel.viewMode == key
+                                                Text(
+                                                    text = label,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (on) MaterialTheme.colorScheme.onPrimary else onSurfaceColor.copy(alpha = 0.7f),
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(50))
+                                                        .background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                                        .clickable { viewModel.changeViewMode(key) }
+                                                        .padding(horizontal = 9.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        // Thème clair / sombre, à portée de main sur la ligne du spot.
+                                        val isDarkActive = when (viewModel.themeMode) {
+                                            "light" -> false
+                                            "dark" -> true
+                                            else -> isSystemInDarkTheme()
+                                        }
+                                        Column(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable { viewModel.changeThemeMode(if (isDarkActive) "light" else "dark") }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            ThemeToggleIcon(
+                                                isDarkActive = isDarkActive,
+                                                backgroundColor = surfaceColor,
+                                                iconColor = onSurfaceColor,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
+                                        }
+                                    }
+
                                 }
                             }
 
@@ -732,6 +793,7 @@ fun MainScreen(
 
                                     item {
                                         DynamicCardsSection(
+                                            afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             dailyTideInfo = dailyTide,
                                             isToday = (date == today),
@@ -954,6 +1016,7 @@ fun FavoritesHeaderRow(
 
 @Composable
 fun DynamicCardsSection(
+    afterTimeline: @Composable () -> Unit,
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -997,6 +1060,8 @@ fun DynamicCardsSection(
     val itemHeights = remember { mutableStateMapOf<String, Int>() }
 
     fun renderableCardKeys(): List<String> = viewModel.cardsOrder.filter { key ->
+        // Vue simple : seulement la semaine et le déroulé de la journée.
+        if (viewModel.viewMode == "simple" && key != "weekly" && key != "dailyTimeline") return@filter false
         when (key) {
             "weekly" -> viewModel.showWeeklyCard
             "dailyTimeline" -> viewModel.showDailyTimelineCard
@@ -1057,6 +1122,7 @@ fun DynamicCardsSection(
     }
 
     val orderedKeys = renderableCardKeys()
+    val afterKey = if ("dailyTimeline" in orderedKeys) "dailyTimeline" else orderedKeys.lastOrNull()
 
     Column(modifier = Modifier.fillMaxWidth()) {
         orderedKeys.forEach { cardKey ->
@@ -1217,9 +1283,11 @@ fun DynamicCardsSection(
                             }
                         }
                     }
+                    if (cardKey == afterKey) afterTimeline()
                 }
             }
         }
+        if (afterKey == null) afterTimeline()
         Spacer(modifier = Modifier.height(6.dp))
     }
 }
