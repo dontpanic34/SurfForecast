@@ -116,13 +116,8 @@ fun MainScreen(
     // pour ne pas masquer l'écran de démarrage).
     if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
         OnboardingDialog(
-            windUnit = viewModel.windUnit,
-            onWindUnitSelected = { viewModel.changeWindUnit(it) },
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
-            themeMode = viewModel.themeMode,
-            onThemeModeChanged = { viewModel.changeThemeMode(it) },
-            engineConfig = viewModel.engineConfig,
             onDone = { viewModel.dismissOnboarding() }
         )
     }
@@ -154,6 +149,7 @@ fun MainScreen(
 
     if (showPreferencesDialog) {
         SurfPreferencesDialog(
+            appVersion = appVersion,
             windUnit = viewModel.windUnit,
             onWindUnitSelected = { newUnit -> viewModel.changeWindUnit(newUnit) },
             showLiveOverlay = viewModel.showLiveOverlay,
@@ -425,28 +421,6 @@ fun MainScreen(
                                             )
                                         }
                                         Spacer(modifier = Modifier.weight(1f))
-                                        // Langue : le drapeau de la langue choisie, un menu pour en changer.
-                                        var showLanguageMenu by remember { mutableStateOf(false) }
-                                        Box {
-                                            Column(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .clickable { showLanguageMenu = true }
-                                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                                                horizontalAlignment = Alignment.CenterHorizontally
-                                            ) {
-                                                FlagIcon(viewModel.language, 14.dp)
-                                                Text("Langue", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
-                                            }
-                                            DropdownMenu(expanded = showLanguageMenu, onDismissRequest = { showLanguageMenu = false }) {
-                                                APP_LANGUAGES.forEach { lang ->
-                                                    DropdownMenuItem(
-                                                        text = { Row(verticalAlignment = Alignment.CenterVertically) { FlagIcon(lang.code, 14.dp); Spacer(modifier = Modifier.width(10.dp)); Text(lang.name + if (lang.code == viewModel.language) "  ✓" else "") } },
-                                                        onClick = { viewModel.changeLanguage(lang.code); showLanguageMenu = false }
-                                                    )
-                                                }
-                                            }
-                                        }
                                         // Thème clair / sombre, à portée de main sur la ligne du spot.
                                         val isDarkActive = when (viewModel.themeMode) {
                                             "light" -> false
@@ -741,9 +715,8 @@ fun MainScreen(
 
                                     run {
                                         val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime}" else ""
-                                        val version = appVersion?.let { "v$it" }.orEmpty()
                                         Text(
-                                            text = listOf(updated, version).filter { it.isNotEmpty() }.joinToString(" · "),
+                                            text = updated,
                                             fontSize = 10.5.sp,
                                             color = onSurfaceColor.copy(alpha = 0.5f),
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
@@ -796,6 +769,8 @@ fun MainScreen(
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
                                 onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
+                                language = viewModel.language,
+                                onLanguageChanged = { viewModel.changeLanguage(it) },
                                 coachTargets = coachTargets
                             )
                         }
@@ -825,21 +800,27 @@ fun MainScreen(
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(
-                        "settings", "⭐ L'appli de surf qui s'adapte à ton niveau",
-                        "Pour que ça marche vraiment, renseigne ton profil : c'est LE réglage à faire en premier, et c'est ce qui change tout. " +
-                            "Important : les meilleurs créneaux (matin et après-midi) ne sont calculés pour toi qu'une fois ton profil rempli ; " +
-                            "tant qu'il ne l'est pas, ils sont remplacés par un message qui t'y renvoie. " +
-                            "Sans lui, les notes sont celles d'un surfeur moyen. Avec lui, elles sont calculées pour toi : ton niveau (Débutant, Intermédiaire, " +
-                            "Confirmé, Expert) ou ton propre réglage (l'énergie de vague que tu cherches, ta tolérance au vent, aux rafales et au clapot). " +
-                            "Le meilleur créneau, les couleurs et le « trop gros » (violet) deviennent les tiens. " +
-                            "Ajoute aussi tes planches avec leur volume : tu les retrouveras dans le journal de bord. Une minute suffit, ne passe pas à côté.",
+                        "settings", "⭐ Des prévisions 100 % sur-mesure",
+                        "Renseigner ton profil est LE réglage à faire en premier.\n" +
+                            "• Sans profil : les notes sont celles d'un surfeur moyen, et les meilleurs créneaux sont remplacés par un message qui t'y renvoie.\n" +
+                            "• Avec ton profil : les scores, les couleurs et la limite violette « trop gros » sont calculés pour toi.\n" +
+                            "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou ton réglage personnalisé (énergie de vague, tolérance au vent, aux rafales, au clapot).\n" +
+                            "• Tes planches : ajoute-les avec leur volume, tu les retrouveras dans le journal.\n" +
+                            "Une minute suffit, et ça débloque tes meilleurs créneaux du matin et de l'après-midi.",
                         actionLabel = "Renseigner mon profil maintenant",
                         onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
                     ),
-                    CoachStep("journal", "📓 Le journal de bord", "Note tes sessions ici : l'appli remplit les conditions toute seule et repère dans quelles conditions tu surfes le mieux."),
-                    CoachStep("bestSlot", "🎯 Les meilleurs créneaux", "Le meilleur moment du matin et de l'après-midi pour le jour sélectionné, calculés selon ton profil. Touche un autre jour dans la semaine pour le changer."),
-                    CoachStep("weekCard", "📅 Les encarts", "Touche un jour pour le détailler. Chaque encart se déplace, se replie ou se masque (Paramètres) : compose ton écran."),
-                    CoachStep("settings", "⚙️ Les paramètres", "Mon profil, modèles de prévision, unités, sauvegarde… Tu peux aussi rejouer cette visite ici.")
+                    CoachStep("journal", "📓 Le journal de bord", "Note tes sessions en quelques secondes : l'appli enregistre toute seule la houle, le vent et la marée, et compare ce qu'elle avait prévu avec ton ressenti (tes étoiles). Au fil du temps, tu vois dans quelles conditions tu surfes le mieux."),
+                    CoachStep("bestSlot", "🎯 Les meilleurs créneaux", "Le meilleur moment du matin et de l'après-midi pour le jour sélectionné, selon ton profil. Touche un autre jour dans la semaine pour voir ses créneaux."),
+                    CoachStep(
+                        "weekCard", "📅 Un écran à ta façon",
+                        "Touche un jour de la semaine pour le détailler. Chaque encart (semaine, déroulé, vagues, vent, météo…) s'adapte à toi :\n" +
+                            "• Masquer ou afficher : dans Paramètres › Affichage.\n" +
+                            "• Replier : touche la flèche de l'encart pour ne garder que son titre.\n" +
+                            "• Déplacer : fais glisser la poignée de l'encart pour changer l'ordre.\n" +
+                            "Garde seulement ce qui t'intéresse."
+                    ),
+                    CoachStep("settings", "⚙️ Les paramètres", "Mon profil et mon matériel, modèles de prévision, orientation de la plage, unités, affichage, sauvegarde de tes données. Tu peux aussi y rejouer cette visite (Aide).")
                 ),
                 targets = coachTargets,
                 onFinish = { viewModel.dismissHomeTour() }
@@ -1251,6 +1232,8 @@ private fun BottomNavBar(
     onJournal: () -> Unit,
     onWeather: () -> Unit,
     onSettings: () -> Unit,
+    language: String,
+    onLanguageChanged: (String) -> Unit,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
 ) {
     val colors = MaterialTheme.colorScheme
@@ -1287,6 +1270,25 @@ private fun BottomNavBar(
                 Item("Météo", false, onWeather) { WeatherIcon("🌤️", 22.dp) }
                 Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
+                }
+                // Langue : juste le drapeau, tout à droite ; un menu pour en changer.
+                var showLanguageMenu by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.padding(horizontal = 10.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showLanguageMenu = true }
+                            .padding(6.dp),
+                        contentAlignment = Alignment.Center
+                    ) { FlagIcon(language, 18.dp) }
+                    DropdownMenu(expanded = showLanguageMenu, onDismissRequest = { showLanguageMenu = false }) {
+                        APP_LANGUAGES.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Row(verticalAlignment = Alignment.CenterVertically) { FlagIcon(lang.code, 14.dp); Spacer(modifier = Modifier.width(10.dp)); Text(lang.name + if (lang.code == language) "  ✓" else "") } },
+                                onClick = { onLanguageChanged(lang.code); showLanguageMenu = false }
+                            )
+                        }
+                    }
                 }
             }
         }

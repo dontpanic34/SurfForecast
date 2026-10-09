@@ -22,6 +22,7 @@ import com.surfcast.surfforecast.resources.widget_preview
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.surfcast.surfforecast.ui.theme.AppColors
@@ -57,6 +58,7 @@ fun SurfPreferencesDialog(
     // Thème clair / sombre / auto (déplacé de l'écran principal vers Affichage).
     themeMode: String = "system",
     language: String = "fr",
+    appVersion: String? = null,
     onLanguageChanged: (String) -> Unit = {},
     onThemeModeChanged: (String) -> Unit = {},
     customProfile: String = "",
@@ -300,8 +302,8 @@ fun SurfPreferencesDialog(
                             color = colors.onBackground
                         )
                     } else {
-                        TextButton(onClick = { page = if (page == "guide") "help" else null }) {
-                            Text(if (page == "guide") "‹ Aide" else "‹ Paramètres", fontSize = 13.sp, color = colors.primary)
+                        TextButton(onClick = { page = null }) {
+                            Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
                         }
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
@@ -344,11 +346,21 @@ fun SurfPreferencesDialog(
                 ) {
                     if (page == null) {
                         PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
-                        PrefMenuRow("🎛️", "Affichage", "Langue, thème, unité du vent, encarts") { page = "display" }
+                        PrefMenuRow("🎛️", "Affichage", "Thème, unité du vent, encarts") { page = "display" }
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
+                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
+                        if (onShowTour != null || onShowIntro != null) PrefMenuRow("💡", "Aide", "Visite guidée, introduction") { page = "help" }
                         if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
-                        PrefMenuRow("💡", "Aide", "Comprendre les prévisions, visite guidée") { page = "help" }
+                        if (!appVersion.isNullOrEmpty()) {
+                            Text(
+                                text = "Surf Log v$appVersion",
+                                fontSize = 11.sp,
+                                color = colors.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
 
                     if (page == "profile") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -378,47 +390,6 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "Langue",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                APP_LANGUAGES.map { it.code to it.code.uppercase() }.forEach { (code, label) ->
-                                    val isSelected = language == code
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(pillShape)
-                                            .clickable { onLanguageChanged(code) },
-                                        color = if (isSelected) colors.primary else colors.surfaceVariant
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            FlagIcon(code, 12.dp)
-                                            Spacer(modifier = Modifier.width(5.dp))
-                                            Text(
-                                                text = label,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (language != "fr") {
-                                Text(
-                                    "La traduction arrive bientôt : pour l'instant l'appli reste en français.",
-                                    fontSize = 11.5.sp,
-                                    color = colors.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Thème",
                                 fontSize = 13.sp,
@@ -634,15 +605,6 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    if (page == "forecast" && onBeachFacingChanged != null && spotName.isNotEmpty()) {
-                        BeachFacingCard(
-                            spotName = spotName,
-                            facing = beachFacing,
-                            defaultFacing = defaultBeachFacing,
-                            onChange = onBeachFacingChanged
-                        )
-                    }
-
                     if (page == "forecast") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -825,13 +787,21 @@ fun SurfPreferencesDialog(
                             }
                         }
                     }
+                    if (page == "forecast" && onBeachFacingChanged != null && spotName.isNotEmpty()) {
+                        BeachFacingCard(
+                            spotName = spotName,
+                            facing = beachFacing,
+                            defaultFacing = defaultBeachFacing,
+                            onChange = onBeachFacingChanged
+                        )
+                    }
+
                     if (page == "help") {
-                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (onShowTour != null) {
                             PrefMenuRow("🧭", "Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", onClick = onShowTour)
                         }
                         if (onShowIntro != null) {
-                            PrefMenuRow("👋", "Revoir l'introduction", "Unités, niveau, origine des prévisions", onClick = onShowIntro)
+                            PrefMenuRow("👋", "Revoir l'introduction", "Ton niveau et l'aperçu des scores", onClick = onShowIntro)
                         }
                     }
                     if (page == "guide") ForecastGuideContent()

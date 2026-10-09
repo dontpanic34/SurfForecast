@@ -326,28 +326,35 @@ fun SurferProfileSection(
 
         // Aperçu : le vrai calcul, sur 5 journées types, avec les réglages en cours.
         SettingBlock("Aperçu en direct", hint = "Le score de 5 journées types avec ton profil.") {
-            previewDays().forEach { day ->
-                val rating = calculateSlotRating(day.hour, 270, surferLevel, false)
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    val band = scoreBand(rating.score, rating.tooBig)
-                    Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).background(band.color()),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            if (rating.tooBig) "↑" else rating.score.toString(), fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                            color = androidx.compose.ui.graphics.Color(0xFF04212A)
-                        )
-                    }
-                    Column {
-                        Text(day.title + if (rating.tooBig) " · Trop gros pour moi" else "", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
-                        Text(day.details, fontSize = 11.sp, color = colors.onSurfaceVariant)
-                    }
-                }
+            ScorePreviewList(surferLevel)
+        }
+    }
+}
+
+/** Le vrai calcul du score sur 5 journées types, pour le niveau donné (aussi utilisé par l'introduction). */
+@Composable
+internal fun ScorePreviewList(surferLevel: String) {
+    val colors = MaterialTheme.colorScheme
+    previewDays().forEach { day ->
+        val rating = calculateSlotRating(day.hour, 270, surferLevel, false)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            val band = scoreBand(rating.score, rating.tooBig)
+            Box(
+                modifier = Modifier.size(44.dp).clip(CircleShape).background(band.color()),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    if (rating.tooBig) "↑" else rating.score.toString(), fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                    color = androidx.compose.ui.graphics.Color(0xFF04212A)
+                )
+            }
+            Column {
+                Text(day.title + if (rating.tooBig) " · Trop gros pour moi" else "", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                Text(day.details, fontSize = 11.sp, color = colors.onSurfaceVariant)
             }
         }
     }
