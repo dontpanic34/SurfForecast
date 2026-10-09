@@ -383,7 +383,7 @@ fun SurfPreferencesDialog(
                                 color = colors.primary
                             )
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                APP_LANGUAGES.map { it.code to "${it.flag} ${it.code.uppercase()}" }.forEach { (code, label) ->
+                                APP_LANGUAGES.map { it.code to it.code.uppercase() }.forEach { (code, label) ->
                                     val isSelected = language == code
                                     Surface(
                                         modifier = Modifier
@@ -392,7 +392,13 @@ fun SurfPreferencesDialog(
                                             .clickable { onLanguageChanged(code) },
                                         color = if (isSelected) colors.primary else colors.surfaceVariant
                                     ) {
-                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                                        Row(
+                                            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            FlagIcon(code, 12.dp)
+                                            Spacer(modifier = Modifier.width(5.dp))
                                             Text(
                                                 text = label,
                                                 fontSize = 12.sp,

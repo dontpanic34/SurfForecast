@@ -403,13 +403,13 @@ fun MainScreen(
                                                     .padding(horizontal = 6.dp, vertical = 2.dp),
                                                 horizontalAlignment = Alignment.CenterHorizontally
                                             ) {
-                                                Text(appLanguage(viewModel.language).flag, fontSize = 15.sp, lineHeight = 17.sp)
+                                                FlagIcon(viewModel.language, 14.dp)
                                                 Text("Langue", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.7f))
                                             }
                                             DropdownMenu(expanded = showLanguageMenu, onDismissRequest = { showLanguageMenu = false }) {
                                                 APP_LANGUAGES.forEach { lang ->
                                                     DropdownMenuItem(
-                                                        text = { Text("${lang.flag}  ${lang.name}" + if (lang.code == viewModel.language) "  ✓" else "") },
+                                                        text = { Row(verticalAlignment = Alignment.CenterVertically) { FlagIcon(lang.code, 14.dp); Spacer(modifier = Modifier.width(10.dp)); Text(lang.name + if (lang.code == viewModel.language) "  ✓" else "") } },
                                                         onClick = { viewModel.changeLanguage(lang.code); showLanguageMenu = false }
                                                     )
                                                 }
@@ -1224,11 +1224,11 @@ private fun BottomNavBar(
                         )
                     }
                 }
-                Item("Prévisions", true, onForecast) { Text("🌊", fontSize = 18.sp) }
+                Item("Prévisions", true, onForecast) { WaveIcon(color = waterTempColor(), modifier = Modifier.size(20.dp)) }
                 Item("Journal", false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
                 }
-                Item("Météo", false, onWeather) { Text("🌤️", fontSize = 18.sp) }
+                Item("Météo", false, onWeather) { WeatherIcon("🌤️", 22.dp) }
                 Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
                 }

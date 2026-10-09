@@ -151,11 +151,7 @@ fun HourlyForecastRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start
         ) {
-            Text(
-                text = SurfUnitsHelper.resolveRealWeatherEmoji(hourlyData),
-                fontSize = 12.sp,
-                maxLines = 1
-            )
+            WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(hourlyData), 14.dp)
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = "${hourlyData.temperature}°",

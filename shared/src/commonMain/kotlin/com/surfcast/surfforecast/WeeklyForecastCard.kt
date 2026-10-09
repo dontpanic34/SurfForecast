@@ -267,7 +267,7 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(text = emoji, fontSize = 13.sp)
+                WeatherIcon(emoji, 16.dp)
                 Text(
                     text = "${slot.temperature}°",
                     fontSize = 8.sp,

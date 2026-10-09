@@ -200,7 +200,7 @@ private fun WeatherHeroSection(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(currentHourModel), fontSize = 22.sp)
+            WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(currentHourModel), 26.dp)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = SurfUnitsHelper.weatherCodeLabel(currentHourModel.weatherCode),
@@ -306,7 +306,7 @@ private fun HourlyStripCard(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(hourly), fontSize = 20.sp)
+                    WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(hourly), 24.dp)
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "$dirFr $windSpeed $windUnitSymbol",
@@ -400,7 +400,7 @@ private fun DailyStripCard(
                         Text(text = "$maxT°", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         Text(text = "$minT°", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(representative), fontSize = 18.sp)
+                        WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(representative), 22.dp)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "$rainPct %",
