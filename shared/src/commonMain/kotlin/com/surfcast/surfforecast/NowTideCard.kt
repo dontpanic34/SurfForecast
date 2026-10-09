@@ -30,6 +30,7 @@ fun NowTideCard(
     hourlyModel: HourlyUiModel,
     tideInfo: DailyTideInfo?,
     windUnit: String,
+    seaTemperature: Int? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
@@ -56,6 +57,9 @@ fun NowTideCard(
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface
             )
             Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = windColor)
+            if (seaTemperature != null) {
+                Text("Eau $seaTemperature °C", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = waterTempColor(), maxLines = 1)
+            }
         }
         if (high != null || low != null) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {

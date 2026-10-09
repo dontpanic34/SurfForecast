@@ -560,21 +560,6 @@ fun MainScreen(
 
                                     }
 
-                                    // « Maintenant » + marée, lisibles d'un coup d'œil (réglable : Paramètres › Affichage).
-                                    run {
-                                        val todayHours = groupedByDate[today].orEmpty()
-                                        val closest = todayHours.minByOrNull { abs(it.rawTime.hour - clock.hour) }
-                                            ?: state.hourlyForecast.firstOrNull()
-                                        if (viewModel.showLiveOverlay && closest != null) {
-                                            NowTideCard(
-                                                hourlyModel = closest,
-                                                tideInfo = currentTideInfo,
-                                                windUnit = viewModel.windUnit,
-                                                modifier = Modifier.padding(horizontal = 2.dp, vertical = 4.dp)
-                                            )
-                                        }
-                                    }
-
                                     if (showSessionLogDialog) {
                                         val allSessions by viewModel.allSessions.collectAsState()
 
@@ -726,6 +711,24 @@ fun MainScreen(
                                             coachTargets = coachTargets
                                         )
                                     }
+                                }
+                            }
+
+                            // « Maintenant » + marée + eau : toujours visible, juste au-dessus de la barre du bas.
+                            run {
+                                val todayHours = groupedByDate[today].orEmpty()
+                                val closest = todayHours.minByOrNull { abs(it.rawTime.hour - clock.hour) }
+                                    ?: state.hourlyForecast.firstOrNull()
+                                if (viewModel.showLiveOverlay && closest != null) {
+                                    NowTideCard(
+                                        hourlyModel = closest,
+                                        tideInfo = currentTideInfo,
+                                        windUnit = viewModel.windUnit,
+                                        seaTemperature = (closest.seaTemperature
+                                            ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
+                                            ?.let { kotlin.math.round(it).toInt() },
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                    )
                                 }
                             }
 

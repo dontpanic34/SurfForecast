@@ -150,15 +150,6 @@ fun DailyTimelineCard(
                         maxLines = 1
                     )
 
-                    if (seaTemp != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        WaterTempChip(celsius = seaTemp)
-                    }
-
-                    if (tideInfo != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        TideMiniInfo(tideInfo = tideInfo, onSurfaceColor = onSurfaceColor)
-                    }
                 }
 
                 CardCollapseButton(isCollapsed = isCollapsed, onToggle = onToggleCollapse)
