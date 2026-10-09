@@ -789,19 +789,14 @@ fun SurfPreferencesDialog(
                     }
                     if (page == "help") {
                         PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
+                        if (onShowTour != null) {
+                            PrefMenuRow("🧭", "Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", onClick = onShowTour)
+                        }
+                        if (onShowIntro != null) {
+                            PrefMenuRow("👋", "Revoir l'introduction", "Unités, niveau, origine des prévisions", onClick = onShowIntro)
+                        }
                     }
                     if (page == "guide") ForecastGuideContent()
-                    if (page == "help" && onShowTour != null) {
-                    TextButton(onClick = onShowTour, modifier = Modifier.fillMaxWidth()) {
-                        Text("🧭 Revoir la visite guidée de l'écran", fontSize = 12.sp)
-                    }
-                }
-
-                    if (page == "help" && onShowIntro != null) {
-                    TextButton(onClick = onShowIntro, modifier = Modifier.fillMaxWidth()) {
-                        Text("ℹ️ Revoir l'introduction (unités, niveau, prévisions)", fontSize = 12.sp)
-                    }
-                }
 
                     if (page == "journal" && backup != null) {
                     var importMessage by remember { mutableStateOf<String?>(null) }
