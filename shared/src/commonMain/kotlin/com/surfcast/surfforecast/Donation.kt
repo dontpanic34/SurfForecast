@@ -40,7 +40,7 @@ const val DONATION_URL = "https://www.paypal.me/othmanmiara"
 const val KOFI_URL = "https://ko-fi.com/othmanmiara"
 
 /** Lien de paiement Lydia (vide = bouton masqué tant que le lien n'est pas fourni). */
-const val LYDIA_URL = ""
+const val LYDIA_URL = "https://pay.lydia.me/l?t=othmana103s"
 
 private class PayOption(val badge: String, val badgeBg: Color, val badgeFg: Color, val title: String, val subtitle: String, val url: String)
 
