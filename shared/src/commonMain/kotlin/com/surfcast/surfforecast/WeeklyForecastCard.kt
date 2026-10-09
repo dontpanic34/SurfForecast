@@ -110,161 +110,160 @@ fun WeeklyForecastCard(
 
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Spacer(modifier = Modifier.width(WEEK_AXIS_W))
-                val today = nowLocalDateTime().date
-                availableDates.forEachIndexed { index, date ->
-                    val dayNum = date.dayOfMonth.toString()
-                    val dayLabel = when {
-                        date == today || index == 0 -> "Auj. $dayNum"
-                        date == today.plus(1, DateTimeUnit.DAY) || index == 1 -> "Dem. $dayNum"
-                        else -> {
-                            val dayName = frenchShortDayName(date)
-                                .replace(".", "")
-                                .replaceFirstChar { it.uppercase() }
-                            "$dayName. $dayNum"
-                        }
-                    }
-                    val isSelected = date == selectedDate
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
-                            .clickable { onSelectDate(date) }
-                            .padding(vertical = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = dayLabel,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isSelected) primaryColor else onSurfaceColor,
-                            maxLines = 1
-                        )
-                    }
-                }
+            val today = nowLocalDateTime().date
+            val scrollState = rememberScrollState()
+            val allDaylight = remember(availableDates, groupedByDate, dailySunInfo) {
+                availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) }
             }
 
-            if (dailyStars.size == availableDates.size) {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Spacer(modifier = Modifier.width(WEEK_AXIS_W))
-                    availableDates.forEachIndexed { index, date ->
-                        val isSelected = date == selectedDate
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
-                                .clickable { onSelectDate(date) }
-                                .padding(bottom = 3.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val stars = dailyStars[index]
-                            if (stars == null) {
-                                Text("Trop gros", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
-                            } else {
-                                StarsRow(value = stars, starSize = 10.dp)
+            // 4 jours bien lisibles : les suivants s'atteignent en glissant sur le côté. L'échelle des
+            // hauteurs reste fixe à gauche ; on voit « un bout » du jour suivant pour montrer qu'il y a une suite.
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val dayW = (maxWidth - WEEK_AXIS_W) / WEEK_VISIBLE_DAYS
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(start = WEEK_AXIS_W).horizontalScroll(scrollState)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            availableDates.forEachIndexed { index, date ->
+                                val dayNum = date.dayOfMonth.toString()
+                                val dayLabel = when {
+                                    date == today || index == 0 -> "Auj. $dayNum"
+                                    date == today.plus(1, DateTimeUnit.DAY) || index == 1 -> "Dem. $dayNum"
+                                    else -> {
+                                        val dayName = frenchShortDayName(date)
+                                            .replace(".", "")
+                                            .replaceFirstChar { it.uppercase() }
+                                        "$dayName. $dayNum"
+                                    }
+                                }
+                                val isSelected = date == selectedDate
+                                Box(
+                                    modifier = Modifier
+                                        .width(dayW)
+                                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                        .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
+                                        .clickable { onSelectDate(date) }
+                                        .padding(vertical = 3.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = dayLabel,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) primaryColor else onSurfaceColor,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+
+                        if (dailyStars.size == availableDates.size) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                availableDates.forEachIndexed { index, date ->
+                                    val isSelected = date == selectedDate
+                                    Box(
+                                        modifier = Modifier
+                                            .width(dayW)
+                                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
+                                            .clickable { onSelectDate(date) }
+                                            .padding(bottom = 4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        val stars = dailyStars[index]
+                                        if (stars == null) {
+                                            Text("Trop gros", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
+                                        } else {
+                                            StarsRow(value = stars, starSize = 13.dp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Row(modifier = Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            availableDates.forEach { date ->
+                                val dailyData = groupedByDate[date] ?: emptyList()
+                                val isSelected = date == selectedDate
+                                Box(
+                                    modifier = Modifier
+                                        .width(dayW)
+                                        .height(52.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
+                                        .clickable { onSelectDate(date) }
+                                        .padding(horizontal = 1.dp, vertical = 1.dp)
+                                ) {
+                                    WeatherCanvasMain(dayData = dailyData, density = weeklyDensity, modifier = Modifier.fillMaxSize())
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        if (weeklyWindMode != "none") {
+                            Row(modifier = Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                availableDates.forEach { date ->
+                                    val dailyData = groupedByDate[date] ?: emptyList()
+                                    val isSelected = date == selectedDate
+                                    Box(
+                                        modifier = Modifier
+                                            .width(dayW)
+                                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
+                                            .clickable { onSelectDate(date) }
+                                            .padding(vertical = 1.dp)
+                                    ) {
+                                        DayWindThreeSlots(
+                                            dailyData = dailyData,
+                                            windUnit = windUnit,
+                                            density = weeklyDensity,
+                                            windMode = weeklyWindMode
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Box(modifier = Modifier.width(dayW * availableDates.size).height(WEEK_CANVAS_H)) {
+                            ContinuousWaveCanvas(
+                                allHourlyData = allDaylight,
+                                dailyPeriods = dailyPeriods,
+                                dailyHeights = dailyHeights,
+                                surferLevel = surferLevel,
+                                dailyEnergies = availableDates.map { date ->
+                                    daylightHoursFor(date, groupedByDate, dailySunInfo).maxOfOrNull { it.energyKj } ?: 0
+                                },
+                                daysCount = availableDates.size,
+                                selectedIndex = selectedIndex,
+                                axisWidth = 0.dp,
+                                modifier = Modifier.fillMaxSize()
+                            )
+
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                availableDates.forEach { date ->
+                                    val isSelected = date == selectedDate
+                                    Box(
+                                        modifier = Modifier
+                                            .width(dayW)
+                                            .fillMaxHeight()
+                                            .background(if (isSelected) primaryColor.copy(alpha = 0.12f) else Color.Transparent)
+                                            .clickable { onSelectDate(date) }
+                                    )
+                                }
                             }
                         }
                     }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Spacer(modifier = Modifier.width(WEEK_AXIS_W))
-                availableDates.forEach { date ->
-                    val dailyData = groupedByDate[date] ?: emptyList()
-                    val isSelected = date == selectedDate
-
-                    Box(
+                    // Échelle des hauteurs : fixe, ne défile pas avec les jours.
+                    WeekAxisCanvas(
+                        allHourlyData = allDaylight,
                         modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
-                            .clickable { onSelectDate(date) }
-                            .padding(horizontal = 1.dp, vertical = 1.dp)
-                    ) {
-                        WeatherCanvasMain(dayData = dailyData, density = weeklyDensity, modifier = Modifier.fillMaxSize())
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            if (weeklyWindMode != "none") {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Spacer(modifier = Modifier.width(WEEK_AXIS_W))
-                availableDates.forEach { date ->
-                    val dailyData = groupedByDate[date] ?: emptyList()
-                    val isSelected = date == selectedDate
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
-                            .clickable { onSelectDate(date) }
-                            .padding(vertical = 1.dp)
-                    ) {
-                        DayWindThreeSlots(
-                            dailyData = dailyData,
-                            windUnit = windUnit,
-                            density = weeklyDensity,
-                            windMode = weeklyWindMode
-                        )
-                    }
-                }
-            }
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(132.dp)
-            ) {
-                ContinuousWaveCanvas(
-                    allHourlyData = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) },
-                    dailyPeriods = dailyPeriods,
-                    dailyHeights = dailyHeights,
-                    surferLevel = surferLevel,
-                    dailyEnergies = availableDates.map { date ->
-                        daylightHoursFor(date, groupedByDate, dailySunInfo).maxOfOrNull { it.energyKj } ?: 0
-                    },
-                    daysCount = availableDates.size,
-                    selectedIndex = selectedIndex,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                Row(modifier = Modifier.fillMaxSize()) {
-                    Spacer(modifier = Modifier.width(WEEK_AXIS_W))
-                    availableDates.forEach { date ->
-                        val isSelected = date == selectedDate
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(if (isSelected) primaryColor.copy(alpha = 0.12f) else Color.Transparent)
-                                .clickable { onSelectDate(date) }
-                        )
-                    }
+                            .align(Alignment.BottomStart)
+                            .width(WEEK_AXIS_W)
+                            .height(WEEK_CANVAS_H)
+                    )
                 }
             }
 
@@ -296,11 +295,11 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
                 WeatherIcon(emoji, 16.dp)
                 Text(
                     text = "${slot.temperature}°",
-                    fontSize = 8.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    lineHeight = 9.sp
+                    lineHeight = 11.sp
                 )
             }
         }
@@ -320,6 +319,32 @@ internal fun isDarkSurfaceTheme(): Boolean =
 /** Largeur de la colonne de l'échelle des hauteurs (à gauche), commune à toutes les lignes de la vue semaine. */
 internal val WEEK_AXIS_W = 30.dp
 
+/** Jours visibles à la fois : 3,7 pour qu'un bout du jour suivant invite à glisser. */
+internal const val WEEK_VISIBLE_DAYS = 3.7f
+
+/** Hauteur de la courbe de la semaine (partagée avec son échelle fixe). */
+internal val WEEK_CANVAS_H = 132.dp
+
+/** Échelle des hauteurs de la semaine, fixe à gauche pendant que les jours défilent. */
+@Composable
+internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifier = Modifier) {
+    if (allHourlyData.isEmpty()) return
+    val textMeasurer = rememberTextMeasurer()
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp)
+    Canvas(modifier = modifier) {
+        val padTop = 16.dp.toPx()
+        val usableH = size.height - padTop - 16.dp.toPx()
+        val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
+        val (niceMax, gridValues) = swellAxisScale(rawMax)
+        gridValues.forEach { value ->
+            val y = padTop + usableH * (1f - (value / niceMax).toFloat())
+            val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
+            drawText(layout, topLeft = Offset(size.width - 5.dp.toPx() - layout.size.width, y + 3.dp.toPx() - layout.firstBaseline))
+        }
+    }
+}
+
 @Composable
 fun ContinuousWaveCanvas(
     allHourlyData: List<HourlyUiModel>,
@@ -330,6 +355,8 @@ fun ContinuousWaveCanvas(
     dailyEnergies: List<Int> = emptyList(),
     daysCount: Int,
     selectedIndex: Int,
+    // 0 quand l'échelle est dessinée à part (vue semaine à défilement) ; sinon réserve la colonne d'échelle.
+    axisWidth: androidx.compose.ui.unit.Dp = WEEK_AXIS_W,
     modifier: Modifier = Modifier
 ) {
     if (allHourlyData.isEmpty()) return
@@ -340,15 +367,15 @@ fun ContinuousWaveCanvas(
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
     val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
 
-    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     // Période juste au-dessus de la courbe : neutre, lisible dans les deux thèmes.
-    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.7f), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp)
 
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        val axisW = WEEK_AXIS_W.toPx()
+        val axisW = axisWidth.toPx()
         val plotLeft = axisW
         val plotW = (w - plotLeft).coerceAtLeast(1f)
         val padTop = 16.dp.toPx()
@@ -367,8 +394,10 @@ fun ContinuousWaveCanvas(
                 end = Offset(w, y),
                 strokeWidth = 0.8.dp.toPx()
             )
-            val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
-            drawText(layout, topLeft = Offset(plotLeft - 5.dp.toPx() - layout.size.width, y + 3.dp.toPx() - layout.firstBaseline))
+            if (axisW > 0f) {
+                val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
+                drawText(layout, topLeft = Offset(plotLeft - 5.dp.toPx() - layout.size.width, y + 3.dp.toPx() - layout.firstBaseline))
+            }
         }
 
         val dayWidth = plotW / daysCount.toFloat()
@@ -439,7 +468,7 @@ fun ContinuousWaveCanvas(
             val targetX = plotLeft + (i + 0.5f) * dayWidth
             val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
             val eText = "${energy}kJ"
-            val eStyle = TextStyle(color = energyZoneColor(energyZone(energy.toDouble(), profile)), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            val eStyle = TextStyle(color = energyZoneColor(energyZone(energy.toDouble(), profile)), fontSize = 11.sp, fontWeight = FontWeight.Bold)
             val eW = textMeasurer.measure(eText, eStyle).size.width.toFloat()
             drawTextAtBaseline(textMeasurer, eText, eStyle, targetX - eW / 2f, h - 3.dp.toPx())
         }
@@ -677,22 +706,22 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
         if (showText) {
         Text(
             text = dirFr,
-            fontSize = if (dirFr.length >= 3) 7.5.sp else 8.sp,
+            fontSize = if (dirFr.length >= 3) 9.sp else 10.sp,
             fontWeight = FontWeight.Bold,
             color = if (windMode == "text") arrowColor else onSurfaceColor,
             maxLines = 1,
-            lineHeight = 9.sp
+            lineHeight = 11.sp
         )
         }
 
         if (showText) {
         Text(
             text = formattedSpeed,
-            fontSize = 8.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
             color = if (windMode == "text") arrowColor else onSurfaceColor.copy(alpha = 0.7f),
             maxLines = 1,
-            lineHeight = 9.sp
+            lineHeight = 11.sp
         )
         }
     }

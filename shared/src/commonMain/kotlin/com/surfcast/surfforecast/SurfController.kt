@@ -182,6 +182,12 @@ class SurfController(
     var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
         private set
 
+    // Vue de l'écran principal : « simple » (semaine + journée) ou « detailed » (tous les encarts).
+    var viewMode by mutableStateOf(prefs.getString("view_mode", "simple") ?: "simple")
+        private set
+    // Vue simple : les meilleurs créneaux sont réduits à une ligne, qu'on ouvre si on veut.
+    var bestSlotsOpen by mutableStateOf(prefs.getBoolean("best_slots_open", false))
+        private set
     var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
         private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
@@ -444,6 +450,16 @@ class SurfController(
     fun toggleDailyTimelineCard(show: Boolean) {
         showDailyTimelineCard = show
         prefs.putBoolean("show_daily_timeline_card", show)
+    }
+
+    fun changeViewMode(mode: String) {
+        viewMode = if (mode == "detailed") "detailed" else "simple"
+        prefs.putString("view_mode", viewMode)
+    }
+
+    fun toggleBestSlotsOpen() {
+        bestSlotsOpen = !bestSlotsOpen
+        prefs.putBoolean("best_slots_open", bestSlotsOpen)
     }
 
     fun changeStarsOffset(offset: Int) {
