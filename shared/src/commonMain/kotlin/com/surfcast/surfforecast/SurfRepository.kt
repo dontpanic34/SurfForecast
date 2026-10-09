@@ -493,8 +493,12 @@ class SurfRepository(
                 }
 
                 val h = mData.waveHeights[mIndex]
-                // Aujourd'hui : la période du modèle côtier (MFWAM), vérifiée sur l'eau. Dès demain : GFS Wave.
-                val p = (if (t.date > today) referencePeriods[t] else null) ?: mData.wavePeriods[mIndex]
+                // Période : moyenne du modèle de la façade (MFWAM / ECMWF) et de GFS Wave. Seul, GFS donne 3 à 4 s
+                // de trop (12 à 16 s annoncées là où Windguru et Yadusurf lisent 10 à 13) et MFWAM / ECMWF 1 à 3 s
+                // de moins : leur moyenne tombe à ±1 s de ces références sur Montalivet.
+                val basePeriod = mData.wavePeriods[mIndex]
+                val refPeriod = referencePeriods[t]
+                val p = if (refPeriod != null && basePeriod > 0.0) (refPeriod + basePeriod) / 2.0 else basePeriod
                 // Vent : AROME HD en court terme si dispo, sinon le modèle météo de cette
                 // heure, sinon le long terme. Jamais de valeur inventée.
                 val longIndex = weatherMapLong[t]
