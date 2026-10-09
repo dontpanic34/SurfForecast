@@ -344,7 +344,7 @@ fun SurfPreferencesDialog(
                 ) {
                     if (page == null) {
                         PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
-                        PrefMenuRow("🎛️", "Affichage", "Langue, thème, unité du vent, encarts") { page = "display" }
+                        PrefMenuRow("🎛️", "Affichage", "Thème, unité du vent, encarts") { page = "display" }
                         PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
                         if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
                         if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
@@ -378,47 +378,6 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "Langue",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                APP_LANGUAGES.map { it.code to it.code.uppercase() }.forEach { (code, label) ->
-                                    val isSelected = language == code
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(pillShape)
-                                            .clickable { onLanguageChanged(code) },
-                                        color = if (isSelected) colors.primary else colors.surfaceVariant
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            FlagIcon(code, 12.dp)
-                                            Spacer(modifier = Modifier.width(5.dp))
-                                            Text(
-                                                text = label,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (language != "fr") {
-                                Text(
-                                    "La traduction arrive bientôt : pour l'instant l'appli reste en français.",
-                                    fontSize = 11.5.sp,
-                                    color = colors.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Thème",
                                 fontSize = 13.sp,
@@ -634,15 +593,6 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    if (page == "forecast" && onBeachFacingChanged != null && spotName.isNotEmpty()) {
-                        BeachFacingCard(
-                            spotName = spotName,
-                            facing = beachFacing,
-                            defaultFacing = defaultBeachFacing,
-                            onChange = onBeachFacingChanged
-                        )
-                    }
-
                     if (page == "forecast") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -825,6 +775,15 @@ fun SurfPreferencesDialog(
                             }
                         }
                     }
+                    if (page == "forecast" && onBeachFacingChanged != null && spotName.isNotEmpty()) {
+                        BeachFacingCard(
+                            spotName = spotName,
+                            facing = beachFacing,
+                            defaultFacing = defaultBeachFacing,
+                            onChange = onBeachFacingChanged
+                        )
+                    }
+
                     if (page == "help") {
                         PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (onShowTour != null) {
