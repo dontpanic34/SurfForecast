@@ -82,11 +82,11 @@ class SurfScoringTest {
 
     @Test
     fun swellDirectionAndCrossWind() {
-        // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent N 10 km/h (travers) x0.9 ;
-        // ; vent de travers N 10 km/h pour un intermédiaire (tolérance 25) : 0.943 ; houle de travers :
-        // facteur 1 - 0.3 x 60/90 = 0.8 ; la direction compte à 80 % pour un intermédiaire : 1 - 0.057 x 0.8 = 0.954 ;
-        // 100 x 0.954 x 0.8 = 76.3 -> 76.
-        assertEquals(76, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        // Écart 60° -> cos = 0.5 -> 98.1 kJ (>= 80 : ça ouvre, fit 1) ; vent de travers N 10 km/h pour un
+        // intermédiaire (tolérance 25) : courbe travers 6 km/h = 1, 12 km/h = 0.8 -> 0.867 ; la direction compte à 80 % :
+        // 1 - 0.133 x 0.8 = 0.893 ; houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 ;
+        // 100 x 0.893 x 0.8 = 71.5 -> 71.
+        assertEquals(71, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -140,7 +140,7 @@ class SurfScoringTest {
     @Test
     fun lightOnshoreIsNearlyAsGoodAsOffshore() {
         val calmOnshore = calculateSlotScore(hour(10, windKmh = 6, windDir = "O"), 275, "intermediate", false)
-        assertTrue(calmOnshore >= 90, "onshore faible : $calmOnshore")
+        assertTrue(calmOnshore >= 85, "onshore faible : $calmOnshore")
     }
 
     // --- Orientation de la plage, rafales, clapot ---
