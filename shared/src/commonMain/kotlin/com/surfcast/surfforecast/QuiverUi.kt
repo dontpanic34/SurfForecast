@@ -203,7 +203,11 @@ fun GearContent(
     val colors = MaterialTheme.colorScheme
     val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
     val levelIdx = body.levelIndex(surferLevel)
-    val recommended = recommendedVolumeL(body, levelIdx)
+    // Type de planche pour le volume recommandé : par défaut celui de la première planche du quiver.
+    var recoFamily by remember(quiverBoards.firstOrNull()?.family) {
+        mutableStateOf(RECOMMENDATION_FAMILIES.map { it.first }.firstOrNull { it == quiverBoards.firstOrNull()?.family.let { f -> if (f == "twin" || f == "groveler") "fish" else if (f == "mousse") "longboard" else f } } ?: "shortboard")
+    }
+    val recommended = recommendedVolumeL(body, levelIdx, recoFamily)
 
     var showAddForm by remember { mutableStateOf(false) }
     var model by remember { mutableStateOf("") }
@@ -257,7 +261,12 @@ fun GearContent(
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Volume recommandé (planche courte)", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.7f))
+            Text("Volume recommandé pour", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.7f))
+            Spacer(modifier = Modifier.height(4.dp))
+            PillRow(RECOMMENDATION_FAMILIES.map { it.second }, RECOMMENDATION_FAMILIES.indexOfFirst { it.first == recoFamily }) {
+                recoFamily = RECOMMENDATION_FAMILIES[it].first
+            }
+            Spacer(modifier = Modifier.height(6.dp))
             if (recommended != null) {
                 Text(formatFr(recommended, 2) + " L", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                 val range = recommendedRange(recommended)
@@ -281,7 +290,7 @@ fun GearContent(
         }
         quiverBoards.forEach { board ->
             val ratio = volumeRatio(board.volumeL, body.weightKg)
-            val boardRecommended = recommendedVolumeL(body, levelIdx, isLongFamily(board.family))
+            val boardRecommended = recommendedVolumeL(body, levelIdx, board.family)
             Surface(modifier = Modifier.fillMaxWidth(), color = colors.surface, shape = RoundedCornerShape(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -366,7 +375,7 @@ fun GearContent(
                 val volumeL = exact ?: estimated
                 val isEstimated = exact == null
                 volumeL?.let { v ->
-                    val boardRec = recommendedVolumeL(body, levelIdx, isLongFamily(family))
+                    val boardRec = recommendedVolumeL(body, levelIdx, family)
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text((if (isEstimated) "≈ " else "") + formatFr(v) + " L", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                         Text(
@@ -419,7 +428,7 @@ fun GearContent(
                     }
                 }
                 quiverBoards.forEach { b ->
-                    val rec = recommendedVolumeL(body, levelIdx, isLongFamily(b.family))
+                    val rec = recommendedVolumeL(body, levelIdx, b.family)
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text(b.model, fontSize = 12.sp, color = colors.onSurface, modifier = Modifier.weight(2.2f), maxLines = 1)
                         Text(b.volumeL?.let { (if (b.volumeEstimated) "≈ " else "") + formatFr(it) + " L" } ?: "—", fontSize = 12.sp, color = colors.onSurface, modifier = Modifier.weight(1.3f))
@@ -433,7 +442,7 @@ fun GearContent(
             }
         }
 
-        VolumeTableCard(weightKg = body.weightKg, levelIndex = levelIdx, body = body)
+        VolumeTableCard(weightKg = body.weightKg, levelIndex = levelIdx, body = body, family = recoFamily)
     }
 
     boardPendingDelete?.let { board ->
@@ -451,19 +460,20 @@ fun GearContent(
 
 /** Correspondances niveau x poids (litres, planche courte, adulte de moins de 30 ans en excellente forme). */
 @Composable
-fun VolumeTableCard(weightKg: Int, levelIndex: Int, body: BodyState) {
+fun VolumeTableCard(weightKg: Int, levelIndex: Int, body: BodyState, family: String = "shortboard") {
     val colors = MaterialTheme.colorScheme
     val weights = listOf(40, 50, 60, 70, 80, 90, 100, 110)
     // Le tableau suit ton âge et ta forme physique, pour rester cohérent avec ton volume recommandé.
     val personal = body.ageYears > 0 || body.fitness > 0
-    val factor = ageFactor(body.ageYears) * FITNESS_LEVELS[body.fitness.coerceIn(0, FITNESS_LEVELS.lastIndex)].second
+    val factor = ageFactor(body.ageYears) * FITNESS_LEVELS[body.fitness.coerceIn(0, FITNESS_LEVELS.lastIndex)].second * familyVolumeFactor(family)
+    val familyName = RECOMMENDATION_FAMILIES.firstOrNull { it.first == family }?.second?.lowercase() ?: "shortboard"
     Column(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text("Correspondances niveau × poids", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
         Text(
-            (if (personal) "Fourchette de volume (L, ± 5 %) pour une planche courte, calculée pour ton âge et ta forme physique." else "Fourchette de volume (L, ± 5 %) pour une planche courte, adulte de moins de 30 ans en excellente forme.") +
+            (if (personal) "Fourchette de volume (L, ± 5 %) pour un $familyName, calculée pour ton âge et ta forme physique." else "Fourchette de volume (L, ± 5 %) pour un $familyName, adulte de moins de 30 ans en excellente forme.") +
                 " Ta ligne et ta colonne sont surlignées. Repères indicatifs : seul le shaper connaît le volume exact, et le bon volume dépend aussi de tes vagues et de ta pratique.",
             fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.65f)
         )

@@ -91,7 +91,7 @@ class BoardVolumeTest {
         assertEquals(31.38, range.endInclusive, 0.05)
         assertNull(recommendedVolumeL(BodyState(ageYears = 40), 4))
         // Plus âgé, moins en forme, planche longue : plus de volume.
-        val older = recommendedVolumeL(BodyState(ageYears = 55, weightKg = 81, fitness = 2), 4, longBoard = true)
+        val older = recommendedVolumeL(BodyState(ageYears = 55, weightKg = 81, fitness = 2), 4, family = "longboard")
         assertNotNull(older)
         assertTrue(older > rec * 1.5)
     }
@@ -133,5 +133,17 @@ class BoardVolumeTest {
         assertEquals("27–29", volumeRangeText(28.0))
         assertEquals("31–34", volumeRangeText(32.15))
         assertEquals("52–57", volumeRangeText(54.4))
+    }
+
+    @Test
+    fun recommendedVolumeDependsOnTheBoardType() {
+        // 61 kg, 34 ans, forme moyenne, intermédiaire : environ 30 L en shortboard, bien plus en mid-length.
+        val body = BodyState(ageYears = 34, weightKg = 61, fitness = 2)
+        val short = recommendedVolumeL(body, 2, "shortboard")!!
+        val mid = recommendedVolumeL(body, 2, "mid-length")!!
+        val long = recommendedVolumeL(body, 2, "longboard")!!
+        assertTrue(short in 28.0..33.0, "shortboard : $short")
+        assertTrue(mid in 44.0..54.0, "mid-length : $mid")
+        assertTrue(long > mid)
     }
 }

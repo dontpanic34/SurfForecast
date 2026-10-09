@@ -116,6 +116,20 @@ fun fillFactorFor(family: String): Double = when (family) {
     else -> VOLUME_FILL_FACTOR
 }
 
+/**
+ * Multiplicateur du volume recommandé selon le type de planche, par rapport à un shortboard (repères indicatifs) :
+ * une mid-length ou un longboard se surfent avec beaucoup plus de litres, quel que soit le niveau.
+ */
+fun familyVolumeFactor(family: String): Double = when (family) {
+    "fish", "twin", "groveler" -> 1.15
+    "mid-length" -> 1.6
+    "longboard", "mousse" -> 2.1
+    else -> 1.0
+}
+
+/** Types proposés pour le volume recommandé : (famille, libellé). */
+val RECOMMENDATION_FAMILIES = listOf("shortboard" to "Shortboard", "fish" to "Fish / Twin", "mid-length" to "Mid-length", "longboard" to "Longboard")
+
 /** Planche « longue » : le volume recommandé est plus élevé que pour une planche courte. */
 fun isLongFamily(family: String): Boolean = family == "longboard" || family == "mousse" || family == "mid-length"
 
@@ -167,12 +181,12 @@ data class BodyState(
 }
 
 /** Volume recommandé (L) : poids x litres par kilo du profil x âge x forme x (type de planche), ou null sans poids. */
-fun recommendedVolumeL(body: BodyState, levelIndex: Int, longBoard: Boolean = false): Double? {
+fun recommendedVolumeL(body: BodyState, levelIndex: Int, family: String = "shortboard"): Double? {
     if (body.weightKg <= 0) return null
     val ratio = VOLUME_LEVELS[levelIndex.coerceIn(0, VOLUME_LEVELS.lastIndex)].second
     val fitness = FITNESS_LEVELS[body.fitness.coerceIn(0, FITNESS_LEVELS.lastIndex)].second
     return body.weightKg * ratio * weightFactor(body.weightKg.toDouble()) * ageFactor(body.ageYears) * fitness *
-        (if (longBoard) 1.35 else 1.0)
+        familyVolumeFactor(family)
 }
 
 /** Plage recommandée : ± 2,5 % autour du volume recommandé. */

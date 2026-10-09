@@ -61,7 +61,7 @@ private fun energySpotHint(w: Double): String = when {
 private fun nearestIndex(values: List<Double>, v: Double): Int =
     values.indices.minByOrNull { abs(values[it] - v) } ?: 0
 
-/** Les 4 journées types de l'aperçu : conditions fixes, plage orientée plein ouest (vent d'est = offshore). */
+/** Les 5 journées types de l'aperçu : conditions fixes, plage orientée plein ouest (vent d'est = offshore). */
 private class PreviewDay(val title: String, val details: String, val hour: HourlyUiModel)
 
 private fun previewDays(): List<PreviewDay> {
@@ -72,8 +72,9 @@ private fun previewDays(): List<PreviewDay> {
     )
     return listOf(
         PreviewDay("Petit jour propre", "0,8 m · 9 s · 6 km/h offshore · rafales 8", h(0.8, 9.0, 6, 8, "E", 0.0)),
-        PreviewDay("Jour moyen", "1,5 m · 10 s · 15 km/h de travers · rafales 25", h(1.5, 10.0, 15, 25, "N", 0.2)),
-        PreviewDay("Gros jour", "2,5 m · 14 s · 20 km/h offshore · rafales 30", h(2.5, 14.0, 20, 30, "E", 0.1)),
+        PreviewDay("Jour normal, bon vent", "1,2 m · 8 s · 8 km/h offshore · rafales 12", h(1.2, 8.0, 8, 12, "E", 0.0)),
+        PreviewDay("Jour normal, vent de mer", "1,2 m · 8 s · 18 km/h onshore · rafales 25", h(1.2, 8.0, 18, 25, "O", 0.4)),
+        PreviewDay("Jour costaud", "1,5 m · 10 s · 12 km/h de travers · rafales 18", h(1.5, 10.0, 12, 18, "N", 0.2)),
         PreviewDay("Mer hachée", "1,2 m · 7 s · 28 km/h onshore · rafales 40", h(1.2, 7.0, 28, 40, "O", 0.8))
     )
 }
@@ -323,8 +324,8 @@ fun SurferProfileSection(
             }
         }
 
-        // Aperçu : le vrai calcul, sur 4 journées types, avec les réglages en cours.
-        SettingBlock("Aperçu en direct", hint = "Le score de 4 journées types avec ton profil.") {
+        // Aperçu : le vrai calcul, sur 5 journées types, avec les réglages en cours.
+        SettingBlock("Aperçu en direct", hint = "Le score de 5 journées types avec ton profil.") {
             previewDays().forEach { day ->
                 val rating = calculateSlotRating(day.hour, 270, surferLevel, false)
                 Row(
