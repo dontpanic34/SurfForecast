@@ -105,13 +105,8 @@ fun MainScreen(
     // pour ne pas masquer l'écran de démarrage).
     if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
         OnboardingDialog(
-            windUnit = viewModel.windUnit,
-            onWindUnitSelected = { viewModel.changeWindUnit(it) },
             surferLevel = viewModel.surferLevel,
             onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
-            themeMode = viewModel.themeMode,
-            onThemeModeChanged = { viewModel.changeThemeMode(it) },
-            engineConfig = viewModel.engineConfig,
             onDone = { viewModel.dismissOnboarding() }
         )
     }

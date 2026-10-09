@@ -801,7 +801,7 @@ fun SurfPreferencesDialog(
                             PrefMenuRow("🧭", "Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", onClick = onShowTour)
                         }
                         if (onShowIntro != null) {
-                            PrefMenuRow("👋", "Revoir l'introduction", "Unités, niveau, origine des prévisions", onClick = onShowIntro)
+                            PrefMenuRow("👋", "Revoir l'introduction", "Ton niveau et l'aperçu des scores", onClick = onShowIntro)
                         }
                     }
                     if (page == "guide") ForecastGuideContent()
