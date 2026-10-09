@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
  */
 @Database(
     entities = [QuiverBoardEntity::class, MicroSpotEntity::class, ConditionSnapshotEntity::class, SurfSessionEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @ConstructedBy(SessionLogDatabaseConstructor::class)
@@ -53,6 +53,13 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+/** v4 → v5 : note prévue par l'appli, gardée avec chaque session pour la comparer au ressenti. */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE condition_snapshots ADD COLUMN forecastScore INTEGER")
+    }
+}
+
 const val SESSION_LOG_DB_NAME = "session_log.db"
 
 /** Fin de configuration commune : le builder vient de la plateforme (chemin du fichier). */
@@ -61,6 +68,6 @@ fun RoomDatabase.Builder<SessionLogDatabase>.buildSessionLogDatabase(): SessionL
         .setQueryCoroutineContext(Dispatchers.Default)
         // Fonctionnalité en cours de développement, pas de migrations écrites :
         // un changement de schéma recrée la base plutôt que de planter.
-        .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
         .fallbackToDestructiveMigration(true)
         .build()

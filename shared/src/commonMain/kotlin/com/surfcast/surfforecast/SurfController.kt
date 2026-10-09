@@ -635,7 +635,8 @@ class SurfController(
         comment: String?,
         mediaUri: String?,
         hourlyModel: HourlyUiModel,
-        tideInfo: DailyTideInfo?
+        tideInfo: DailyTideInfo?,
+        forecastScore: Int? = null
     ) {
         val dao = sessionLogStore ?: return
         scope.launch {
@@ -648,7 +649,8 @@ class SurfController(
                 windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
                 tideCoeff = tideInfo?.coefficient,
                 isNearHighTide = isNearHighTide(hourlyModel, tideInfo),
-                tidePhase = tidePhaseAt(hourlyModel.rawTime.time, tideInfo)
+                tidePhase = tidePhaseAt(hourlyModel.rawTime.time, tideInfo),
+                forecastScore = forecastScore
             )
             dao.logSession(
                 startTime = LocalDateTime(date, LocalTime(startHour, 0)).toEpochMillis(),

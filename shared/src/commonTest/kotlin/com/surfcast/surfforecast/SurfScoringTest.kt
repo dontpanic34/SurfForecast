@@ -345,3 +345,13 @@ class SurfScoringTest {
         assertTrue(smallGrid.size in 2..5 && bigGrid.size in 2..5)
     }
 }
+
+class StarsTest {
+    @kotlin.test.Test
+    fun scoreMapsToHalfStars() {
+        kotlin.test.assertEquals(0.5f, starsForScore(0))
+        kotlin.test.assertEquals(2.5f, starsForScore(50))
+        kotlin.test.assertEquals(4.5f, starsForScore(85))
+        kotlin.test.assertEquals(5f, starsForScore(100))
+    }
+}

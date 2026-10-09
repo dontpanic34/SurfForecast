@@ -348,6 +348,20 @@ fun MainScreen(
                             dailyData.maxByOrNull { it.waveHeight }?.waveHeight ?: 0.0
                         }
 
+                        val dailyStars = availableDates.map { date ->
+                            val hours = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
+                            val tide = state.dailyTides[date]
+                            val ratings = hours.map {
+                                calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel, isNearHighTide(it, tide), viewModel.tidePreference, tide)
+                            }
+                            val slots = findBestSlotsOfDay(hours, idealSwellDirection, viewModel.surferLevel, tide, viewModel.tidePreference)
+                            val best = listOfNotNull(slots.morning, slots.afternoon).maxOfOrNull { it.averageScore }
+                            when {
+                                ratings.isNotEmpty() && ratings.all { it.tooBig } -> null
+                                else -> starsForScore(best ?: 0)
+                            }
+                        }
+
                         val dailyFeelsLike = availableDates.map { date ->
                             state.dailySummaries[date]?.avgFeelsLike ?: 20
                         }
@@ -683,7 +697,11 @@ fun MainScreen(
                                                         comment = comment,
                                                         mediaUri = mediaUri,
                                                         hourlyModel = hourlyModel,
-                                                        tideInfo = dayTide
+                                                        tideInfo = dayTide,
+                                                        forecastScore = calculateSlotRating(
+                                                            hourlyModel, idealSwellDirection, viewModel.surferLevel,
+                                                            isNearHighTide(hourlyModel, dayTide), viewModel.tidePreference, dayTide
+                                                        ).let { if (it.tooBig) -1 else it.score }
                                                     )
                                                 }
                                             },
@@ -735,6 +753,7 @@ fun MainScreen(
                                             dailyPeriods = dailyPeriods,
                                             dailyHeights = dailyHeights,
                                             dailyFeelsLike = dailyFeelsLike,
+                                            dailyStars = dailyStars,
                                             dailyWaterTemps = dailyWaterTemps,
                                             fixedMaxScale = fixedMaxScale,
                                             selectedIndex = selectedIndex,
@@ -932,6 +951,7 @@ fun DynamicCardsSection(
     dailyPeriods: List<Int>,
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
+    dailyStars: List<Float?>,
     dailyWaterTemps: List<Int?>,
     fixedMaxScale: Float,
     selectedIndex: Int,
@@ -1052,6 +1072,7 @@ fun DynamicCardsSection(
                                 dailyHeights = dailyHeights,
                                 dailyFeelsLike = dailyFeelsLike,
                                 dailyWaterTemps = dailyWaterTemps,
+                                dailyStars = dailyStars,
                                 dailySunInfo = dailySunInfo,
                                 fixedMaxScale = fixedMaxScale,
                                 selectedIndex = selectedIndex,

@@ -73,7 +73,7 @@ private val guideSections = listOf(
         "Le score et le meilleur créneau",
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (rafales comprises) et clapot.\n" +
             "• Gris : à éviter. Rouge : médiocre. Orange : correct.\n" +
-            "• Jaune : bon. Vert : très bon. Vert fluo : excellent.\n" +
+            "• Jaune : bon. Vert : très bon. Turquoise : excellent.\n" +
             "• Violet : trop gros pour ton niveau (plafond : débutant 250 kJ, intermédiaire 450, confirmé 700, expert aucun). Ce n'est pas mauvais, c'est juste au-dessus de ce que ton niveau gère.\n" +
             "Ton profil règle aussi l'importance de l'offshore (il creuse la vague : surtout pour confirmés et experts) et la tolérance au vent, aux rafales, au clapot et à la période : un expert est plus exigeant qu'un débutant. Le profil Personnalisé te laisse tout ajuster.\n" +
             "Le meilleur créneau est la fenêtre de 2 à 3 heures avec la meilleure moyenne, le matin et l'après-midi.\n" +
