@@ -177,9 +177,10 @@ class SurfRepositoryTest {
             respondJson(body)
         }
         val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
-        assertEquals(11.0, hourly[0].wavePeriod)
+        // Aujourd'hui : MFWAM (12 s) ; les jours suivants : GFS Wave.
+        assertEquals(12.0, hourly[0].wavePeriod)
         assertEquals(13.0, hourly[1].wavePeriod)
-        assertEquals(calculateWaveEnergyReal(1.5, 11.0), hourly[0].energyKj)
+        assertEquals(calculateWaveEnergyReal(1.5, 12.0), hourly[0].energyKj)
     }
 
     @Test
