@@ -77,6 +77,8 @@ fun WeeklyForecastCard(
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
     dailyWaterTemps: List<Int?>,
+    // Étoiles du jour (0,5 à 5) d'après le meilleur créneau ; null = trop gros pour le profil.
+    dailyStars: List<Float?> = emptyList(),
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     fixedMaxScale: Float,
     selectedIndex: Int,
@@ -144,6 +146,30 @@ fun WeeklyForecastCard(
                             color = if (isSelected) primaryColor else onSurfaceColor,
                             maxLines = 1
                         )
+                    }
+                }
+            }
+
+            if (dailyStars.size == availableDates.size) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.width(WEEK_AXIS_W))
+                    availableDates.forEachIndexed { index, date ->
+                        val isSelected = date == selectedDate
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
+                                .clickable { onSelectDate(date) }
+                                .padding(bottom = 3.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val stars = dailyStars[index]
+                            if (stars == null) {
+                                Text("Trop gros", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
+                            } else {
+                                StarsRow(value = stars, starSize = 10.dp)
+                            }
+                        }
                     }
                 }
             }
@@ -267,7 +293,7 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(text = emoji, fontSize = 13.sp)
+                WeatherIcon(emoji, 16.dp)
                 Text(
                     text = "${slot.temperature}°",
                     fontSize = 8.sp,

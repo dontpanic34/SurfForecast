@@ -44,7 +44,9 @@ data class ConditionSnapshot(
     val tideCoeff: Int?,
     val isNearHighTide: Boolean,
     // Phase de marée pendant la session : "rising" / "falling" / "high" / "low" (null = inconnue).
-    val tidePhase: String? = null
+    val tidePhase: String? = null,
+    // Note prévue par l'appli pour ce créneau (0-100, -1 = « trop gros »), null = session ancienne.
+    val forecastScore: Int? = null
 )
 
 @Serializable

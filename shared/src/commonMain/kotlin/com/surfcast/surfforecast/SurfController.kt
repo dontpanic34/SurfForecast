@@ -185,6 +185,8 @@ class SurfController(
     var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
         private set
 
+    var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
+        private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
         private set
 
@@ -463,6 +465,15 @@ class SurfController(
         }
     }
 
+    // Langue de l'appli (voir APP_LANGUAGES ; seul le français est traduit pour l'instant ; les autres langues viendront).
+    var language by mutableStateOf(prefs.getString("app_language", "fr") ?: "fr")
+        private set
+
+    fun changeLanguage(code: String) {
+        language = code
+        prefs.putString("app_language", code)
+    }
+
     fun changeThemeMode(mode: String) {
         themeMode = mode
         prefs.putString("theme_mode", mode)
@@ -481,6 +492,12 @@ class SurfController(
     fun toggleDailyTimelineCard(show: Boolean) {
         showDailyTimelineCard = show
         prefs.putBoolean("show_daily_timeline_card", show)
+    }
+
+    fun changeStarsOffset(offset: Int) {
+        starsOffset = offset.coerceIn(-15, 15)
+        StarsSettings.offset = starsOffset
+        prefs.putInt("stars_offset", starsOffset)
     }
 
     fun changeWeeklyDensity(density: Int) {
@@ -674,7 +691,8 @@ class SurfController(
         comment: String?,
         mediaUri: String?,
         hourlyModel: HourlyUiModel,
-        tideInfo: DailyTideInfo?
+        tideInfo: DailyTideInfo?,
+        forecastScore: Int? = null
     ) {
         val dao = sessionLogStore ?: return
         scope.launch {
@@ -687,7 +705,8 @@ class SurfController(
                 windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
                 tideCoeff = tideInfo?.coefficient,
                 isNearHighTide = isNearHighTide(hourlyModel, tideInfo),
-                tidePhase = tidePhaseAt(hourlyModel.rawTime.time, tideInfo)
+                tidePhase = tidePhaseAt(hourlyModel.rawTime.time, tideInfo),
+                forecastScore = forecastScore
             )
             dao.logSession(
                 startTime = LocalDateTime(date, LocalTime(startHour, 0)).toEpochMillis(),

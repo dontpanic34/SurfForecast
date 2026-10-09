@@ -362,7 +362,7 @@ fun SessionLogEntryDialog(
                 MyGearButton(onClick = onOpenGear)
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Note", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.7f))
+                Text("Comment c'était ? (ton ressenti)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.7f))
                 Spacer(modifier = Modifier.height(4.dp))
                 StarRating(rating) { rating = it }
 

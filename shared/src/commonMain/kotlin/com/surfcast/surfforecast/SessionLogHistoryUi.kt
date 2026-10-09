@@ -240,12 +240,21 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
                     fontWeight = FontWeight.SemiBold,
                     color = colors.onSurface
                 )
-                val rating = session.session.rating.coerceIn(0, 5)
-                Text(
-                    text = "★".repeat(rating) + "☆".repeat(5 - rating),
-                    fontSize = 13.sp,
-                    color = AppColors.WindHigh
-                )
+                StarsRow(value = session.session.rating.coerceIn(0, 5).toFloat(), starSize = 14.dp)
+            }
+            val forecast = session.condition.forecastScore
+            if (forecast != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Prévu", fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.7f))
+                    if (forecast < 0) {
+                        Text("trop gros", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color())
+                    } else {
+                        StarsRow(value = starsForScore(forecast), starSize = 11.dp)
+                    }
+                    Text("· Vécu", fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.7f))
+                    StarsRow(value = session.session.rating.coerceIn(0, 5).toFloat(), starSize = 11.dp)
+                }
             }
 
             Spacer(modifier = Modifier.height(2.dp))

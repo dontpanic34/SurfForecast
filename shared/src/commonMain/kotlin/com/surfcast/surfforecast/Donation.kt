@@ -36,16 +36,16 @@ import androidx.compose.ui.unit.sp
 /** Lien de don PayPal (PayPal.Me) : sans frais quand la personne envoie en « paiement entre proches ». */
 const val DONATION_URL = "https://www.paypal.me/othmanmiara"
 
-/** Page Ko-fi pour payer par carte bancaire (vide = bouton masqué tant que le lien n'est pas fourni). */
-const val KOFI_URL = "https://ko-fi.com/othmanmiara"
+/** Lien de paiement Stripe (Payment Link) : page de paiement par carte, montant libre. */
+const val CARD_URL = "https://buy.stripe.com/bJe5kDh1ugKN6zQ0rv6sw00"
 
 /** Lien de paiement Lydia (vide = bouton masqué tant que le lien n'est pas fourni). */
-const val LYDIA_URL = ""
+const val LYDIA_URL = "https://pay.lydia.me/l?t=othmana103s"
 
 private class PayOption(val badge: String, val badgeBg: Color, val badgeFg: Color, val title: String, val subtitle: String, val url: String)
 
 private val payOptions = listOf(
-    PayOption("CB", Color(0xFF29ABE0), Color.White, "Carte bancaire", "Visa, Mastercard · via Ko-fi", KOFI_URL),
+    PayOption("CB", Color(0xFF29ABE0), Color.White, "Carte bancaire", "Visa, Mastercard, Apple Pay", CARD_URL),
     PayOption("PayPal", Color(0xFFFFC439), Color(0xFF003087), "PayPal", "Avec ton compte PayPal", DONATION_URL),
     PayOption("Lydia", Color(0xFF0F7BFF), Color.White, "Lydia", "Depuis l'appli Lydia", LYDIA_URL)
 ).filter { it.url.isNotBlank() }

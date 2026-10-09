@@ -43,7 +43,8 @@ data class ConditionSnapshotEntity(
     val windDirection: Int,
     val tideCoeff: Int?,
     val isNearHighTide: Boolean,
-    val tidePhase: String? = null
+    val tidePhase: String? = null,
+    val forecastScore: Int? = null
 )
 
 @Entity(
@@ -72,10 +73,10 @@ internal fun QuiverBoard.toEntity() = QuiverBoardEntity(id, model, family, lengt
 internal fun MicroSpotEntity.toModel() = MicroSpot(id, parentSpotName, name, tidePhase, minHeight, maxHeight, notes)
 internal fun MicroSpot.toEntity() = MicroSpotEntity(id, parentSpotName, name, tidePhase, minHeight, maxHeight, notes)
 internal fun ConditionSnapshotEntity.toModel() = ConditionSnapshot(
-    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide, tidePhase
+    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide, tidePhase, forecastScore
 )
 internal fun ConditionSnapshot.toEntity() = ConditionSnapshotEntity(
-    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide, tidePhase
+    id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide, tidePhase, forecastScore
 )
 internal fun SurfSessionEntity.toModel() = SurfSession(
     id, startTime, endTime, microSpotId, quiverId, conditionId, rating, comment, mediaUri

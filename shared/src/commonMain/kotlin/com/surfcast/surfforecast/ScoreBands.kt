@@ -33,6 +33,6 @@ fun ScoreBand.color(): Color = when (this) {
     ScoreBand.POOR -> Color(0xFFE53935)
     ScoreBand.FAIR -> Color(0xFFFB8C00)
     ScoreBand.GOOD -> Color(0xFFFFD600)
-    ScoreBand.VERY_GOOD -> Color(0xFF43A047)
-    ScoreBand.EXCELLENT -> Color(0xFF00E676)
+    ScoreBand.VERY_GOOD -> Color(0xFF2E9E4F)
+    ScoreBand.EXCELLENT -> Color(0xFF00E5FF)
 }

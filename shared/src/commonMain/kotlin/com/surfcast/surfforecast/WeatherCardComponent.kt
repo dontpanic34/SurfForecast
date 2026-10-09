@@ -83,10 +83,7 @@ fun WeatherCardComponent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        text = SurfUnitsHelper.resolveRealWeatherEmoji(selectedHour),
-                        fontSize = 18.sp
-                    )
+                    WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(selectedHour), 22.dp)
                     Text(
                         text = "${selectedHour.temperature}°C",
                         fontSize = 18.sp,

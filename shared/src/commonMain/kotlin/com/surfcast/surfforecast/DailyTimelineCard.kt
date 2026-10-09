@@ -215,7 +215,7 @@ fun DailyTimelineCard(
                                 ),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(hourly), fontSize = 14.sp)
+                            WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(hourly), 16.dp)
                             Canvas(modifier = Modifier.size(12.dp)) {
                                 val w = size.width
                                 val h = size.height
