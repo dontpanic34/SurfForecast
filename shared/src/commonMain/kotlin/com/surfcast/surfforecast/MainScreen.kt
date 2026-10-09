@@ -709,7 +709,7 @@ fun MainScreen(
                                         seaTemperature = (closest.seaTemperature
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
                                     )
                                 }
                             }
