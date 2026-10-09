@@ -74,11 +74,11 @@ jobs:
         run: |
           bash scripts/web-release.sh shared/build/dist/wasmJs/productionExecutable ${{ github.run_number }}
 
-      # APK Android téléchargeable depuis le site (surflog.fr/surflog.apk), construit depuis la branche de l'appli.
+      # APK Android téléchargeable depuis le site (surflog.fr/surflog.apk), construit depuis la branche de l'appli (unified : coque Android sur le module partagé, même appli que le site).
       - name: Checkout Android app branch
         uses: actions/checkout@v4
         with:
-          ref: main-26mfzy
+          ref: unified
           path: apk-src
 
       - name: Accept Android SDK licenses
