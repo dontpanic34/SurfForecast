@@ -125,7 +125,8 @@ class SurfRepositoryTest {
 
         val longTerm = result.hourly[1]
         assertEquals(1.1, longTerm.waveHeight)
-        assertEquals(11.0, longTerm.wavePeriod)
+        // Seule la période MOYENNE (11 s) est donnée : convertie en période de pic (x 1,2).
+        assertEquals(11.0 * 1.2, longTerm.wavePeriod, 1e-9)
         assertEquals(0.0, longTerm.windWaveHeight)
         assertEquals(21, longTerm.windSpeedKmh)
         assertEquals("O", longTerm.windDirectionStr)
@@ -134,6 +135,26 @@ class SurfRepositoryTest {
 
         assertEquals(LocalTime(8, 40), result.dailySun.getValue(today).sunrise)
         assertEquals(LocalTime(17, 25), result.dailySun.getValue(today).sunset)
+    }
+
+    @Test
+    fun totalPeakPeriodBeatsShortMeanSwellPeriod() = runTest {
+        // ECMWF : houle à 6 s en moyenne, mais pic du total des vagues à 11 s -> on affiche 11 s.
+        val ecmwf = """
+            {"hourly":{"time":["2026-01-04T10:00"],"wave_height":[1.6],"wave_period":[6.0],"wave_peak_period":[11.0],
+            "swell_wave_height":[1.4],"swell_wave_period":[6.2],"wave_direction":[300.0]}}
+        """.trimIndent()
+        val engine = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            val body = when {
+                request.url.host == "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else ecmwf
+                model == "meteofrance_arome_france" -> shortWeather
+                else -> longWeather
+            }
+            respondJson(body)
+        }
+        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        assertEquals(11.0, hourly.last().wavePeriod)
     }
 
     @Test

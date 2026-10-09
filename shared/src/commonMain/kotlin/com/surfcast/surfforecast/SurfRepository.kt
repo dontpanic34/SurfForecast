@@ -75,6 +75,9 @@ const val MAREE_RELAY_BASE = "https://surflog.fr/api/maree"
 /** Source du vent quand aucun modèle n'a de valeur pour cette heure (vent affiché : 0). */
 const val WIND_SOURCE_MISSING = "manquant"
 
+/** Rapport approximatif période de pic / période moyenne d'une houle (spectre type). */
+private const val MEAN_TO_PEAK_PERIOD = 1.2
+
 class SurfRepository(
     private val httpClient: HttpClient,
     // Cache hors réseau (navigateur) : la dernière réponse de chaque appel sert de repli quand le réseau
@@ -185,7 +188,7 @@ class SurfRepository(
     private suspend fun fetchMarineBlock(lat: Double, lon: Double, waveModel: WaveModel, days: Int): RawMarineHourly {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
             "latitude=$lat&longitude=$lon" +
-            "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period" +
+            "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period" +
             "&models=${waveModel.apiParam}" +
             "&forecast_days=$days" +
             "&timezone=auto"
@@ -196,6 +199,7 @@ class SurfRepository(
         val swellHArr = hourly.optArray("swell_wave_height")
         val swellPArr = hourly.optArray("swell_wave_period")
         val swellPeakArr = hourly.optArray("swell_wave_peak_period")
+        val totalPeakArr = hourly.optArray("wave_peak_period")
         val windPeakArr = hourly.optArray("wind_wave_peak_period")
         val windMeanPArr = hourly.optArray("wind_wave_period")
         val swellDArr = hourly.optArray("swell_wave_direction")
@@ -227,13 +231,17 @@ class SurfRepository(
             val totalD = waveDirArr.doubleAt(i)?.toFloat() ?: 0f
 
             val finalH = if (!swellH.isNaN() && swellH > 0.0) swellH else totalH
-            // Période de PIC (train de houle le plus énergétique) plutôt que la moyenne.
-            // Jamais la période de la mer de vent (clapot, 4-8 s) : associée à la hauteur
-            // de houle, elle affichait des "0.9m - 8s" qui ne correspondaient à rien.
+            // Période de PIC, comme l'affichent Windy, Windguru, Surfline et Surf-Forecast : la plus longue des
+            // périodes de pic disponibles (houle, ou total des vagues). Jamais la période de la mer de vent
+            // (clapot, 4-8 s) : associée à la hauteur de houle, elle ne correspondrait à rien.
+            // Si le modèle (ECMWF) ne donne que des périodes MOYENNES, plus courtes d'environ 20 %,
+            // on les convertit en période de pic : sinon l'appli afficherait 6 s là où tout le monde lit 10.
+            val totalPeak = totalPeakArr.doubleAt(i) ?: Double.NaN
+            val peakCandidates = listOf(swellPeak, totalPeak).filter { !it.isNaN() && it > 0.0 }
             val finalP = when {
-                !swellPeak.isNaN() && swellPeak > 0.0 -> swellPeak
-                !swellP.isNaN() && swellP > 0.0 -> swellP
-                else -> totalP
+                peakCandidates.isNotEmpty() -> maxOf(peakCandidates.max(), if (!swellP.isNaN()) swellP else 0.0)
+                !swellP.isNaN() && swellP > 0.0 -> swellP * MEAN_TO_PEAK_PERIOD
+                else -> totalP * MEAN_TO_PEAK_PERIOD
             }
             val finalD = if (!swellD.isNaN()) swellD else totalD
 
