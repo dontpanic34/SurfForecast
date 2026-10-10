@@ -277,9 +277,9 @@ fun calculateSlotRating(
 const val GUST_WEIGHT = 0.5
 private const val TOO_SMALL_RATIO = 0.85
 private const val TOO_WINDY_FACTOR = 0.4
-const val WHY_TOO_SMALL = "Trop petit : sous ta plus petite vague"
-const val WHY_TOO_BIG = "Au-dessus de ton maximum"
-const val WHY_TOO_HOLLOW = "Challengeant : trop creux pour toi"
+const val WHY_TOO_SMALL = "Trop petit pour toi"
+const val WHY_TOO_BIG = "Trop gros pour toi"
+const val WHY_TOO_HOLLOW = "Trop creux pour toi"
 
 /** Diviseur du vent selon la hauteur : 1 sous 1 m, jusqu'à 1,6 pour les grosses vagues. */
 private fun windSizeDivisor(heightM: Double): Double = heightM.pow(0.9).coerceIn(0.8, 1.6)
@@ -297,34 +297,34 @@ private const val STRONG_LIMIT = 0.55
 private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits): String = when (kind) {
     ConditionKind.TOO_SMALL -> WHY_TOO_SMALL
     ConditionKind.TOO_WINDY -> when (windCategory) {
-        "onshore" -> "Le vent de mer abîme la vague"
-        "cross" -> "Le vent de côté abîme la vague"
+        "onshore" -> "Onshore abîme la vague"
+        "cross" -> "Sideshore abîme la vague"
         else -> "Offshore trop fort"
     }
     ConditionKind.TOO_BIG -> WHY_TOO_BIG
-    ConditionKind.CHALLENGING -> "Challengeant : " + when (windCategory) {
-        "offshore" -> "creux et puissant"
-        "onshore" -> "gros mais moins creux"
-        else -> "gros, vent de côté"
+    ConditionKind.CHALLENGING -> when (windCategory) {
+        "offshore" -> "Creux et puissant"
+        "onshore" -> "Gros, accessible"
+        else -> "Gros, vent de côté"
     }
     ConditionKind.NORMAL -> {
         val factors = listOf("size" to l.size, "wind" to l.wind, "gusts" to l.gusts, "chop" to l.chop, "period" to l.period, "direction" to l.direction)
         val worst = factors.minByOrNull { it.second }!!
         if (worst.second >= MINOR_LIMIT) {
-            if (l.wind >= 0.9) "Bonne taille, vent propre" else "Bonne taille, vent léger sans gêne"
+            if (l.wind >= 0.9) "Bonne taille, vent propre" else "Bonne taille, vent léger"
         } else {
             val strong = worst.second < STRONG_LIMIT
             when (worst.first) {
                 "size" -> if (strong) "Petite pour toi" else "Un peu petite pour toi"
                 "wind" -> when (windCategory) {
-                    "onshore" -> if (strong) "Le vent de mer gâche la vague" else "Un peu de vent de mer"
+                    "onshore" -> if (strong) "Onshore, gâche la vague" else "Un peu de vent de mer"
                     "cross" -> if (strong) "Vent de côté fort" else "Vent de côté qui gêne"
                     else -> if (strong) "Offshore trop fort" else "Offshore un peu fort"
                 }
-                "gusts" -> if (strong) "Rafales fortes, surface hachée" else "Des rafales gênent"
+                "gusts" -> if (strong) "Rafales fortes" else "Des rafales gênent"
                 "chop" -> if (strong) "Beaucoup de clapot" else "Un peu de clapot"
                 "period" -> if (strong) "Houle trop courte" else "Houle un peu courte"
-                else -> "Houle de biais, moins bien formée"
+                else -> "Houle de biais"
             }
         }
     }

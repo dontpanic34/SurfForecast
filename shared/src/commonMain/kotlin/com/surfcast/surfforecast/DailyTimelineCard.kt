@@ -59,6 +59,7 @@ import kotlin.math.roundToInt
  * Houle/Vent/Meteo affiches plus bas dans "Previsions de la semaine" — meme etat partage
  * que ces trois cartes, donc la selection reste synchronisee dans les deux sens.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DailyTimelineCard(
     selectedDate: LocalDate,
@@ -134,20 +135,42 @@ fun DailyTimelineCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-            // Pas de titre : toute la ligne dit la note de l'heure touchée, « 14 h · Correct à Bon · Un peu petite pour toi »,
-            // sur un fond de la couleur de la note. Le repli de la carte reste possible par la poignée / le chevron.
+            // Pas de titre : l'heure touchée, son libellé et sa phrase. Si la phrase ne tient pas à côté du libellé, elle passe
+            // entière à la ligne (jamais coupée), entre le libellé et la jauge à 5 segments.
             if (selectedIndex in ratings.indices) {
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
-                Box(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(shownBand.color())
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = curveHours[selectedIndex].rawTime.hour.toString() + " h · " + bandLabelWithTrend(shownRating) +
-                            (if (shownRating.why.isNotBlank()) " · " + shownRating.why else ""),
-                        fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = shownBand.onColor(), lineHeight = 16.sp
-                    )
+                val level = gaugeLevel(shownRating)
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(1.dp),
+                        itemVerticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            curveHours[selectedIndex].rawTime.hour.toString() + " h", fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold, color = onSurfaceColor, maxLines = 1
+                        )
+                        Text(
+                            bandLabelWithTrend(shownRating), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
+                            color = shownBand.textColor(), maxLines = 1
+                        )
+                        if (shownRating.why.isNotBlank()) {
+                            Text(
+                                shownRating.why, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                                color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1, modifier = Modifier.padding(bottom = 1.dp)
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.padding(top = 4.dp).width(110.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        for (i in 1..5) {
+                            Box(
+                                Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp))
+                                    .background(if (i <= level) shownBand.color() else onSurfaceColor.copy(alpha = 0.15f))
+                            )
+                        }
+                    }
                 }
             } else {
                 Text(

@@ -54,6 +54,22 @@ fun ScoreBand.color(): Color = when (this) {
 }
 
 /** Couleur de texte lisible sur [color] de cette nuance. */
+/** Couleur du libellé sur le fond sombre des cartes : le marron et le violet profond y sont éclaircis pour rester lisibles. */
+fun ScoreBand.textColor(): Color = when (this) {
+    ScoreBand.AVOID -> Color(0xFFC08E78)
+    ScoreBand.TOO_BIG -> Color(0xFFB57BFF)
+    else -> color()
+}
+
+/** Niveau de la jauge à 5 segments : Mauvais 1, Médiocre 2, Correct 3, Bon 4, Très bon et Parfait 5 ; les conditions hors zone (challengeant, trop petit, trop gros) 3, trop de vent 2. */
+fun gaugeLevel(rating: SlotRating): Int = when (conditionBand(rating)) {
+    ScoreBand.EXCELLENT, ScoreBand.VERY_GOOD -> 5
+    ScoreBand.GOOD -> 4
+    ScoreBand.FAIR, ScoreBand.CHALLENGING, ScoreBand.TOO_BIG, ScoreBand.TOO_SMALL -> 3
+    ScoreBand.POOR, ScoreBand.TOO_WINDY -> 2
+    ScoreBand.AVOID -> 1
+}
+
 fun ScoreBand.onColor(): Color = when (this) {
     ScoreBand.TOO_BIG, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.EXCELLENT, ScoreBand.TOO_WINDY -> Color.White
     else -> Color(0xFF061018)
