@@ -512,19 +512,16 @@ private fun DailyCurveCanvas(
         if (selectedIndex in pts.indices) {
             val p = pts[selectedIndex]
             val hourly = hours[selectedIndex]
-            fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight) {
-                val style = TextStyle(color = nacre, fontSize = sp.sp, fontWeight = weight)
-                val outline = TextStyle(
-                    color = halo, fontSize = sp.sp, fontWeight = weight,
-                    drawStyle = Stroke(width = 3.dp.toPx(), join = StrokeJoin.Round)
-                )
+            // Même tracé que la semaine (drawHaloTextAtBaseline) : l'ancien double dessin laissait seul le contour sombre.
+            fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight, color: Color, outline: Color) {
+                val style = TextStyle(color = color, fontSize = sp.sp, fontWeight = weight)
                 val layout = textMeasurer.measure(text, style)
                 val x = (cx - layout.size.width / 2f).coerceIn(2.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
-                drawText(textMeasurer, text, Offset(x, topY), outline)
-                drawText(textMeasurer, text, Offset(x, topY), style)
+                drawHaloTextAtBaseline(textMeasurer, text, style, outline, x, topY + layout.firstBaseline)
             }
-            haloText(formatDecimal(hourly.waveHeight, 1, ',') + " m", p.x, p.y - 26.dp.toPx(), 12f, FontWeight.ExtraBold)
-            haloText("${hourly.wavePeriod.roundToInt()} s", p.x, p.y + 8.dp.toPx(), 10.5f, FontWeight.Bold)
+            // La taille est au-dessus de la courbe (sur le ciel), la période dessous (sur l'eau, toujours sombre : texte blanc).
+            haloText(formatDecimal(hourly.waveHeight, 1, ',') + " m", p.x, p.y - 26.dp.toPx(), 12f, FontWeight.ExtraBold, nacre, halo)
+            haloText("${hourly.wavePeriod.roundToInt()} s", p.x, p.y + 8.dp.toPx(), 10.5f, FontWeight.Bold, Color.White, Color(0xFF0B121A))
             drawCircle(nacre.copy(alpha = 0.9f), radius = 3.6.dp.toPx(), center = p)
             drawCircle(nacre.copy(alpha = 0.35f), radius = 6.dp.toPx(), center = p, style = Stroke(1.2.dp.toPx()))
         }
