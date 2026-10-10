@@ -3,9 +3,8 @@ package com.surfcast.surfforecast
 import androidx.compose.ui.graphics.Color
 
 /**
- * Nuances de la note, du meilleur au pire : bleu roi (parfait), bleu ciel (très bon), vert (bon), jaune (correct),
- * rouge (médiocre), marron (mauvais). À part : orange (challengeant : costaud mais faisable), violet (trop gros),
- * gris clair (trop petit), rose (trop de vent).
+ * Neuf libellés, trois teintes à deux nuances : vert vif (parfait, très bon) et vert sombre (bon), jaune (correct) et
+ * orange (pas pour toi : challengeant, trop petit, trop gros), rouge (médiocre, trop de vent) et bordeaux (mauvais).
  */
 enum class ScoreBand(val label: String) {
     TOO_BIG("Trop gros"),
@@ -40,24 +39,27 @@ fun conditionBand(rating: SlotRating): ScoreBand = when (rating.kind) {
     ConditionKind.NORMAL -> scoreBand(rating.score)
 }
 
+private val GREEN = Color(0xFF2BD47A)
+private val GREEN_DEEP = Color(0xFF12A06F)
+private val YELLOW = Color(0xFFFFD21F)
+private val ORANGE = Color(0xFFFF9A1F)
+private val RED = Color(0xFFE53935)
+private val BORDEAUX = Color(0xFF9B1C31)
+
 fun ScoreBand.color(): Color = when (this) {
-    ScoreBand.TOO_BIG -> Color(0xFF7B2CBF)
-    ScoreBand.AVOID -> Color(0xFF795548)
-    ScoreBand.POOR -> Color(0xFFE53935)
-    ScoreBand.FAIR -> Color(0xFFFFE033)
-    ScoreBand.GOOD -> Color(0xFF3DDC84)
-    ScoreBand.VERY_GOOD -> Color(0xFF4FC3F7)
-    ScoreBand.EXCELLENT -> Color(0xFF2B4BFF)
-    ScoreBand.CHALLENGING -> Color(0xFFFF9A1F)
-    ScoreBand.TOO_SMALL -> Color(0xFFCFD8E3)
-    ScoreBand.TOO_WINDY -> Color(0xFFD81B60)
+    ScoreBand.EXCELLENT, ScoreBand.VERY_GOOD -> GREEN
+    ScoreBand.GOOD -> GREEN_DEEP
+    ScoreBand.FAIR -> YELLOW
+    ScoreBand.CHALLENGING, ScoreBand.TOO_SMALL, ScoreBand.TOO_BIG -> ORANGE
+    ScoreBand.POOR, ScoreBand.TOO_WINDY -> RED
+    ScoreBand.AVOID -> BORDEAUX
 }
 
-/** Couleur de texte lisible sur [color] de cette nuance. */
-/** Couleur du libellé sur le fond sombre des cartes : le marron et le violet profond y sont éclaircis pour rester lisibles. */
+/** Couleur du libellé sur le fond sombre des cartes : le vert sombre, le rouge et le bordeaux y sont éclaircis. */
 fun ScoreBand.textColor(): Color = when (this) {
-    ScoreBand.AVOID -> Color(0xFFC08E78)
-    ScoreBand.TOO_BIG -> Color(0xFFB57BFF)
+    ScoreBand.GOOD -> Color(0xFF3CCF9D)
+    ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color(0xFFFF5A55)
+    ScoreBand.AVOID -> Color(0xFFFF6F86)
     else -> color()
 }
 
@@ -70,8 +72,9 @@ fun gaugeLevel(rating: SlotRating): Int = when (conditionBand(rating)) {
     ScoreBand.AVOID -> 1
 }
 
+/** Couleur de texte lisible sur [color] de cette nuance. */
 fun ScoreBand.onColor(): Color = when (this) {
-    ScoreBand.TOO_BIG, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.EXCELLENT, ScoreBand.TOO_WINDY -> Color.White
+    ScoreBand.GOOD, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color.White
     else -> Color(0xFF061018)
 }
 
@@ -114,10 +117,10 @@ fun trendOnColor(bands: List<ScoreBand>): Color {
 }
 
 private val STOPS = listOf(
-    10 to 0xFF795548, 30 to 0xFFE53935, 47 to 0xFFFFE033, 62 to 0xFF3DDC84, 77 to 0xFF4FC3F7, 92 to 0xFF2B4BFF
+    10 to 0xFF9B1C31, 30 to 0xFFE53935, 47 to 0xFFFFD21F, 62 to 0xFF12A06F, 77 to 0xFF2BD47A, 92 to 0xFF2BD47A
 )
 
-/** Couleur d'une note sur le dégradé continu (marron -> rouge -> jaune -> vert -> bleu ciel -> bleu roi). */
+/** Couleur d'une note sur le dégradé continu (bordeaux -> rouge -> jaune -> vert sombre -> vert vif). */
 fun scoreGradientColor(score: Int): Color {
     val s = score.coerceIn(STOPS.first().first, STOPS.last().first)
     for (i in 1 until STOPS.size) {

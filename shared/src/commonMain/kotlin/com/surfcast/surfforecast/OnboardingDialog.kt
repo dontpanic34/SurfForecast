@@ -105,7 +105,7 @@ fun OnboardingDialog(
 
                     OnboardingSection(title = "Les scores pour toi") {
                         Text(
-                            "Touche un niveau : les notes changent. Le même jour peut être parfait pour l'un et « trop gros » (violet) pour l'autre.",
+                            "Touche un niveau : les notes changent. Le même jour peut être parfait pour l'un et « trop gros » (orange) pour l'autre.",
                             fontSize = 12.sp,
                             color = colors.onSurfaceVariant
                         )

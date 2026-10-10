@@ -228,7 +228,7 @@ fun ProfileBenefitsCard() {
                 fontSize = 12.sp, color = colors.onSurfaceVariant
             )
             listOf(
-                "🎯 Des notes faites pour toi : la taille qui te convient, et « trop gros » (violet) quand ça dépasse ton niveau, sans que ce soit « mauvais ».",
+                "🎯 Des notes faites pour toi : la taille qui te convient, et « trop gros » (orange) quand ça dépasse ton niveau, sans que ce soit « mauvais ».",
                 "💨 Ta tolérance au vent, aux rafales, au clapot et aux houles courtes : les notes et les étoiles en tiennent compte.",
                 "🏄 Ton matériel : tes planches avec leur volume et leur ratio litres par kilo.",
                 "📓 Le journal de bord : tu choisis ta planche en un geste, et l'appli retient avec quoi tu surfes le mieux."

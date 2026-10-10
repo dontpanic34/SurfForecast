@@ -45,7 +45,7 @@ private val guideSections = listOf(
             "• 0,8 m à 9 s ≈ 100 kJ : accessible à tous.\n" +
             "• 1,2 m à 11 s ≈ 285 kJ : pour surfeurs à l'aise.\n" +
             "• 2 m à 12 s ≈ 1100 kJ : massif et très puissant.\n" +
-            "Chaque profil a son plafond : au-delà, la note passe à « trop gros » (violet). Tu règles tes limites dans Paramètres › Mon profil."
+            "Chaque profil a son plafond : au-delà, la note passe à « trop gros » (orange). Tu règles tes limites dans Paramètres › Mon profil."
     ),
     GuideSection(
         "🧭", "La direction",
@@ -72,9 +72,9 @@ private val guideSections = listOf(
     GuideSection(
         "🎯", "Le score et les étoiles",
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (rafales comprises) et clapot. Plus la vague est grosse, moins le vent la gêne.\n" +
-            "• Du meilleur au pire : bleu roi = parfait, bleu ciel = très bon, vert = bon, jaune = correct, rouge = médiocre, marron = mauvais.\n" +
-            "• Orange : challengeant, costaud mais faisable. Avec un offshore, c'est creux et puissant ; avec un vent de mer, gros mais moins creux. Si c'est trop creux pour ton niveau, la note baisse.\n" +
-            "• Violet : trop gros pour ton niveau. Gris clair : trop petit. Rose : trop de vent. Ce n'est pas la même chose que « mauvais ».\n" +
+            "• Trois teintes, deux nuances chacune : vert vif = parfait ou très bon, vert sombre = bon ; jaune = correct ; rouge = médiocre ou trop de vent, bordeaux = mauvais.\n" +
+            "• Orange : pas pour toi aujourd'hui (challengeant, trop petit, trop gros). Avec un offshore, challengeant veut dire creux et puissant ; avec un vent de mer, gros mais accessible. Ce n'est pas la même chose que « mauvais ».\n" +
+            "• La jauge à 5 segments de l'en-tête du jour donne le niveau : 1 mauvais, 2 médiocre, 3 correct, 4 bon, 5 très bon ou parfait.\n" +
             "Entre deux niveaux, le libellé dit vers où ça va : « Correct à Bon ».\n" +
             "Ton profil règle la taille de ta plus petite et de ta plus grosse vague, la tolérance au vent de mer, aux rafales, au clapot et à la période : un expert est plus exigeant qu'un débutant. Tu peux aussi noter des exemples de vagues pour que les couleurs te ressemblent.\n" +
             "Les étoiles du jour (0,5 à 5) mélangent le meilleur moment et la durée des bonnes conditions : un jour propre toute la journée vaut plus qu'une seule bonne heure.\n" +
