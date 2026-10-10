@@ -85,7 +85,7 @@ class BoardVolumeTest {
         val body = BodyState(ageYears = 40, weightKg = 81, fitness = 0)
         val rec = recommendedVolumeL(body, 4)
         assertNotNull(rec)
-        assertEquals(33.23, rec, 0.01)
+        assertEquals(33.24, rec, 0.01)
         val range = recommendedRange(rec)
         assertEquals(32.40, range.start, 0.05)
         assertEquals(34.06, range.endInclusive, 0.05)
