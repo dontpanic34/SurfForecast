@@ -107,6 +107,9 @@ class SkyScene(
     val animate: Boolean
 )
 
+/** Les nuages restent des suggestions : assez transparents pour laisser lire la courbe et les chiffres. */
+private const val CLOUD_OPACITY = 0.5f
+
 private class SkyImages(
     val clouds: List<ImageBitmap>, val sun: ImageBitmap, val rain: ImageBitmap, val snow: ImageBitmap
 )
@@ -182,7 +185,7 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
             Color(0xFF5F6C7D).copy(alpha = 0.32f), Color.Transparent
         )
         for (l in 0 until 4) {
-            val stops = fadeStops(scene, n) { x -> cloudWeights(scene.cover.at(x))[l] * (if (l == 3) 0.92f else 1f) }
+            val stops = fadeStops(scene, n) { x -> cloudWeights(scene.cover.at(x))[l] * (if (l == 3) 0.92f else 1f) * CLOUD_OPACITY }
             if (stops.all { it.second.alpha < 0.02f }) continue
             drawIntoCanvas { canvas ->
                 canvas.saveLayer(bounds, Paint())
@@ -241,7 +244,7 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
 
     // Soleil : au premier plan, devant les nuages, jamais coupé (donc hors du rognage du ciel) ; il s'efface sous la couverture.
     for (s in scene.suns) {
-        val a = (max(0f, 1f - scene.cover.at(s.x) * 1.1f) * (if (isDark) 0.95f else 1f)).coerceIn(0f, 1f)
+        val a = (max(0f, 1f - scene.cover.at(s.x) * 1.1f) * (if (isDark) 0.8f else 0.9f)).coerceIn(0f, 1f)
         if (a <= 0.03f) continue
         drawImage(
             im.sun, srcOffset = IntOffset.Zero, srcSize = IntSize(im.sun.width, im.sun.height),

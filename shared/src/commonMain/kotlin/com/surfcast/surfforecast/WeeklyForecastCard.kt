@@ -780,8 +780,8 @@ internal fun weekSkyScene(
             rain.add(part.maxOfOrNull { rainAmountForCode(it.weatherCode) } ?: 0f)
             snow.add(part.maxOfOrNull { snowAmountForCode(it.weatherCode) } ?: 0f)
         }
-        val sizePx = 64f * density
-        suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 10f * density))
+        val sizePx = 44f * density
+        suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 1f * density))
     }
     val smooth = 7f * density
     val top = 8f * density
