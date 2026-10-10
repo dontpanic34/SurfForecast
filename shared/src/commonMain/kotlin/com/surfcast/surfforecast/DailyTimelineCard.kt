@@ -227,7 +227,7 @@ fun DailyTimelineCard(
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(62.dp)) {
                     val slotW = maxWidth * 3f / (timelineItems.size - 1).coerceAtLeast(1)
                     val firstHour = timelineItems.firstOrNull()?.rawTime?.hour ?: 0
-                    for (h in 0..21 step 3) {
+                    for (h in 6..21 step 3) {
                         val idx = h - firstHour
                         val hourly = timelineItems.getOrNull(idx) ?: continue
                         val centerX = maxWidth * idx / (timelineItems.size - 1).coerceAtLeast(1)
@@ -290,41 +290,11 @@ fun DailyTimelineCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                @OptIn(ExperimentalLayoutApi::class) FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    // Les trois teintes, avec leurs nuances (les neuf libellés s'écrivent dans l'en-tête).
-                    val legend = listOf(
-                        ScoreBand.EXCELLENT to "Parfait, Très bon", ScoreBand.GOOD to "Bon", ScoreBand.FAIR to "Correct",
-                        ScoreBand.CHALLENGING to "Pas pour toi", ScoreBand.POOR to "Médiocre, vent", ScoreBand.AVOID to "Mauvais"
-                    )
-                    legend.map { it.first.color() to it.second }.forEach { (dotColor, label) ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        ) {
-                            Canvas(modifier = Modifier.size(7.dp)) {
-                                drawCircle(color = dotColor, radius = size.minDimension / 2f)
-                            }
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = label,
-                                fontSize = 10.sp,
-                                color = onSurfaceColor.copy(alpha = 0.55f),
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
                 // --- Bas : une graduation toutes les 3 h, posée à l'aplomb de son heure, sur fond léger ---
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(20.dp)) {
                     val slotW = maxWidth * 3f / (timelineItems.size - 1).coerceAtLeast(1)
                     val firstHour = timelineItems.firstOrNull()?.rawTime?.hour ?: 0
-                    for (h in 0..21 step 3) {
+                    for (h in 6..21 step 3) {
                         val idx = h - firstHour
                         if (idx !in timelineItems.indices) continue
                         val centerX = maxWidth * idx / (timelineItems.size - 1).coerceAtLeast(1)
