@@ -464,6 +464,29 @@ fun SurfPreferencesDialog(
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
+                                text = "Graphiques de houle",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary
+                            )
+                            @Composable
+                            fun graphSlider(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
+                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(label, fontSize = 12.sp, color = colors.onBackground, modifier = Modifier.weight(1f))
+                                    Text("$value %", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant)
+                                }
+                                Slider(
+                                    value = value.toFloat(),
+                                    onValueChange = { onChange(it.toInt()) },
+                                    valueRange = range.first.toFloat()..range.last.toFloat()
+                                )
+                            }
+                            graphSlider("Place du graphique, semaine", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
+                            graphSlider("Place du graphique, jour", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
+                            graphSlider("Place de l'océan (le reste est du ciel)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
+                            TextButton(onClick = { SkyGraphSettings.reset() }) { Text("Valeurs par défaut", fontSize = 12.sp) }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
                                 text = "1. Unité du vent",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,

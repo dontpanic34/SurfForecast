@@ -194,6 +194,12 @@ class SurfController(
     // Vent du déroulé de la journée : "2h" (toutes les 2 h), "auto" (autant que la place le permet), "1h" (toutes les heures).
     var windStep by mutableStateOf((prefs.getString("wind_step", null) ?: "2h").let { if (it in listOf("2h", "auto", "1h")) it else "2h" })
         private set
+    // Place des graphiques de houle (semaine, jour, eau), modifiable dans Affichage.
+    @Suppress("unused")
+    private val skyGraphInit = run {
+        SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER))
+        SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
+    }
     var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
         private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))

@@ -51,10 +51,8 @@ import kotlin.math.sin
 
 // Dimensions (dp) du déroulé : mêmes proportions que la maquette validée.
 private const val WIND_ROW_H = 40
-private const val PLOT_H = 150
-private const val PLOT_TOP = 18      // haut de la zone de courbe
-private const val PLOT_BOTTOM = 142  // bas de la zone de courbe
-private const val SKY_EXT = 0        // le ciel déborde au-dessus du graphique, jusque vers le vent
+private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
+private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
 private const val BAND_H = 28
 private const val HOURS_H = 22
 private const val SIDE_PAD = 4
@@ -315,13 +313,17 @@ private fun DailyTimelineBody(
                 // --- Courbe sur son fond météo ---
                 val rawMax = maxOf(scaleRawMax ?: 0.0, hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
                 val (niceMax, gridValues) = swellAxisScale(rawMax)
-                val displayMax = (niceMax * 1.3).toFloat()
-                Box(modifier = Modifier.fillMaxWidth().height(PLOT_H.dp)) {
-                    val extPx = with(density) { SKY_EXT.dp.toPx() }
+                // La houle la plus haute de la journée atteint la part d'eau réglée (35 % par défaut) ; au-dessus, c'est du ciel.
+                val waterF = SkyGraphSettings.waterFraction
+                val displayMax = (rawMax / waterF).toFloat()
+                val plotHdp = SkyGraphSettings.dayPlotDp()
+                val plotBottomDp = plotHdp - PLOT_BOTTOM_MARGIN
+                Box(modifier = Modifier.fillMaxWidth().height(plotHdp.dp)) {
+                    val extPx = 0f
                     val topPx = with(density) { PLOT_TOP.dp.toPx() }
-                    val bottomPx = with(density) { PLOT_BOTTOM.dp.toPx() }
+                    val bottomPx = with(density) { plotBottomDp.dp.toPx() }
                     SkyCanvas(
-                        modifier = Modifier.fillMaxWidth().height((PLOT_H + SKY_EXT).dp).offset(y = (-SKY_EXT).dp),
+                        modifier = Modifier.fillMaxWidth().height(plotHdp.dp),
                         isDark = isDark
                     ) { size ->
                         val xs = FloatArray(hours.size) { xOf(hours[it].rawTime.hour.toFloat()) }
@@ -336,7 +338,9 @@ private fun DailyTimelineBody(
                             val alt = sunAltitude(selH, sunrise, sunset)
                             if (alt >= 0f) {
                                 val sizePx = with(density) { 30.dp.toPx() }
-                                val horizon = bottomPx - with(density) { 26.dp.toPx() }
+                                // Le soleil reste dans le ciel : au plus bas, juste au-dessus de la ligne d'eau.
+                                val waterline = bottomPx - (bottomPx - topPx) * waterF
+                                val horizon = waterline - with(density) { 18.dp.toPx() }
                                 val zenith = topPx + with(density) { 6.dp.toPx() }
                                 val cy = horizon - (horizon - zenith) * alt
                                 suns.add(SunSpot(xOf(selH), sizePx, extPx + cy - sizePx / 2f))
@@ -345,12 +349,13 @@ private fun DailyTimelineBody(
                         SkyScene(
                             left = pad, right = size.width - pad, top = extPx + topPx, bottom = extPx + bottomPx,
                             cover = cover, rain = rain, snow = snow, suns = suns,
-                            animate = hours.any { rainAmountForCode(it.weatherCode) > 0f || snowAmountForCode(it.weatherCode) > 0f }
+                            animate = hours.any { rainAmountForCode(it.weatherCode) > 0f || snowAmountForCode(it.weatherCode) > 0f },
+                            skyHeight = (bottomPx - topPx) * (1f - waterF) + with(density) { 8.dp.toPx() }
                         )
                     }
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
-                        gridValues = gridValues, displayMax = displayMax, onSurfaceColor = onSurfaceColor, isDark = isDark,
+                        gridValues = gridValues, displayMax = displayMax, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
                         nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1)
                     )
                 }
@@ -445,6 +450,7 @@ private fun DailyCurveCanvas(
     selectedIndex: Int,
     gridValues: List<Double>,
     displayMax: Float,
+    plotBottomDp: Float,
     onSurfaceColor: Color,
     isDark: Boolean,
     nacre: Color,
@@ -453,14 +459,16 @@ private fun DailyCurveCanvas(
     edgeLeft: Float,
     edgeRight: Float
 ) {
-    val waterImage = LocalSkyImages.current?.water
+    val skyImages = LocalSkyImages.current
+    val rainActive = hours.any { rainAmountForCode(it.weatherCode) > 0f }
+    val clock = rememberRainClock(rainActive)
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
     val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
     val halo = if (isDark) Color(0xFF0B121A) else Color.White
     val labelColor = if (isDark) Color.White else Color(0xFF14202B)
     Canvas(modifier = modifier) {
         val top = PLOT_TOP.dp.toPx()
-        val bottom = PLOT_BOTTOM.dp.toPx()
+        val bottom = plotBottomDp.dp.toPx()
         fun yOf(v: Double): Float = bottom - (bottom - top) * (v / displayMax).toFloat().coerceIn(0f, 1.2f)
 
         gridValues.forEach { v ->
@@ -486,7 +494,22 @@ private fun DailyCurveCanvas(
                 lineTo(line.last().x, bottom)
                 close()
             }
-            if (waterImage != null) drawWater(waterImage, fill, line.first().x, line.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
+            if (skyImages != null) {
+                val rainCurve = SkyCurve(
+                    FloatArray(hours.size) { pts[it].x }, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, 6.dp.toPx()
+                )
+                drawWater(skyImages, rainCurve.takeIf { rainActive }, fill, line.first().x, line.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
+                if (rainActive) {
+                    fun surfaceY(x: Float): Float {
+                        for (i in 1 until line.size) if (x <= line[i].x) {
+                            val a = line[i - 1]; val b = line[i]
+                            return a.y + (b.y - a.y) * ((x - a.x) / (b.x - a.x).coerceAtLeast(1e-3f)).coerceIn(0f, 1f)
+                        }
+                        return line.last().y
+                    }
+                    drawRainRipples(fill, rainCurve, ::surfaceY, line.first().x, line.last().x, bottom, clock.value)
+                }
+            }
             for (i in 1 until line.size) {
                 val p = line[i - 1]; val c = line[i]; val mx = (p.x + c.x) / 2f
                 val seg = Path().apply { moveTo(p.x, p.y); cubicTo(mx, p.y, mx, c.y, c.x, c.y) }
@@ -512,19 +535,16 @@ private fun DailyCurveCanvas(
         if (selectedIndex in pts.indices) {
             val p = pts[selectedIndex]
             val hourly = hours[selectedIndex]
-            fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight) {
-                val style = TextStyle(color = nacre, fontSize = sp.sp, fontWeight = weight)
-                val outline = TextStyle(
-                    color = halo, fontSize = sp.sp, fontWeight = weight,
-                    drawStyle = Stroke(width = 3.dp.toPx(), join = StrokeJoin.Round)
-                )
+            // Même tracé que la semaine (drawHaloTextAtBaseline) : l'ancien double dessin laissait seul le contour sombre.
+            fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight, color: Color, outline: Color) {
+                val style = TextStyle(color = color, fontSize = sp.sp, fontWeight = weight)
                 val layout = textMeasurer.measure(text, style)
                 val x = (cx - layout.size.width / 2f).coerceIn(2.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
-                drawText(textMeasurer, text, Offset(x, topY), outline)
-                drawText(textMeasurer, text, Offset(x, topY), style)
+                drawHaloTextAtBaseline(textMeasurer, text, style, outline, x, topY + layout.firstBaseline)
             }
-            haloText(formatDecimal(hourly.waveHeight, 1, ',') + " m", p.x, p.y - 26.dp.toPx(), 12f, FontWeight.ExtraBold)
-            haloText("${hourly.wavePeriod.roundToInt()} s", p.x, p.y + 8.dp.toPx(), 10.5f, FontWeight.Bold)
+            // La taille est au-dessus de la courbe (sur le ciel), la période dessous (sur l'eau, toujours sombre : texte blanc).
+            haloText(formatDecimal(hourly.waveHeight, 1, ',') + " m", p.x, p.y - 26.dp.toPx(), 12f, FontWeight.ExtraBold, nacre, halo)
+            haloText("${hourly.wavePeriod.roundToInt()} s", p.x, p.y + 8.dp.toPx(), 10.5f, FontWeight.Bold, Color.White, Color(0xFF0B121A))
             drawCircle(nacre.copy(alpha = 0.9f), radius = 3.6.dp.toPx(), center = p)
             drawCircle(nacre.copy(alpha = 0.35f), radius = 6.dp.toPx(), center = p, style = Stroke(1.2.dp.toPx()))
         }
