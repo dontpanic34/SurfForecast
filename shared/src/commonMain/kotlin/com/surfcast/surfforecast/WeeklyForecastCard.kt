@@ -331,6 +331,7 @@ internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifi
     val textMeasurer = rememberTextMeasurer()
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp)
+    val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
     Canvas(modifier = modifier) {
         val padTop = 16.dp.toPx()
         val usableH = size.height - padTop - 16.dp.toPx()
@@ -340,7 +341,14 @@ internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifi
             val y = padTop + usableH * (1f - (value / niceMax).toFloat())
             val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
             // Graduations DANS la courbe, collées à gauche : mêmes marges à gauche et à droite, comme le déroulé.
-            drawText(layout, topLeft = Offset(4.dp.toPx(), y - layout.size.height - 1.dp.toPx()))
+            val labelTop = y - layout.size.height - 1.dp.toPx()
+            drawRoundRect(
+                color = labelBg,
+                topLeft = Offset(2.dp.toPx(), labelTop),
+                size = Size(layout.size.width + 4.dp.toPx(), layout.size.height.toFloat()),
+                cornerRadius = CornerRadius(3.dp.toPx())
+            )
+            drawText(layout, topLeft = Offset(4.dp.toPx(), labelTop))
         }
     }
 }

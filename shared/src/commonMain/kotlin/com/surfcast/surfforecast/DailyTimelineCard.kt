@@ -120,7 +120,10 @@ fun DailyTimelineCard(
 
     // Point 3 : score par heure (0-100), sert a colorer la courbe segment par segment.
     // Score négatif = trop gros pour le niveau (violet).
-    val scores = curveHours.map { hourly ->
+    // Notation avec la mémoire du vent : la mer ne devient pas « glacée » une heure après 30 km/h de vent de mer.
+    val scoring = hoursWithWindMemory(selectedDate, groupedByDate).associateBy { it.rawTime }
+    val scores = curveHours.map { shown ->
+        val hourly = scoring[shown.rawTime] ?: shown
         val rating = calculateSlotRating(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, tideInfo), tidePreference, tideInfo)
         if (rating.tooBig) -1 else rating.score
     }
@@ -294,34 +297,6 @@ fun DailyTimelineCard(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             when {
-                                isFirst && sun != null -> {
-                                    SunEventIcon(
-                                        isSunrise = true,
-                                        color = onSurfaceColor.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Text(
-                                        text = sun.sunrise.formatHHmm(),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = onSurfaceColor.copy(alpha = 0.6f),
-                                        maxLines = 1
-                                    )
-                                }
-                                isLast && sun != null -> {
-                                    SunEventIcon(
-                                        isSunrise = false,
-                                        color = onSurfaceColor.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Text(
-                                        text = sun.sunset.formatHHmm(),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = onSurfaceColor.copy(alpha = 0.6f),
-                                        maxLines = 1
-                                    )
-                                }
                                 else -> {
                                     Text(
                                         text = "${hourly.rawTime.hour.toString().padStart(2, '0')}h",
@@ -333,6 +308,26 @@ fun DailyTimelineCard(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+
+                // Lever et coucher du soleil, à part : les colonnes ci-dessus restent de vraies heures.
+                if (sun != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SunEventIcon(isSunrise = true, color = onSurfaceColor.copy(alpha = 0.6f), modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(sun.sunrise.formatHHmm(), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(sun.sunset.formatHHmm(), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1)
+                            Spacer(modifier = Modifier.width(3.dp))
+                            SunEventIcon(isSunrise = false, color = onSurfaceColor.copy(alpha = 0.6f), modifier = Modifier.size(12.dp))
                         }
                     }
                 }
@@ -555,6 +550,8 @@ private fun DailyTimelineSwellCanvas(
     val textMeasurer = rememberTextMeasurer()
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
     val periodTextStyle = TextStyle(color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    // Fond léger derrière les graduations (couleur de l'encart : marche en clair comme en sombre).
+    val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
 
     Canvas(modifier = modifier) {
         val w = size.width
@@ -586,7 +583,14 @@ private fun DailyTimelineSwellCanvas(
                 strokeWidth = 0.8.dp.toPx()
             )
             val axisLayout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
-            drawText(axisLayout, topLeft = Offset(4.dp.toPx(), y - axisLayout.size.height - 1.dp.toPx()))
+            val labelTop = y - axisLayout.size.height - 1.dp.toPx()
+            drawRoundRect(
+                color = labelBg,
+                topLeft = Offset(2.dp.toPx(), labelTop),
+                size = androidx.compose.ui.geometry.Size(axisLayout.size.width + 4.dp.toPx(), axisLayout.size.height.toFloat()),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
+            )
+            drawText(axisLayout, topLeft = Offset(4.dp.toPx(), labelTop))
         }
 
         val points = hours.mapIndexed { index, item ->

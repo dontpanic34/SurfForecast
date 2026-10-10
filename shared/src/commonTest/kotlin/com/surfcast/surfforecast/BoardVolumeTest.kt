@@ -51,8 +51,8 @@ class BoardVolumeTest {
         // Xero Gravity 31,5 L pour 81 kg (≈ 0,39 L/kg) : un ratio de confirmé.
         assertEquals("confirmed", levelForRatio(31.5 / 81))
         val range = volumeRangeFor("confirmed", 80)
-        assertEquals(28.0, range.start, 0.01)
-        assertEquals(34.4, range.endInclusive, 0.01)
+        assertEquals(29.6, range.start, 0.01)
+        assertEquals(36.0, range.endInclusive, 0.01)
     }
 
     @Test
@@ -81,14 +81,14 @@ class BoardVolumeTest {
 
     @Test
     fun recommendedVolumeMatchesTheShopReferenceExample() {
-        // 81 kg, 40 ans, forme excellente, Confirmé (index 4), planche courte : 30,62 L, plage 29,87 à 31,39.
+        // 81 kg, 40 ans, forme excellente, Confirmé (index 4), planche courte : 33,2 L.
         val body = BodyState(ageYears = 40, weightKg = 81, fitness = 0)
         val rec = recommendedVolumeL(body, 4)
         assertNotNull(rec)
-        assertEquals(30.62, rec, 0.01)
+        assertEquals(33.23, rec, 0.01)
         val range = recommendedRange(rec)
-        assertEquals(29.85, range.start, 0.05)
-        assertEquals(31.38, range.endInclusive, 0.05)
+        assertEquals(32.40, range.start, 0.05)
+        assertEquals(34.06, range.endInclusive, 0.05)
         assertNull(recommendedVolumeL(BodyState(ageYears = 40), 4))
         // Plus âgé, moins en forme, planche longue : plus de volume.
         val older = recommendedVolumeL(BodyState(ageYears = 55, weightKg = 81, fitness = 2), 4, family = "longboard")
@@ -101,7 +101,7 @@ class BoardVolumeTest {
         assertEquals(54.4, volumeTableValue(0, 80), 0.1)
         assertEquals(43.2, volumeTableValue(1, 80), 0.1)
         assertEquals(33.6, volumeTableValue(2, 80), 0.1)
-        assertEquals(28.0, volumeTableValue(4, 80), 0.1)
+        assertEquals(30.4, volumeTableValue(4, 80), 0.1)
         assertEquals(2, BodyState().levelIndex("intermediate"))
         assertEquals(4, BodyState().levelIndex("confirmed"))
         assertEquals(1, BodyState(volumeLevel = 1).levelIndex("expert"))
@@ -133,6 +133,15 @@ class BoardVolumeTest {
         assertEquals("27–29", volumeRangeText(28.0))
         assertEquals("31–34", volumeRangeText(32.15))
         assertEquals("52–57", volumeRangeText(54.4))
+    }
+
+    @Test
+    fun expertShortboardVolumeMatchesProReferences() {
+        // Slater 72 kg ≈ 24-25 L, Medina 80 kg = 29 L, Wright 86 kg = 31,5 L (à ±5 %).
+        for ((kg, ref) in listOf(72 to 24.5, 80 to 29.0, 86 to 31.5)) {
+            val v = recommendedVolumeL(BodyState(ageYears = 25, weightKg = kg, fitness = 0), 5)!!
+            assertTrue(v in ref * 0.95..ref * 1.06, "$kg kg : $v L pour $ref L")
+        }
     }
 
     @Test
