@@ -113,7 +113,7 @@ fun OnboardingDialog(
                     }
 
                     Text(
-                        "Tu pourras affiner (énergie, vent, planches…) dans ⚙ Réglages › Mon profil.",
+                        "Tu pourras affiner (taille des vagues, vent, planches…) dans ⚙ Réglages › Mon profil.",
                         fontSize = 12.sp,
                         color = colors.onSurfaceVariant
                     )

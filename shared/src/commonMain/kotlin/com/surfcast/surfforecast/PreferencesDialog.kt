@@ -68,8 +68,10 @@ fun SurfPreferencesDialog(
     onThemeModeChanged: (String) -> Unit = {},
     customProfile: String = "",
     onCustomProfileSaved: (String) -> Unit = {},
-    tidePreference: String = "any",
-    onTidePreferenceChanged: (String) -> Unit = {},
+    homeView: String = "classic",
+    onHomeViewChanged: (String) -> Unit = {},
+    exampleAnswers: String = "",
+    onExampleAnswersChanged: (String) -> Unit = {},
     engineConfig: ForecastEngineConfig,
     onEngineConfigChanged: (ForecastEngineConfig) -> Unit,
     onViewLogs: () -> Unit,
@@ -142,26 +144,26 @@ fun SurfPreferencesDialog(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Chaque heure recoit une note de 0 a 100, calculee a partir de l'energie de la houle (hauteur x periode), du vent et de la maree.",
+                        text = "Chaque heure recoit une note de 0 a 100, calculee a partir de l'energie de la houle (hauteur x periode), de la direction, du vent et du clapot. La maree n'entre pas dans la note.",
                         fontSize = 12.sp,
                         color = colors.onSurfaceVariant,
                         lineHeight = 16.sp
                     )
                     ModelDescItem(
                         name = "1. Énergie de la houle",
-                        desc = "Plus la houle est grosse et longue (période), plus l'énergie est élevée. Une houle plate (< 0,4 m) donne 0. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde. Au-delà du plafond de ton niveau, c'est « trop gros » (violet), pas « mauvais »."
+                        desc = "Plus la houle est grosse et longue (période), plus l'énergie est élevée. Une houle plate (< 0,4 m) donne 0. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde, et la note monte avec la taille. Au-dessus de ton confort, c'est « challengeant » (rose) ; bien au-delà de ton maximum, « trop gros » (violet), pas « mauvais »."
                     )
                     ModelDescItem(
                         name = "2. Vent",
-                        desc = "Offshore (de la terre) : le meilleur. Onshore (de la mer) : presque aussi bon quand il y a très peu de vent, puis de plus en plus mauvais. Les rafales comptent : de fortes rafales gâchent la session quelle que soit la direction."
+                        desc = "Offshore (de la terre) : le meilleur. Onshore (de la mer) : presque aussi bon quand il y a très peu de vent, puis de plus en plus mauvais. Side-shore : entre les deux. Plus la vague est grosse, moins le vent la gêne. Les rafales comptent à moitié de leur écart avec le vent moyen, et de fortes rafales gâchent la session."
                     )
                     ModelDescItem(
                         name = "3. Direction et clapot",
-                        desc = "Une houle de face est mieux notée qu'une houle de travers. Un clapot (mer de vent) important par rapport à la houle baisse la note."
+                        desc = "Une houle de face est mieux notée qu'une houle de côté. Un clapot (mer de vent) important par rapport à la houle baisse la note."
                     )
                     ModelDescItem(
                         name = "4. Ton niveau",
-                        desc = "Le profil règle l'énergie idéale, le plafond « trop gros », mais aussi la tolérance au vent, aux rafales, au clapot et à la période. La direction du vent compte aussi selon le niveau : l'offshore creuse la vague et fait les tubes, ce qu'un débutant ignore, qu'un intermédiaire apprécie avec modération et qu'un confirmé ou un expert recherche. Tout ce qui dégrade la vague ne pèse pas pareil : un expert, qui cherche le plein potentiel de la vague, y est plus sensible qu'un débutant qui prend de la mousse.\nDébutant : les mousses, petites vagues douces (trop gros dès 250 kJ).\nIntermédiaire : commence à aller au large et à suivre les vagues (trop gros dès 450).\nConfirmé : autonome, surfe seul, préfère un peu de puissance (trop gros dès 700).\nExpert : plein potentiel de la vague, aucune limite.\nPersonnalisé : tu règles tout toi-même."
+                        desc = "Le profil règle ta plus petite et ta plus grosse vague (le plafond « trop gros »), mais aussi la tolérance au vent, aux rafales, au clapot et à la période. La direction du vent compte aussi selon le niveau : l'offshore creuse la vague et fait les tubes, ce qu'un débutant ignore, qu'un intermédiaire apprécie avec modération et qu'un confirmé ou un expert recherche. Tout ce qui dégrade la vague ne pèse pas pareil : un expert, qui cherche le plein potentiel de la vague, y est plus sensible qu'un débutant qui prend de la mousse.\nDébutant : les mousses, petites vagues douces (jusqu'à 1,3 m à 10 s).\nIntermédiaire : commence à aller au large et à suivre les vagues (jusqu'à 1,7 m à 10 s).\nConfirmé : autonome, surfe seul, préfère un peu de puissance (jusqu'à 2 m à 11 s).\nExpert : plein potentiel de la vague, aucune limite.\nPersonnalisé : tu règles tout toi-même."
                     )
                 }
             },
@@ -369,15 +371,15 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "profile") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        ProfileBenefitsCard()
-                        SurferProfileSection(
+                        ProfilePage(
                             surferLevel = surferLevel,
                             onLevelChanged = onSurferLevelChanged,
                             savedCustom = customProfile,
                             onCustomSaved = onCustomProfileSaved,
+                            exampleAnswers = exampleAnswers,
+                            onExampleAnswersChanged = onExampleAnswersChanged,
                             onInfo = { showScoreInfo = true }
                         )
-                        TidePreferenceSection(current = tidePreference, onChange = onTidePreferenceChanged)
                         HorizontalDivider(color = colors.onBackground.copy(alpha = 0.1f))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             QuiverIcon(color = colors.onBackground, modifier = Modifier.size(20.dp))
@@ -464,6 +466,24 @@ fun SurfPreferencesDialog(
                                     }
                                 }
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Vue de l'accueil",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary
+                            )
+                            PillRow(listOf("Classique", "Tendance"), if (homeView == "trend") 1 else 0) {
+                                onHomeViewChanged(if (it == 1) "trend" else "classic")
+                            }
+                            Text(
+                                if (homeView == "trend")
+                                    "Comme la vue classique, avec en plus le libellé de la note et sa tendance (« Correct à Bon »), sous « Maintenant », dans le déroulé et sous les étoiles."
+                                else
+                                    "Courbe de houle, liseré coloré et étoiles : la vue d'origine.",
+                                fontSize = 11.5.sp,
+                                color = colors.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Thème",

@@ -580,13 +580,23 @@ class SurfController(
         profileNudgeHidden = true
     }
 
-    // Marée préférée : "any", "rising" (montant), "falling" (descendant), "high" (pleine mer), "low" (basse mer).
-    var tidePreference by mutableStateOf(prefs.getString("tide_preference", "any") ?: "any")
+    // Vue de l'accueil : « classic » (courbe, liseré, étoiles) ou « trend » (en plus, le libellé avec tendance : « Correct à Bon »).
+    var homeView by mutableStateOf(prefs.getString("home_view", "classic") ?: "classic")
         private set
 
-    fun changeTidePreference(preference: String) {
-        tidePreference = preference
-        prefs.putString("tide_preference", preference)
+    fun changeHomeView(view: String) {
+        homeView = view
+        prefs.putString("home_view", view)
+    }
+
+    // Réponses de l'étape « Tes notes » de l'assistant de profil (« indice:réponse,… »), qui pèsent sur les notes.
+    var exampleAnswers by mutableStateOf(prefs.getString("example_answers", "") ?: "")
+        private set
+
+    fun changeExampleAnswers(serialized: String) {
+        exampleAnswers = serialized
+        prefs.putString("example_answers", serialized)
+        markProfileReviewed()
     }
 
     // Profil Personnalisé gardé à part : passer sur Débutant (pour montrer à un élève) ne l'efface pas.

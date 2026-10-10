@@ -202,8 +202,10 @@ fun MainScreen(
             onThemeModeChanged = { viewModel.changeThemeMode(it) },
             customProfile = viewModel.customProfile,
             onCustomProfileSaved = { viewModel.saveCustomProfile(it) },
-            tidePreference = viewModel.tidePreference,
-            onTidePreferenceChanged = { viewModel.changeTidePreference(it); viewModel.markProfileReviewed() },
+            homeView = viewModel.homeView,
+            onHomeViewChanged = { viewModel.changeHomeView(it) },
+            exampleAnswers = viewModel.exampleAnswers,
+            onExampleAnswersChanged = { viewModel.changeExampleAnswers(it) },
             engineConfig = viewModel.engineConfig,
             onEngineConfigChanged = { viewModel.updateEngineConfig(it) },
             onViewLogs = {
@@ -463,10 +465,17 @@ fun MainScreen(
                             val night = groupedByDate[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 21 } +
                                 groupedByDate[date].orEmpty().filter { it.rawTime.hour < 7 }
                             dayQualityScore(
-                                hours, idealSwellDirection, viewModel.surferLevel, state.dailyTides[date], viewModel.tidePreference,
+                                hours, idealSwellDirection, viewModel.surferLevel, state.dailyTides[date],
                                 offshoreNight = hasOffshoreNight(night, idealSwellDirection)
                             )?.let { starsForScore(it) }
                         }
+
+                        // Vue « Tendance » : le libellé de la meilleure heure de chaque jour (vide en vue classique).
+                        val dailyLabels: List<SlotRating?> = if (viewModel.homeView == "trend") {
+                            availableDates.map { date ->
+                                bestRatingOfDay(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
+                            }
+                        } else emptyList()
 
                         val dailyFeelsLike = availableDates.map { date ->
                             state.dailySummaries[date]?.avgFeelsLike ?: 20
@@ -592,8 +601,7 @@ fun MainScreen(
                                                         hourlyModel = hourlyModel,
                                                         tideInfo = dayTide,
                                                         forecastScore = calculateSlotRating(
-                                                            hourlyModel, idealSwellDirection, viewModel.surferLevel,
-                                                            isNearHighTide(hourlyModel, dayTide), viewModel.tidePreference, dayTide
+                                                            hourlyModel, idealSwellDirection, viewModel.surferLevel
                                                         ).let { if (it.tooBig) -1 else it.score }
                                                     )
                                                 }
@@ -649,6 +657,7 @@ fun MainScreen(
                                             dailyHeights = dailyHeights,
                                             dailyFeelsLike = dailyFeelsLike,
                                             dailyStars = dailyStars,
+                                            dailyLabels = dailyLabels,
                                             dailyWaterTemps = dailyWaterTemps,
                                             fixedMaxScale = fixedMaxScale,
                                             selectedIndex = selectedIndex,
@@ -657,7 +666,6 @@ fun MainScreen(
                                             onSurfaceColor = onSurfaceColor,
                                             idealSwellDirection = idealSwellDirection,
                                             surferLevel = viewModel.surferLevel,
-                                            tidePreference = viewModel.tidePreference,
                                             coachTargets = coachTargets
                                         )
                                     }
@@ -677,6 +685,12 @@ fun MainScreen(
                                         seaTemperature = (closest.seaTemperature
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
+                                        rating = if (viewModel.homeView == "trend") {
+                                            calculateSlotRating(
+                                                hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
+                                                idealSwellDirection, viewModel.surferLevel
+                                            )
+                                        } else null,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
                                     )
                                 }
@@ -724,7 +738,7 @@ fun MainScreen(
                         "Renseigner ton profil est LE réglage à faire en premier.\n" +
                             "• Sans profil : les notes sont celles d'un surfeur moyen, et un message t'invite à remplir ton profil.\n" +
                             "• Avec ton profil : les scores, les couleurs et la limite violette « trop gros » sont calculés pour toi.\n" +
-                            "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou ton réglage personnalisé (énergie de vague, tolérance au vent, aux rafales, au clapot).\n" +
+                            "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou ton réglage personnalisé (taille de vague, tolérance au vent, aux rafales, au clapot).\n" +
                             "• Tes planches : ajoute-les avec leur volume, tu les retrouveras dans le journal.\n" +
                             "Une minute suffit, et les scores, les étoiles et le « trop gros » deviennent les tiens.",
                         actionLabel = "Renseigner mon profil maintenant",
@@ -888,6 +902,7 @@ fun DynamicCardsSection(
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
     dailyStars: List<Float?>,
+    dailyLabels: List<SlotRating?> = emptyList(),
     dailyWaterTemps: List<Int?>,
     fixedMaxScale: Float,
     selectedIndex: Int,
@@ -896,7 +911,6 @@ fun DynamicCardsSection(
     onSurfaceColor: Color,
     idealSwellDirection: Int?,
     surferLevel: String,
-    tidePreference: String = "any",
     currentHour: Int = nowLocalDateTime().hour,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null
 ) {
@@ -1010,6 +1024,7 @@ fun DynamicCardsSection(
                                 dailyFeelsLike = dailyFeelsLike,
                                 dailyWaterTemps = dailyWaterTemps,
                                 dailyStars = dailyStars,
+                                dailyLabels = dailyLabels,
                                 dailySunInfo = dailySunInfo,
                                 fixedMaxScale = fixedMaxScale,
                                 selectedIndex = selectedIndex,
@@ -1036,7 +1051,7 @@ fun DynamicCardsSection(
                                 windUnit = viewModel.windUnit,
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
-                                tidePreference = tidePreference,
+                                showTrend = viewModel.homeView == "trend",
                                 scaleRawMax = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) }
                                     .maxOfOrNull { it.waveHeight },
                                 selectedHour = selectedHourlyItem,

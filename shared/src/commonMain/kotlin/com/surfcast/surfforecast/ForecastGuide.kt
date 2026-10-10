@@ -51,7 +51,7 @@ private val guideSections = listOf(
         "🧭", "La direction",
         "On donne toujours la direction d'où vient la houle (ou le vent).\n" +
             "• Plein face à la plage : la houle rentre bien.\n" +
-            "• De travers : une partie de la force est perdue.\n" +
+            "• Side-shore : une partie de la force est perdue.\n" +
             "• À 90° de la plage (parallèle à la côte) : elle ne rentre plus.\n" +
             "Chaque spot a une orientation que tu peux corriger dans Paramètres › Prévisions."
     ),
@@ -59,7 +59,7 @@ private val guideSections = listOf(
         "💨", "Le vent",
         "• Offshore (vent de terre) : il souffle contre la vague, la lisse et la tient debout. C'est le meilleur.\n" +
             "• Onshore (vent de mer) : il écrase et hache les vagues.\n" +
-            "• Travers : entre les deux.\n" +
+            "• Side-shore : entre les deux.\n" +
             "Moins de 8 km/h est léger, 8 à 18 modéré, plus de 18 fort. Les rafales comptent : un vent de 15 avec des rafales à 35 gâche la surface. " +
             "Le « forcit / vire » du widget annonce un changement de vent à venir."
     ),
@@ -71,11 +71,12 @@ private val guideSections = listOf(
     ),
     GuideSection(
         "🎯", "Le score et les étoiles",
-        "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (rafales comprises) et clapot.\n" +
-            "• Rouge foncé : mauvais. Rouge : médiocre. Orange : correct.\n" +
-            "• Jaune : bon. Vert : très bon. Turquoise : excellent.\n" +
-            "• Violet : trop gros pour ton niveau (plafond : débutant 250 kJ, intermédiaire 450, confirmé 700, expert aucun). Ce n'est pas mauvais, c'est juste au-dessus de ce que ton niveau gère.\n" +
-            "Ton profil règle aussi l'importance de l'offshore (il creuse la vague : surtout pour confirmés et experts) et la tolérance au vent, aux rafales, au clapot et à la période : un expert est plus exigeant qu'un débutant. Le profil Personnalisé te laisse tout ajuster.\n" +
+        "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (rafales comprises) et clapot. Plus la vague est grosse, moins le vent la gêne.\n" +
+            "• Du meilleur au pire : cyan = parfait, vert = très bon, vert-jaune = bon, jaune = correct, orange = médiocre, rouge = mauvais.\n" +
+            "• Rose : challengeant, costaud mais faisable. Avec un offshore, c'est creux et puissant ; avec un vent de mer, gros mais moins creux. Si c'est trop creux pour ton niveau, la note baisse.\n" +
+            "• Violet : trop gros pour ton niveau. Gris clair : trop petit. Orange foncé : trop de vent. Ce n'est pas la même chose que « mauvais ».\n" +
+            "Entre deux niveaux, le libellé dit vers où ça va : « Correct à Bon ».\n" +
+            "Ton profil règle la taille de ta plus petite et de ta plus grosse vague, la tolérance au vent de mer, aux rafales, au clapot et à la période : un expert est plus exigeant qu'un débutant. Tu peux aussi noter des exemples de vagues pour que les couleurs te ressemblent.\n" +
             "Les étoiles du jour (0,5 à 5) mélangent le meilleur moment et la durée des bonnes conditions : un jour propre toute la journée vaut plus qu'une seule bonne heure.\n" +
             "La note ne connaît pas ton spot (bancs de sable, courants) : regarde la webcam avant de partir."
     ),
