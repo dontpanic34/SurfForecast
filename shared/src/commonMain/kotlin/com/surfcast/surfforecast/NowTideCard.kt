@@ -22,8 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * « Maintenant » + la marée, en deux lignes lisibles (remplace l'ancien bandeau sombre) :
- * houle / période / vent de l'heure actuelle, puis pleine mer, basse mer et coefficient avec leurs noms.
+ * Les conditions actuelles du spot, écrites comme un titre en haut à gauche : « Maintenant · Montalivet · 14 h », puis
+ * houle, période, vent, eau, marée haute, marée basse et coefficient à la suite. À droite, le libellé de la note de l'heure.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -32,8 +32,9 @@ fun NowTideCard(
     tideInfo: DailyTideInfo?,
     windUnit: String,
     seaTemperature: Int? = null,
-    // La note de l'heure, avec son libellé et sa tendance (« Correct à Bon »); null = pas de libellé.
+    // La note de l'heure, avec son libellé et sa tendance (null = pas de libellé).
     rating: SlotRating? = null,
+    spotName: String = "",
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
@@ -44,6 +45,11 @@ fun NowTideCard(
     val high = tideInfo?.highTideTime
     val low = tideInfo?.lowTideTime
     val coef = tideInfo?.coefficient
+    val title = buildString {
+        append("Maintenant")
+        if (spotName.isNotBlank()) append(" · ").append(spotName)
+        append(" · ").append(hourlyModel.rawTime.hour).append(" h")
+    }
 
     Column(
         modifier = modifier
@@ -51,33 +57,32 @@ fun NowTideCard(
             .clip(RoundedCornerShape(12.dp))
             .background(colors.surface)
             .padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        if (rating != null) {
-            val band = conditionBand(rating)
-            Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(band.color()).padding(horizontal = 12.dp, vertical = 4.dp)) {
-                Text(bandLabelWithTrend(rating).uppercase(), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = band.onColor(), maxLines = 1)
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f),
+                maxLines = 1, modifier = Modifier.weight(1f)
+            )
+            if (rating != null) {
+                val band = conditionBand(rating)
+                Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(band.color()).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                    Text(bandLabelWithTrend(rating).uppercase(), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = band.onColor(), maxLines = 1)
+                }
             }
         }
-        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Maintenant", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f))
+        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                "${formatDecimal(hourlyModel.waveHeight, 1)} m · ${hourlyModel.wavePeriod.toInt()} s",
+                "Houle ${formatDecimal(hourlyModel.waveHeight, 1)} m · ${hourlyModel.wavePeriod.toInt()} s",
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface
             )
             Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = windColor)
             if (seaTemperature != null) {
                 Text("Eau $seaTemperature °C", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = waterTempColor(), maxLines = 1)
             }
-        }
-        if (high != null || low != null) {
-            FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Marée", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f))
-                if (high != null) Text("▲ Haute $high", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF42A5F5), maxLines = 1)
-                if (low != null) Text("▼ Basse $low", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF26A69A), maxLines = 1)
-                if (coef != null) Text("Coef. $coef", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
-            }
+            if (high != null) Text("▲ Haute $high", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF42A5F5), maxLines = 1)
+            if (low != null) Text("▼ Basse $low", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF26A69A), maxLines = 1)
+            if (coef != null) Text("Coef. $coef", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
         }
     }
 }

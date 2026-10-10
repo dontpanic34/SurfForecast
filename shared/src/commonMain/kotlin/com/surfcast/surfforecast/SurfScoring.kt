@@ -440,6 +440,20 @@ fun bestRatingOfDay(daylightHours: List<HourlyUiModel>, idealSwellDirection: Int
     return ratings.filter { !it.tooBig }.maxByOrNull { it.score } ?: ratings.first()
 }
 
+/** Les teintes de la journée dans l'ordre des horaires (matin, milieu, après-midi), sans doublon consécutif : 1 à 3 bandes. */
+fun dayBandsInTimeOrder(daylightHours: List<HourlyUiModel>, idealSwellDirection: Int?, surferLevel: String): List<ScoreBand> {
+    if (daylightHours.isEmpty()) return emptyList()
+    val ratings = daylightHours.sortedBy { it.rawTime }.map { calculateSlotRating(it, idealSwellDirection, surferLevel) }
+    val n = ratings.size
+    val chunks = if (n >= 3) 3 else n
+    val bands = (0 until chunks).map { c ->
+        val part = ratings.subList(c * n / chunks, (c + 1) * n / chunks)
+        val best = part.filter { !it.tooBig }.maxByOrNull { it.score } ?: part.first()
+        conditionBand(best)
+    }
+    return bands.fold(emptyList()) { acc, b -> if (acc.lastOrNull() == b) acc else acc + b }
+}
+
 fun findBestSlot(
     dailyHours: List<HourlyUiModel>,
     idealSwellDirection: Int?,

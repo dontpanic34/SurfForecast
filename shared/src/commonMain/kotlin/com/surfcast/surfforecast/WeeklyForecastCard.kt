@@ -83,6 +83,7 @@ fun WeeklyForecastCard(
     dailyStars: List<Float?> = emptyList(),
     // La meilleure heure de chaque jour, pour le libellé sous les étoiles (vide = pas de libellé).
     dailyLabels: List<SlotRating?> = emptyList(),
+    dailyBands: List<List<ScoreBand>> = emptyList(),
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     fixedMaxScale: Float,
     selectedIndex: Int,
@@ -179,7 +180,7 @@ fun WeeklyForecastCard(
                                                 StarsRow(value = stars, starSize = 13.dp)
                                                 val label = dailyLabels.getOrNull(index)
                                                 if (label != null) {
-                                                    val labelBands = trendBands(label)
+                                                    val labelBands = dailyBands.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: trendBands(label)
                                                     val labelBrush = Brush.horizontalGradient(labelBands.map { it.color() }.let { if (it.size == 1) listOf(it[0], it[0]) else it })
                                                     Box(
                                                         modifier = Modifier.padding(top = 2.dp, start = 2.dp, end = 2.dp)

@@ -599,15 +599,6 @@ private fun DailyTimelineSwellCanvas(
                 end = Offset(w, y),
                 strokeWidth = 0.8.dp.toPx()
             )
-            val axisLayout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
-            val labelTop = y - axisLayout.size.height - 1.dp.toPx()
-            drawRoundRect(
-                color = labelBg,
-                topLeft = Offset(2.dp.toPx(), labelTop),
-                size = androidx.compose.ui.geometry.Size(axisLayout.size.width + 4.dp.toPx(), axisLayout.size.height.toFloat()),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
-            )
-            drawText(axisLayout, topLeft = Offset(4.dp.toPx(), labelTop))
         }
 
         val points = hours.mapIndexed { index, item ->
@@ -694,6 +685,21 @@ private fun DailyTimelineSwellCanvas(
             val nowPoint = points[nowIndex]
             drawCircle(color = Color.White, radius = 3.8.dp.toPx(), center = nowPoint)
             drawCircle(color = Color(0xFFE53935), radius = 2.6.dp.toPx(), center = nowPoint)
+        }
+
+        // Graduations en dernier, par-dessus le remplissage et la courbe : le fond léger derrière les chiffres reste
+        // visible (comme dans la vue semaine, où l'échelle est dessinée au-dessus).
+        gridValues.forEach { value ->
+            val y = padY + usableH * (1f - (value / niceMax).toFloat())
+            val axisLayout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
+            val labelTop = y - axisLayout.size.height - 1.dp.toPx()
+            drawRoundRect(
+                color = labelBg,
+                topLeft = Offset(2.dp.toPx(), labelTop),
+                size = androidx.compose.ui.geometry.Size(axisLayout.size.width + 4.dp.toPx(), axisLayout.size.height.toFloat()),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
+            )
+            drawText(axisLayout, topLeft = Offset(4.dp.toPx(), labelTop))
         }
     }
 }
