@@ -42,12 +42,52 @@ class SurfScoringTest {
     }
 
     @Test
+    fun windMemoryKeepsTheSeaRoughAfterTheWindDrops() {
+        val hours = listOf(
+            hour(8, windKmh = 30, windDir = "O"),
+            hour(9, windKmh = 5, windDir = "E"),
+            hour(10, windKmh = 5, windDir = "E"),
+            hour(11, windKmh = 5, windDir = "E")
+        )
+        val adjusted = windMemoryAdjusted(hours)
+        assertEquals(30, adjusted[0].windSpeedKmh)
+        assertEquals(23, adjusted[1].windSpeedKmh)   // 30 x 0,75 = 22,5 -> 23, avec la direction du vent de mer
+        assertEquals("O", adjusted[1].windDirectionStr)
+        assertEquals(17, adjusted[2].windSpeedKmh)
+        assertEquals(13, adjusted[3].windSpeedKmh)
+        // Une heure à 5 km/h juste après 30 km/h de vent de mer ne peut donc plus être « excellente ».
+        val after = calculateSlotScore(adjusted[1], 270, "confirmed", false)
+        val calm = calculateSlotScore(hour(9, windKmh = 5, windDir = "E"), 270, "confirmed", false)
+        assertTrue(after < calm - 40, "juste après 30 km/h : $after contre $calm")
+    }
+
+    @Test
+    fun windMemoryDoesNotChangeAStrongerNewWind() {
+        val hours = listOf(hour(8, windKmh = 10, windDir = "O"), hour(9, windKmh = 25, windDir = "N"))
+        val adjusted = windMemoryAdjusted(hours)
+        assertEquals(25, adjusted[1].windSpeedKmh)
+        assertEquals("N", adjusted[1].windDirectionStr)
+    }
+
+    @Test
+    fun dayScoreIsHalfMorningHalfAfternoon() {
+        val good = { it: Int -> hour(it, windKmh = 5, windDir = "E") }
+        val bad = { it: Int -> hour(it, windKmh = 26, windDir = "O") }
+        val whole = dayQualityScore((8..18).map(good), 270, "confirmed", null)!!
+        val morningOnly = dayQualityScore((8..12).map(good) + (13..18).map(bad), 270, "confirmed", null)!!
+        val afternoonOnly = dayQualityScore((8..12).map(bad) + (13..18).map(good), 270, "confirmed", null)!!
+        assertTrue(whole >= 90, "journée propre : $whole")
+        assertTrue(morningOnly in 35..65, "bon le matin seulement : $morningOnly")
+        assertTrue(afternoonOnly in 35..65, "bon l'après-midi seulement : $afternoonOnly")
+    }
+
+    @Test
     fun dayScoreRewardsAWholeGoodDayOverASingleGoodHour() {
         val goodAllDay = (8..18).map { hour(it, windKmh = 5, windDir = "E") }
         val oneGoodHour = (8..18).map { if (it == 11) hour(it, windKmh = 5, windDir = "E") else hour(it, windKmh = 24, windDir = "O") }
         val whole = dayQualityScore(goodAllDay, 270, "confirmed", null)!!
         val single = dayQualityScore(oneGoodHour, 270, "confirmed", null)!!
-        assertTrue(whole - single >= 25, "journée propre $whole contre une seule bonne heure $single")
+        assertTrue(whole - single >= 40, "journée propre $whole contre une seule bonne heure $single")
     }
 
     @Test

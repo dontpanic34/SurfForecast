@@ -439,8 +439,10 @@ fun MainScreen(
                             dailyData.maxByOrNull { it.waveHeight }?.waveHeight ?: 0.0
                         }
 
+                        // Notation avec la mémoire du vent (la mer garde le vent qui vient de souffler).
+                        val scoringByDate = availableDates.associateWith { hoursWithWindMemory(it, groupedByDate) }
                         val dailyStars = availableDates.map { date ->
-                            val hours = daylightHoursFor(date, groupedByDate, state.dailySunInfo)
+                            val hours = daylightHoursFor(date, scoringByDate, state.dailySunInfo)
                             // Nuit offshore : soirée de la veille (21 h et après) + petit matin (avant 7 h).
                             val night = groupedByDate[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 21 } +
                                 groupedByDate[date].orEmpty().filter { it.rawTime.hour < 7 }

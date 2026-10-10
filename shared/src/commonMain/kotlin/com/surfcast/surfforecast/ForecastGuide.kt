@@ -72,7 +72,7 @@ private val guideSections = listOf(
     GuideSection(
         "🎯", "Le score et les étoiles",
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (rafales comprises) et clapot.\n" +
-            "• Gris : à éviter. Rouge : médiocre. Orange : correct.\n" +
+            "• Rouge foncé : à éviter. Rouge : médiocre. Orange : correct.\n" +
             "• Jaune : bon. Vert : très bon. Turquoise : excellent.\n" +
             "• Violet : trop gros pour ton niveau (plafond : débutant 250 kJ, intermédiaire 450, confirmé 700, expert aucun). Ce n'est pas mauvais, c'est juste au-dessus de ce que ton niveau gère.\n" +
             "Ton profil règle aussi l'importance de l'offshore (il creuse la vague : surtout pour confirmés et experts) et la tolérance au vent, aux rafales, au clapot et à la période : un expert est plus exigeant qu'un débutant. Le profil Personnalisé te laisse tout ajuster.\n" +

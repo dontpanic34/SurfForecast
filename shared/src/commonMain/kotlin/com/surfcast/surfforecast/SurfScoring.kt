@@ -1,6 +1,9 @@
 @file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 import kotlinx.datetime.LocalTime
 import kotlin.math.PI
 import kotlin.math.abs
@@ -263,9 +266,48 @@ fun hasOffshoreNight(nightHours: List<HourlyUiModel>, beachFacing: Int?): Boolea
 }
 
 /**
- * Qualité d'une JOURNÉE (0-100) : 60 % du meilleur créneau + 40 % de la moyenne des heures de jour (une heure
- * excellente au milieu d'une journée de vent ne fait pas une bonne journée), plus 5 points si le vent a soufflé
- * offshore la nuit. Null = trop gros pour le profil toute la journée, ou pas de données.
+ * La mer garde en mémoire le vent qui vient de souffler : 30 km/h à 8 h, ce n'est pas « glacé » à 9 h. Pour la
+ * NOTATION (pas pour l'affichage), le vent d'une heure est au moins [keep] x celui de l'heure précédente (et garde sa
+ * direction) : 30 km/h de vent de mer donne environ 22, 17, 13 km/h les heures suivantes, même si le vent est tombé.
+ * [hours] doit couvrir assez de temps avant la période notée pour amorcer la mémoire.
+ */
+fun windMemoryAdjusted(hours: List<HourlyUiModel>, keep: Double = 0.75): List<HourlyUiModel> {
+    var memSpeed = 0.0
+    var memGust = 0.0
+    var memDir = ""
+    return hours.sortedBy { it.rawTime }.map { h ->
+        val speed = h.windSpeedKmh.toDouble()
+        val decayedSpeed = memSpeed * keep
+        val decayedGust = memGust * keep
+        if (speed >= decayedSpeed) {
+            memSpeed = speed
+            memDir = h.windDirectionStr
+        } else {
+            memSpeed = decayedSpeed
+        }
+        memGust = maxOf(h.windGustKmh.toDouble(), decayedGust)
+        if (memSpeed.roundToInt() == h.windSpeedKmh && memGust.roundToInt() == h.windGustKmh && memDir == h.windDirectionStr) h
+        else h.copy(windSpeedKmh = memSpeed.roundToInt(), windGustKmh = memGust.roundToInt(), windDirectionStr = memDir)
+    }
+}
+
+/**
+ * Les heures de [date] avec la mémoire du vent appliquée (amorcée par l'après-midi / la soirée de la veille).
+ * À utiliser pour NOTER ; l'affichage garde le vent réel.
+ */
+fun hoursWithWindMemory(date: LocalDate, grouped: Map<LocalDate, List<HourlyUiModel>>): List<HourlyUiModel> {
+    val previous = grouped[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 12 }
+    val today = grouped[date].orEmpty()
+    val adjusted = windMemoryAdjusted(previous + today)
+    val dates = today.map { it.rawTime }.toSet()
+    return adjusted.filter { it.rawTime in dates }
+}
+
+/**
+ * Qualité d'une JOURNÉE (0-100) : « bonne journée ou pas ? ». Moyenne de la meilleure fenêtre du MATIN et de la
+ * meilleure de l'APRÈS-MIDI (un jour bon la moitié du temps vaut la moitié), plus 5 points si le vent a soufflé offshore
+ * la nuit. Passer des heures déjà corrigées par [windMemoryAdjusted]. Null = trop gros pour le profil toute la
+ * journée, ou pas de données.
  */
 fun dayQualityScore(
     daylightHours: List<HourlyUiModel>,
@@ -280,11 +322,17 @@ fun dayQualityScore(
         calculateSlotRating(it, idealSwellDirection, surferLevel, isNearHighTide(it, dailyTide), tidePreference, dailyTide)
     }
     if (ratings.all { it.tooBig }) return null
-    val scores = ratings.map { if (it.tooBig) 0 else it.score }
     val slots = findBestSlotsOfDay(daylightHours, idealSwellDirection, surferLevel, dailyTide, tidePreference)
-    val best = listOfNotNull(slots.morning, slots.afternoon).maxOfOrNull { it.averageScore } ?: scores.max()
-    var day = 0.6 * best + 0.4 * scores.average()
-    if (offshoreNight && best > 0) day += 5.0
+    val halves = listOf(slots.morning, slots.afternoon).map { it?.averageScore }
+    // Une moitié sans créneau jouable compte 0 ; si une moitié n'a pas de données (jour en cours), on ne la compte pas.
+    val hasMorning = daylightHours.any { it.rawTime.hour < 13 }
+    val hasAfternoon = daylightHours.any { it.rawTime.hour >= 13 }
+    val parts = buildList {
+        if (hasMorning) add(halves[0] ?: 0)
+        if (hasAfternoon) add(halves[1] ?: 0)
+    }
+    var day = if (parts.isEmpty()) 0.0 else parts.average()
+    if (offshoreNight && day > 0) day += 5.0
     return day.roundToInt().coerceIn(0, 100)
 }
 
