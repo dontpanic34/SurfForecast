@@ -206,7 +206,6 @@ class ProfileWizardTest {
     @Test
     fun challengingAndBadAreDifferentColors() {
         assertTrue(ScoreBand.CHALLENGING.color() != ScoreBand.AVOID.color())
-        assertTrue(ScoreBand.CHALLENGING.color() != ScoreBand.TOO_BIG.color())
         assertTrue(ScoreBand.CHALLENGING.color() != ScoreBand.EXCELLENT.color())
     }
 

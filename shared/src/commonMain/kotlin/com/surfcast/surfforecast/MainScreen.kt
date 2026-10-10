@@ -475,7 +475,7 @@ fun MainScreen(
                         }
 
                         val dailyBands: List<List<ScoreBand>> = availableDates.map { date ->
-                            dayBandsInTimeOrder(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
+                            dayBandsInTimeOrder(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel, viewModel.weeklyDensity)
                         }
 
                         val dailyFeelsLike = availableDates.map { date ->
@@ -743,7 +743,7 @@ fun MainScreen(
                         "settings", "⭐ Des prévisions 100 % sur-mesure",
                         "Renseigner ton profil est LE réglage à faire en premier.\n" +
                             "• Sans profil : les notes sont celles d'un surfeur moyen, et un message t'invite à remplir ton profil.\n" +
-                            "• Avec ton profil : les scores, les couleurs et la limite violette « trop gros » sont calculés pour toi.\n" +
+                            "• Avec ton profil : les scores, les couleurs et la limite orange « trop gros » sont calculés pour toi.\n" +
                             "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou ton réglage personnalisé (taille de vague, tolérance au vent, aux rafales, au clapot).\n" +
                             "• Tes planches : ajoute-les avec leur volume, tu les retrouveras dans le journal.\n" +
                             "Une minute suffit, et les scores, les étoiles et le « trop gros » deviennent les tiens.",

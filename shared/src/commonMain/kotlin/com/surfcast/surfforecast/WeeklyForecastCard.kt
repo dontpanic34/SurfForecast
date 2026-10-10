@@ -50,6 +50,12 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.plus
 
+/** « 3,5 », « 4 » : la note en étoiles sur une décimale, virgule française. */
+internal fun formatStars(v: Float): String {
+    val half = (v * 2).roundToInt() / 2f
+    return if (half % 1f == 0f) half.toInt().toString() else half.toString().replace('.', ',')
+}
+
 internal fun daylightHoursFor(
     date: LocalDate,
     groupedByDate: Map<LocalDate, List<HourlyUiModel>>,
@@ -176,20 +182,29 @@ fun WeeklyForecastCard(
                                         if (stars == null) {
                                             Text("Trop gros", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
                                         } else {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                StarsRow(value = stars, starSize = 13.dp)
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                // Une seule étoile avec la note (3,5), puis le libellé en une ligne, puis une barre par créneau.
+                                                Text(
+                                                    "★ " + formatStars(stars), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
+                                                    color = Color(0xFFFFC107), maxLines = 1
+                                                )
                                                 val label = dailyLabels.getOrNull(index)
                                                 if (label != null) {
-                                                    val labelBands = dailyBands.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: trendBands(label)
-                                                    val labelBrush = Brush.horizontalGradient(labelBands.map { it.color() }.let { if (it.size == 1) listOf(it[0], it[0]) else it })
-                                                    Box(
-                                                        modifier = Modifier.padding(top = 2.dp, start = 2.dp, end = 2.dp)
-                                                            .clip(RoundedCornerShape(5.dp)).background(labelBrush).padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    val band = conditionBand(label)
+                                                    Text(
+                                                        band.label, fontSize = 10.5.sp, fontWeight = FontWeight.Bold,
+                                                        color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1, softWrap = false
+                                                    )
+                                                }
+                                                val bars = dailyBands.getOrNull(index).orEmpty()
+                                                if (bars.isNotEmpty()) {
+                                                    Row(
+                                                        modifier = Modifier.padding(top = 1.dp).fillMaxWidth(0.72f),
+                                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
                                                     ) {
-                                                        Text(
-                                                            bandLabelWithTrend(label), fontSize = 8.5.sp, fontWeight = FontWeight.Bold,
-                                                            color = trendOnColor(labelBands), maxLines = 2, textAlign = TextAlign.Center, lineHeight = 10.sp
-                                                        )
+                                                        bars.forEach { b ->
+                                                            Box(Modifier.weight(1f).height(3.dp).clip(RoundedCornerShape(2.dp)).background(b.color()))
+                                                        }
                                                     }
                                                 }
                                             }
@@ -492,7 +507,7 @@ fun ContinuousWaveCanvas(
         }
 
         // Énergie de la houle au pic du jour, sous la courbe ; la couleur suit le profil de l'utilisateur :
-        // gris (sous le minimum), vert (zone idéale), orange (challengeant), violet (trop gros).
+        // gris (sous le minimum), vert (zone idéale), orange (challengeant ou trop gros).
         for (i in 0 until daysCount) {
             val targetX = plotLeft + (i + 0.5f) * dayWidth
             val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
@@ -504,12 +519,12 @@ fun ContinuousWaveCanvas(
     }
 }
 
-/** Couleur d'une zone d'énergie : gris, vert, orange (challengeant), violet (« trop gros », comme le score). */
+/** Couleur d'une zone d'énergie : gris, vert, orange (challengeant ou trop gros : pas pour toi, comme le score). */
 internal fun energyZoneColor(zone: Int): Color = when (zone) {
     0 -> Color(0xFF78909C)
     1 -> Color(0xFF26A69A)
     2 -> Color(0xFFFF9A1F)
-    else -> Color(0xFF7B2CBF)
+    else -> Color(0xFFFF9A1F)
 }
 
 @Composable
@@ -695,8 +710,9 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
     val dirFr = SurfUnitsHelper.formatCardinalFr(slot.windDirectionStr)
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
-    val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, slot.windSpeedKmh)
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    // Le vent est une donnée, pas une note : en gris et blanc, la couleur reste réservée aux libellés.
+    val arrowColor = onSurfaceColor.copy(alpha = 0.6f)
 
     val formattedSpeed = SurfUnitsHelper.formatWindValue(slot.windSpeedKmh, windUnit)
     val showArrow = windMode == "arrow" || windMode == "both"
@@ -737,7 +753,7 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
             text = dirFr,
             fontSize = if (dirFr.length >= 3) 9.sp else 10.sp,
             fontWeight = FontWeight.Bold,
-            color = if (windMode == "text") arrowColor else onSurfaceColor,
+            color = onSurfaceColor,
             maxLines = 1,
             lineHeight = 11.sp
         )
@@ -748,7 +764,7 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
             text = formattedSpeed,
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
-            color = if (windMode == "text") arrowColor else onSurfaceColor.copy(alpha = 0.7f),
+            color = onSurfaceColor.copy(alpha = 0.7f),
             maxLines = 1,
             lineHeight = 11.sp
         )

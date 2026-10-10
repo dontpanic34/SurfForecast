@@ -39,7 +39,6 @@ fun NowTideCard(
 ) {
     val colors = MaterialTheme.colorScheme
     val dirFr = SurfUnitsHelper.formatCardinalFr(hourlyModel.windDirectionStr)
-    val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyModel.windSpeedKmh)
     val speed = SurfUnitsHelper.formatWindValue(hourlyModel.windSpeedKmh, windUnit)
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val high = tideInfo?.highTideTime
@@ -76,12 +75,12 @@ fun NowTideCard(
                 "Houle ${formatDecimal(hourlyModel.waveHeight, 1)} m · ${hourlyModel.wavePeriod.toInt()} s",
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface
             )
-            Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = windColor)
+            Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
             if (seaTemperature != null) {
-                Text("Eau $seaTemperature °C", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = waterTempColor(), maxLines = 1)
+                Text("Eau $seaTemperature °C", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
             }
-            if (high != null) Text("▲ Haute $high", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF42A5F5), maxLines = 1)
-            if (low != null) Text("▼ Basse $low", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF26A69A), maxLines = 1)
+            if (high != null) Text("▲ Haute $high", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
+            if (low != null) Text("▼ Basse $low", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
             if (coef != null) Text("Coef. $coef", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
         }
     }
