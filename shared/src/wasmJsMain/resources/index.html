@@ -75,6 +75,24 @@
         });
         setInterval(function () { newerVersion().then(function (v) { if (v) showBanner(v); }); }, 10 * 60 * 1000);
     })();
+    // Zoom : l'appli est dessinée dans un canvas qui garde les gestes pour elle. Quand la page est zoomée (pincement), on
+    // rend le geste au navigateur pour qu'un doigt déplace la vue zoomée dans tous les sens ; au zoom normal, rien ne change.
+    (function () {
+        var vv = window.visualViewport;
+        if (!vv) return;
+        var style = document.createElement("style");
+        style.id = "zoom-pan";
+        document.head.appendChild(style);
+        var zoomed = false;
+        function apply() {
+            var now = vv.scale > 1.02;
+            if (now === zoomed) return;
+            zoomed = now;
+            style.textContent = now ? "html, body, canvas { touch-action: auto !important; }" : "";
+        }
+        vv.addEventListener("resize", apply);
+        vv.addEventListener("scroll", apply);
+    })();
     // Service worker minimal (aucune mise en cache) : requis par certaines versions de Chrome pour proposer l'installation.
     if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
 </script>
