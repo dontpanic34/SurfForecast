@@ -3,8 +3,6 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -13,59 +11,61 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.surfcast.surfforecast.ui.theme.AppColors
 import kotlinx.datetime.LocalDate
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
-import kotlin.math.roundToLong
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.math.roundToLong
+import kotlin.math.sin
+
+
+// Dimensions (dp) du déroulé : mêmes proportions que la maquette validée.
+private const val WIND_ROW_H = 40
+private const val PLOT_H = 112
+private const val PLOT_TOP = 14      // haut de la zone de courbe
+private const val PLOT_BOTTOM = 104  // bas de la zone de courbe
+private const val SKY_EXT = 36       // le ciel déborde au-dessus du graphique, jusque vers le vent
+private const val BAND_H = 28
+private const val HOURS_H = 22
+private const val SIDE_PAD = 4
 
 /**
- * Tache 3 / Point 3 : "Deroule de la journee". Fait partie du cardsOrder reordonnable
- * (glisser-depose par appui long sur la poignee/le titre + chevron reduire).
+ * « Déroulé de la journée » : l'heure touchée, son libellé, sa phrase et sa jauge ; le vent en couleur toutes les 2 h (plus
+ * l'heure choisie) ; la courbe de houle sur un fond météo vivant (taille au-dessus du point, période en dessous) ; une bande
+ * jour et nuit découpée heure par heure avec le soleil levant et couchant à leur heure exacte ; une seule ligne d'heures.
  *
- * Affiche toujours la journee selectionnee dans "Previsions de la semaine" ([selectedDate]).
- * Limite aux heures d'ensoleillement (sunrise -> sunset) via dailySunInfo. Les libelles
- * de premiere/derniere heure (bas du graphique) sont remplaces par l'heure exacte du
- * lever/coucher du soleil, avec une icone dediee.
- *
- * Point 3 : la courbe de houle est coloree segment par segment selon le score
- * "Meilleur Creneau" (rouge/orange/vert), calcule via SurfScoring.kt a partir de
- * [idealSwellDirection] et [surferLevel].
- *
- * En-tete : poignee + titre + marees (haute/basse + UN SEUL coefficient global, meme
- * code couleur que "Previsions de la semaine"), puis le controle de reduction.
- * De haut en bas ensuite : vent (vitesse + direction abregee) + meteo, courbe de houle
- * coloree par score (point rouge = heure actuelle), puis heures (lever/coucher aux
- * extremites).
- *
- * Scrub tactile : glisser (ou taper) n'importe ou dans le corps de la carte deplace
- * l'heure selectionnee ([selectedHour] / [onHourSelected]), qui pilote aussi les encarts
- * Houle/Vent/Meteo affiches plus bas dans "Previsions de la semaine" — meme etat partage
- * que ces trois cartes, donc la selection reste synchronisee dans les deux sens.
+ * La fenêtre va d'une demi-heure avant le lever à une demi-heure après le coucher. Glisser ou taper sur la courbe OU sur la
+ * bande déplace l'heure choisie ([selectedHour] / [onHourSelected]), partagée avec les encarts Houle/Vent/Météo plus bas.
  */
-/** Heure la plus proche d'une position horizontale : les points de la courbe vont de 0 à la largeur (n - 1 intervalles). */
-internal fun hourIndexAt(x: Float, width: Float, count: Int): Int {
-    if (count <= 1 || width <= 0f) return 0
-    return (x / (width / (count - 1))).roundToInt().coerceIn(0, count - 1)
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DailyTimelineCard(
@@ -78,7 +78,7 @@ fun DailyTimelineCard(
     surferLevel: String,
     // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
     scaleRawMax: Double? = null,
-    // Vue simple : une heure sur deux (la légende des couleurs reste toujours visible).
+    // Gardé pour compatibilité : le déroulé n'a plus de vue simple.
     compact: Boolean = false,
     selectedHour: HourlyUiModel?,
     onHourSelected: (HourlyUiModel) -> Unit,
@@ -91,64 +91,29 @@ fun DailyTimelineCard(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val isDark = isDarkSurfaceTheme()
+    val density = LocalDensity.current
 
-    fun daylightHoursFor(date: LocalDate): List<HourlyUiModel> {
-        val dayHours = groupedByDate[date] ?: return emptyList()
-        val sun = dailySunInfo[date]
-        return if (sun != null) {
-            dayHours.filter {
-                val t = it.rawTime.time
-                t >= sun.sunrise && t <= sun.sunset
-            }
-        } else {
-            // Repli si le lever/coucher n'est pas dispo pour ce jour (ex: J+6/7) : plage diurne large.
-            dayHours.filter { it.rawTime.hour in 7..21 }
-        }
-    }
-
-    val now = nowLocalDateTime()
-
-    // Le jour avec une heure de marge de chaque côté du lever et du coucher ; météo, vent et heures sont posés toutes
-    // les 3 h à l'intérieur des heures d'ensoleillement.
-    val tideInfo = dailyTides[selectedDate]
     val sun = dailySunInfo[selectedDate]
-    val sunriseHour = sun?.let { it.sunrise.hour + it.sunrise.minute / 60f }
-    val sunsetHour = sun?.let { it.sunset.hour + it.sunset.minute / 60f }
-    val allDayHours = (groupedByDate[selectedDate] ?: emptyList()).sortedBy { it.rawTime }
-    val fromHour = (sunriseHour?.let { kotlin.math.floor(it).toInt() - 1 } ?: 6).coerceAtLeast(0)
-    val toHour = (sunsetHour?.let { kotlin.math.ceil(it).toInt() + 1 } ?: 22).coerceAtMost(23)
-    val curveHours = allDayHours.filter { it.rawTime.hour in fromHour..toHour }.let { if (it.size >= 2) it else allDayHours }
-    val timelineItems: List<HourlyUiModel> = curveHours
-    val labelHours: List<Int> = run {
-        val first = sunriseHour?.let { kotlin.math.ceil(it).toInt() } ?: 9
-        val last = sunsetHour?.toInt() ?: 18
-        generateSequence(first) { it + 3 }.takeWhile { it <= last }.toList()
-    }
+    val sunrise = sun?.let { it.sunrise.hour + it.sunrise.minute / 60f } ?: 7f
+    val sunset = sun?.let { it.sunset.hour + it.sunset.minute / 60f } ?: 20f
+    val ax0 = sunrise - 0.5f
+    val ax1 = sunset + 0.5f
+    val allDay = (groupedByDate[selectedDate] ?: emptyList()).sortedBy { it.rawTime }
+    val firstH = ceil(ax0).toInt().coerceAtLeast(0)
+    val lastH = floor(ax1).toInt().coerceAtMost(23)
+    val curveHours = allDay.filter { it.rawTime.hour in firstH..lastH }.let { if (it.size >= 2) it else allDay }
 
-    val nowIndex = curveHours.indexOfFirst {
-        it.rawTime.date == now.date && it.rawTime.hour == now.hour
-    }
-
-    // Une heure choisie hors de la fenêtre (la nuit) se ramène à l'heure visible la plus proche.
-    val selectedIndex = selectedHour?.let { sel ->
-        val exact = curveHours.indexOfFirst { it.rawTime == sel.rawTime }
-        if (exact >= 0) exact else curveHours.indices.minByOrNull { kotlin.math.abs(curveHours[it].rawTime.hour - sel.rawTime.hour) } ?: -1
-    } ?: -1
-
-    // Température de la mer (vraie prévision) : celle de l'heure touchée, sinon la moyenne du jour.
-    val seaTemp = (
-        selectedHour?.takeIf { it.rawTime.date == selectedDate }?.seaTemperature
-            ?: curveHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average()
-        )?.let { kotlin.math.round(it).toInt() }
-
-    // Point 3 : score par heure (0-100), sert a colorer la courbe segment par segment.
-    // Score négatif = trop gros pour le niveau (orange).
     // Notation avec la mémoire du vent : la mer ne devient pas « glacée » une heure après 30 km/h de vent de mer.
     val scoring = hoursWithWindMemory(selectedDate, groupedByDate).associateBy { it.rawTime }
     val ratings = curveHours.map { shown ->
-        val hourly = scoring[shown.rawTime] ?: shown
-        calculateSlotRating(hourly, idealSwellDirection, surferLevel)
+        calculateSlotRating(scoring[shown.rawTime] ?: shown, idealSwellDirection, surferLevel)
     }
+    // Une heure choisie hors de la fenêtre (la nuit) se ramène à l'heure visible la plus proche.
+    val selectedIndex = selectedHour?.let { sel ->
+        val exact = curveHours.indexOfFirst { it.rawTime == sel.rawTime }
+        if (exact >= 0) exact else curveHours.indices.minByOrNull { abs(curveHours[it].rawTime.hour - sel.rawTime.hour) } ?: -1
+    } ?: -1
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -157,8 +122,6 @@ fun DailyTimelineCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-            // Pas de titre : l'heure touchée, son libellé et sa phrase. Si la phrase ne tient pas à côté du libellé, elle passe
-            // entière à la ligne (jamais coupée), entre le libellé et la jauge à 5 segments.
             if (selectedIndex in ratings.indices) {
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
@@ -196,247 +159,379 @@ fun DailyTimelineCard(
                 }
             } else {
                 Text(
-                    text = "Déroulé de la journée",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = onSurfaceColor.copy(alpha = 0.55f),
-                    maxLines = 1,
+                    text = "Déroulé de la journée", fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    color = onSurfaceColor.copy(alpha = 0.55f), maxLines = 1,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
                 )
             }
 
             if (!isCollapsed) {
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                if (curveHours.size < 2) {
+                    Text(
+                        text = "Pas de données diurnes disponibles pour cette sélection.", fontSize = 12.sp,
+                        color = onSurfaceColor.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                } else {
+                    DailyTimelineBody(
+                        hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
+                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit,
+                        isDark = isDark, onSurfaceColor = onSurfaceColor
+                    )
+                }
+            }
+        }
+    }
+}
 
-            if (timelineItems.isEmpty()) {
-                Text(
-                    text = "Pas de données diurnes disponibles pour cette sélection.",
-                    fontSize = 12.sp,
-                    color = onSurfaceColor.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
-            } else {
-                val primaryColor = MaterialTheme.colorScheme.primary
+/** Position horizontale d'une heure (décimale) sur la largeur [w] (px), avec une petite marge de chaque côté. */
+private fun hourX(h: Float, ax0: Float, ax1: Float, w: Float, pad: Float): Float = pad + (w - 2 * pad) * (h - ax0) / (ax1 - ax0)
 
-                // --- Scrub tactile : glisser ou taper deplace l'heure selectionnee,
-                // partagee avec les encarts Houle/Vent/Meteo (synchro bidirectionnelle). ---
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .pointerInput(timelineItems) {
-                            detectHorizontalDragGestures { change, _ ->
-                                val x = change.position.x.coerceIn(0f, size.width.toFloat())
-                                val index = hourIndexAt(x, size.width.toFloat(), timelineItems.size)
-                                onHourSelected(timelineItems[index])
-                            }
-                        }
-                        .pointerInput(timelineItems) {
-                            detectTapGestures { offset ->
-                                val index = hourIndexAt(offset.x, size.width.toFloat(), timelineItems.size)
-                                onHourSelected(timelineItems[index])
-                            }
-                        }
-                ) {
-                // --- Haut : météo et vent par créneau de 3 h, posés à l'aplomb de leur heure sur la courbe ---
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(62.dp)) {
-                    val slotW = maxWidth * 3f / (timelineItems.size - 1).coerceAtLeast(1)
-                    val firstHour = timelineItems.firstOrNull()?.rawTime?.hour ?: 0
-                    for (h in labelHours) {
-                        val idx = h - firstHour
-                        val hourly = timelineItems.getOrNull(idx) ?: continue
-                        val centerX = maxWidth * idx / (timelineItems.size - 1).coerceAtLeast(1)
-                        val left = (centerX - slotW / 2).coerceIn(0.dp, maxWidth - slotW)
-                        val selectedHourOfDay = timelineItems.getOrNull(selectedIndex)?.rawTime?.hour ?: -1
-                        val isSelected = selectedHourOfDay in (h - 1)..(h + 1)
+/** Hauteur du soleil de 0 (horizon) à 1 (zénith, à la mi-journée entre lever et coucher), ou -1 hors du jour. */
+private fun sunAltitude(h: Float, sunrise: Float, sunset: Float): Float =
+    if (h < sunrise || h > sunset) -1f else sin(PI.toFloat() * (h - sunrise) / (sunset - sunrise)).toDouble().pow(0.85).toFloat()
+
+private fun formatHm(h: Float): String {
+    var m = (h * 60f).roundToInt()
+    val hh = m / 60
+    m %= 60
+    return hh.toString().padStart(2, '0') + ":" + m.toString().padStart(2, '0')
+}
+
+@Composable
+private fun DailyTimelineBody(
+    hours: List<HourlyUiModel>,
+    ratings: List<SlotRating>,
+    selectedIndex: Int,
+    onHourSelected: (HourlyUiModel) -> Unit,
+    sunrise: Float,
+    sunset: Float,
+    ax0: Float,
+    ax1: Float,
+    scaleRawMax: Double?,
+    windUnit: String,
+    isDark: Boolean,
+    onSurfaceColor: Color
+) {
+    val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val nacre = if (isDark) Color(0xFFF1F4F7) else Color(0xFF2A3A4A)
+    val sunGold = if (isDark) Color(0xFFFFD9A0) else Color(0xFFB9740A)
+    val selHour = hours.getOrNull(selectedIndex)?.rawTime?.hour
+    val selH = selHour?.toFloat()
+
+    // Une indication de vent par heure d'ensoleillement : heures paires, plus l'heure choisie, sans heure imposée ; on masque
+    // ce qui toucherait sa voisine (mesuré en pixels).
+    val sunnyHours = hours.map { it.rawTime.hour }.filter { it >= ceil(sunrise).toInt() && it <= floor(sunset).toInt() }
+    val windFont = if (sunnyHours.size > 12) 7.4f else if (sunnyHours.size > 9) 8.6f else 9.6f
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val wPx = with(density) { maxWidth.toPx() }
+        val pad = with(density) { SIDE_PAD.dp.toPx() }
+        fun xOf(h: Float) = hourX(h, ax0, ax1, wPx, pad)
+
+        fun pickHour(x: Float) {
+            val h = ax0 + ((x - pad) / (wPx - 2 * pad)) * (ax1 - ax0)
+            val best = hours.minByOrNull { abs(it.rawTime.hour - h) } ?: return
+            onHourSelected(best)
+        }
+
+        Box(
+            modifier = Modifier.fillMaxWidth()
+                .pointerInput(hours, ax0, ax1) { detectTapGestures { pickHour(it.x) } }
+                .pointerInput(hours, ax0, ax1) { detectHorizontalDragGestures { change, _ -> pickHour(change.position.x) } }
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // --- Vent ---
+                val windMinGap = windFont * 2.5f + 2f
+                val windHours: List<Int> = run {
+                    val cand = ArrayList<Pair<Int, Int>>() // heure, priorité
+                    sunnyHours.filter { it % 2 == 0 }.forEach { cand.add(it to 1) }
+                    if (selHour != null && selHour in sunnyHours) cand.add(selHour to 0)
+                    val kept = ArrayList<Int>()
+                    cand.sortedBy { it.second }.forEach { (h, _) ->
+                        if (kept.none { k -> k == h || abs(xOf(k.toFloat()) - xOf(h.toFloat())) < with(density) { windMinGap.dp.toPx() } }) kept.add(h)
+                    }
+                    kept.sorted()
+                }
+                Box(modifier = Modifier.fillMaxWidth().height(WIND_ROW_H.dp)) {
+                    for (h in windHours) {
+                        val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
+                        val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
+                        val color = SurfUnitsHelper.getSurfWindColor(dirFr, effectiveWindKmh(hourly).roundToInt())
+                        val textColor = SurfUnitsHelper.windTextColor(color, isDark)
+                        val rotation = (SurfUnitsHelper.cardinalToDegrees(dirFr) + 180f) % 360f
+                        val itemW = 34.dp
                         Column(
-                            modifier = Modifier.offset(x = left).width(slotW)
-                                .background(
-                                    color = if (isSelected) primaryColor.copy(alpha = 0.14f) else Color.Transparent,
-                                    shape = RoundedCornerShape(4.dp)
-                                ),
+                            modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), 0) }.width(itemW),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
-                            val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
-                            val rotationAngle = (degrees + 180f) % 360f
-                            // Le vent est une donnée, pas une note : gris et blanc, la couleur reste aux libellés.
-                            val arrowColor = onSurfaceColor.copy(alpha = 0.6f)
-                            WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(hourly), 16.dp)
-                            Canvas(modifier = Modifier.size(12.dp)) {
+                            Canvas(modifier = Modifier.size((windFont + 3f).dp)) {
                                 val w = size.width
                                 val hh = size.height
-                                rotate(rotationAngle, pivot = Offset(w / 2f, hh / 2f)) {
-                                    val path = Path().apply {
+                                rotate(rotation, pivot = Offset(w / 2f, hh / 2f)) {
+                                    val p = Path().apply {
                                         moveTo(w * 0.5f, 0f)
                                         lineTo(w * 0.9f, hh * 0.55f)
                                         lineTo(w * 0.5f, hh * 0.38f)
                                         lineTo(w * 0.1f, hh * 0.55f)
                                         close()
                                     }
-                                    drawPath(path = path, color = arrowColor)
+                                    drawPath(p, color = color)
                                 }
                             }
-                            Text(text = dirFr, fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1)
+                            Text(dirFr, fontSize = windFont.sp, fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp)
                             Text(
-                                text = SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit),
-                                fontSize = 10.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.75f), maxLines = 1
+                                SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit), fontSize = windFont.sp,
+                                fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // --- Milieu : courbe de houle coloree par score, avec repere sur l'heure actuelle ---
-                DailyTimelineSwellCanvas(
-                    hours = curveHours,
-                    ratings = ratings,
-                    nowIndex = nowIndex,
-                    selectedIndex = selectedIndex,
-                    onSurfaceColor = onSurfaceColor,
-                    scaleRawMax = scaleRawMax,
-                    sunriseHour = sun?.let { it.sunrise.hour + it.sunrise.minute / 60f },
-                    sunsetHour = sun?.let { it.sunset.hour + it.sunset.minute / 60f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(WEEK_CANVAS_H)
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                // --- Bas : une graduation toutes les 3 h, posée à l'aplomb de son heure, sur fond léger ---
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(20.dp)) {
-                    val slotW = maxWidth * 3f / (timelineItems.size - 1).coerceAtLeast(1)
-                    val firstHour = timelineItems.firstOrNull()?.rawTime?.hour ?: 0
-                    for (h in labelHours) {
-                        val idx = h - firstHour
-                        if (idx !in timelineItems.indices) continue
-                        val centerX = maxWidth * idx / (timelineItems.size - 1).coerceAtLeast(1)
-                        val left = (centerX - slotW / 2).coerceIn(0.dp, maxWidth - slotW)
-                        Box(modifier = Modifier.offset(x = left).width(slotW), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "$h h", fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
-                                color = onSurfaceColor.copy(alpha = 0.75f), maxLines = 1,
-                                modifier = Modifier.background(onSurfaceColor.copy(alpha = 0.10f), RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 1.dp)
-                            )
+                // --- Courbe sur son fond météo ---
+                val rawMax = maxOf(scaleRawMax ?: 0.0, hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
+                val (niceMax, gridValues) = swellAxisScale(rawMax)
+                val displayMax = (niceMax * 1.3).toFloat()
+                Box(modifier = Modifier.fillMaxWidth().height(PLOT_H.dp)) {
+                    val extPx = with(density) { SKY_EXT.dp.toPx() }
+                    val topPx = with(density) { PLOT_TOP.dp.toPx() }
+                    val bottomPx = with(density) { PLOT_BOTTOM.dp.toPx() }
+                    SkyCanvas(
+                        modifier = Modifier.fillMaxWidth().height((PLOT_H + SKY_EXT).dp).offset(y = (-SKY_EXT).dp),
+                        isDark = isDark
+                    ) { size ->
+                        val xs = FloatArray(hours.size) { xOf(hours[it].rawTime.hour.toFloat()) }
+                        val smooth = with(density) { 6.dp.toPx() }
+                        val cover = SkyCurve(xs, FloatArray(hours.size) { hours[it].cloudCover / 100f }, smooth)
+                        val rain = SkyCurve(xs, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, smooth)
+                        val snow = SkyCurve(xs, FloatArray(hours.size) { snowAmountForCode(hours[it].weatherCode) }, smooth)
+                        // Le soleil suit l'heure choisie : il se lève en bas à l'heure du lever, monte au zénith à la mi-journée
+                        // près du vent, puis redescend et se couche en bas à l'heure du coucher.
+                        val suns = ArrayList<SunSpot>()
+                        if (selH != null) {
+                            val alt = sunAltitude(selH, sunrise, sunset)
+                            if (alt >= 0f) {
+                                val sizePx = with(density) { 52.dp.toPx() }
+                                val horizon = bottomPx - with(density) { 26.dp.toPx() }
+                                val zenith = topPx - with(density) { 12.dp.toPx() }
+                                val cy = horizon - (horizon - zenith) * alt
+                                suns.add(SunSpot(xOf(selH), sizePx, extPx + cy - sizePx / 2f))
+                            }
                         }
+                        SkyScene(
+                            left = pad, right = size.width - pad, top = extPx + topPx, bottom = extPx + bottomPx,
+                            cover = cover, rain = rain, snow = snow, suns = suns,
+                            animate = hours.any { rainAmountForCode(it.weatherCode) > 0f || snowAmountForCode(it.weatherCode) > 0f }
+                        )
                     }
+                    DailyCurveCanvas(
+                        modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
+                        gridValues = gridValues, displayMax = displayMax, onSurfaceColor = onSurfaceColor, isDark = isDark,
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf
+                    )
                 }
 
+                // --- Bande jour et nuit, heure par heure ---
+                Canvas(modifier = Modifier.fillMaxWidth().height(BAND_H.dp)) {
+                    val cellDark = if (isDark) Color(0xFF0F1822) else Color(0xFFD3DBE4)
+                    val goldLo = Color(0xFF0B121A)
+                    val ico = 9.dp.toPx()
+                    val xr = xOf(sunrise)
+                    val xs = xOf(sunset)
+                    val cellH = 6.dp.toPx()
+                    val top = 7.dp.toPx()
+                    for (h in hours.map { it.rawTime.hour }.let { (it.firstOrNull() ?: 0)..(it.lastOrNull() ?: 0) }) {
+                        val x0 = maxOf(pad, xOf(h - 0.5f))
+                        val x1 = minOf(size.width - pad, xOf(h + 0.5f))
+                        if (x1 - x0 < 1f) continue
+                        drawRoundRect(cellDark, Offset(x0 + 0.75.dp.toPx(), top), Size(x1 - x0 - 1.5.dp.toPx(), cellH), CornerRadius(3.dp.toPx()))
+                        val a0 = maxOf(x0, xr + ico)
+                        val a1 = minOf(x1, xs - ico)
+                        if (a1 - a0 > 1.2.dp.toPx()) {
+                            val mid = sin(PI * ((h - sunrise) / (sunset - sunrise)).coerceIn(0f, 1f).toDouble()).toFloat()
+                            val k = 0.55f + 0.45f * mid
+                            val gold = androidx.compose.ui.graphics.lerp(goldLo, Color(0xFFF6C453), k)
+                            val on = h == selHour
+                            val hh = if (on) 9.dp.toPx() else cellH
+                            drawRoundRect(
+                                gold, Offset(a0 + 0.75.dp.toPx(), if (on) top - 1.5.dp.toPx() else top),
+                                Size(a1 - a0 - 1.5.dp.toPx(), hh), CornerRadius(3.dp.toPx())
+                            )
+                            if (on) {
+                                drawRoundRect(
+                                    nacre, Offset(a0 + 0.75.dp.toPx(), top - 1.5.dp.toPx()), Size(a1 - a0 - 1.5.dp.toPx(), hh),
+                                    CornerRadius(3.dp.toPx()), style = Stroke(1.4.dp.toPx())
+                                )
+                            }
+                        }
+                    }
+                    drawSunEvent(Offset(xr, 10.dp.toPx()), true, sunGold, 1.15.dp.toPx())
+                    drawSunEvent(Offset(xs, 10.dp.toPx()), false, sunGold, 1.15.dp.toPx())
+                }
+
+                // --- Une seule ligne d'heures, dynamique ---
+                Box(modifier = Modifier.fillMaxWidth().height(HOURS_H.dp)) {
+                    class Lbl(val h: Float, val text: String, val kind: Int, val prio: Int)
+                    val items = ArrayList<Lbl>()
+                    if (selH != null) items.add(Lbl(selH, "${selHour}:00", 0, 0))
+                    items.add(Lbl(sunrise, formatHm(sunrise), 1, 1))
+                    items.add(Lbl(sunset, formatHm(sunset), 1, 1))
+                    for (h in hours.map { it.rawTime.hour }) {
+                        if (h % 2 == 0 && abs(h - sunrise) >= 1.25f && abs(h - sunset) >= 1.25f) items.add(Lbl(h.toFloat(), "$h h", 2, 2))
+                    }
+                    val edge = with(density) { 20.dp.toPx() }
+                    fun cx(h: Float) = xOf(h).coerceIn(edge, wPx - edge)
+                    val kept = ArrayList<Lbl>()
+                    for (lb in items.sortedBy { x -> x.prio }) {
+                        val w = with(density) { (if (lb.kind == 2) 30 else 34).dp.toPx() }
+                        if (kept.all { k ->
+                                val kw = with(density) { (if (k.kind == 2) 30 else 34).dp.toPx() }
+                                abs(cx(k.h) - cx(lb.h)) >= kw / 2f + w / 2f + with(density) { 2.dp.toPx() }
+                            }
+                        ) kept.add(lb)
+                    }
+                    for (l in kept) {
+                        val color = when (l.kind) {
+                            0 -> nacre
+                            1 -> sunGold
+                            else -> onSurfaceColor.copy(alpha = 0.6f)
+                        }
+                        val fs = when (l.kind) { 0 -> 12.5f; 1 -> 9.5f; else -> 10f }
+                        val weight = if (l.kind == 2) FontWeight.SemiBold else FontWeight.ExtraBold
+                        Box(
+                            modifier = Modifier.offset { IntOffset((cx(l.h) - 24.dp.toPx()).roundToInt(), 2.dp.roundToPx()) }.width(48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(l.text, fontSize = fs.sp, fontWeight = weight, color = color, maxLines = 1)
+                        }
+                    }
                 }
             }
+
+            // --- Surbrillance de l'heure choisie : un fondu, plus coloré au milieu (vers la courbe), qui s'estompe vers le haut,
+            // le bas et les côtés, sans bord visible. ---
+            if (selH != null) {
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    val hourW = (size.width - 2 * pad) / (ax1 - ax0)
+                    val half = hourW * 0.95f
+                    val cxp = xOf(selH)
+                    val a = if (isDark) 0.30f else 0.24f
+                    val base = nacre
+                    val stops = arrayOf(
+                        0.00f to base.copy(alpha = 0f), 0.10f to base.copy(alpha = a * 0.04f), 0.24f to base.copy(alpha = a * 0.20f),
+                        0.38f to base.copy(alpha = a * 0.55f), 0.52f to base.copy(alpha = a), 0.62f to base.copy(alpha = a * 0.70f),
+                        0.74f to base.copy(alpha = a * 0.35f), 0.86f to base.copy(alpha = a * 0.10f), 1.00f to base.copy(alpha = 0f)
+                    )
+                    val bounds = androidx.compose.ui.geometry.Rect(cxp - half, 0f, cxp + half, size.height)
+                    drawIntoCanvas { canvas ->
+                        canvas.saveLayer(bounds, Paint())
+                        drawRect(brush = Brush.verticalGradient(*stops, startY = 0f, endY = size.height), topLeft = bounds.topLeft, size = bounds.size)
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                0f to Color.Transparent, 0.35f to Color.Black, 0.65f to Color.Black, 1f to Color.Transparent,
+                                startX = bounds.left, endX = bounds.right
+                            ),
+                            topLeft = bounds.topLeft, size = bounds.size, blendMode = BlendMode.DstIn
+                        )
+                        canvas.restore()
+                    }
+                }
             }
         }
     }
 }
 
-/**
- * Petit résumé marée (haute/basse), même esprit visuel que SurfLiveStripOverlay, mais
- * compact pour tenir sur la ligne du titre. Le coefficient n'est plus repete entre
- * parentheses a cote de chaque heure : un seul coefficient est affiche a la fin, avec le
- * meme code couleur que "Previsions de la semaine" (pastille verte/orange/rouge selon
- * le seuil, cf. DailyTideCanvas dans MainScreen.kt).
- */
+/** Courbe de houle : graduations, remplissage, segments colorés par note, puis le petit point nacré avec sa taille et sa période. */
 @Composable
-private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
-    val highTime = tideInfo.highTideTime
-    val lowTime = tideInfo.lowTideTime
-    val coef = tideInfo.coefficient
+private fun DailyCurveCanvas(
+    modifier: Modifier,
+    hours: List<HourlyUiModel>,
+    ratings: List<SlotRating>,
+    selectedIndex: Int,
+    gridValues: List<Double>,
+    displayMax: Float,
+    onSurfaceColor: Color,
+    isDark: Boolean,
+    nacre: Color,
+    textMeasurer: TextMeasurer,
+    xOf: (Float) -> Float
+) {
+    val primaryFill = AppColors.TideHigh
+    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
+    val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
+    val halo = if (isDark) Color(0xFF0B121A) else Color.White
+    val labelColor = if (isDark) Color.White else Color(0xFF14202B)
+    Canvas(modifier = modifier) {
+        val top = PLOT_TOP.dp.toPx()
+        val bottom = PLOT_BOTTOM.dp.toPx()
+        fun yOf(v: Double): Float = bottom - (bottom - top) * (v / displayMax).toFloat().coerceIn(0f, 1.2f)
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (highTime != null) {
-            Canvas(modifier = Modifier.size(9.dp)) {
-                val w = size.width
-                val h = size.height
-                val wavePath = Path().apply {
-                    moveTo(0f, h * 0.70f)
-                    quadraticBezierTo(w * 0.5f, h * 0.25f, w, h * 0.70f)
-                }
-                drawPath(wavePath, color = Color(0xFF64B5F6), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
-                val arrowX = w * 0.5f
-                drawLine(
-                    color = Color(0xFF64B5F6),
-                    start = Offset(arrowX, h * 0.70f),
-                    end = Offset(arrowX, h * 0.10f),
-                    strokeWidth = 1.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
-                val headSize = 1.4.dp.toPx()
-                val headPath = Path().apply {
-                    moveTo(arrowX - headSize, h * 0.10f + headSize)
-                    lineTo(arrowX, h * 0.10f)
-                    lineTo(arrowX + headSize, h * 0.10f + headSize)
-                }
-                drawPath(headPath, color = Color(0xFF64B5F6), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
-            }
-            Spacer(modifier = Modifier.width(2.dp))
-            Text(
-                text = highTime,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = onSurfaceColor,
-                maxLines = 1
-            )
+        gridValues.forEach { v ->
+            val y = yOf(v)
+            drawLine(onSurfaceColor.copy(alpha = 0.10f), Offset(0f, y), Offset(size.width, y), strokeWidth = 0.8.dp.toPx())
         }
 
-        if (lowTime != null) {
-            Spacer(modifier = Modifier.width(6.dp))
-            Canvas(modifier = Modifier.size(9.dp)) {
-                val w = size.width
-                val h = size.height
-                val wavePath = Path().apply {
-                    moveTo(0f, h * 0.30f)
-                    quadraticBezierTo(w * 0.5f, h * 0.75f, w, h * 0.30f)
+        val pts = hours.map { Offset(xOf(it.rawTime.hour.toFloat()), yOf(it.waveHeight)) }
+        if (pts.size >= 2) {
+            val fill = Path().apply {
+                moveTo(pts.first().x, bottom)
+                lineTo(pts.first().x, pts.first().y)
+                for (i in 1 until pts.size) {
+                    val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
+                    cubicTo(mx, p.y, mx, c.y, c.x, c.y)
                 }
-                drawPath(wavePath, color = Color(0xFF26A69A), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
-                val arrowX = w * 0.5f
-                drawLine(
-                    color = Color(0xFF26A69A),
-                    start = Offset(arrowX, h * 0.30f),
-                    end = Offset(arrowX, h * 0.90f),
-                    strokeWidth = 1.dp.toPx(),
-                    cap = StrokeCap.Round
-                )
-                val headSize = 1.4.dp.toPx()
-                val headPath2 = Path().apply {
-                    moveTo(arrowX - headSize, h * 0.90f - headSize)
-                    lineTo(arrowX, h * 0.90f)
-                    lineTo(arrowX + headSize, h * 0.90f - headSize)
-                }
-                drawPath(headPath2, color = Color(0xFF26A69A), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+                lineTo(pts.last().x, bottom)
+                close()
             }
-            Spacer(modifier = Modifier.width(2.dp))
-            Text(
-                text = lowTime,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = onSurfaceColor,
-                maxLines = 1
-            )
+            drawPath(fill, color = primaryFill.copy(alpha = 0.18f))
+            for (i in 1 until pts.size) {
+                val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
+                val seg = Path().apply { moveTo(p.x, p.y); cubicTo(mx, p.y, mx, c.y, c.x, c.y) }
+                val rating = ratings.getOrElse(i - 1) { ratings.getOrElse(i) { SlotRating(50, false) } }
+                drawPath(seg, color = conditionBand(rating).color(), style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
+            }
         }
 
-        if (coef != null) {
-            Spacer(modifier = Modifier.width(6.dp))
-
-            val dotColor = when {
-                coef < 55 -> AppColors.WindLow
-                coef <= 80 -> AppColors.WindMid
-                else -> AppColors.WindHigh
-            }
-
-            Text(
-                text = "$coef",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = onSurfaceColor.copy(alpha = 0.75f),
-                maxLines = 1
+        // Graduations par-dessus la courbe, sur un fond léger (comme la vue semaine).
+        gridValues.forEach { v ->
+            val y = yOf(v)
+            val layout = textMeasurer.measure(formatAxisHeight(v), axisTextStyle)
+            val labelTop = y - layout.size.height - 1.dp.toPx()
+            drawRoundRect(
+                labelBg, Offset(2.dp.toPx(), labelTop), Size(layout.size.width + 4.dp.toPx(), layout.size.height.toFloat()),
+                CornerRadius(3.dp.toPx())
             )
-            Spacer(modifier = Modifier.width(3.dp))
-            Canvas(modifier = Modifier.size(6.dp)) {
-                drawCircle(color = dotColor, radius = size.minDimension / 2f)
+            drawText(layout, topLeft = Offset(4.dp.toPx(), labelTop))
+        }
+
+        // Le petit point nacré, avec la taille au-dessus et la période en dessous (contour de la couleur du fond, pas d'encart).
+        if (selectedIndex in pts.indices) {
+            val p = pts[selectedIndex]
+            val hourly = hours[selectedIndex]
+            fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight) {
+                val style = TextStyle(color = labelColor, fontSize = sp.sp, fontWeight = weight)
+                val outline = TextStyle(
+                    color = halo, fontSize = sp.sp, fontWeight = weight,
+                    drawStyle = Stroke(width = 3.dp.toPx(), join = StrokeJoin.Round)
+                )
+                val layout = textMeasurer.measure(text, style)
+                val x = (cx - layout.size.width / 2f).coerceIn(2.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
+                drawText(textMeasurer, text, Offset(x, topY), outline)
+                drawText(textMeasurer, text, Offset(x, topY), style)
             }
+            haloText(formatDecimal(hourly.waveHeight, 1, ',') + " m", p.x, p.y - 26.dp.toPx(), 12f, FontWeight.ExtraBold)
+            haloText("${hourly.wavePeriod.roundToInt()} s", p.x, p.y + 8.dp.toPx(), 10.5f, FontWeight.Bold)
+            drawCircle(nacre.copy(alpha = 0.9f), radius = 3.6.dp.toPx(), center = p)
+            drawCircle(nacre.copy(alpha = 0.35f), radius = 6.dp.toPx(), center = p, style = Stroke(1.2.dp.toPx()))
         }
     }
+}
+
+/** Heure la plus proche d'une position horizontale : les points de la courbe vont de 0 à la largeur (n - 1 intervalles). */
+internal fun hourIndexAt(x: Float, width: Float, count: Int): Int {
+    if (count <= 1 || width <= 0f) return 0
+    return (x / (width / (count - 1))).roundToInt().coerceIn(0, count - 1)
 }
 
 /**
@@ -467,199 +562,6 @@ internal fun formatAxisHeight(value: Double): String {
     }
 }
 
-/**
- * Inspire des applis de reference (ex. Surf-Forecast) : un axe vertical a gauche avec
- * des lignes horizontales a hauteur de houle fixe (0,5 / 1 / 1,5 m, etc.), pour lire
- * la courbe d'un coup d'oeil "entre telle et telle ligne" plutot que de devoir dechiffrer
- * de petites etiquettes numeriques collees a chaque point.
- */
-@Composable
-private fun DailyTimelineSwellCanvas(
-    hours: List<HourlyUiModel>,
-    ratings: List<SlotRating>,
-    nowIndex: Int,
-    selectedIndex: Int,
-    onSurfaceColor: Color,
-    // Plus grosse houle de la semaine : la même échelle que la vue semaine (mêmes hauteurs, mêmes graduations).
-    scaleRawMax: Double? = null,
-    // Lever et coucher (heures décimales) : un petit soleil et l'heure dans les marges de chaque côté.
-    sunriseHour: Float? = null,
-    sunsetHour: Float? = null,
-    modifier: Modifier = Modifier
-) {
-    if (hours.size < 2) {
-        Box(modifier = modifier)
-        return
-    }
-
-    val primaryColor = MaterialTheme.colorScheme.primary
-    // Remplace les Paint Android (non multiplateformes) : mêmes tailles, graisses et alignements.
-    val textMeasurer = rememberTextMeasurer()
-    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
-    val periodTextStyle = TextStyle(color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-    // Fond léger derrière les graduations (couleur de l'encart : marche en clair comme en sombre).
-    val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
-
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val padY = 16.dp.toPx()
-
-        // Echelle de l'axe : un pas "rond" (0,25 / 0,5 / 1 / 2 m...) choisi pour obtenir
-        // environ 4 lignes, et toujours un peu de marge au-dessus du pic du jour.
-        val rawMax = maxOf(scaleRawMax ?: 0.0, hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
-        val (niceMax, gridValues) = swellAxisScale(rawMax)
-
-        val axisLabels = gridValues.map { formatAxisHeight(it) }
-        // Graduations DANS la courbe (pas de colonne vide à gauche) : marges gauche et droite identiques.
-        val axisW = 0f
-
-        val usableH = h - (2 * padY)
-        val baseY = padY + usableH
-        val plotLeft = axisW
-        val plotW = (w - plotLeft).coerceAtLeast(1f)
-        val stepX = plotW / (hours.size - 1).toFloat()
-
-        // Lignes horizontales de repere + etiquette a gauche, a chaque palier de l'axe.
-        gridValues.forEach { value ->
-            val y = padY + usableH * (1f - (value / niceMax).toFloat())
-            drawLine(
-                color = onSurfaceColor.copy(alpha = 0.10f),
-                start = Offset(plotLeft, y),
-                end = Offset(w, y),
-                strokeWidth = 0.8.dp.toPx()
-            )
-        }
-
-        val points = hours.mapIndexed { index, item ->
-            val ratio = (item.waveHeight / niceMax).coerceIn(0.0, 1.0).toFloat()
-            val y = padY + usableH * (1f - ratio)
-            Offset(plotLeft + index * stepX, y)
-        }
-
-        val fillPath = Path().apply {
-            moveTo(plotLeft, baseY)
-            lineTo(points.first().x, points.first().y)
-            for (i in 1 until points.size) {
-                val prev = points[i - 1]
-                val curr = points[i]
-                val midX = (prev.x + curr.x) / 2f
-                cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
-            }
-            lineTo(w, baseY)
-            close()
-        }
-        drawPath(path = fillPath, color = AppColors.TideHigh.copy(alpha = 0.18f))
-
-        // Point 3 : la courbe est tracee segment par segment, coloree selon le score
-        // (rouge/orange/vert) de l'heure de depart du segment.
-        for (i in 1 until points.size) {
-            val prev = points[i - 1]
-            val curr = points[i]
-            val midX = (prev.x + curr.x) / 2f
-            val segPath = Path().apply {
-                moveTo(prev.x, prev.y)
-                cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
-            }
-            val rating = ratings.getOrElse(i - 1) { ratings.getOrElse(i) { SlotRating(50, false) } }
-            val segColor = conditionBand(rating).color()
-            drawPath(path = segPath, color = segColor, style = Stroke(width = 2.6.dp.toPx()))
-        }
-
-        // Trois pastilles "periode" reparties dans la journee (matin / milieu / fin)
-        // plutot qu'une seule au pic : donne une idee de comment la periode evolue sur
-        // la journee, sans surcharger la courbe d'une etiquette par point.
-        val periodIndices = listOf(0.13, 0.38, 0.63, 0.88)
-            .map { frac -> (frac * (hours.size - 1)).roundToInt().coerceIn(0, hours.size - 1) }
-            .distinct()
-        periodIndices.forEach { idx ->
-            val point = points[idx]
-            val label = "${hours[idx].wavePeriod.roundToInt()}s"
-            val periodLayout = textMeasurer.measure(label, periodTextStyle)
-            val textW = periodLayout.size.width.toFloat()
-            val bubbleLow = plotLeft + textW / 2f + 6.dp.toPx()
-            val bubbleHigh = (w - textW / 2f - 6.dp.toPx()).coerceAtLeast(bubbleLow)
-            val bubbleCenter = Offset(
-                point.x.coerceIn(bubbleLow, bubbleHigh),
-                (point.y - 16.dp.toPx()).coerceAtLeast(padY + 8.dp.toPx())
-            )
-            drawCircle(
-                color = Color.Black.copy(alpha = 0.35f),
-                radius = 13.dp.toPx(),
-                center = bubbleCenter
-            )
-            // Centré sur la pastille, ligne de base à +3.5dp (comme Paint.Align.CENTER).
-            drawText(
-                periodLayout,
-                topLeft = Offset(bubbleCenter.x - textW / 2f, bubbleCenter.y + 3.5.dp.toPx() - periodLayout.firstBaseline)
-            )
-        }
-
-        // Lever et coucher : un petit soleil (levant / couchant) et l'heure, en bas des marges, sous les graduations.
-        val firstHour = hours.first().rawTime.hour.toFloat()
-        val sunColor = Color(0xFFFFD9A0)
-        val sunTimeStyle = TextStyle(color = sunColor, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
-        fun sunMark(hourDecimal: Float?, isSunrise: Boolean) {
-            if (hourDecimal == null) return
-            val x = (plotLeft + (hourDecimal - firstHour) * stepX).coerceIn(plotLeft, w)
-            val cx = if (isSunrise) (plotLeft + x) / 2f else (x + w) / 2f
-            if (kotlin.math.abs(x - (if (isSunrise) plotLeft else w)) < 22.dp.toPx()) return
-            drawSunEvent(Offset(cx, baseY - 22.dp.toPx()), isSunrise, sunColor, 1.2.dp.toPx())
-            var hh = hourDecimal.toInt()
-            var mm = ((hourDecimal - hh) * 60f).roundToInt()
-            if (mm == 60) { hh += 1; mm = 0 }
-            val layout = textMeasurer.measure(hh.toString().padStart(2, '0') + ":" + mm.toString().padStart(2, '0'), sunTimeStyle)
-            drawText(layout, topLeft = Offset((cx - layout.size.width / 2f).coerceIn(0f, w - layout.size.width), baseY - 12.dp.toPx()))
-        }
-        sunMark(sunriseHour, true)
-        sunMark(sunsetHour, false)
-
-        // « Maintenant » : trait en pointillés et son nom en haut (masqué quand il touche l'heure choisie).
-        val selX = points.getOrNull(selectedIndex)?.x
-        if (nowIndex in points.indices && nowIndex != selectedIndex) {
-            val nx = points[nowIndex].x
-            drawLine(
-                color = onSurfaceColor.copy(alpha = 0.5f), start = Offset(nx, padY - 2.dp.toPx()), end = Offset(nx, baseY),
-                strokeWidth = 1.dp.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
-            )
-            if (selX == null || kotlin.math.abs(selX - nx) > 56.dp.toPx()) {
-                val nowLayout = textMeasurer.measure("Maintenant", axisTextStyle.copy(fontWeight = FontWeight.Bold))
-                val tx = (nx - nowLayout.size.width / 2f).coerceIn(0f, w - nowLayout.size.width)
-                drawText(nowLayout, topLeft = Offset(tx, 0f))
-            }
-        }
-
-        // Heure choisie : trait blanc et son heure en haut ; le point prend la couleur de la note.
-        if (selectedIndex in points.indices) {
-            val selPoint = points[selectedIndex]
-            drawLine(color = Color.White, start = Offset(selPoint.x, padY - 2.dp.toPx()), end = Offset(selPoint.x, baseY), strokeWidth = 2.dp.toPx())
-            val hourText = hours[selectedIndex].rawTime.hour.toString().padStart(2, '0') + ":00"
-            val pill = textMeasurer.measure(hourText, TextStyle(color = Color(0xFF0B121A), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold))
-            val pw = pill.size.width + 10.dp.toPx()
-            val pillLeft = (selPoint.x - pw / 2f).coerceIn(0f, w - pw)
-            drawRoundRect(Color.White, topLeft = Offset(pillLeft, 0f), size = Size(pw, pill.size.height.toFloat() + 2.dp.toPx()), cornerRadius = CornerRadius(5.dp.toPx()))
-            drawText(pill, topLeft = Offset(pillLeft + 5.dp.toPx(), 1.dp.toPx()))
-            val ringColor = ratings.getOrNull(selectedIndex)?.let { conditionBand(it).color() } ?: primaryColor
-            drawCircle(color = Color.White, radius = 4.6.dp.toPx(), center = selPoint)
-            drawCircle(color = ringColor, radius = 3.dp.toPx(), center = selPoint)
-        }
-
-        // Graduations en dernier, par-dessus le remplissage et la courbe : le fond léger derrière les chiffres reste
-        // visible (comme dans la vue semaine, où l'échelle est dessinée au-dessus).
-        gridValues.forEach { value ->
-            val y = padY + usableH * (1f - (value / niceMax).toFloat())
-            val axisLayout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
-            val labelTop = y - axisLayout.size.height - 1.dp.toPx()
-            drawRoundRect(
-                color = labelBg,
-                topLeft = Offset(2.dp.toPx(), labelTop),
-                size = androidx.compose.ui.geometry.Size(axisLayout.size.width + 4.dp.toPx(), axisLayout.size.height.toFloat()),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx())
-            )
-            drawText(axisLayout, topLeft = Offset(4.dp.toPx(), labelTop))
-        }
-    }
-}
 
 /**
  * Lever / coucher de soleil dessiné à la main : horizon, demi-soleil et flèche (vers le haut = lever, vers le bas =
