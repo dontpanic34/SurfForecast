@@ -484,7 +484,6 @@ private fun DailyCurveCanvas(
                 lineTo(pts.last().x, bottom)
                 close()
             }
-            drawPath(fill, color = primaryFill.copy(alpha = 0.18f))
             for (i in 1 until pts.size) {
                 val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
                 val seg = Path().apply { moveTo(p.x, p.y); cubicTo(mx, p.y, mx, c.y, c.x, c.y) }

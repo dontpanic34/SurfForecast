@@ -446,7 +446,6 @@ fun ContinuousWaveCanvas(
             lineTo(w, baseY)
             close()
         }
-        drawPath(path = fillPath, color = AppColors.TideHigh.copy(alpha = 0.3f))
 
         val strokePath = Path().apply {
             moveTo(points.first().x, points.first().y)
