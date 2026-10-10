@@ -442,7 +442,9 @@ fun MainScreen(
 
                         // Notation avec la mémoire du vent (la mer garde le vent qui vient de souffler).
                         val scoringByDate = availableDates.associateWith { hoursWithWindMemory(it, groupedByDate) }
-                        val dailyStars = availableDates.map { date ->
+                        // Note du jour (matin + après-midi, nuit offshore comprise) : elle donne les étoiles ET le libellé, pour que
+                        // « Très bon » ne s'affiche pas avec 2,5 étoiles parce qu'une seule heure est bonne.
+                        val dailyScores = availableDates.map { date ->
                             val hours = daylightHoursFor(date, scoringByDate, state.dailySunInfo)
                             // Nuit offshore : soirée de la veille (21 h et après) + petit matin (avant 7 h).
                             val night = groupedByDate[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 21 } +
@@ -450,12 +452,16 @@ fun MainScreen(
                             dayQualityScore(
                                 hours, idealSwellDirection, viewModel.surferLevel, state.dailyTides[date],
                                 offshoreNight = hasOffshoreNight(night, idealSwellDirection)
-                            )?.let { starsForScore(it) }
+                            )
                         }
+                        val dailyStars = dailyScores.map { it?.let { sc -> starsForScore(sc) } }
 
-                        // Libellé (avec tendance) de la meilleure heure de chaque jour, sous les étoiles.
-                        val dailyLabels: List<SlotRating?> = availableDates.map { date ->
-                            bestRatingOfDay(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
+                        // Libellé du jour : celui de la note du jour. Les cas à part (trop gros, trop petit, challengeant, trop de
+                        // vent) gardent leur nom quand c'est le cas de la meilleure heure.
+                        val dailyLabels: List<SlotRating?> = availableDates.mapIndexed { i, date ->
+                            val best = bestRatingOfDay(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
+                            val score = dailyScores[i]
+                            if (best == null) null else if (best.kind != ConditionKind.NORMAL || score == null) best else SlotRating(score, false)
                         }
 
                         val dailyBands: List<List<ScoreBand>> = availableDates.map { date ->
@@ -894,7 +900,8 @@ fun DynamicCardsSection(
         if (isToday) {
             hoursForSelectedDay.minByOrNull { abs(it.rawTime.hour - currentHour) } ?: hoursForSelectedDay.firstOrNull()
         } else {
-            hoursForSelectedDay.firstOrNull()
+            // Un autre jour : une heure de la journée (autour de 14 h), pas le petit matin.
+            hoursForSelectedDay.minByOrNull { abs(it.rawTime.hour - 14) } ?: hoursForSelectedDay.firstOrNull()
         }
     }
 
