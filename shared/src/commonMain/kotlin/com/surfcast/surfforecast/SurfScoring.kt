@@ -77,6 +77,8 @@ data class SurfProfile(
 
     companion object {
         const val NO_CAP = 1e9
+        /** Plafond « trop gros » minimal par rapport au minimum d'énergie. */
+        const val MIN_CAP_RATIO = 1.5
         const val CUSTOM_PREFIX = "custom:"
 
         /**
@@ -106,8 +108,10 @@ data class SurfProfile(
                 val v = level.removePrefix(CUSTOM_PREFIX).split(";").mapNotNull { it.toDoubleOrNull() }
                 // 11 nombres = ancien format (sans direction du vent) : les nouveaux réglages gardent leur valeur par défaut.
                 if (v.size == 11 || v.size == 13) {
+                    // Un maximum au ras du minimum rendrait « trop gros » presque tous les jours : marge d'au moins 50 %.
+                    val cap = if (v[2] >= NO_CAP) v[2] else maxOf(v[2], v[0] * MIN_CAP_RATIO)
                     return SurfProfile(
-                        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10] > 0.5,
+                        v[0], v[1], cap, v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10] > 0.5,
                         directionMatters = v.getOrElse(11) { 1.0 }, offshoreMinFactor = v.getOrElse(12) { 1.0 }
                     )
                 }

@@ -3,12 +3,12 @@ package com.surfcast.surfforecast
 import androidx.compose.ui.graphics.Color
 
 /**
- * Nuances de la note, du pire au meilleur, avec des couleurs bien contrastées : rouge foncé (à éviter), rouge (médiocre),
+ * Nuances de la note, du pire au meilleur, avec des couleurs bien contrastées : rouge foncé (mauvais), rouge (médiocre),
  * orange (correct), jaune (bon), vert (très bon), vert fluo (excellent) ; « trop gros » à part (violet).
  */
 enum class ScoreBand(val label: String) {
     TOO_BIG("Trop gros"),
-    AVOID("À éviter"),
+    AVOID("Mauvais"),
     POOR("Médiocre"),
     FAIR("Correct"),
     GOOD("Bon"),

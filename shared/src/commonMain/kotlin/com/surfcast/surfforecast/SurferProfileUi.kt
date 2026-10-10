@@ -262,7 +262,7 @@ fun SurferProfileSection(
                 Slider(
                     value = minIdx.toFloat(), onValueChange = { i ->
                         val v = MIN_ENERGIES[i.roundToInt().coerceIn(0, MIN_ENERGIES.lastIndex)]
-                        update(profile.copy(idealMin = v, rampEnd = maxOf(v, minOf(profile.rampEnd, profile.idealMax)), cap = maxOf(profile.cap, v)))
+                        update(profile.copy(idealMin = v, rampEnd = maxOf(v, minOf(profile.rampEnd, profile.idealMax)), cap = if (profile.hasCap) maxOf(profile.cap, v * SurfProfile.MIN_CAP_RATIO) else profile.cap))
                     },
                     valueRange = 0f..6f, steps = 5
                 )
@@ -280,16 +280,16 @@ fun SurferProfileSection(
                             profile.copy(
                                 cap = cap,
                                 idealMax = if (cap >= SurfProfile.NO_CAP) 4000.0 else maxOf(cap / 2.2, profile.idealMin),
-                                idealMin = minOf(profile.idealMin, cap)
+                                idealMin = if (cap >= SurfProfile.NO_CAP) profile.idealMin else minOf(profile.idealMin, cap / SurfProfile.MIN_CAP_RATIO)
                             )
                         )
                     },
                     valueRange = 0f..7f, steps = 6
                 )
                 EnergyCalculator(
-                    onUseAsMin = { e -> update(profile.copy(idealMin = e, rampEnd = e, cap = maxOf(profile.cap, e), idealMax = maxOf(profile.idealMax, e))) },
+                    onUseAsMin = { e -> update(profile.copy(idealMin = e, rampEnd = e, cap = if (profile.hasCap) maxOf(profile.cap, e * SurfProfile.MIN_CAP_RATIO) else profile.cap, idealMax = maxOf(profile.idealMax, e))) },
                     onUseAsMax = { e ->
-                        update(profile.copy(cap = e, idealMax = maxOf(e / 2.2, minOf(profile.idealMin, e)), idealMin = minOf(profile.idealMin, e), rampEnd = minOf(profile.rampEnd, e)))
+                        update(profile.copy(cap = e, idealMax = maxOf(e / 2.2, minOf(profile.idealMin, e)), idealMin = minOf(profile.idealMin, e / SurfProfile.MIN_CAP_RATIO), rampEnd = minOf(profile.rampEnd, e)))
                     }
                 )
             }
@@ -353,7 +353,7 @@ internal fun ScorePreviewList(surferLevel: String) {
                 )
             }
             Column {
-                Text(day.title + if (rating.tooBig) " · Trop gros pour moi" else "", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                Text(day.title + if (rating.tooBig) " · Au-dessus de mon maximum" else "", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
                 Text(day.details, fontSize = 11.sp, color = colors.onSurfaceVariant)
             }
         }

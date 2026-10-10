@@ -60,9 +60,9 @@ fun volumeRatio(volumeL: Double?, weightKg: Int): Double? =
 /** Fourchette de ratio L/kg par profil (repères de boutiques, adulte en forme) : [min, max]. */
 fun ratioRangeFor(level: String): ClosedFloatingPointRange<Double> = when (level) {
     "beginner" -> 0.58..0.80
-    "intermediate" -> 0.43..0.58
-    "confirmed" -> 0.35..0.43
-    else -> 0.28..0.35
+    "intermediate" -> 0.45..0.58
+    "confirmed" -> 0.37..0.45
+    else -> 0.30..0.37
 }
 
 /** Volume (L) correspondant à un profil pour ce poids : fourchette min-max. */
@@ -74,8 +74,8 @@ fun volumeRangeFor(level: String, weightKg: Int): ClosedFloatingPointRange<Doubl
 /** Profil que suggère un ratio L/kg (repère indicatif, pas un jugement de niveau). */
 fun levelForRatio(ratio: Double): String = when {
     ratio >= 0.58 -> "beginner"
-    ratio >= 0.43 -> "intermediate"
-    ratio >= 0.35 -> "confirmed"
+    ratio >= 0.45 -> "intermediate"
+    ratio >= 0.37 -> "confirmed"
     else -> "expert"
 }
 
@@ -138,9 +138,10 @@ val VOLUME_LEVELS: List<Pair<String, Double>> = listOf(
     "Débutant" to 0.68,
     "Débutant / Interm." to 0.54,
     "Intermédiaire" to 0.42,
-    "Interm. / Confirmé" to 0.38,
-    "Confirmé" to 0.35,
-    "Expert" to 0.31
+    "Interm. / Confirmé" to 0.405,
+    "Confirmé" to 0.38,
+    // Repères de pros en shortboard : Slater 72 kg ≈ 24-25 L, Medina 80 kg = 29 L, Wright 86 kg = 31,5 L (≈ 0,34 à 0,37 L/kg).
+    "Expert" to 0.35
 )
 
 /** Forme physique : libellé et coefficient (moins en forme = plus de volume). */
