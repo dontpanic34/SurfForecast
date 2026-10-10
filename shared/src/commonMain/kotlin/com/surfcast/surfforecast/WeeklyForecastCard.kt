@@ -37,6 +37,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -336,7 +337,11 @@ internal val WEEK_AXIS_W = 30.dp
 internal const val WEEK_VISIBLE_DAYS = 3.7f
 
 /** Hauteur de la courbe de la semaine (partagée avec son échelle fixe). */
-internal val WEEK_CANVAS_H = 180.dp
+internal val WEEK_CANVAS_H: Dp get() = SkyGraphSettings.weekHeightDp().dp
+
+/** Hauteur maximale de la houle de la semaine à l'échelle : elle atteint la part d'eau réglée (35 % par défaut). */
+internal fun weekDisplayMax(allHourlyData: List<HourlyUiModel>): Double =
+    (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3) / SkyGraphSettings.waterFraction
 
 /** Échelle des hauteurs de la semaine, fixe à gauche pendant que les jours défilent. */
 @Composable
@@ -350,9 +355,9 @@ internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifi
         val padTop = 16.dp.toPx()
         val usableH = size.height - padTop - 16.dp.toPx()
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
-        val (niceMax, gridValues) = swellAxisScale(rawMax)
+        val (_, gridValues) = swellAxisScale(rawMax)
         gridValues.forEach { value ->
-            val y = padTop + usableH * (1f - (value / niceMax).toFloat())
+            val y = padTop + usableH * (1f - (value / weekDisplayMax(allHourlyData)).toFloat())
             val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
             // Graduations DANS la courbe, collées à gauche : mêmes marges à gauche et à droite, comme le déroulé.
             val labelTop = y - layout.size.height - 1.dp.toPx()
@@ -388,7 +393,9 @@ fun ContinuousWaveCanvas(
     val isDarkTheme = isDarkSurfaceTheme()
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
     val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
-    val skyWater = LocalSkyImages.current?.water
+    val skyImages = LocalSkyImages.current
+    val weekRainActive = allHourlyData.any { rainAmountForCode(it.weatherCode) > 0f }
+    val rainClock = rememberRainClock(weekRainActive)
     val textHalo = Color(0xFF0B121A)
 
     val heightTextPaint = TextStyle(color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -409,9 +416,10 @@ fun ContinuousWaveCanvas(
 
         // Échelle des hauteurs à gauche, qui s'adapte aux prévisions de la semaine (comme le déroulé de la journée).
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
-        val (niceMax, gridValues) = swellAxisScale(rawMax)
+        val (_, gridValues) = swellAxisScale(rawMax)
+        val displayMaxW = weekDisplayMax(allHourlyData)
         gridValues.forEach { value ->
-            val y = padTop + usableH * (1f - (value / niceMax).toFloat())
+            val y = padTop + usableH * (1f - (value / displayMaxW).toFloat())
             drawLine(
                 color = onSurfaceColor.copy(alpha = 0.10f),
                 start = Offset(plotLeft, y),
@@ -432,7 +440,7 @@ fun ContinuousWaveCanvas(
 
         val stepX = plotW / (allHourlyData.size - 1).coerceAtLeast(1).toFloat()
         val points = allHourlyData.mapIndexed { index, item ->
-            val ratio = (item.waveHeight / niceMax).coerceIn(0.0, 1.0).toFloat()
+            val ratio = (item.waveHeight / displayMaxW).coerceIn(0.0, 1.0).toFloat()
             Offset(plotLeft + index * stepX, padTop + usableH * (1f - ratio))
         }
 
@@ -449,7 +457,22 @@ fun ContinuousWaveCanvas(
             close()
         }
 
-        skyWater?.let { drawWater(it, fillPath, plotLeft, w, points.minOf { p -> p.y } - 2.dp.toPx(), baseY) }
+        skyImages?.let { im ->
+            val rainCurve = SkyCurve(
+                FloatArray(points.size) { points[it].x }, FloatArray(points.size) { rainAmountForCode(allHourlyData[it].weatherCode) }, 7.dp.toPx()
+            )
+            drawWater(im, rainCurve.takeIf { weekRainActive }, fillPath, plotLeft, w, points.minOf { p -> p.y } - 2.dp.toPx(), baseY)
+            if (weekRainActive) {
+                fun surfaceY(x: Float): Float {
+                    for (i in 1 until points.size) if (x <= points[i].x) {
+                        val a = points[i - 1]; val b = points[i]
+                        return a.y + (b.y - a.y) * ((x - a.x) / (b.x - a.x).coerceAtLeast(1e-3f)).coerceIn(0f, 1f)
+                    }
+                    return points.last().y
+                }
+                drawRainRipples(fillPath, rainCurve, ::surfaceY, plotLeft, w, baseY, rainClock.value)
+            }
+        }
 
         val strokePath = Path().apply {
             moveTo(points.first().x, points.first().y)
@@ -788,12 +811,17 @@ internal fun weekSkyScene(
     val smooth = 7f * density
     val top = 8f * density
     val bottom = size.height - 18f * density
+    // La houle la plus haute de la semaine atteint la part d'eau réglée ; les nuages sont étalés sur le ciel au-dessus.
+    val padTop = 16f * density
+    val usableH = size.height - 32f * density
+    val waterline = padTop + usableH * (1f - SkyGraphSettings.waterFraction)
     return SkyScene(
         left = 0f, right = size.width, top = top, bottom = bottom,
         cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), smooth),
         rain = SkyCurve(xs.toFloatArray(), rain.toFloatArray(), smooth),
         snow = SkyCurve(xs.toFloatArray(), snow.toFloatArray(), smooth),
         suns = suns,
-        animate = rain.any { it > 0f } || snow.any { it > 0f }
+        animate = rain.any { it > 0f } || snow.any { it > 0f },
+        skyHeight = waterline - top + 8f * density
     )
 }

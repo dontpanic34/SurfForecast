@@ -24,11 +24,11 @@ object AppColors {
     val DarkPillInactive = Color(0xFF23404C)
 
     // --- Thème clair "Brume marine" : bleu marine et vert du thème sombre, en version claire ---
-    val LightBackground = Color(0xFFEAF2F6)
-    val LightSurface = Color(0xFFFFFFFF)
-    val LightSurfaceVariant = Color(0xFFD9E7EE)
+    val LightBackground = Color(0xFFC5D3E2)
+    val LightSurface = Color(0xFFD9E3EE)
+    val LightSurfaceVariant = Color(0xFFC9D6E4)
     val LightOnBackground = Color(0xFF0C2433)
     val LightOnSurfaceVariant = Color(0xFF5A7686)
     val LightPillActive = Color(0xFF134B73)
-    val LightPillInactive = Color(0xFFD9E7EE)
+    val LightPillInactive = Color(0xFFD9E3EE)
 }
