@@ -80,7 +80,7 @@ fun WeeklyForecastCard(
     dailyWaterTemps: List<Int?>,
     // Étoiles du jour (0,5 à 5) d'après le meilleur créneau ; null = trop gros pour le profil.
     dailyStars: List<Float?> = emptyList(),
-    // Vue « Tendance » : la meilleure heure de chaque jour, pour le libellé sous les étoiles (vide = pas de libellé).
+    // La meilleure heure de chaque jour, pour le libellé sous les étoiles (vide = pas de libellé).
     dailyLabels: List<SlotRating?> = emptyList(),
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     fixedMaxScale: Float,
@@ -489,7 +489,7 @@ fun ContinuousWaveCanvas(
         }
 
         // Énergie de la houle au pic du jour, sous la courbe ; la couleur suit le profil de l'utilisateur :
-        // gris (sous le minimum), vert (zone idéale), rose (challengeant), violet (trop gros).
+        // gris (sous le minimum), vert (zone idéale), bleu vif (challengeant), violet (trop gros).
         for (i in 0 until daysCount) {
             val targetX = plotLeft + (i + 0.5f) * dayWidth
             val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
@@ -501,11 +501,11 @@ fun ContinuousWaveCanvas(
     }
 }
 
-/** Couleur d'une zone d'énergie : gris, vert, rose (challengeant), violet (« trop gros », comme le score). */
+/** Couleur d'une zone d'énergie : gris, vert, bleu vif (challengeant), violet (« trop gros », comme le score). */
 internal fun energyZoneColor(zone: Int): Color = when (zone) {
     0 -> Color(0xFF78909C)
     1 -> Color(0xFF26A69A)
-    2 -> Color(0xFFD81B60)
+    2 -> Color(0xFF2F6BFF)
     else -> Color(0xFF7B2CBF)
 }
 

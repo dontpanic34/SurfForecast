@@ -32,7 +32,7 @@ fun NowTideCard(
     tideInfo: DailyTideInfo?,
     windUnit: String,
     seaTemperature: Int? = null,
-    // Vue « Tendance » : la note de l'heure, avec son libellé et sa tendance (null = vue classique).
+    // La note de l'heure, avec son libellé et sa tendance (« Correct à Bon »); null = pas de libellé.
     rating: SlotRating? = null,
     modifier: Modifier = Modifier
 ) {

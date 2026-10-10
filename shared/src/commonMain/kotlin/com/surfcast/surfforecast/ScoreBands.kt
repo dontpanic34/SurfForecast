@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Nuances de la note, du meilleur (cyan clair) au pire (rouge), comme une carte de vent : cyan (parfait), vert (très
- * bon), vert-jaune (bon), jaune (correct), orange (médiocre), rouge (mauvais). À part : violet (trop gros), rose
+ * bon), vert-jaune (bon), jaune (correct), orange (médiocre), rouge (mauvais). À part : violet (trop gros), bleu vif
  * (challengeant : costaud mais faisable), gris clair (trop petit), orange foncé (trop de vent).
  */
 enum class ScoreBand(val label: String) {
@@ -42,13 +42,13 @@ fun conditionBand(rating: SlotRating): ScoreBand = when (rating.kind) {
 
 fun ScoreBand.color(): Color = when (this) {
     ScoreBand.TOO_BIG -> Color(0xFF7B2CBF)
-    ScoreBand.AVOID -> Color(0xFFE53935)
+    ScoreBand.AVOID -> Color(0xFFD32F2F)
     ScoreBand.POOR -> Color(0xFFFF9A1F)
     ScoreBand.FAIR -> Color(0xFFFFE033)
     ScoreBand.GOOD -> Color(0xFFB8E04A)
     ScoreBand.VERY_GOOD -> Color(0xFF3DDC84)
     ScoreBand.EXCELLENT -> Color(0xFF7EE7FF)
-    ScoreBand.CHALLENGING -> Color(0xFFD81B60)
+    ScoreBand.CHALLENGING -> Color(0xFF2F6BFF)
     ScoreBand.TOO_SMALL -> Color(0xFFCFD8E3)
     ScoreBand.TOO_WINDY -> Color(0xFFF57C00)
 }
@@ -79,7 +79,7 @@ fun bandLabelWithTrend(rating: SlotRating): String {
 }
 
 private val STOPS = listOf(
-    10 to 0xFFE53935, 30 to 0xFFFF9A1F, 47 to 0xFFFFE033, 62 to 0xFFB8E04A, 77 to 0xFF3DDC84, 92 to 0xFF7EE7FF
+    10 to 0xFFD32F2F, 30 to 0xFFFF9A1F, 47 to 0xFFFFE033, 62 to 0xFFB8E04A, 77 to 0xFF3DDC84, 92 to 0xFF7EE7FF
 )
 
 /** Couleur d'une note sur le dégradé continu (rouge -> orange -> jaune -> vert-jaune -> vert -> cyan). */

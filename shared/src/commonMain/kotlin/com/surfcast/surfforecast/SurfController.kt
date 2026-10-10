@@ -532,15 +532,6 @@ class SurfController(
         profileNudgeHidden = true
     }
 
-    // Vue de l'accueil : « classic » (courbe, liseré, étoiles) ou « trend » (en plus, le libellé avec tendance : « Correct à Bon »).
-    var homeView by mutableStateOf(prefs.getString("home_view", "classic") ?: "classic")
-        private set
-
-    fun changeHomeView(view: String) {
-        homeView = view
-        prefs.putString("home_view", view)
-    }
-
     // Réponses de l'étape « Tes notes » de l'assistant de profil (« indice:réponse,… »), qui pèsent sur les notes.
     var exampleAnswers by mutableStateOf(prefs.getString("example_answers", "") ?: "")
         private set
