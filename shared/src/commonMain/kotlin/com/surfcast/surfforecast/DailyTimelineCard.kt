@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -67,7 +68,8 @@ fun DailyTimelineCard(
     windUnit: String,
     idealSwellDirection: Int?,
     surferLevel: String,
-    tidePreference: String = "any",
+    // Vue « Tendance » : le libellé de la note de l'heure touchée, en haut à droite.
+    showTrend: Boolean = false,
     // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
     scaleRawMax: Double? = null,
     // Vue simple : une heure sur deux (la légende des couleurs reste toujours visible).
@@ -122,10 +124,9 @@ fun DailyTimelineCard(
     // Score négatif = trop gros pour le niveau (violet).
     // Notation avec la mémoire du vent : la mer ne devient pas « glacée » une heure après 30 km/h de vent de mer.
     val scoring = hoursWithWindMemory(selectedDate, groupedByDate).associateBy { it.rawTime }
-    val scores = curveHours.map { shown ->
+    val ratings = curveHours.map { shown ->
         val hourly = scoring[shown.rawTime] ?: shown
-        val rating = calculateSlotRating(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, tideInfo), tidePreference, tideInfo)
-        if (rating.tooBig) -1 else rating.score
+        calculateSlotRating(hourly, idealSwellDirection, surferLevel)
     }
 
     Card(
@@ -136,14 +137,26 @@ fun DailyTimelineCard(
     ) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
             // --- En-tête : titre seul (réduire / déplacer : Paramètres › Affichage) ---
-            Text(
-                text = "Déroulé de la journée",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = onSurfaceColor.copy(alpha = 0.55f),
-                maxLines = 1,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
-            )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Déroulé de la journée",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurfaceColor.copy(alpha = 0.55f),
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp, vertical = 4.dp)
+                )
+                if (showTrend && selectedIndex in ratings.indices) {
+                    val shownRating = ratings[selectedIndex]
+                    val shownBand = conditionBand(shownRating)
+                    Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(shownBand.color()).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                        Text(
+                            text = bandLabelWithTrend(shownRating).uppercase() + " · " + curveHours[selectedIndex].rawTime.hour + " h",
+                            fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = shownBand.onColor(), maxLines = 1
+                        )
+                    }
+                }
+            }
 
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(4.dp))
@@ -242,7 +255,7 @@ fun DailyTimelineCard(
                 // --- Milieu : courbe de houle coloree par score, avec repere sur l'heure actuelle ---
                 DailyTimelineSwellCanvas(
                     hours = curveHours,
-                    scores = scores,
+                    ratings = ratings,
                     nowIndex = nowIndex,
                     selectedIndex = selectedIndex,
                     onSurfaceColor = onSurfaceColor,
@@ -258,8 +271,10 @@ fun DailyTimelineCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    val legend = listOf(ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.FAIR, ScoreBand.GOOD, ScoreBand.VERY_GOOD, ScoreBand.EXCELLENT) +
-                        (if (scores.any { it < 0 }) listOf(ScoreBand.TOO_BIG) else emptyList())
+                    // Du meilleur au pire, puis les cas à part qui apparaissent dans la journée.
+                    val inDay = ratings.map { conditionBand(it) }.toSet()
+                    val legend = listOf(ScoreBand.EXCELLENT, ScoreBand.VERY_GOOD, ScoreBand.GOOD, ScoreBand.FAIR, ScoreBand.POOR, ScoreBand.AVOID) +
+                        listOf(ScoreBand.CHALLENGING, ScoreBand.TOO_SMALL, ScoreBand.TOO_WINDY, ScoreBand.TOO_BIG).filter { it in inDay }
                     legend.map { it.color() to it.label }.forEach { (dotColor, label) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -532,7 +547,7 @@ internal fun formatAxisHeight(value: Double): String {
 @Composable
 private fun DailyTimelineSwellCanvas(
     hours: List<HourlyUiModel>,
-    scores: List<Int>,
+    ratings: List<SlotRating>,
     nowIndex: Int,
     selectedIndex: Int,
     onSurfaceColor: Color,
@@ -623,8 +638,8 @@ private fun DailyTimelineSwellCanvas(
                 moveTo(prev.x, prev.y)
                 cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
             }
-            val score = scores.getOrElse(i - 1) { scores.getOrElse(i) { 50 } }
-            val segColor = scoreBand(score).color()
+            val rating = ratings.getOrElse(i - 1) { ratings.getOrElse(i) { SlotRating(50, false) } }
+            val segColor = conditionBand(rating).color()
             drawPath(path = segPath, color = segColor, style = Stroke(width = 2.6.dp.toPx()))
         }
 
