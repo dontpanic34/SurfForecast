@@ -473,6 +473,10 @@ fun MainScreen(
                             bestRatingOfDay(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
                         }
 
+                        val dailyBands: List<List<ScoreBand>> = availableDates.map { date ->
+                            dayBandsInTimeOrder(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
+                        }
+
                         val dailyFeelsLike = availableDates.map { date ->
                             state.dailySummaries[date]?.avgFeelsLike ?: 20
                         }
@@ -654,6 +658,7 @@ fun MainScreen(
                                             dailyFeelsLike = dailyFeelsLike,
                                             dailyStars = dailyStars,
                                             dailyLabels = dailyLabels,
+ dailyBands = dailyBands,
                                             dailyWaterTemps = dailyWaterTemps,
                                             fixedMaxScale = fixedMaxScale,
                                             selectedIndex = selectedIndex,
@@ -681,6 +686,7 @@ fun MainScreen(
                                         seaTemperature = (closest.seaTemperature
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
+                                        spotName = state.spotName,
                                         rating = calculateSlotRating(
                                             hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
                                             idealSwellDirection, viewModel.surferLevel
@@ -897,6 +903,7 @@ fun DynamicCardsSection(
     dailyFeelsLike: List<Int>,
     dailyStars: List<Float?>,
     dailyLabels: List<SlotRating?> = emptyList(),
+    dailyBands: List<List<ScoreBand>> = emptyList(),
     dailyWaterTemps: List<Int?>,
     fixedMaxScale: Float,
     selectedIndex: Int,
@@ -1019,6 +1026,7 @@ fun DynamicCardsSection(
                                 dailyWaterTemps = dailyWaterTemps,
                                 dailyStars = dailyStars,
                                 dailyLabels = dailyLabels,
+ dailyBands = dailyBands,
                                 dailySunInfo = dailySunInfo,
                                 fixedMaxScale = fixedMaxScale,
                                 selectedIndex = selectedIndex,
