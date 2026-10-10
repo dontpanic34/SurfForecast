@@ -299,17 +299,20 @@ fun SurfPreferencesDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (page == null) {
-                        Text(
-                            text = "Paramètres",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.onBackground
-                        )
-                    } else {
-                        TextButton(onClick = { page = null }) {
-                            Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (page == null) {
+                            Text(
+                                text = "Paramètres",
+                                fontSize = 19.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.onBackground
+                            )
+                        } else {
+                            TextButton(onClick = { page = null }) {
+                                Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
+                            }
                         }
+                        LanguageFlags(language = language, onChange = onLanguageChanged)
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
@@ -318,6 +321,13 @@ fun SurfPreferencesDialog(
                             tint = colors.onSurfaceVariant
                         )
                     }
+                }
+                if (language != "fr") {
+                    Text(
+                        "La traduction arrive bientôt : pour l'instant l'appli reste en français.",
+                        fontSize = 11.5.sp,
+                        color = colors.onSurfaceVariant
+                    )
                 }
                 page?.let { current ->
                     Text(
@@ -395,47 +405,6 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "Langue",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                APP_LANGUAGES.map { it.code to it.code.uppercase() }.forEach { (code, label) ->
-                                    val isSelected = language == code
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(pillShape)
-                                            .clickable { onLanguageChanged(code) },
-                                        color = if (isSelected) colors.primary else colors.surfaceVariant
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.Center,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            FlagIcon(code, 12.dp)
-                                            Spacer(modifier = Modifier.width(5.dp))
-                                            Text(
-                                                text = label,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (language != "fr") {
-                                Text(
-                                    "La traduction arrive bientôt : pour l'instant l'appli reste en français.",
-                                    fontSize = 11.5.sp,
-                                    color = colors.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Taille de l'affichage",
                                 fontSize = 13.sp,
@@ -1189,4 +1158,25 @@ private fun forecastModelInfo(model: String): Pair<String, String> = when (model
         "Modèle de vagues du Centre européen (14 km). La référence pour la houle du grand large, les longues périodes et l'énergie océanique. " +
         "Moins précis tout près de la côte."
     else -> model to "Modèle de prévision."
+}
+
+/** Les drapeaux de langue, juste à côté de « Paramètres » : un geste, sans passer par l'onglet Affichage. */
+@Composable
+private fun LanguageFlags(language: String, onChange: (String) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        APP_LANGUAGES.forEach { lang ->
+            val selected = language == lang.code
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (selected) colors.primary.copy(alpha = 0.25f) else Color.Transparent)
+                    .clickable { onChange(lang.code) }
+                    .padding(horizontal = 5.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                FlagIcon(lang.code, if (selected) 20.dp else 17.dp)
+            }
+        }
+    }
 }
