@@ -3,9 +3,9 @@ package com.surfcast.surfforecast
 import androidx.compose.ui.graphics.Color
 
 /**
- * Nuances de la note, du meilleur (cyan clair) au pire (rouge), comme une carte de vent : cyan (parfait), vert (très
- * bon), vert-jaune (bon), jaune (correct), orange (médiocre), rouge (mauvais). À part : violet (trop gros), bleu vif
- * (challengeant : costaud mais faisable), gris clair (trop petit), orange foncé (trop de vent).
+ * Nuances de la note, du meilleur au pire : bleu roi (parfait), bleu ciel (très bon), vert (bon), jaune (correct),
+ * rouge (médiocre), marron (mauvais). À part : orange (challengeant : costaud mais faisable), violet (trop gros),
+ * gris clair (trop petit), rose (trop de vent).
  */
 enum class ScoreBand(val label: String) {
     TOO_BIG("Trop gros"),
@@ -42,20 +42,20 @@ fun conditionBand(rating: SlotRating): ScoreBand = when (rating.kind) {
 
 fun ScoreBand.color(): Color = when (this) {
     ScoreBand.TOO_BIG -> Color(0xFF7B2CBF)
-    ScoreBand.AVOID -> Color(0xFFD32F2F)
-    ScoreBand.POOR -> Color(0xFFFF9A1F)
+    ScoreBand.AVOID -> Color(0xFF795548)
+    ScoreBand.POOR -> Color(0xFFE53935)
     ScoreBand.FAIR -> Color(0xFFFFE033)
-    ScoreBand.GOOD -> Color(0xFFB8E04A)
-    ScoreBand.VERY_GOOD -> Color(0xFF3DDC84)
-    ScoreBand.EXCELLENT -> Color(0xFF7EE7FF)
-    ScoreBand.CHALLENGING -> Color(0xFF2F6BFF)
+    ScoreBand.GOOD -> Color(0xFF3DDC84)
+    ScoreBand.VERY_GOOD -> Color(0xFF4FC3F7)
+    ScoreBand.EXCELLENT -> Color(0xFF2B4BFF)
+    ScoreBand.CHALLENGING -> Color(0xFFFF9A1F)
     ScoreBand.TOO_SMALL -> Color(0xFFCFD8E3)
-    ScoreBand.TOO_WINDY -> Color(0xFFF57C00)
+    ScoreBand.TOO_WINDY -> Color(0xFFD81B60)
 }
 
 /** Couleur de texte lisible sur [color] de cette nuance. */
 fun ScoreBand.onColor(): Color = when (this) {
-    ScoreBand.TOO_BIG, ScoreBand.CHALLENGING, ScoreBand.AVOID -> Color.White
+    ScoreBand.TOO_BIG, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.EXCELLENT, ScoreBand.TOO_WINDY -> Color.White
     else -> Color(0xFF061018)
 }
 
@@ -78,11 +78,30 @@ fun bandLabelWithTrend(rating: SlotRating): String {
     return band.label
 }
 
+/**
+ * Les deux niveaux d'un libellé avec tendance (« Très bon à Parfait » -> très bon, parfait), ou le niveau seul :
+ * le fond du libellé est un dégradé de l'un à l'autre.
+ */
+fun trendBands(rating: SlotRating): List<ScoreBand> {
+    val band = conditionBand(rating)
+    if (band !in BAND_ORDER) return listOf(band)
+    for ((i, bound) in BOUNDS.withIndex()) {
+        if (kotlin.math.abs(rating.score - bound) <= 4) return listOf(BAND_ORDER[i], BAND_ORDER[i + 1])
+    }
+    return listOf(band)
+}
+
+/** Couleur de texte lisible sur le fond d'un libellé (une ou deux nuances). */
+fun trendOnColor(bands: List<ScoreBand>): Color {
+    val darkCount = bands.count { it.onColor() == Color.White }
+    return if (darkCount * 2 > bands.size) Color.White else Color(0xFF061018)
+}
+
 private val STOPS = listOf(
-    10 to 0xFFD32F2F, 30 to 0xFFFF9A1F, 47 to 0xFFFFE033, 62 to 0xFFB8E04A, 77 to 0xFF3DDC84, 92 to 0xFF7EE7FF
+    10 to 0xFF795548, 30 to 0xFFE53935, 47 to 0xFFFFE033, 62 to 0xFF3DDC84, 77 to 0xFF4FC3F7, 92 to 0xFF2B4BFF
 )
 
-/** Couleur d'une note sur le dégradé continu (rouge -> orange -> jaune -> vert-jaune -> vert -> cyan). */
+/** Couleur d'une note sur le dégradé continu (marron -> rouge -> jaune -> vert -> bleu ciel -> bleu roi). */
 fun scoreGradientColor(score: Int): Color {
     val s = score.coerceIn(STOPS.first().first, STOPS.last().first)
     for (i in 1 until STOPS.size) {

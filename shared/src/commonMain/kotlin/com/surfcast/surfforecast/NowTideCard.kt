@@ -59,7 +59,6 @@ fun NowTideCard(
             Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(band.color()).padding(horizontal = 12.dp, vertical = 4.dp)) {
                 Text(bandLabelWithTrend(rating).uppercase(), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = band.onColor(), maxLines = 1)
             }
-            Text(rating.why, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface.copy(alpha = 0.7f))
         }
         FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text("Maintenant", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f))

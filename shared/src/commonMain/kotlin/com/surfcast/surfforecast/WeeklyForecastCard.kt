@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -178,14 +179,15 @@ fun WeeklyForecastCard(
                                                 StarsRow(value = stars, starSize = 13.dp)
                                                 val label = dailyLabels.getOrNull(index)
                                                 if (label != null) {
-                                                    val labelBand = conditionBand(label)
+                                                    val labelBands = trendBands(label)
+                                                    val labelBrush = Brush.horizontalGradient(labelBands.map { it.color() }.let { if (it.size == 1) listOf(it[0], it[0]) else it })
                                                     Box(
                                                         modifier = Modifier.padding(top = 2.dp, start = 2.dp, end = 2.dp)
-                                                            .clip(RoundedCornerShape(5.dp)).background(labelBand.color()).padding(horizontal = 4.dp, vertical = 1.dp)
+                                                            .clip(RoundedCornerShape(5.dp)).background(labelBrush).padding(horizontal = 4.dp, vertical = 1.dp)
                                                     ) {
                                                         Text(
                                                             bandLabelWithTrend(label), fontSize = 8.5.sp, fontWeight = FontWeight.Bold,
-                                                            color = labelBand.onColor(), maxLines = 2, textAlign = TextAlign.Center, lineHeight = 10.sp
+                                                            color = trendOnColor(labelBands), maxLines = 2, textAlign = TextAlign.Center, lineHeight = 10.sp
                                                         )
                                                     }
                                                 }
@@ -489,7 +491,7 @@ fun ContinuousWaveCanvas(
         }
 
         // Énergie de la houle au pic du jour, sous la courbe ; la couleur suit le profil de l'utilisateur :
-        // gris (sous le minimum), vert (zone idéale), bleu vif (challengeant), violet (trop gros).
+        // gris (sous le minimum), vert (zone idéale), orange (challengeant), violet (trop gros).
         for (i in 0 until daysCount) {
             val targetX = plotLeft + (i + 0.5f) * dayWidth
             val energy = dailyEnergies.getOrNull(i)?.takeIf { it > 0 } ?: continue
@@ -501,11 +503,11 @@ fun ContinuousWaveCanvas(
     }
 }
 
-/** Couleur d'une zone d'énergie : gris, vert, bleu vif (challengeant), violet (« trop gros », comme le score). */
+/** Couleur d'une zone d'énergie : gris, vert, orange (challengeant), violet (« trop gros », comme le score). */
 internal fun energyZoneColor(zone: Int): Color = when (zone) {
     0 -> Color(0xFF78909C)
     1 -> Color(0xFF26A69A)
-    2 -> Color(0xFF2F6BFF)
+    2 -> Color(0xFFFF9A1F)
     else -> Color(0xFF7B2CBF)
 }
 

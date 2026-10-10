@@ -72,9 +72,9 @@ private val guideSections = listOf(
     GuideSection(
         "🎯", "Le score et les étoiles",
         "Chaque heure reçoit une note de 0 à 100 selon ton niveau : énergie de la houle, direction, vent (rafales comprises) et clapot. Plus la vague est grosse, moins le vent la gêne.\n" +
-            "• Du meilleur au pire : cyan = parfait, vert = très bon, vert-jaune = bon, jaune = correct, orange = médiocre, rouge = mauvais.\n" +
-            "• Bleu vif : challengeant, costaud mais faisable. Avec un offshore, c'est creux et puissant ; avec un vent de mer, gros mais moins creux. Si c'est trop creux pour ton niveau, la note baisse.\n" +
-            "• Violet : trop gros pour ton niveau. Gris clair : trop petit. Orange foncé : trop de vent. Ce n'est pas la même chose que « mauvais ».\n" +
+            "• Du meilleur au pire : bleu roi = parfait, bleu ciel = très bon, vert = bon, jaune = correct, rouge = médiocre, marron = mauvais.\n" +
+            "• Orange : challengeant, costaud mais faisable. Avec un offshore, c'est creux et puissant ; avec un vent de mer, gros mais moins creux. Si c'est trop creux pour ton niveau, la note baisse.\n" +
+            "• Violet : trop gros pour ton niveau. Gris clair : trop petit. Rose : trop de vent. Ce n'est pas la même chose que « mauvais ».\n" +
             "Entre deux niveaux, le libellé dit vers où ça va : « Correct à Bon ».\n" +
             "Ton profil règle la taille de ta plus petite et de ta plus grosse vague, la tolérance au vent de mer, aux rafales, au clapot et à la période : un expert est plus exigeant qu'un débutant. Tu peux aussi noter des exemples de vagues pour que les couleurs te ressemblent.\n" +
             "Les étoiles du jour (0,5 à 5) mélangent le meilleur moment et la durée des bonnes conditions : un jour propre toute la journée vaut plus qu'une seule bonne heure.\n" +
