@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.unit.dp
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.number
@@ -22,6 +23,23 @@ fun DrawScope.drawTextAtBaseline(
 ) {
     val layout = textMeasurer.measure(text, style)
     drawText(layout, topLeft = Offset(x, baselineY - layout.firstBaseline))
+}
+
+/** Texte lisible sur n'importe quel fond : un contour de la couleur [halo] sous le texte. */
+fun DrawScope.drawHaloTextAtBaseline(
+    textMeasurer: TextMeasurer,
+    text: String,
+    style: TextStyle,
+    halo: androidx.compose.ui.graphics.Color,
+    x: Float,
+    baselineY: Float
+) {
+    val outline = style.copy(
+        color = halo,
+        drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round)
+    )
+    drawTextAtBaseline(textMeasurer, text, outline, x, baselineY)
+    drawTextAtBaseline(textMeasurer, text, style, x, baselineY)
 }
 
 /** Équivalent de `paint.descent() + paint.ascent()` (sert à centrer verticalement un texte). */

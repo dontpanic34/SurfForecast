@@ -336,7 +336,7 @@ internal val WEEK_AXIS_W = 30.dp
 internal const val WEEK_VISIBLE_DAYS = 3.7f
 
 /** Hauteur de la courbe de la semaine (partagée avec son échelle fixe). */
-internal val WEEK_CANVAS_H = 132.dp
+internal val WEEK_CANVAS_H = 180.dp
 
 /** Échelle des hauteurs de la semaine, fixe à gauche pendant que les jours défilent. */
 @Composable
@@ -388,10 +388,12 @@ fun ContinuousWaveCanvas(
     val isDarkTheme = isDarkSurfaceTheme()
     val tideLineColor = if (isDarkTheme) AppColors.TideHigh else AppColors.TideHighDark
     val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
+    val skyWater = LocalSkyImages.current?.water
+    val textHalo = Color(0xFF0B121A)
 
-    val heightTextPaint = TextStyle(color = tideLineColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    val heightTextPaint = TextStyle(color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     // Période juste au-dessus de la courbe : neutre, lisible dans les deux thèmes.
-    val periodTextPaint = TextStyle(color = onSurfaceColor.copy(alpha = 0.7f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    val periodTextPaint = TextStyle(color = Color.White.copy(alpha = 0.92f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp)
 
     Canvas(modifier = modifier) {
@@ -447,6 +449,8 @@ fun ContinuousWaveCanvas(
             close()
         }
 
+        skyWater?.let { drawWater(it, fillPath, plotLeft, w, points.minOf { p -> p.y } - 2.dp.toPx(), baseY) }
+
         val strokePath = Path().apply {
             moveTo(points.first().x, points.first().y)
             for (i in 1 until points.size) {
@@ -456,7 +460,7 @@ fun ContinuousWaveCanvas(
                 cubicTo(midX, prev.y, midX, curr.y, curr.x, curr.y)
             }
         }
-        drawPath(path = strokePath, color = tideLineColor, style = Stroke(width = 2.5.dp.toPx()))
+        drawPath(path = strokePath, color = Color.White.copy(alpha = 0.85f), style = Stroke(width = 1.3.dp.toPx()))
 
         for (i in 0 until daysCount) {
             val targetX = plotLeft + (i + 0.5f) * dayWidth
@@ -474,12 +478,12 @@ fun ContinuousWaveCanvas(
                 val gap = 3.dp.toPx()
                 val totalW = hW + if (pText != null) gap + pW else 0f
                 val baseline = (closestPoint.y - 9.dp.toPx()).coerceAtLeast(10.dp.toPx())
-                drawTextAtBaseline(textMeasurer, hText, heightTextPaint, targetX - totalW / 2f, baseline)
-                if (pText != null) drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - totalW / 2f + hW + gap, baseline)
+                drawHaloTextAtBaseline(textMeasurer, hText, heightTextPaint, textHalo, targetX - totalW / 2f, baseline)
+                if (pText != null) drawHaloTextAtBaseline(textMeasurer, pText, periodTextPaint, textHalo, targetX - totalW / 2f + hW + gap, baseline)
             } else if (pText != null) {
                 // Autres jours : la période seule, juste au-dessus de la courbe.
                 val pW = textMeasurer.measure(pText, periodTextPaint).size.width.toFloat()
-                drawTextAtBaseline(textMeasurer, pText, periodTextPaint, targetX - pW / 2f, (closestPoint.y - 5.dp.toPx()).coerceAtLeast(10.dp.toPx()))
+                drawHaloTextAtBaseline(textMeasurer, pText, periodTextPaint, textHalo, targetX - pW / 2f, (closestPoint.y - 5.dp.toPx()).coerceAtLeast(10.dp.toPx()))
             }
         }
 
@@ -778,8 +782,8 @@ internal fun weekSkyScene(
             rain.add(part.maxOfOrNull { rainAmountForCode(it.weatherCode) } ?: 0f)
             snow.add(part.maxOfOrNull { snowAmountForCode(it.weatherCode) } ?: 0f)
         }
-        val sizePx = 44f * density
-        suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 1f * density))
+        val sizePx = 32f * density
+        suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 2f * density))
     }
     val smooth = 7f * density
     val top = 8f * density
