@@ -510,7 +510,7 @@ private fun DailyCurveCanvas(
             val p = pts[selectedIndex]
             val hourly = hours[selectedIndex]
             fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight) {
-                val style = TextStyle(color = labelColor, fontSize = sp.sp, fontWeight = weight)
+                val style = TextStyle(color = nacre, fontSize = sp.sp, fontWeight = weight)
                 val outline = TextStyle(
                     color = halo, fontSize = sp.sp, fontWeight = weight,
                     drawStyle = Stroke(width = 3.dp.toPx(), join = StrokeJoin.Round)
