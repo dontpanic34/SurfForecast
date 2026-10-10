@@ -257,12 +257,11 @@ fun WeeklyForecastCard(
 
                             Row(modifier = Modifier.fillMaxSize()) {
                                 availableDates.forEach { date ->
-                                    val isSelected = date == selectedDate
+                                    // Pas de teinte sur le ciel : le jour choisi se lit à l'en-tête et au repère sur la courbe.
                                     Box(
                                         modifier = Modifier
                                             .width(dayW)
                                             .fillMaxHeight()
-                                            .background(if (isSelected) primaryColor.copy(alpha = 0.12f) else Color.Transparent)
                                             .clickable { onSelectDate(date) }
                                     )
                                 }
