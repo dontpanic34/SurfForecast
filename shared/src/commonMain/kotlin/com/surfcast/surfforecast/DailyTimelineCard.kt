@@ -151,13 +151,18 @@ fun DailyTimelineCard(
                             )
                         }
                     }
-                    Row(modifier = Modifier.padding(top = 4.dp).width(110.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        for (i in 1..5) {
-                            Box(
-                                Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp))
-                                    .background(if (i <= level) shownBand.color() else onSurfaceColor.copy(alpha = 0.15f))
-                            )
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.width(110.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            for (i in 1..5) {
+                                Box(
+                                    Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp))
+                                        .background(if (i <= level) shownBand.color() else onSurfaceColor.copy(alpha = 0.15f))
+                                )
+                            }
                         }
+                        Spacer(Modifier.weight(1f))
+                        // Marées du jour (haute, basse, coefficient), à droite de la jauge.
+                        dailyTides[selectedDate]?.let { TideMiniInfo(it, onSurfaceColor) }
                     }
                 }
             } else {
@@ -574,4 +579,113 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSunEvent(center
         lineTo(center.x + 2.5f * u, tip + back * u)
     }
     drawPath(head, color, style = stroke)
+}
+
+/**
+ * Petit résumé marée (haute/basse), même esprit visuel que SurfLiveStripOverlay, mais
+ * compact pour tenir sur la ligne du titre. Le coefficient n'est plus repete entre
+ * parentheses a cote de chaque heure : un seul coefficient est affiche a la fin, avec le
+ * meme code couleur que "Previsions de la semaine" (pastille verte/orange/rouge selon
+ * le seuil, cf. DailyTideCanvas dans MainScreen.kt).
+ */
+@Composable
+private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
+    val highTime = tideInfo.highTideTime
+    val lowTime = tideInfo.lowTideTime
+    val coef = tideInfo.coefficient
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (highTime != null) {
+            Canvas(modifier = Modifier.size(9.dp)) {
+                val w = size.width
+                val h = size.height
+                val wavePath = Path().apply {
+                    moveTo(0f, h * 0.70f)
+                    quadraticBezierTo(w * 0.5f, h * 0.25f, w, h * 0.70f)
+                }
+                drawPath(wavePath, color = Color(0xFF64B5F6), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+                val arrowX = w * 0.5f
+                drawLine(
+                    color = Color(0xFF64B5F6),
+                    start = Offset(arrowX, h * 0.70f),
+                    end = Offset(arrowX, h * 0.10f),
+                    strokeWidth = 1.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+                val headSize = 1.4.dp.toPx()
+                val headPath = Path().apply {
+                    moveTo(arrowX - headSize, h * 0.10f + headSize)
+                    lineTo(arrowX, h * 0.10f)
+                    lineTo(arrowX + headSize, h * 0.10f + headSize)
+                }
+                drawPath(headPath, color = Color(0xFF64B5F6), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+            }
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = highTime,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor,
+                maxLines = 1
+            )
+        }
+
+        if (lowTime != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Canvas(modifier = Modifier.size(9.dp)) {
+                val w = size.width
+                val h = size.height
+                val wavePath = Path().apply {
+                    moveTo(0f, h * 0.30f)
+                    quadraticBezierTo(w * 0.5f, h * 0.75f, w, h * 0.30f)
+                }
+                drawPath(wavePath, color = Color(0xFF26A69A), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+                val arrowX = w * 0.5f
+                drawLine(
+                    color = Color(0xFF26A69A),
+                    start = Offset(arrowX, h * 0.30f),
+                    end = Offset(arrowX, h * 0.90f),
+                    strokeWidth = 1.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+                val headSize = 1.4.dp.toPx()
+                val headPath2 = Path().apply {
+                    moveTo(arrowX - headSize, h * 0.90f - headSize)
+                    lineTo(arrowX, h * 0.90f)
+                    lineTo(arrowX + headSize, h * 0.90f - headSize)
+                }
+                drawPath(headPath2, color = Color(0xFF26A69A), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+            }
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = lowTime,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor,
+                maxLines = 1
+            )
+        }
+
+        if (coef != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+
+            val dotColor = when {
+                coef < 55 -> AppColors.WindLow
+                coef <= 80 -> AppColors.WindMid
+                else -> AppColors.WindHigh
+            }
+
+            Text(
+                text = "$coef",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor.copy(alpha = 0.75f),
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.width(3.dp))
+            Canvas(modifier = Modifier.size(6.dp)) {
+                drawCircle(color = dotColor, radius = size.minDimension / 2f)
+            }
+        }
+    }
 }

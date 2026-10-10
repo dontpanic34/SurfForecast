@@ -110,7 +110,7 @@ class SkyScene(
 )
 
 /** Les nuages restent des suggestions : assez transparents pour laisser lire la courbe et les chiffres. */
-private const val CLOUD_OPACITY = 0.5f
+private val CLOUD_LAYER_OPACITY = floatArrayOf(0.5f, 0.65f, 0.85f, 1f)
 
 internal class SkyImages(
     val clouds: List<ImageBitmap>, val sun: ImageBitmap, val rain: ImageBitmap, val snow: ImageBitmap, val water: ImageBitmap
@@ -186,12 +186,13 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
 
     clipRect(scene.left, scene.top, scene.right, scene.bottom) {
         // Nuages : quatre calques, chacun plus ou moins opaque le long de l'axe selon la couverture.
+        // Plus le ciel se couvre, plus les nuages sont sombres (en thème clair, on grise les images) et présents.
         val cloudTint = listOf(
-            Color(0xFF69768A).copy(alpha = 0.55f), Color(0xFF69768A).copy(alpha = 0.50f),
-            Color(0xFF5F6C7D).copy(alpha = 0.32f), Color.Transparent
+            Color.Transparent, Color(0xFF8FA0B3).copy(alpha = 0.45f),
+            Color(0xFF66778C).copy(alpha = 0.60f), Color(0xFF4A586B).copy(alpha = 0.70f)
         )
         for (l in 0 until 4) {
-            val stops = fadeStops(scene, n) { x -> cloudWeights(scene.cover.at(x))[l] * (if (l == 3) 0.92f else 1f) * CLOUD_OPACITY }
+            val stops = fadeStops(scene, n) { x -> cloudWeights(scene.cover.at(x))[l] * CLOUD_LAYER_OPACITY[l] }
             if (stops.all { it.second.alpha < 0.02f }) continue
             drawIntoCanvas { canvas ->
                 canvas.saveLayer(bounds, Paint())
@@ -200,7 +201,7 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
                     img, srcOffset = IntOffset.Zero, srcSize = IntSize(img.width, img.height),
                     dstOffset = IntOffset(scene.left.roundToInt(), (scene.top - h * 0.05f).roundToInt()),
                     dstSize = IntSize(w.roundToInt(), (h * 1.25f).roundToInt()),
-                    colorFilter = if (!isDark && cloudTint[l] != Color.Transparent) ColorFilter.tint(cloudTint[l], BlendMode.SrcAtop) else null
+                    colorFilter = if (cloudTint[l] != Color.Transparent && !isDark) ColorFilter.tint(cloudTint[l], BlendMode.SrcAtop) else null
                 )
                 drawRect(
                     brush = Brush.horizontalGradient(*stops, startX = scene.left, endX = scene.right),
