@@ -108,18 +108,32 @@ fun DailyTimelineCard(
 
     val now = nowLocalDateTime()
 
-    // Les 24 heures du jour (la nuit est assombrie sur la courbe) ; les créneaux de 3 h donnent météo et vent.
-    val curveHours = (groupedByDate[selectedDate] ?: emptyList()).sortedBy { it.rawTime }
+    // Le jour avec une heure de marge de chaque côté du lever et du coucher ; météo, vent et heures sont posés toutes
+    // les 3 h à l'intérieur des heures d'ensoleillement.
+    val tideInfo = dailyTides[selectedDate]
+    val sun = dailySunInfo[selectedDate]
+    val sunriseHour = sun?.let { it.sunrise.hour + it.sunrise.minute / 60f }
+    val sunsetHour = sun?.let { it.sunset.hour + it.sunset.minute / 60f }
+    val allDayHours = (groupedByDate[selectedDate] ?: emptyList()).sortedBy { it.rawTime }
+    val fromHour = (sunriseHour?.let { kotlin.math.floor(it).toInt() - 1 } ?: 6).coerceAtLeast(0)
+    val toHour = (sunsetHour?.let { kotlin.math.ceil(it).toInt() + 1 } ?: 22).coerceAtMost(23)
+    val curveHours = allDayHours.filter { it.rawTime.hour in fromHour..toHour }.let { if (it.size >= 2) it else allDayHours }
     val timelineItems: List<HourlyUiModel> = curveHours
+    val labelHours: List<Int> = run {
+        val first = sunriseHour?.let { kotlin.math.ceil(it).toInt() } ?: 9
+        val last = sunsetHour?.toInt() ?: 18
+        generateSequence(first) { it + 3 }.takeWhile { it <= last }.toList()
+    }
 
     val nowIndex = curveHours.indexOfFirst {
         it.rawTime.date == now.date && it.rawTime.hour == now.hour
     }
 
-    val selectedIndex = selectedHour?.let { sel -> curveHours.indexOfFirst { it.rawTime == sel.rawTime } } ?: -1
-
-    val tideInfo = dailyTides[selectedDate]
-    val sun = dailySunInfo[selectedDate]
+    // Une heure choisie hors de la fenêtre (la nuit) se ramène à l'heure visible la plus proche.
+    val selectedIndex = selectedHour?.let { sel ->
+        val exact = curveHours.indexOfFirst { it.rawTime == sel.rawTime }
+        if (exact >= 0) exact else curveHours.indices.minByOrNull { kotlin.math.abs(curveHours[it].rawTime.hour - sel.rawTime.hour) } ?: -1
+    } ?: -1
 
     // Température de la mer (vraie prévision) : celle de l'heure touchée, sinon la moyenne du jour.
     val seaTemp = (
@@ -227,7 +241,7 @@ fun DailyTimelineCard(
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(62.dp)) {
                     val slotW = maxWidth * 3f / (timelineItems.size - 1).coerceAtLeast(1)
                     val firstHour = timelineItems.firstOrNull()?.rawTime?.hour ?: 0
-                    for (h in 6..21 step 3) {
+                    for (h in labelHours) {
                         val idx = h - firstHour
                         val hourly = timelineItems.getOrNull(idx) ?: continue
                         val centerX = maxWidth * idx / (timelineItems.size - 1).coerceAtLeast(1)
@@ -294,7 +308,7 @@ fun DailyTimelineCard(
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(20.dp)) {
                     val slotW = maxWidth * 3f / (timelineItems.size - 1).coerceAtLeast(1)
                     val firstHour = timelineItems.firstOrNull()?.rawTime?.hour ?: 0
-                    for (h in 6..21 step 3) {
+                    for (h in labelHours) {
                         val idx = h - firstHour
                         if (idx !in timelineItems.indices) continue
                         val centerX = maxWidth * idx / (timelineItems.size - 1).coerceAtLeast(1)
@@ -309,77 +323,10 @@ fun DailyTimelineCard(
                     }
                 }
 
-                // Lever et coucher du soleil, à part : les colonnes ci-dessus restent de vraies heures.
-                if (sun != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            SunEventIcon(isSunrise = true, color = onSurfaceColor.copy(alpha = 0.6f), modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(sun.sunrise.formatHHmm(), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(sun.sunset.formatHHmm(), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1)
-                            Spacer(modifier = Modifier.width(3.dp))
-                            SunEventIcon(isSunrise = false, color = onSurfaceColor.copy(alpha = 0.6f), modifier = Modifier.size(12.dp))
-                        }
-                    }
-                }
                 }
             }
             }
         }
-    }
-}
-
-/**
- * Icone lever/coucher de soleil dessinee a la main : horizon + demi-soleil + fleche
- * (vers le haut = lever, vers le bas = coucher).
- */
-@Composable
-private fun SunEventIcon(isSunrise: Boolean, color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val horizonY = h * 0.62f
-
-        drawLine(color = color, start = Offset(0f, horizonY), end = Offset(w, horizonY), strokeWidth = 0.8.dp.toPx())
-
-        drawArc(
-            color = color,
-            startAngle = 180f,
-            sweepAngle = 180f,
-            useCenter = false,
-            topLeft = Offset(w * 0.2f, horizonY - w * 0.3f),
-            size = Size(w * 0.6f, w * 0.6f),
-            style = Stroke(width = 0.8.dp.toPx())
-        )
-
-        val arrowX = w / 2f
-        val lowY = horizonY - w * 0.15f
-        val highY = horizonY - w * 0.55f
-        val startY = if (isSunrise) lowY else highY
-        val endY = if (isSunrise) highY else lowY
-
-        drawLine(
-            color = color,
-            start = Offset(arrowX, startY),
-            end = Offset(arrowX, endY),
-            strokeWidth = 0.8.dp.toPx(),
-            cap = StrokeCap.Round
-        )
-
-        val headSize = 1.1.dp.toPx()
-        val dir = if (isSunrise) 1f else -1f
-        val headPath = Path().apply {
-            moveTo(arrowX - headSize, endY + dir * headSize)
-            lineTo(arrowX, endY)
-            lineTo(arrowX + headSize, endY + dir * headSize)
-        }
-        drawPath(headPath, color = color, style = Stroke(width = 0.8.dp.toPx()))
     }
 }
 
@@ -535,7 +482,7 @@ private fun DailyTimelineSwellCanvas(
     onSurfaceColor: Color,
     // Plus grosse houle de la semaine : la même échelle que la vue semaine (mêmes hauteurs, mêmes graduations).
     scaleRawMax: Double? = null,
-    // Lever et coucher (heures décimales) : la nuit est assombrie.
+    // Lever et coucher (heures décimales) : un petit soleil et l'heure dans les marges de chaque côté.
     sunriseHour: Float? = null,
     sunsetHour: Float? = null,
     modifier: Modifier = Modifier
@@ -648,17 +595,24 @@ private fun DailyTimelineSwellCanvas(
             )
         }
 
-        // La nuit (avant le lever, après le coucher) est assombrie.
+        // Lever et coucher : un petit soleil (levant / couchant) et l'heure, en bas des marges, sous les graduations.
         val firstHour = hours.first().rawTime.hour.toFloat()
-        val nightColor = Color.Black.copy(alpha = 0.30f)
-        if (sunriseHour != null) {
-            val x = (plotLeft + (sunriseHour - firstHour) * stepX).coerceIn(plotLeft, w)
-            if (x > plotLeft) drawRect(nightColor, topLeft = Offset(plotLeft, padY), size = Size(x - plotLeft, baseY - padY))
+        val sunColor = Color(0xFFFFD9A0)
+        val sunTimeStyle = TextStyle(color = sunColor, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
+        fun sunMark(hourDecimal: Float?, isSunrise: Boolean) {
+            if (hourDecimal == null) return
+            val x = (plotLeft + (hourDecimal - firstHour) * stepX).coerceIn(plotLeft, w)
+            val cx = if (isSunrise) (plotLeft + x) / 2f else (x + w) / 2f
+            if (kotlin.math.abs(x - (if (isSunrise) plotLeft else w)) < 22.dp.toPx()) return
+            drawSunEvent(Offset(cx, baseY - 22.dp.toPx()), isSunrise, sunColor, 1.2.dp.toPx())
+            var hh = hourDecimal.toInt()
+            var mm = ((hourDecimal - hh) * 60f).roundToInt()
+            if (mm == 60) { hh += 1; mm = 0 }
+            val layout = textMeasurer.measure(hh.toString().padStart(2, '0') + ":" + mm.toString().padStart(2, '0'), sunTimeStyle)
+            drawText(layout, topLeft = Offset((cx - layout.size.width / 2f).coerceIn(0f, w - layout.size.width), baseY - 12.dp.toPx()))
         }
-        if (sunsetHour != null) {
-            val x = (plotLeft + (sunsetHour - firstHour) * stepX).coerceIn(plotLeft, w)
-            if (x < w) drawRect(nightColor, topLeft = Offset(x, padY), size = Size(w - x, baseY - padY))
-        }
+        sunMark(sunriseHour, true)
+        sunMark(sunsetHour, false)
 
         // « Maintenant » : trait en pointillés et son nom en haut (masqué quand il touche l'heure choisie).
         val selX = points.getOrNull(selectedIndex)?.x
@@ -705,4 +659,28 @@ private fun DailyTimelineSwellCanvas(
             drawText(axisLayout, topLeft = Offset(4.dp.toPx(), labelTop))
         }
     }
+}
+
+/**
+ * Lever / coucher de soleil dessiné à la main : horizon, demi-soleil et flèche (vers le haut = lever, vers le bas =
+ * coucher), centré sur [center] ; [u] est l'unité de dessin (1,2 dp donne une icône d'environ 17 dp de large).
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSunEvent(center: Offset, isSunrise: Boolean, color: Color, u: Float) {
+    val stroke = Stroke(width = 1.1f * u, cap = StrokeCap.Round)
+    val horizonY = center.y + 3f * u
+    drawLine(color, Offset(center.x - 7f * u, horizonY), Offset(center.x + 7f * u, horizonY), strokeWidth = stroke.width, cap = StrokeCap.Round)
+    drawArc(
+        color = color, startAngle = 180f, sweepAngle = 180f, useCenter = false,
+        topLeft = Offset(center.x - 4.5f * u, horizonY - 4.5f * u), size = Size(9f * u, 9f * u), style = stroke
+    )
+    val tip = center.y + (if (isSunrise) -8f else -1f) * u
+    val tail = center.y + (if (isSunrise) -1f else -8f) * u
+    drawLine(color, Offset(center.x, tail), Offset(center.x, tip), strokeWidth = stroke.width, cap = StrokeCap.Round)
+    val back = if (isSunrise) 2.5f else -2.5f
+    val head = Path().apply {
+        moveTo(center.x - 2.5f * u, tip + back * u)
+        lineTo(center.x, tip)
+        lineTo(center.x + 2.5f * u, tip + back * u)
+    }
+    drawPath(head, color, style = stroke)
 }
