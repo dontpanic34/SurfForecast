@@ -62,8 +62,12 @@ fun SurfLogApp(
         val base = LocalDensity.current
         val scale = displayScaleFor(controller.displaySize)
         CompositionLocalProvider(LocalDensity provides Density(base.density * scale, base.fontScale)) {
-            PinchZoomBox {
-                MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install)
+            // On charge les images du fond météo tout de suite, sans attendre que la semaine s'affiche.
+            val skyImages = rememberSkyImages()
+            CompositionLocalProvider(LocalSkyImages provides skyImages) {
+                PinchZoomBox {
+                    MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install)
+                }
             }
         }
     }

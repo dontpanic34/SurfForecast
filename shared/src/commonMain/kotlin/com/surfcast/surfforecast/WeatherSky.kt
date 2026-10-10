@@ -110,12 +110,15 @@ class SkyScene(
 /** Les nuages restent des suggestions : assez transparents pour laisser lire la courbe et les chiffres. */
 private const val CLOUD_OPACITY = 0.5f
 
-private class SkyImages(
+internal class SkyImages(
     val clouds: List<ImageBitmap>, val sun: ImageBitmap, val rain: ImageBitmap, val snow: ImageBitmap
 )
 
+/** Les images du ciel, chargées dès le lancement de l'appli (voir SurfLogApp) pour être prêtes quand la semaine s'affiche. */
+internal val LocalSkyImages = androidx.compose.runtime.compositionLocalOf<SkyImages?> { null }
+
 @Composable
-private fun rememberSkyImages(): SkyImages = SkyImages(
+internal fun rememberSkyImages(): SkyImages = SkyImages(
     clouds = listOf(
         imageResource(Res.drawable.sky_clouds_1), imageResource(Res.drawable.sky_clouds_2),
         imageResource(Res.drawable.sky_clouds_3), imageResource(Res.drawable.sky_clouds_4)
@@ -148,7 +151,7 @@ private fun cloudWeights(c: Float): FloatArray {
  */
 @Composable
 fun SkyCanvas(modifier: Modifier, isDark: Boolean, sceneOf: (androidx.compose.ui.geometry.Size) -> SkyScene?) {
-    val images = rememberSkyImages()
+    val images = LocalSkyImages.current ?: rememberSkyImages()
     var frameNs by remember { mutableLongStateOf(0L) }
     var animating by remember { mutableLongStateOf(0L) }
     LaunchedEffect(animating) {
