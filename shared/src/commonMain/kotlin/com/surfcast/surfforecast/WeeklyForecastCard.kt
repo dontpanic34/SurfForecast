@@ -188,14 +188,6 @@ fun WeeklyForecastCard(
                                                     "★ " + formatStars(stars), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
                                                     color = Color(0xFFFFC107), maxLines = 1
                                                 )
-                                                val label = dailyLabels.getOrNull(index)
-                                                if (label != null) {
-                                                    val band = conditionBand(label)
-                                                    Text(
-                                                        band.label, fontSize = 10.5.sp, fontWeight = FontWeight.Bold,
-                                                        color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1, softWrap = false
-                                                    )
-                                                }
                                                 val bars = dailyBands.getOrNull(index).orEmpty()
                                                 if (bars.isNotEmpty()) {
                                                     Row(
@@ -215,24 +207,6 @@ fun WeeklyForecastCard(
                         }
 
                         Spacer(modifier = Modifier.height(2.dp))
-
-                        Row(modifier = Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                            availableDates.forEach { date ->
-                                val dailyData = groupedByDate[date] ?: emptyList()
-                                val isSelected = date == selectedDate
-                                Box(
-                                    modifier = Modifier
-                                        .width(dayW)
-                                        .height(52.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else Color.Transparent)
-                                        .clickable { onSelectDate(date) }
-                                        .padding(horizontal = 1.dp, vertical = 1.dp)
-                                ) {
-                                    WeatherCanvasMain(dayData = dailyData, density = weeklyDensity, modifier = Modifier.fillMaxSize())
-                                }
-                            }
-                        }
 
                         Spacer(modifier = Modifier.height(2.dp))
 
@@ -262,6 +236,11 @@ fun WeeklyForecastCard(
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Box(modifier = Modifier.width(dayW * availableDates.size).height(WEEK_CANVAS_H)) {
+                            val weekIsDark = isDarkSurfaceTheme()
+                            val weekDensity = LocalDensity.current
+                            SkyCanvas(modifier = Modifier.fillMaxSize(), isDark = weekIsDark) { size ->
+                                weekSkyScene(size, weekDensity.density, availableDates, groupedByDate, dailySunInfo)
+                            }
                             ContinuousWaveCanvas(
                                 allHourlyData = allDaylight,
                                 dailyPeriods = dailyPeriods,
@@ -711,8 +690,8 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    // Le vent est une donnée, pas une note : en gris et blanc, la couleur reste réservée aux libellés.
-    val arrowColor = onSurfaceColor.copy(alpha = 0.6f)
+    val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, effectiveWindKmh(slot).roundToInt())
+    val windTextColor = SurfUnitsHelper.windTextColor(arrowColor, isDarkSurfaceTheme())
 
     val formattedSpeed = SurfUnitsHelper.formatWindValue(slot.windSpeedKmh, windUnit)
     val showArrow = windMode == "arrow" || windMode == "both"
@@ -753,7 +732,7 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
             text = dirFr,
             fontSize = if (dirFr.length >= 3) 9.sp else 10.sp,
             fontWeight = FontWeight.Bold,
-            color = onSurfaceColor,
+            color = windTextColor,
             maxLines = 1,
             lineHeight = 11.sp
         )
@@ -764,10 +743,55 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
             text = formattedSpeed,
             fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
-            color = onSurfaceColor.copy(alpha = 0.7f),
+            color = windTextColor,
             maxLines = 1,
             lineHeight = 11.sp
         )
         }
     }
+}
+
+
+/**
+ * Le fond météo de la vue semaine : trois créneaux par jour (matin, milieu, après-midi) donnent la couverture nuageuse et la pluie
+ * ou la neige ; le soleil se pose au centre de chaque jour et s'efface sous les nuages.
+ */
+internal fun weekSkyScene(
+    size: androidx.compose.ui.geometry.Size,
+    density: Float,
+    dates: List<LocalDate>,
+    groupedByDate: Map<LocalDate, List<HourlyUiModel>>,
+    sunInfo: Map<LocalDate, DailySunInfo>
+): SkyScene? {
+    if (dates.isEmpty() || size.width <= 1f) return null
+    val dayW = size.width / dates.size
+    val xs = ArrayList<Float>()
+    val cover = ArrayList<Float>()
+    val rain = ArrayList<Float>()
+    val snow = ArrayList<Float>()
+    val suns = ArrayList<SunSpot>()
+    dates.forEachIndexed { i, date ->
+        val hours = daylightHoursFor(date, groupedByDate, sunInfo).ifEmpty { groupedByDate[date].orEmpty() }
+        val n = hours.size
+        for (j in 0 until 3) {
+            val part = if (n == 0) emptyList() else hours.subList(j * n / 3, ((j + 1) * n / 3).coerceAtLeast(j * n / 3 + 1).coerceAtMost(n))
+            xs.add((i + (j + 0.5f) / 3f) * dayW)
+            cover.add(if (part.isEmpty()) 0f else part.map { it.cloudCover }.average().toFloat() / 100f)
+            rain.add(part.maxOfOrNull { rainAmountForCode(it.weatherCode) } ?: 0f)
+            snow.add(part.maxOfOrNull { snowAmountForCode(it.weatherCode) } ?: 0f)
+        }
+        val sizePx = 64f * density
+        suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 10f * density))
+    }
+    val smooth = 7f * density
+    val top = 8f * density
+    val bottom = size.height - 18f * density
+    return SkyScene(
+        left = 0f, right = size.width, top = top, bottom = bottom,
+        cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), smooth),
+        rain = SkyCurve(xs.toFloatArray(), rain.toFloatArray(), smooth),
+        snow = SkyCurve(xs.toFloatArray(), snow.toFloatArray(), smooth),
+        suns = suns,
+        animate = rain.any { it > 0f } || snow.any { it > 0f }
+    )
 }

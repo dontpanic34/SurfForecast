@@ -73,22 +73,42 @@ object SurfUnitsHelper {
     }
 
     /**
-     * Code couleur vent officiel de l'appli : jaune = vent de terre (offshore, favorable),
-     * orange = vent de mer modéré, rouge = vent de mer fort. À afficher tel quel partout :
-     * ne jamais assombrir ces teintes (les 3 paliers deviendraient indistinguables).
+     * Code couleur vent officiel de l'appli : la force ET la direction comptent. À afficher tel quel partout : ne jamais
+     * assombrir ces teintes sur fond sombre (les trois paliers deviendraient indistinguables).
+     *
+     * - Calme (6 km/h ou moins) : jaune, quelle que soit la direction.
+     * - Vent de terre (offshore) : jaune jusqu'à 20 km/h, orange jusqu'à 30, rouge au-delà.
+     * - Vent de côté (side-shore : N, S, NNE, SSE) : jaune jusqu'à 10 km/h, orange jusqu'à 20, rouge au-delà.
+     * - Vent de mer (onshore) : orange jusqu'à 15 km/h, rouge au-delà.
      */
     fun getSurfWindColor(directionFr: String, speedKmh: Int): Color {
         val dir = directionFr.uppercase().trim()
-
-        val isVentDeTerre = dir in listOf("E", "ENE", "ESE", "SE", "NE")
-        val isVentDeMer = dir in listOf("O", "W", "ONO", "WNW", "OSO", "WSW", "NO", "NW", "NNO", "NNW", "SO", "SW", "SSO", "SSW", "NNE", "SSE", "S", "N")
-
+        val offshore = dir in OFFSHORE_DIRECTIONS
+        val side = dir in SIDE_DIRECTIONS
         return when {
-            isVentDeTerre -> Color(0xFFFDD835)
-            isVentDeMer && speedKmh <= 22 -> Color(0xFFFF9800)
-            else -> Color(0xFFE53935)
+            speedKmh <= WIND_CALM_KMH -> WIND_YELLOW
+            offshore -> when { speedKmh <= 20 -> WIND_YELLOW; speedKmh <= 30 -> WIND_ORANGE; else -> WIND_RED }
+            side -> when { speedKmh <= 10 -> WIND_YELLOW; speedKmh <= 20 -> WIND_ORANGE; else -> WIND_RED }
+            else -> if (speedKmh <= 15) WIND_ORANGE else WIND_RED
         }
     }
+
+    /** Teinte du texte du vent : les mêmes paliers, assombris sur fond clair pour rester lisibles. */
+    fun windTextColor(windColor: Color, isDarkTheme: Boolean): Color {
+        if (isDarkTheme) return windColor
+        return when (windColor) {
+            WIND_YELLOW -> Color(0xFFA77B00)
+            WIND_ORANGE -> Color(0xFFC46200)
+            else -> Color(0xFFC62828)
+        }
+    }
+
+    private val OFFSHORE_DIRECTIONS = setOf("E", "ENE", "ESE", "SE", "NE")
+    private val SIDE_DIRECTIONS = setOf("N", "S", "NNE", "SSE")
+    const val WIND_CALM_KMH = 6
+    val WIND_YELLOW = Color(0xFFFDD835)
+    val WIND_ORANGE = Color(0xFFFF9800)
+    val WIND_RED = Color(0xFFE53935)
 
     fun calculateWaveEnergy(heightMeters: Double, periodSeconds: Double): Int {
         val energy = 10.76 * (heightMeters * heightMeters) * periodSeconds
