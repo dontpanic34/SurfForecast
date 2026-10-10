@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -490,11 +491,15 @@ fun MainScreen(
                                 .fillMaxSize()
                                 .systemBarsPadding()
                         ) {
+                            PullToRefreshBox(
+                                isRefreshing = viewModel.isRefreshing,
+                                onRefresh = { viewModel.refreshActiveSpot() },
+                                modifier = Modifier.weight(1f).fillMaxWidth()
+                            ) {
                             LazyColumn(
                                 state = mainListState,
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
                                     .padding(horizontal = 6.dp),
                                 contentPadding = PaddingValues(bottom = 16.dp)
                             ) {
@@ -671,6 +676,7 @@ fun MainScreen(
                                         )
                                     }
                                 }
+                            }
                             }
 
                             // « Maintenant » + marée + eau : toujours visible, juste au-dessus de la barre du bas.
