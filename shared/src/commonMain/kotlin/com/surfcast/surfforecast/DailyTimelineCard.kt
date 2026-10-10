@@ -50,10 +50,10 @@ import kotlin.math.sin
 
 // Dimensions (dp) du déroulé : mêmes proportions que la maquette validée.
 private const val WIND_ROW_H = 40
-private const val PLOT_H = 112
-private const val PLOT_TOP = 14      // haut de la zone de courbe
-private const val PLOT_BOTTOM = 104  // bas de la zone de courbe
-private const val SKY_EXT = 36       // le ciel déborde au-dessus du graphique, jusque vers le vent
+private const val PLOT_H = 150
+private const val PLOT_TOP = 18      // haut de la zone de courbe
+private const val PLOT_BOTTOM = 142  // bas de la zone de courbe
+private const val SKY_EXT = 0        // le ciel déborde au-dessus du graphique, jusque vers le vent
 private const val BAND_H = 28
 private const val HOURS_H = 22
 private const val SIDE_PAD = 4
@@ -312,9 +312,9 @@ private fun DailyTimelineBody(
                         if (selH != null) {
                             val alt = sunAltitude(selH, sunrise, sunset)
                             if (alt >= 0f) {
-                                val sizePx = with(density) { 52.dp.toPx() }
+                                val sizePx = with(density) { 30.dp.toPx() }
                                 val horizon = bottomPx - with(density) { 26.dp.toPx() }
-                                val zenith = topPx - with(density) { 12.dp.toPx() }
+                                val zenith = topPx + with(density) { 6.dp.toPx() }
                                 val cy = horizon - (horizon - zenith) * alt
                                 suns.add(SunSpot(xOf(selH), sizePx, extPx + cy - sizePx / 2f))
                             }
@@ -409,35 +409,6 @@ private fun DailyTimelineBody(
                 }
             }
 
-            // --- Surbrillance de l'heure choisie : un fondu, plus coloré au milieu (vers la courbe), qui s'estompe vers le haut,
-            // le bas et les côtés, sans bord visible. ---
-            if (selH != null) {
-                Canvas(modifier = Modifier.matchParentSize()) {
-                    val hourW = (size.width - 2 * pad) / (ax1 - ax0)
-                    val half = hourW * 0.95f
-                    val cxp = xOf(selH)
-                    val a = if (isDark) 0.30f else 0.24f
-                    val base = nacre
-                    val stops = arrayOf(
-                        0.00f to base.copy(alpha = 0f), 0.10f to base.copy(alpha = a * 0.04f), 0.24f to base.copy(alpha = a * 0.20f),
-                        0.38f to base.copy(alpha = a * 0.55f), 0.52f to base.copy(alpha = a), 0.62f to base.copy(alpha = a * 0.70f),
-                        0.74f to base.copy(alpha = a * 0.35f), 0.86f to base.copy(alpha = a * 0.10f), 1.00f to base.copy(alpha = 0f)
-                    )
-                    val bounds = androidx.compose.ui.geometry.Rect(cxp - half, 0f, cxp + half, size.height)
-                    drawIntoCanvas { canvas ->
-                        canvas.saveLayer(bounds, Paint())
-                        drawRect(brush = Brush.verticalGradient(*stops, startY = 0f, endY = size.height), topLeft = bounds.topLeft, size = bounds.size)
-                        drawRect(
-                            brush = Brush.horizontalGradient(
-                                0f to Color.Transparent, 0.35f to Color.Black, 0.65f to Color.Black, 1f to Color.Transparent,
-                                startX = bounds.left, endX = bounds.right
-                            ),
-                            topLeft = bounds.topLeft, size = bounds.size, blendMode = BlendMode.DstIn
-                        )
-                        canvas.restore()
-                    }
-                }
-            }
         }
     }
 }
@@ -457,7 +428,7 @@ private fun DailyCurveCanvas(
     textMeasurer: TextMeasurer,
     xOf: (Float) -> Float
 ) {
-    val primaryFill = AppColors.TideHigh
+    val waterImage = LocalSkyImages.current?.water
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
     val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
     val halo = if (isDark) Color(0xFF0B121A) else Color.White
@@ -484,11 +455,12 @@ private fun DailyCurveCanvas(
                 lineTo(pts.last().x, bottom)
                 close()
             }
+            if (waterImage != null) drawWater(waterImage, fill, pts.first().x, pts.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
             for (i in 1 until pts.size) {
                 val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
                 val seg = Path().apply { moveTo(p.x, p.y); cubicTo(mx, p.y, mx, c.y, c.x, c.y) }
                 val rating = ratings.getOrElse(i - 1) { ratings.getOrElse(i) { SlotRating(50, false) } }
-                drawPath(seg, color = conditionBand(rating).color(), style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
+                drawPath(seg, color = conditionBand(rating).color(), style = Stroke(1.6.dp.toPx(), cap = StrokeCap.Round))
             }
         }
 

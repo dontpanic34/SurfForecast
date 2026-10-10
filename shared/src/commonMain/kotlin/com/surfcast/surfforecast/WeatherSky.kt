@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
@@ -32,6 +33,7 @@ import com.surfcast.surfforecast.resources.sky_clouds_4
 import com.surfcast.surfforecast.resources.sky_rain
 import com.surfcast.surfforecast.resources.sky_snow
 import com.surfcast.surfforecast.resources.sky_sun
+import com.surfcast.surfforecast.resources.sky_water
 import org.jetbrains.compose.resources.imageResource
 import kotlin.math.max
 import kotlin.math.min
@@ -110,19 +112,23 @@ class SkyScene(
 /** Les nuages restent des suggestions : assez transparents pour laisser lire la courbe et les chiffres. */
 private const val CLOUD_OPACITY = 0.5f
 
-private class SkyImages(
-    val clouds: List<ImageBitmap>, val sun: ImageBitmap, val rain: ImageBitmap, val snow: ImageBitmap
+internal class SkyImages(
+    val clouds: List<ImageBitmap>, val sun: ImageBitmap, val rain: ImageBitmap, val snow: ImageBitmap, val water: ImageBitmap
 )
 
+/** Les images du ciel, chargées dès le lancement de l'appli (voir SurfLogApp) pour être prêtes quand la semaine s'affiche. */
+internal val LocalSkyImages = androidx.compose.runtime.compositionLocalOf<SkyImages?> { null }
+
 @Composable
-private fun rememberSkyImages(): SkyImages = SkyImages(
+internal fun rememberSkyImages(): SkyImages = SkyImages(
     clouds = listOf(
         imageResource(Res.drawable.sky_clouds_1), imageResource(Res.drawable.sky_clouds_2),
         imageResource(Res.drawable.sky_clouds_3), imageResource(Res.drawable.sky_clouds_4)
     ),
     sun = imageResource(Res.drawable.sky_sun),
     rain = imageResource(Res.drawable.sky_rain),
-    snow = imageResource(Res.drawable.sky_snow)
+    snow = imageResource(Res.drawable.sky_snow),
+    water = imageResource(Res.drawable.sky_water)
 )
 
 /** Poids des quatre niveaux de nuages pour une couverture de 0 à 1 : deux niveaux voisins se fondent l'un dans l'autre. */
@@ -148,7 +154,7 @@ private fun cloudWeights(c: Float): FloatArray {
  */
 @Composable
 fun SkyCanvas(modifier: Modifier, isDark: Boolean, sceneOf: (androidx.compose.ui.geometry.Size) -> SkyScene?) {
-    val images = rememberSkyImages()
+    val images = LocalSkyImages.current ?: rememberSkyImages()
     var frameNs by remember { mutableLongStateOf(0L) }
     var animating by remember { mutableLongStateOf(0L) }
     LaunchedEffect(animating) {
@@ -250,6 +256,21 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
             im.sun, srcOffset = IntOffset.Zero, srcSize = IntSize(im.sun.width, im.sun.height),
             dstOffset = IntOffset((s.x - s.sizePx / 2f).roundToInt(), s.topPx.roundToInt()),
             dstSize = IntSize(s.sizePx.roundToInt(), s.sizePx.roundToInt()), alpha = a
+        )
+    }
+}
+
+/**
+ * L'océan : l'image d'eau remplit, opaque, tout ce qui est sous la courbe de houle (rien ne transparaît derrière). Le haut de
+ * l'image se cale sur le point le plus haut de la courbe, le bas sur [bottom].
+ */
+internal fun DrawScope.drawWater(water: ImageBitmap, under: androidx.compose.ui.graphics.Path, left: Float, right: Float, topY: Float, bottom: Float) {
+    if (right - left < 2f || bottom - topY < 2f) return
+    clipPath(under) {
+        drawImage(
+            water, srcOffset = IntOffset.Zero, srcSize = IntSize(water.width, water.height),
+            dstOffset = IntOffset(left.roundToInt(), topY.roundToInt()),
+            dstSize = IntSize((right - left).roundToInt(), (bottom - topY).roundToInt())
         )
     }
 }
