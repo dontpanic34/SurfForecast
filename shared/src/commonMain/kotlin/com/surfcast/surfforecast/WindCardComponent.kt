@@ -40,7 +40,8 @@ fun WindCardComponent(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val maxWind = (allHoursOfDay.maxOfOrNull { it.windSpeedKmh.toDouble() } ?: 15.0).coerceAtLeast(20.0)
+    // Échelle commune au vent et aux rafales : la barre de rafale (derrière) est toujours au moins aussi haute que celle du vent.
+    val maxWind = (allHoursOfDay.maxOfOrNull { maxOf(it.windSpeedKmh, it.windGustKmh).toDouble() } ?: 15.0).coerceAtLeast(20.0)
 
     // Remplace le Paint Android (non multiplateforme) : même taille, même graisse.
     val textMeasurer = rememberTextMeasurer()
@@ -53,6 +54,7 @@ fun WindCardComponent(
 
     val formattedSpeed = SurfUnitsHelper.formatWindValue(selectedHour.windSpeedKmh, windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
+    val formattedGust = SurfUnitsHelper.formatWindValue(selectedHour.windGustKmh, windUnit)
 
     Card(
         modifier = modifier
@@ -100,6 +102,14 @@ fun WindCardComponent(
                         fontWeight = FontWeight.Bold,
                         color = onSurfaceColor
                     )
+                    if (selectedHour.windGustKmh > selectedHour.windSpeedKmh) {
+                        Text(
+                            text = "Rafales $formattedGust $unitSymbol",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = onSurfaceColor.copy(alpha = 0.7f)
+                        )
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -160,6 +170,22 @@ fun WindCardComponent(
                                 .fillMaxHeight(),
                             contentAlignment = Alignment.BottomCenter
                         ) {
+                            // Rafale : barre grise derrière celle du vent, plus haute quand la rafale dépasse le vent moyen.
+                            if (hourly.windGustKmh > hourly.windSpeedKmh) {
+                                val gustRatio = (hourly.windGustKmh / maxWind).toFloat().coerceIn(heightRatio, 1f)
+                                Canvas(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .fillMaxHeight(gustRatio)
+                                ) {
+                                    drawRoundRect(
+                                        color = onSurfaceColor.copy(alpha = if (isSelected) 0.32f else 0.16f),
+                                        topLeft = Offset.Zero,
+                                        size = Size(size.width, size.height),
+                                        cornerRadius = CornerRadius(3f, 3f)
+                                    )
+                                }
+                            }
                             Canvas(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -212,6 +238,10 @@ fun WindCardComponent(
                             radius = 3.2f,
                             center = Offset(indicatorX, currentBarHeight)
                         )
+                        if (selectedHour.windGustKmh > selectedHour.windSpeedKmh) {
+                            val gustY = size.height * (1f - (selectedHour.windGustKmh / maxWind).toFloat().coerceIn(0.15f, 1f))
+                            drawCircle(color = onSurfaceColor.copy(alpha = 0.55f), radius = 2.6f, center = Offset(indicatorX, gustY))
+                        }
 
                         val timeStr = selectedHour.rawTime.formatHHmm()
                         val timeStrLayout = textMeasurer.measure(timeStr, timeTextPaint)
