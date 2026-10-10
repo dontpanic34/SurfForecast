@@ -1031,6 +1031,8 @@ fun DynamicCardsSection(
                                 dailySunInfo = dailySunInfo,
                                 dailyTides = dailyTides,
                                 windUnit = viewModel.windUnit,
+                                windStep = viewModel.windStep,
+                                onWindStepChange = { viewModel.cycleWindStep() },
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
                                 scaleRawMax = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) }

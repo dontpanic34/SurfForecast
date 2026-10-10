@@ -188,6 +188,9 @@ class SurfController(
             .also { if (prefs.getString("display_size", null) == null) prefs.putString("display_size", it) }
     )
         private set
+    // Vent du déroulé de la journée : "2h" (toutes les 2 h), "auto" (autant que la place le permet), "1h" (toutes les heures).
+    var windStep by mutableStateOf((prefs.getString("wind_step", null) ?: "2h").let { if (it in listOf("2h", "auto", "1h")) it else "2h" })
+        private set
     var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
         private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
@@ -471,6 +474,11 @@ class SurfController(
     fun changeDisplaySize(size: String) {
         displaySize = if (size in listOf("normal", "large", "xlarge")) size else "normal"
         prefs.putString("display_size", displaySize)
+    }
+
+    fun cycleWindStep() {
+        windStep = when (windStep) { "2h" -> "auto"; "auto" -> "1h"; else -> "2h" }
+        prefs.putString("wind_step", windStep)
     }
 
     fun cycleDisplaySize() = changeDisplaySize(when (displaySize) { "normal" -> "large"; "large" -> "xlarge"; else -> "normal" })

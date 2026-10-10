@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -74,6 +75,8 @@ fun DailyTimelineCard(
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     dailyTides: Map<LocalDate, DailyTideInfo>,
     windUnit: String,
+    windStep: String = "2h",
+    onWindStepChange: () -> Unit = {},
     idealSwellDirection: Int?,
     surferLevel: String,
     // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
@@ -175,7 +178,7 @@ fun DailyTimelineCard(
                 } else {
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
-                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit,
+                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit, windStep = windStep, onWindStepChange = onWindStepChange,
                         isDark = isDark, onSurfaceColor = onSurfaceColor
                     )
                 }
@@ -210,6 +213,8 @@ private fun DailyTimelineBody(
     ax1: Float,
     scaleRawMax: Double?,
     windUnit: String,
+    windStep: String,
+    onWindStepChange: () -> Unit,
     isDark: Boolean,
     onSurfaceColor: Color
 ) {
@@ -223,7 +228,7 @@ private fun DailyTimelineBody(
     // Une indication de vent par heure d'ensoleillement : heures paires, plus l'heure choisie, sans heure imposée ; on masque
     // ce qui toucherait sa voisine (mesuré en pixels).
     val sunnyHours = hours.map { it.rawTime.hour }.filter { it >= ceil(sunrise).toInt() && it <= floor(sunset).toInt() }
-    val windFont = if (sunnyHours.size > 12) 7.4f else if (sunnyHours.size > 9) 8.6f else 9.6f
+    val windFont = if (windStep == "1h") 6.6f else if (sunnyHours.size > 12) 7.4f else if (sunnyHours.size > 9) 8.6f else 9.6f
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val wPx = with(density) { maxWidth.toPx() }
@@ -243,10 +248,16 @@ private fun DailyTimelineBody(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // --- Vent ---
-                val windMinGap = windFont * 2.5f + 2f
+                val windMinGap = if (windStep == "1h") windFont * 2.1f else windFont * 2.5f + 2f
                 val windHours: List<Int> = run {
                     val cand = ArrayList<Pair<Int, Int>>() // heure, priorité
-                    sunnyHours.filter { it % 2 == 0 }.forEach { cand.add(it to 1) }
+                    when (windStep) {
+                        // Toutes les heures : on ne masque que ce qui toucherait l'heure choisie.
+                        "1h" -> sunnyHours.forEach { cand.add(it to 1) }
+                        // Adaptatif : les heures paires d'abord, puis les impaires tant qu'il y a de la place.
+                        "auto" -> sunnyHours.forEach { cand.add(it to if (it % 2 == 0) 1 else 2) }
+                        else -> sunnyHours.filter { it % 2 == 0 }.forEach { cand.add(it to 1) }
+                    }
                     if (selHour != null && selHour in sunnyHours) cand.add(selHour to 0)
                     val kept = ArrayList<Int>()
                     cand.sortedBy { it.second }.forEach { (h, _) ->
@@ -255,6 +266,13 @@ private fun DailyTimelineBody(
                     kept.sorted()
                 }
                 Box(modifier = Modifier.fillMaxWidth().height(WIND_ROW_H.dp)) {
+                    Text(
+                        when (windStep) { "1h" -> "Vent 1 h"; "auto" -> "Vent auto"; else -> "Vent 2 h" },
+                        fontSize = 8.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.7f),
+                        modifier = Modifier.align(Alignment.TopEnd)
+                            .clip(RoundedCornerShape(6.dp)).background(onSurfaceColor.copy(alpha = 0.10f))
+                            .clickable { onWindStepChange() }.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
                     for (h in windHours) {
                         val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
