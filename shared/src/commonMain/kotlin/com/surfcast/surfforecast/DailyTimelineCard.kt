@@ -351,7 +351,7 @@ private fun DailyTimelineBody(
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
                         gridValues = gridValues, displayMax = displayMax, onSurfaceColor = onSurfaceColor, isDark = isDark,
-                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1)
                     )
                 }
 
@@ -449,7 +449,9 @@ private fun DailyCurveCanvas(
     isDark: Boolean,
     nacre: Color,
     textMeasurer: TextMeasurer,
-    xOf: (Float) -> Float
+    xOf: (Float) -> Float,
+    edgeLeft: Float,
+    edgeRight: Float
 ) {
     val waterImage = LocalSkyImages.current?.water
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
@@ -468,21 +470,28 @@ private fun DailyCurveCanvas(
 
         val pts = hours.map { Offset(xOf(it.rawTime.hour.toFloat()), yOf(it.waveHeight)) }
         if (pts.size >= 2) {
+            // La courbe va d'un bord à l'autre de la fenêtre (lever − 0,5 h → coucher + 0,5 h) : on prolonge à plat le premier
+            // et le dernier point jusqu'aux bords.
+            val line = ArrayList<Offset>(pts.size + 2)
+            line.add(Offset(minOf(edgeLeft, pts.first().x), pts.first().y))
+            line.addAll(pts)
+            line.add(Offset(maxOf(edgeRight, pts.last().x), pts.last().y))
             val fill = Path().apply {
-                moveTo(pts.first().x, bottom)
-                lineTo(pts.first().x, pts.first().y)
-                for (i in 1 until pts.size) {
-                    val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
+                moveTo(line.first().x, bottom)
+                lineTo(line.first().x, line.first().y)
+                for (i in 1 until line.size) {
+                    val p = line[i - 1]; val c = line[i]; val mx = (p.x + c.x) / 2f
                     cubicTo(mx, p.y, mx, c.y, c.x, c.y)
                 }
-                lineTo(pts.last().x, bottom)
+                lineTo(line.last().x, bottom)
                 close()
             }
-            if (waterImage != null) drawWater(waterImage, fill, pts.first().x, pts.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
-            for (i in 1 until pts.size) {
-                val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
+            if (waterImage != null) drawWater(waterImage, fill, line.first().x, line.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
+            for (i in 1 until line.size) {
+                val p = line[i - 1]; val c = line[i]; val mx = (p.x + c.x) / 2f
                 val seg = Path().apply { moveTo(p.x, p.y); cubicTo(mx, p.y, mx, c.y, c.x, c.y) }
-                val rating = ratings.getOrElse(i - 1) { ratings.getOrElse(i) { SlotRating(50, false) } }
+                val ri = (i - 2).coerceIn(0, (ratings.size - 1).coerceAtLeast(0))
+                val rating = ratings.getOrElse(ri) { SlotRating(50, false) }
                 drawPath(seg, color = conditionBand(rating).color(), style = Stroke(1.6.dp.toPx(), cap = StrokeCap.Round))
             }
         }
