@@ -149,7 +149,7 @@ fun SurfPreferencesDialog(
                     )
                     ModelDescItem(
                         name = "1. Énergie de la houle",
-                        desc = "Plus la houle est grosse et longue (période), plus l'énergie est élevée. Une houle plate (< 0,4 m) donne 0. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde, et la note monte avec la taille. Au-dessus de ton confort, c'est « challengeant » (bleu vif) ; bien au-delà de ton maximum, « trop gros » (violet), pas « mauvais »."
+                        desc = "Plus la houle est grosse et longue (période), plus l'énergie est élevée. Une houle plate (< 0,4 m) donne 0. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde, et la note monte avec la taille. Au-dessus de ton confort, c'est « challengeant » (orange) ; bien au-delà de ton maximum, « trop gros » (violet), pas « mauvais »."
                     )
                     ModelDescItem(
                         name = "2. Vent",

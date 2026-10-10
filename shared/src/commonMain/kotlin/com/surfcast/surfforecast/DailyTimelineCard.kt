@@ -134,26 +134,30 @@ fun DailyTimelineCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-            // --- En-tête : titre seul (réduire / déplacer : Paramètres › Affichage) ---
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Pas de titre : toute la ligne dit la note de l'heure touchée, « 14 h · Correct à Bon · Un peu petite pour toi »,
+            // sur un fond de la couleur de la note. Le repli de la carte reste possible par la poignée / le chevron.
+            if (selectedIndex in ratings.indices) {
+                val shownRating = ratings[selectedIndex]
+                val shownBand = conditionBand(shownRating)
+                Box(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(shownBand.color())
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = curveHours[selectedIndex].rawTime.hour.toString() + " h · " + bandLabelWithTrend(shownRating) +
+                            (if (shownRating.why.isNotBlank()) " · " + shownRating.why else ""),
+                        fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = shownBand.onColor(), lineHeight = 16.sp
+                    )
+                }
+            } else {
                 Text(
                     text = "Déroulé de la journée",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = onSurfaceColor.copy(alpha = 0.55f),
                     maxLines = 1,
-                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
                 )
-                if (selectedIndex in ratings.indices) {
-                    val shownRating = ratings[selectedIndex]
-                    val shownBand = conditionBand(shownRating)
-                    Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(shownBand.color()).padding(horizontal = 8.dp, vertical = 2.dp)) {
-                        Text(
-                            text = bandLabelWithTrend(shownRating).uppercase() + " · " + curveHours[selectedIndex].rawTime.hour + " h",
-                            fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = shownBand.onColor(), maxLines = 1
-                        )
-                    }
-                }
             }
 
             if (!isCollapsed) {

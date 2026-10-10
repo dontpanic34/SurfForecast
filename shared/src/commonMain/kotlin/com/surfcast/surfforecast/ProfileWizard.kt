@@ -74,14 +74,16 @@ internal val PROFILE_EXAMPLES: List<ProfileCondition> = listOf(
 
 /** Les cinq réponses possibles : (libellé, couleur). 0 = J'y vais pas, 1 = Pas mal, 2 = Parfait, 3 = Challengeant, 4 = Trop gros. */
 internal val EXAMPLE_ANSWERS: List<Pair<String, Color>> = listOf(
-    "J'y vais pas" to Color(0xFFD32F2F),
-    "Pas mal" to Color(0xFFD4E157),
-    "Parfait" to Color(0xFF7EE7FF),
-    "Challengeant" to Color(0xFF2F6BFF),
-    "Trop gros" to Color(0xFF7B2CBF)
+    "J'y vais pas" to ScoreBand.AVOID.color(),
+    "Pas mal" to ScoreBand.GOOD.color(),
+    "Parfait" to ScoreBand.EXCELLENT.color(),
+    "Challengeant" to ScoreBand.CHALLENGING.color(),
+    "Trop gros" to ScoreBand.TOO_BIG.color()
 )
 
-private fun answerTextColor(index: Int): Color = if (index == 0 || index == 3 || index == 4) Color.White else Color(0xFF061018)
+private val EXAMPLE_ANSWER_BANDS = listOf(ScoreBand.AVOID, ScoreBand.GOOD, ScoreBand.EXCELLENT, ScoreBand.CHALLENGING, ScoreBand.TOO_BIG)
+
+private fun answerTextColor(index: Int): Color = EXAMPLE_ANSWER_BANDS[index].onColor()
 
 /** Réponse que donne l'appli à cette vague avec ce profil (celle que l'utilisateur change s'il n'est pas d'accord). */
 internal fun autoExampleAnswer(rating: SlotRating): Int = when {
