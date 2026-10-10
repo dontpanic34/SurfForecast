@@ -68,8 +68,6 @@ fun SurfPreferencesDialog(
     onThemeModeChanged: (String) -> Unit = {},
     customProfile: String = "",
     onCustomProfileSaved: (String) -> Unit = {},
-    homeView: String = "classic",
-    onHomeViewChanged: (String) -> Unit = {},
     exampleAnswers: String = "",
     onExampleAnswersChanged: (String) -> Unit = {},
     engineConfig: ForecastEngineConfig,
@@ -151,7 +149,7 @@ fun SurfPreferencesDialog(
                     )
                     ModelDescItem(
                         name = "1. Énergie de la houle",
-                        desc = "Plus la houle est grosse et longue (période), plus l'énergie est élevée. Une houle plate (< 0,4 m) donne 0. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde, et la note monte avec la taille. Au-dessus de ton confort, c'est « challengeant » (rose) ; bien au-delà de ton maximum, « trop gros » (violet), pas « mauvais »."
+                        desc = "Plus la houle est grosse et longue (période), plus l'énergie est élevée. Une houle plate (< 0,4 m) donne 0. Un petit jour propre (0,8 m à 9 s) ouvre pour tout le monde, et la note monte avec la taille. Au-dessus de ton confort, c'est « challengeant » (bleu vif) ; bien au-delà de ton maximum, « trop gros » (violet), pas « mauvais »."
                     )
                     ModelDescItem(
                         name = "2. Vent",
@@ -467,23 +465,6 @@ fun SurfPreferencesDialog(
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Vue de l'accueil",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            PillRow(listOf("Classique", "Tendance"), if (homeView == "trend") 1 else 0) {
-                                onHomeViewChanged(if (it == 1) "trend" else "classic")
-                            }
-                            Text(
-                                if (homeView == "trend")
-                                    "Comme la vue classique, avec en plus le libellé de la note et sa tendance (« Correct à Bon »), sous « Maintenant », dans le déroulé et sous les étoiles."
-                                else
-                                    "Courbe de houle, liseré coloré et étoiles : la vue d'origine.",
-                                fontSize = 11.5.sp,
-                                color = colors.onSurfaceVariant
-                            )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Thème",

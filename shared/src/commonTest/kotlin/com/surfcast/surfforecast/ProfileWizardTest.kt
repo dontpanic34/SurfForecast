@@ -186,6 +186,31 @@ class ProfileWizardTest {
     }
 
     @Test
+    fun theSentenceNamesWhatReallyWeighs() {
+        // Rien ne pèse : bonne taille, vent propre.
+        assertEquals("Bonne taille, vent propre", calculateSlotRating(hour(10), 270, "intermediate").why)
+        // Un peu petite : la note part de 60 au minimum.
+        assertEquals("Un peu petite pour toi", calculateSlotRating(hour(10, height = 0.8, period = 9.0), 270, "intermediate").why)
+        // Vent de mer modéré sur une vague moyenne.
+        assertEquals("Un peu de vent de mer", calculateSlotRating(hour(10, height = 1.2, period = 10.0, windKmh = 16, windDir = "O"), 270, "confirmed").why)
+        // Rafales fortes : c'est elles qui gâchent la surface.
+        val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12).copy(windGustKmh = 40)
+        assertEquals("Rafales fortes, surface hachée", calculateSlotRating(gusty, 275, "confirmed").why)
+        // Challengeant : offshore = creux et puissant, vent de mer = gros mais moins creux.
+        val offshore = PROFILE_EXAMPLES[4].hour
+        val onshore = PROFILE_EXAMPLES[7].hour
+        assertEquals("Challengeant : creux et puissant", calculateSlotRating(offshore, 270, "intermediate").why)
+        assertEquals("Challengeant : gros mais moins creux", calculateSlotRating(onshore, 270, "intermediate").why)
+    }
+
+    @Test
+    fun challengingAndBadAreDifferentColors() {
+        assertTrue(ScoreBand.CHALLENGING.color() != ScoreBand.AVOID.color())
+        assertTrue(ScoreBand.CHALLENGING.color() != ScoreBand.TOO_BIG.color())
+        assertTrue(ScoreBand.CHALLENGING.color() != ScoreBand.EXCELLENT.color())
+    }
+
+    @Test
     fun everyConditionHasASentence() {
         PROFILE_DAYS.forEach { day ->
             listOf("beginner", "intermediate", "confirmed", "expert").forEach { level ->

@@ -231,7 +231,8 @@ fun calculateSlotRating(
     if (profile.hasCap && felt > profile.cap) score *= ((capEnd - felt) / (capEnd - profile.cap)).coerceIn(0.0, 1.0)
 
     // Clapot (mer de vent) : une houle propre coiffée de clapot est moins bonne qu'une houle seule.
-    score *= chopFactor(h, hourlyModel.windWaveHeight, profile.chopThreshold)
+    val chopF = chopFactor(h, hourlyModel.windWaveHeight, profile.chopThreshold)
+    score *= chopF
     // Vent « ressenti » sur l'eau : les rafales comptent à moitié. Plus la vague est grosse, moins le vent la gêne
     // (les faces sont assez hautes pour que 16 km/h restent surfables à 1,5 m).
     val windKmh = effectiveWindKmh(hourlyModel, if (profile.countGusts) GUST_WEIGHT else 0.0) / windSizeDivisor(h)
@@ -247,11 +248,14 @@ fun calculateSlotRating(
     score *= windFactor
     // Rafales fortes : mauvaises pour tout le monde, quelle que soit la direction.
     val gust = hourlyModel.windGustKmh
-    if (profile.countGusts && gust > profile.gustThreshold) score *= (1.0 - (gust - profile.gustThreshold) / 30.0).coerceAtLeast(0.3)
+    val gustF = if (profile.countGusts && gust > profile.gustThreshold) (1.0 - (gust - profile.gustThreshold) / 30.0).coerceAtLeast(0.3) else 1.0
+    score *= gustF
     // Période trop courte pour le profil : houle de clapot, vagues moins organisées.
-    if (t < profile.minPeriod) score *= (t / profile.minPeriod).coerceAtLeast(0.3)
+    val periodF = if (t < profile.minPeriod) (t / profile.minPeriod).coerceAtLeast(0.3) else 1.0
+    score *= periodF
     // Houle de travers : en plus de l'énergie réduite, la vague est moins bien formée.
-    score *= 1.0 - 0.3 * minOf(directionDiff, 90.0) / 90.0
+    val directionF = 1.0 - 0.3 * minOf(directionDiff, 90.0) / 90.0
+    score *= directionF
 
     if (profile.beginnerExtras) {
         if (h > 1.5) score *= 0.7
@@ -265,7 +269,8 @@ fun calculateSlotRating(
         felt > profile.idealMax * profile.comfortScale -> ConditionKind.CHALLENGING
         else -> ConditionKind.NORMAL
     }
-    return SlotRating(final, false, kind, whyFor(kind, final, windCategory, windFactor))
+    val limits = ScoreLimits(fit, windFactor, gustF, chopF, periodF, directionF)
+    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits))
 }
 
 /** Les rafales comptent à moitié de leur écart avec le vent moyen. */
@@ -279,21 +284,49 @@ const val WHY_TOO_HOLLOW = "Challengeant : trop creux pour toi"
 /** Diviseur du vent selon la hauteur : 1 sous 1 m, jusqu'à 1,6 pour les grosses vagues. */
 private fun windSizeDivisor(heightM: Double): Double = heightM.pow(0.9).coerceIn(0.8, 1.6)
 
-/** Phrase courte qui dit pourquoi la note est ce qu'elle est (voir les maquettes du profil). */
-private fun whyFor(kind: ConditionKind, score: Int, windCategory: String, windFactor: Double): String = when (kind) {
+/** Les facteurs (de 0 à 1) qui ont fait la note : celui qui pèse le plus donne la raison affichée. */
+private class ScoreLimits(val size: Double, val wind: Double, val gusts: Double, val chop: Double, val period: Double, val direction: Double)
+
+private const val MINOR_LIMIT = 0.85
+private const val STRONG_LIMIT = 0.55
+
+/**
+ * Phrase courte qui dit pourquoi la note est ce qu'elle est (voir les maquettes du profil) : ce qui pèse vraiment
+ * (taille, vent, rafales, clapot, période, direction de la houle), ou « Bonne taille, vent propre » quand rien ne pèse.
+ */
+private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits): String = when (kind) {
     ConditionKind.TOO_SMALL -> WHY_TOO_SMALL
-    ConditionKind.TOO_WINDY -> "Le vent de mer abîme la vague"
+    ConditionKind.TOO_WINDY -> when (windCategory) {
+        "onshore" -> "Le vent de mer abîme la vague"
+        "cross" -> "Le vent de côté abîme la vague"
+        else -> "Offshore trop fort"
+    }
     ConditionKind.TOO_BIG -> WHY_TOO_BIG
     ConditionKind.CHALLENGING -> "Challengeant : " + when (windCategory) {
         "offshore" -> "creux et puissant"
         "onshore" -> "gros mais moins creux"
-        else -> "gros"
+        else -> "gros, vent de côté"
     }
-    ConditionKind.NORMAL -> when {
-        score >= 70 -> if (windFactor >= 0.9) "Bonne taille, vent propre" else "Bonne taille, vent léger sans gêne"
-        score >= 55 -> if (windFactor < 0.8) "Bonne vague, un peu de vent" else "Bonne vague, un peu petite"
-        score >= 40 -> if (windFactor < 0.8) "Surfable, le vent gêne un peu" else "Surfable, plutôt petite"
-        else -> if (windFactor < 0.6) "Le vent gâche la vague" else "Peu de vague pour toi"
+    ConditionKind.NORMAL -> {
+        val factors = listOf("size" to l.size, "wind" to l.wind, "gusts" to l.gusts, "chop" to l.chop, "period" to l.period, "direction" to l.direction)
+        val worst = factors.minByOrNull { it.second }!!
+        if (worst.second >= MINOR_LIMIT) {
+            if (l.wind >= 0.9) "Bonne taille, vent propre" else "Bonne taille, vent léger sans gêne"
+        } else {
+            val strong = worst.second < STRONG_LIMIT
+            when (worst.first) {
+                "size" -> if (strong) "Petite pour toi" else "Un peu petite pour toi"
+                "wind" -> when (windCategory) {
+                    "onshore" -> if (strong) "Le vent de mer gâche la vague" else "Un peu de vent de mer"
+                    "cross" -> if (strong) "Vent de côté fort" else "Vent de côté qui gêne"
+                    else -> if (strong) "Offshore trop fort" else "Offshore un peu fort"
+                }
+                "gusts" -> if (strong) "Rafales fortes, surface hachée" else "Des rafales gênent"
+                "chop" -> if (strong) "Beaucoup de clapot" else "Un peu de clapot"
+                "period" -> if (strong) "Houle trop courte" else "Houle un peu courte"
+                else -> "Houle de biais, moins bien formée"
+            }
+        }
     }
 }
 

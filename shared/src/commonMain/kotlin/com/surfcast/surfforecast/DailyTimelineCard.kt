@@ -68,8 +68,6 @@ fun DailyTimelineCard(
     windUnit: String,
     idealSwellDirection: Int?,
     surferLevel: String,
-    // Vue « Tendance » : le libellé de la note de l'heure touchée, en haut à droite.
-    showTrend: Boolean = false,
     // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
     scaleRawMax: Double? = null,
     // Vue simple : une heure sur deux (la légende des couleurs reste toujours visible).
@@ -146,7 +144,7 @@ fun DailyTimelineCard(
                     maxLines = 1,
                     modifier = Modifier.weight(1f).padding(horizontal = 4.dp, vertical = 4.dp)
                 )
-                if (showTrend && selectedIndex in ratings.indices) {
+                if (selectedIndex in ratings.indices) {
                     val shownRating = ratings[selectedIndex]
                     val shownBand = conditionBand(shownRating)
                     Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(shownBand.color()).padding(horizontal = 8.dp, vertical = 2.dp)) {

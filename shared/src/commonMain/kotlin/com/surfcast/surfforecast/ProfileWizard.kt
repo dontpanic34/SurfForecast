@@ -74,10 +74,10 @@ internal val PROFILE_EXAMPLES: List<ProfileCondition> = listOf(
 
 /** Les cinq réponses possibles : (libellé, couleur). 0 = J'y vais pas, 1 = Pas mal, 2 = Parfait, 3 = Challengeant, 4 = Trop gros. */
 internal val EXAMPLE_ANSWERS: List<Pair<String, Color>> = listOf(
-    "J'y vais pas" to Color(0xFFE53935),
+    "J'y vais pas" to Color(0xFFD32F2F),
     "Pas mal" to Color(0xFFD4E157),
     "Parfait" to Color(0xFF7EE7FF),
-    "Challengeant" to Color(0xFFD81B60),
+    "Challengeant" to Color(0xFF2F6BFF),
     "Trop gros" to Color(0xFF7B2CBF)
 )
 

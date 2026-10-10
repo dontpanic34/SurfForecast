@@ -202,8 +202,6 @@ fun MainScreen(
             onThemeModeChanged = { viewModel.changeThemeMode(it) },
             customProfile = viewModel.customProfile,
             onCustomProfileSaved = { viewModel.saveCustomProfile(it) },
-            homeView = viewModel.homeView,
-            onHomeViewChanged = { viewModel.changeHomeView(it) },
             exampleAnswers = viewModel.exampleAnswers,
             onExampleAnswersChanged = { viewModel.changeExampleAnswers(it) },
             engineConfig = viewModel.engineConfig,
@@ -470,12 +468,10 @@ fun MainScreen(
                             )?.let { starsForScore(it) }
                         }
 
-                        // Vue « Tendance » : le libellé de la meilleure heure de chaque jour (vide en vue classique).
-                        val dailyLabels: List<SlotRating?> = if (viewModel.homeView == "trend") {
-                            availableDates.map { date ->
-                                bestRatingOfDay(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
-                            }
-                        } else emptyList()
+                        // Libellé (avec tendance) de la meilleure heure de chaque jour, sous les étoiles.
+                        val dailyLabels: List<SlotRating?> = availableDates.map { date ->
+                            bestRatingOfDay(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
+                        }
 
                         val dailyFeelsLike = availableDates.map { date ->
                             state.dailySummaries[date]?.avgFeelsLike ?: 20
@@ -685,12 +681,10 @@ fun MainScreen(
                                         seaTemperature = (closest.seaTemperature
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
-                                        rating = if (viewModel.homeView == "trend") {
-                                            calculateSlotRating(
-                                                hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
-                                                idealSwellDirection, viewModel.surferLevel
-                                            )
-                                        } else null,
+                                        rating = calculateSlotRating(
+                                            hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
+                                            idealSwellDirection, viewModel.surferLevel
+                                        ),
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
                                     )
                                 }
@@ -1051,7 +1045,6 @@ fun DynamicCardsSection(
                                 windUnit = viewModel.windUnit,
                                 idealSwellDirection = idealSwellDirection,
                                 surferLevel = surferLevel,
-                                showTrend = viewModel.homeView == "trend",
                                 scaleRawMax = availableDates.flatMap { daylightHoursFor(it, groupedByDate, dailySunInfo) }
                                     .maxOfOrNull { it.waveHeight },
                                 selectedHour = selectedHourlyItem,
