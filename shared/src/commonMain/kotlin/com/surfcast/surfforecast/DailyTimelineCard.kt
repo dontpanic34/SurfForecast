@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -74,6 +75,8 @@ fun DailyTimelineCard(
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     dailyTides: Map<LocalDate, DailyTideInfo>,
     windUnit: String,
+    windStep: String = "2h",
+    onWindStepChange: () -> Unit = {},
     idealSwellDirection: Int?,
     surferLevel: String,
     // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
@@ -148,13 +151,18 @@ fun DailyTimelineCard(
                             )
                         }
                     }
-                    Row(modifier = Modifier.padding(top = 4.dp).width(110.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        for (i in 1..5) {
-                            Box(
-                                Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp))
-                                    .background(if (i <= level) shownBand.color() else onSurfaceColor.copy(alpha = 0.15f))
-                            )
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.width(110.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            for (i in 1..5) {
+                                Box(
+                                    Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp))
+                                        .background(if (i <= level) shownBand.color() else onSurfaceColor.copy(alpha = 0.15f))
+                                )
+                            }
                         }
+                        Spacer(Modifier.weight(1f))
+                        // Marées du jour (haute, basse, coefficient), à droite de la jauge.
+                        dailyTides[selectedDate]?.let { TideMiniInfo(it, onSurfaceColor) }
                     }
                 }
             } else {
@@ -175,7 +183,7 @@ fun DailyTimelineCard(
                 } else {
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
-                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit,
+                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit, windStep = windStep, onWindStepChange = onWindStepChange,
                         isDark = isDark, onSurfaceColor = onSurfaceColor
                     )
                 }
@@ -210,6 +218,8 @@ private fun DailyTimelineBody(
     ax1: Float,
     scaleRawMax: Double?,
     windUnit: String,
+    windStep: String,
+    onWindStepChange: () -> Unit,
     isDark: Boolean,
     onSurfaceColor: Color
 ) {
@@ -223,7 +233,7 @@ private fun DailyTimelineBody(
     // Une indication de vent par heure d'ensoleillement : heures paires, plus l'heure choisie, sans heure imposée ; on masque
     // ce qui toucherait sa voisine (mesuré en pixels).
     val sunnyHours = hours.map { it.rawTime.hour }.filter { it >= ceil(sunrise).toInt() && it <= floor(sunset).toInt() }
-    val windFont = if (sunnyHours.size > 12) 7.4f else if (sunnyHours.size > 9) 8.6f else 9.6f
+    val windFont = if (windStep == "1h") 6.6f else if (sunnyHours.size > 12) 7.4f else if (sunnyHours.size > 9) 8.6f else 9.6f
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val wPx = with(density) { maxWidth.toPx() }
@@ -243,10 +253,16 @@ private fun DailyTimelineBody(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // --- Vent ---
-                val windMinGap = windFont * 2.5f + 2f
+                val windMinGap = if (windStep == "1h") windFont * 2.1f else windFont * 2.5f + 2f
                 val windHours: List<Int> = run {
                     val cand = ArrayList<Pair<Int, Int>>() // heure, priorité
-                    sunnyHours.filter { it % 2 == 0 }.forEach { cand.add(it to 1) }
+                    when (windStep) {
+                        // Toutes les heures : on ne masque que ce qui toucherait l'heure choisie.
+                        "1h" -> sunnyHours.forEach { cand.add(it to 1) }
+                        // Adaptatif : les heures paires d'abord, puis les impaires tant qu'il y a de la place.
+                        "auto" -> sunnyHours.forEach { cand.add(it to if (it % 2 == 0) 1 else 2) }
+                        else -> sunnyHours.filter { it % 2 == 0 }.forEach { cand.add(it to 1) }
+                    }
                     if (selHour != null && selHour in sunnyHours) cand.add(selHour to 0)
                     val kept = ArrayList<Int>()
                     cand.sortedBy { it.second }.forEach { (h, _) ->
@@ -255,6 +271,13 @@ private fun DailyTimelineBody(
                     kept.sorted()
                 }
                 Box(modifier = Modifier.fillMaxWidth().height(WIND_ROW_H.dp)) {
+                    Text(
+                        when (windStep) { "1h" -> "Vent 1 h"; "auto" -> "Vent auto"; else -> "Vent 2 h" },
+                        fontSize = 8.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.7f),
+                        modifier = Modifier.align(Alignment.TopEnd)
+                            .clip(RoundedCornerShape(6.dp)).background(onSurfaceColor.copy(alpha = 0.10f))
+                            .clickable { onWindStepChange() }.padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
                     for (h in windHours) {
                         val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
@@ -328,7 +351,7 @@ private fun DailyTimelineBody(
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
                         gridValues = gridValues, displayMax = displayMax, onSurfaceColor = onSurfaceColor, isDark = isDark,
-                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1)
                     )
                 }
 
@@ -426,7 +449,9 @@ private fun DailyCurveCanvas(
     isDark: Boolean,
     nacre: Color,
     textMeasurer: TextMeasurer,
-    xOf: (Float) -> Float
+    xOf: (Float) -> Float,
+    edgeLeft: Float,
+    edgeRight: Float
 ) {
     val waterImage = LocalSkyImages.current?.water
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
@@ -445,21 +470,28 @@ private fun DailyCurveCanvas(
 
         val pts = hours.map { Offset(xOf(it.rawTime.hour.toFloat()), yOf(it.waveHeight)) }
         if (pts.size >= 2) {
+            // La courbe va d'un bord à l'autre de la fenêtre (lever − 0,5 h → coucher + 0,5 h) : on prolonge à plat le premier
+            // et le dernier point jusqu'aux bords.
+            val line = ArrayList<Offset>(pts.size + 2)
+            line.add(Offset(minOf(edgeLeft, pts.first().x), pts.first().y))
+            line.addAll(pts)
+            line.add(Offset(maxOf(edgeRight, pts.last().x), pts.last().y))
             val fill = Path().apply {
-                moveTo(pts.first().x, bottom)
-                lineTo(pts.first().x, pts.first().y)
-                for (i in 1 until pts.size) {
-                    val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
+                moveTo(line.first().x, bottom)
+                lineTo(line.first().x, line.first().y)
+                for (i in 1 until line.size) {
+                    val p = line[i - 1]; val c = line[i]; val mx = (p.x + c.x) / 2f
                     cubicTo(mx, p.y, mx, c.y, c.x, c.y)
                 }
-                lineTo(pts.last().x, bottom)
+                lineTo(line.last().x, bottom)
                 close()
             }
-            if (waterImage != null) drawWater(waterImage, fill, pts.first().x, pts.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
-            for (i in 1 until pts.size) {
-                val p = pts[i - 1]; val c = pts[i]; val mx = (p.x + c.x) / 2f
+            if (waterImage != null) drawWater(waterImage, fill, line.first().x, line.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
+            for (i in 1 until line.size) {
+                val p = line[i - 1]; val c = line[i]; val mx = (p.x + c.x) / 2f
                 val seg = Path().apply { moveTo(p.x, p.y); cubicTo(mx, p.y, mx, c.y, c.x, c.y) }
-                val rating = ratings.getOrElse(i - 1) { ratings.getOrElse(i) { SlotRating(50, false) } }
+                val ri = (i - 2).coerceIn(0, (ratings.size - 1).coerceAtLeast(0))
+                val rating = ratings.getOrElse(ri) { SlotRating(50, false) }
                 drawPath(seg, color = conditionBand(rating).color(), style = Stroke(1.6.dp.toPx(), cap = StrokeCap.Round))
             }
         }
@@ -556,4 +588,113 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSunEvent(center
         lineTo(center.x + 2.5f * u, tip + back * u)
     }
     drawPath(head, color, style = stroke)
+}
+
+/**
+ * Petit résumé marée (haute/basse), même esprit visuel que SurfLiveStripOverlay, mais
+ * compact pour tenir sur la ligne du titre. Le coefficient n'est plus repete entre
+ * parentheses a cote de chaque heure : un seul coefficient est affiche a la fin, avec le
+ * meme code couleur que "Previsions de la semaine" (pastille verte/orange/rouge selon
+ * le seuil, cf. DailyTideCanvas dans MainScreen.kt).
+ */
+@Composable
+private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
+    val highTime = tideInfo.highTideTime
+    val lowTime = tideInfo.lowTideTime
+    val coef = tideInfo.coefficient
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (highTime != null) {
+            Canvas(modifier = Modifier.size(9.dp)) {
+                val w = size.width
+                val h = size.height
+                val wavePath = Path().apply {
+                    moveTo(0f, h * 0.70f)
+                    quadraticBezierTo(w * 0.5f, h * 0.25f, w, h * 0.70f)
+                }
+                drawPath(wavePath, color = Color(0xFF64B5F6), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+                val arrowX = w * 0.5f
+                drawLine(
+                    color = Color(0xFF64B5F6),
+                    start = Offset(arrowX, h * 0.70f),
+                    end = Offset(arrowX, h * 0.10f),
+                    strokeWidth = 1.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+                val headSize = 1.4.dp.toPx()
+                val headPath = Path().apply {
+                    moveTo(arrowX - headSize, h * 0.10f + headSize)
+                    lineTo(arrowX, h * 0.10f)
+                    lineTo(arrowX + headSize, h * 0.10f + headSize)
+                }
+                drawPath(headPath, color = Color(0xFF64B5F6), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+            }
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = highTime,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor,
+                maxLines = 1
+            )
+        }
+
+        if (lowTime != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Canvas(modifier = Modifier.size(9.dp)) {
+                val w = size.width
+                val h = size.height
+                val wavePath = Path().apply {
+                    moveTo(0f, h * 0.30f)
+                    quadraticBezierTo(w * 0.5f, h * 0.75f, w, h * 0.30f)
+                }
+                drawPath(wavePath, color = Color(0xFF26A69A), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+                val arrowX = w * 0.5f
+                drawLine(
+                    color = Color(0xFF26A69A),
+                    start = Offset(arrowX, h * 0.30f),
+                    end = Offset(arrowX, h * 0.90f),
+                    strokeWidth = 1.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+                val headSize = 1.4.dp.toPx()
+                val headPath2 = Path().apply {
+                    moveTo(arrowX - headSize, h * 0.90f - headSize)
+                    lineTo(arrowX, h * 0.90f)
+                    lineTo(arrowX + headSize, h * 0.90f - headSize)
+                }
+                drawPath(headPath2, color = Color(0xFF26A69A), style = Stroke(width = 1.dp.toPx(), cap = StrokeCap.Round))
+            }
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                text = lowTime,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor,
+                maxLines = 1
+            )
+        }
+
+        if (coef != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+
+            val dotColor = when {
+                coef < 55 -> AppColors.WindLow
+                coef <= 80 -> AppColors.WindMid
+                else -> AppColors.WindHigh
+            }
+
+            Text(
+                text = "$coef",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = onSurfaceColor.copy(alpha = 0.75f),
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.width(3.dp))
+            Canvas(modifier = Modifier.size(6.dp)) {
+                drawCircle(color = dotColor, radius = size.minDimension / 2f)
+            }
+        }
+    }
 }
