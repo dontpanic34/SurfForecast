@@ -154,6 +154,9 @@ internal class SkyImages(
     val water: ImageBitmap, val waterRain: ImageBitmap
 )
 
+/** Les images du ciel, chargées dès le lancement de l'appli (voir SurfLogApp) pour être prêtes quand la semaine s'affiche. */
+internal val LocalSkyImages = androidx.compose.runtime.compositionLocalOf<SkyImages?> { null }
+
 @Composable
 internal fun rememberSkyImages(): SkyImages = SkyImages(
     light = CloudSet(
