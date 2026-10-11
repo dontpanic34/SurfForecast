@@ -692,13 +692,14 @@ fun MainScreen(
 
                             // Barre du bas : Prévisions, Journal, Météo, Réglages (toujours visible, à portée de pouce).
                             // Journal et Météo s'ouvrent depuis le haut de la liste : on y remonte d'abord.
+                            val darkNow = isDarkSurfaceTheme()
                             BottomNavBar(
                                 onForecast = { navScope.launch { mainListState.animateScrollToItem(0) } },
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
                                 onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
-                                isDark = isDarkSurfaceTheme(),
-                                onToggleTheme = { viewModel.changeThemeMode(if (isDarkSurfaceTheme()) "light" else "dark") },
+                                isDark = darkNow,
+                                onToggleTheme = { viewModel.changeThemeMode(if (darkNow) "light" else "dark") },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
                                 coachTargets = coachTargets
