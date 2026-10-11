@@ -90,3 +90,9 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Déplacer « Tu surfes depuis », la fréquence (avec « plusieurs fois par jour ») et la saison (« toute l'année » / « quand l'eau est bonne ») dans Matériel, avec la condition physique. À traiter quand on s'occupe de Matériel.
 - Matériel : ajouter la question « Tu surfes sur quoi ? » en choix multiple (mousse, longboard, mid-length, fish, shortboard).
 - À trancher (propriétaire) : « Jusqu'à quelle taille tu passes la barre » reste dans le niveau ; « Quand tu passes la barre, tu te sens… » est plus proche de la condition physique.
+
+## Volume : incohérences trouvées dans le code (BoardVolume.kt), à corriger après validation
+- Le volume des longboards et mid-lengths est multiplié par 2,1 et 1,6 sur le ratio du niveau : un longboard « Confirmé » de 70 kg tombe à environ 56 L, un « Débutant » à 100 L. Les sources publient plutôt un ajout en litres (hybride +3 à 5, funboard +8 à 12, longboard +15 à 25), et le niveau ne doit pas définir le volume d'une planche longue. Proposition : volume conseillé seulement pour shortboard, fish, twin (fish +3 à 5 L), repère large pour mid-length, rien pour longboard et mousse.
+- Les ratios L/kg du code (Intermédiaire 0,42, Confirmé 0,38) sont plus bas que les repères publiés (≈ 0,5 pour un intermédiaire) : à recaler.
+- Deux échelles coexistent : 6 profils de volume (VOLUME_LEVELS) et 4 niveaux (ratioRangeFor, levelForRatio) : à aligner sur les 5 niveaux.
+- Le niveau « pour le volume » est un réglage séparé dans Matériel : il doit venir du profil.

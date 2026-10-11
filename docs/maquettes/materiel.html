@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon matériel</title>
+<style>
+:root{--bg:#EDF1F6;--surface:#FFFFFF;--surface2:#E4EAF2;--ink:#14202B;--muted:#5D6E80;--line:#D5DDE7;--accent:#2F6FE4;--accent-ink:#FFFFFF;
+--good:#1FA463;--ok:#8DB92E;--warn:#E08A00;--bad:#D6403A;--grey:#7C8A99;--frame:#C9D3DF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#243345;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--ok:#B5D84A;--warn:#FFA826;--bad:#F2554F;--grey:#8896A6;--frame:#2A3A4D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#243345;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--ok:#B5D84A;--warn:#FFA826;--bad:#F2554F;--grey:#8896A6;--frame:#2A3A4D;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px 16px 40px;line-height:1.4}
+h1{font-size:21px;margin:0 0 4px;text-wrap:balance}
+.lead{color:var(--muted);font-size:14px;margin:0 0 14px;max-width:62ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.tabs button{all:unset;cursor:pointer;padding:8px 12px;border-radius:10px;font-size:13.5px;font-weight:650;color:var(--muted);background:var(--surface2)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.theme{float:right}
+.theme button{all:unset;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12.5px;color:var(--muted);background:var(--surface2)}
+.theme button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+section[hidden]{display:none}
+.phone{width:min(100%,392px);margin:0 auto;background:var(--bg);border:1px solid var(--frame);border-radius:30px;padding:14px 12px 20px}
+.top{display:flex;align-items:center;gap:8px;padding:2px 6px 10px}
+.top .back{color:var(--accent);font-size:13px;font-weight:600}
+.top h2{font-size:17px;margin:0;font-weight:800}
+.grp{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 6px 6px}
+.card{background:var(--surface);border-radius:14px;overflow:hidden}
+.blk{padding:12px 14px;border-top:1px solid var(--line)}.blk:first-child{border-top:0}
+.lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:14px;font-weight:650}
+.lab span{font-weight:500;font-size:12.5px;color:var(--muted)}
+.notes{max-width:392px;margin:12px auto 0;color:var(--muted);font-size:13px}
+.notes b{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;padding:8px 12px;border-radius:99px;background:var(--surface2);font-size:13px;font-weight:650}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible,.ans:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{all:unset;cursor:pointer;display:block;text-align:center;padding:11px;border-radius:12px;background:var(--surface2);font-weight:700;font-size:14px}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:2px}
+/* prévisualisation commune */
+.pv{display:grid;gap:0}
+.pv .d{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.pv .d:first-child{border-top:0}
+.pv .d b{font-size:13.5px;font-weight:650;display:block}.pv .d small{color:var(--muted);font-size:12px}
+.badge{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:99px;color:#fff;white-space:nowrap}
+.lvl{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:12px 14px}
+.lvl i{display:block;height:6px;border-radius:3px;background:var(--surface2)}
+.lvl i.on{background:var(--accent)}
+.lvname{padding:0 14px 12px;font-size:14px;font-weight:700}
+.lvname span{color:var(--muted);font-weight:500;font-size:12.5px}
+/* proposition 1 */
+.sit{padding:14px}
+.sit .big{font-size:22px;font-weight:800}
+.sit .meta{color:var(--muted);font-size:13px;margin:2px 0 10px}
+.body{display:flex;align-items:flex-end;gap:2px;height:44px;margin:6px 0 12px}
+.body i{display:block;width:14px;border-radius:3px 3px 0 0;background:var(--surface2)}
+.body i.on{background:var(--accent)}
+.wind{display:inline-flex;gap:6px;align-items:center;background:var(--surface2);border-radius:99px;padding:5px 11px;font-size:13px;font-weight:650}
+.ans{all:unset;cursor:pointer;display:block;text-align:center;padding:10px 6px;border-radius:12px;font-size:13.5px;font-weight:700;background:var(--surface2);margin-top:6px}
+.ans[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.prog{height:4px;border-radius:2px;background:var(--surface2);margin:0 14px 2px}
+.prog i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* proposition 2 */
+.ruler{position:relative;height:70px;margin:6px 4px 0}
+.ruler .bar{position:absolute;left:0;right:0;top:22px;height:10px;border-radius:5px;background:var(--surface2)}
+.ruler .sel{position:absolute;top:22px;height:10px;border-radius:5px;background:var(--good)}
+.ruler .max{position:absolute;top:22px;height:10px;border-radius:0 5px 5px 0;background:var(--warn)}
+.ruler .tick{position:absolute;top:36px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);text-align:center;white-space:nowrap}
+.ruler .tick::before{content:"";display:block;width:1px;height:6px;background:var(--line);margin:-6px auto 2px}
+.dual{position:relative;height:30px;margin:2px 0}
+.dual input{position:absolute;left:0;width:100%;top:4px;pointer-events:none;-webkit-appearance:none;appearance:none;background:none;height:22px}
+.dual input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:grab}
+.dual input::-moz-range-thumb{pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);cursor:grab}
+.dual input::-webkit-slider-runnable-track{background:none}
+.dual input::-moz-range-track{background:none}
+/* proposition 3 */
+.q{padding:12px 14px;border-top:1px solid var(--line)}.q:first-child{border-top:0}
+.q p{margin:0 0 8px;font-size:14px;font-weight:650}
+/* proposition 4 */
+.ses{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.ses:first-child{border-top:0}
+.ses b{display:block;font-size:13.5px}.ses small{color:var(--muted);font-size:12px}
+.ses .st{color:#F5B50A;font-size:12px;letter-spacing:1px}
+.sw{all:unset;cursor:pointer;width:42px;height:25px;border-radius:99px;background:var(--surface2);position:relative;box-shadow:inset 0 0 0 1px var(--line)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--muted);transition:transform .15s}
+.sw[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.sw[aria-checked="true"]::after{transform:translateX(17px);background:var(--accent-ink)}
+/* structures de la page d'accueil */
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1000px;margin:0 auto}
+.mini{background:var(--bg);border:1px solid var(--frame);border-radius:26px;padding:12px 10px 16px}
+.mini h3{font-size:12px;margin:0 6px 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lrow{display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:1px solid var(--line)}
+.lrow:first-child{border-top:0}
+.lrow .t{flex:1;min-width:0}.lrow b{display:block;font-size:14px}.lrow span{display:block;font-size:11.5px;color:var(--muted)}
+.ico{width:28px;height:28px;border-radius:8px;background:var(--surface2);display:grid;place-items:center;font-size:14px;flex:none}
+.hero{background:var(--surface);border-radius:16px;padding:14px;margin-bottom:10px}
+.hero b{font-size:16px}.hero p{margin:2px 0 8px;color:var(--muted);font-size:12.5px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--surface);border-radius:14px;padding:12px}
+.tile .ico{margin-bottom:8px;width:34px;height:34px;font-size:17px}
+.tile b{display:block;font-size:14px}.tile span{font-size:11.5px;color:var(--muted)}
+.pro{display:block;margin-top:8px;font-size:12.5px;color:var(--muted)}.pro b{color:var(--ink)}
+
+/* poignées sur la barre (proposition 2) */
+.rl{position:relative;height:96px;margin:4px 12px 0;touch-action:none}
+.rl .bar{position:absolute;left:0;right:0;top:40px;height:14px;border-radius:7px;background:var(--surface2)}
+.rl .zg{position:absolute;top:40px;height:14px;background:var(--good)}
+.rl .zo{position:absolute;top:40px;height:14px;background:var(--warn);border-radius:0 7px 7px 0}
+.rl .tk{position:absolute;top:60px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);text-align:center;white-space:nowrap;line-height:1.2}
+.rl .hd{position:absolute;top:30px;width:34px;height:34px;margin-left:-17px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:grab;touch-action:none;border:3px solid var(--surface)}
+.rl .hd:active{cursor:grabbing}
+.rl .hd:focus-visible{outline:3px solid var(--ink)}
+.rl .hd.mx{background:var(--warn);color:#1a1000}
+.rl .lb{position:absolute;top:2px;transform:translateX(-50%);font-size:11.5px;font-weight:700;white-space:nowrap}
+.hint{font-size:12.5px;color:var(--muted);margin:2px 0 0;display:flex;gap:6px;align-items:center}
+.cmp{display:grid;gap:10px;max-width:760px;margin:0 auto}
+.ex{background:var(--surface);border-radius:14px;padding:12px 14px}
+.ex .c{font-size:13.5px;font-weight:700}.ex .c small{color:var(--muted);font-weight:500;font-size:12.5px;display:block}
+.ex p.lv{margin:8px 0 0;font-size:13.5px;color:var(--ink)}
+.ex .row3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:8px}
+.opt{all:unset;cursor:pointer;display:block;border-radius:10px;padding:9px 11px;background:var(--surface2);font-size:13.5px;font-weight:650;box-shadow:inset 0 0 0 2px transparent}
+.opt small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.opt[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent);background:var(--surface)}
+.opt:focus-visible{outline:2px solid var(--accent)}
+.opt.now{opacity:.8;cursor:default}
+
+.res{padding:14px}
+.xp{position:relative;height:14px;border-radius:7px;background:var(--surface2);margin:14px 14px 4px;overflow:hidden}
+.xp i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--accent),#6fd3a5);transition:width .5s}
+.xp b{position:absolute;top:0;bottom:0;width:2px;background:var(--surface);opacity:.9}
+.xpl{display:flex;justify-content:space-between;margin:0 14px;font-size:10.5px;color:var(--muted)}
+.res .nm{font-size:24px;font-weight:800}
+.ibtn{float:right;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font:700 12px/20px system-ui;padding:0;cursor:pointer}
+.res .sc{font-size:12px;color:var(--muted);margin-top:2px}
+.next{margin:0 14px 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px}
+.tol .q2{padding:12px 14px;border-top:1px solid var(--line)}
+.tol .q2 p{margin:0 0 8px;font-weight:700;font-size:14px}
+.tol .q2 button{display:block;width:100%;text-align:left;margin-top:6px}
+.res .df{margin:8px 0 0;font-size:14px}
+.res .goal{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--surface2);font-size:13.5px}
+.why{padding:10px 14px 14px;color:var(--muted);font-size:12.5px}
+.rec{display:grid;gap:0}
+.rec .r{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:8px;padding:8px 14px;border-top:1px solid var(--line);font-size:12.5px}
+.rec .r span{color:var(--muted)}.rec .r b{font-weight:650}
+details.lv5{padding:0 14px 12px}details.lv5 summary{cursor:pointer;font-weight:650;font-size:13.5px;padding:10px 0;color:var(--accent)}
+details.lv5 p{margin:0 0 8px;font-size:12.5px}
+.ans small{display:block;font-weight:500;opacity:.8;font-size:12px;margin-top:2px}
+</style><style>
+.lock{padding:26px 16px;text-align:center;color:var(--muted);font-size:14px}
+.lock b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+.boardrow{padding:12px 14px;border-top:1px solid var(--line)}
+.boardrow:first-child{border-top:0}
+.boardrow p{margin:0 0 8px;font-weight:700;font-size:14px}
+.numrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.numrow label{font-size:12px;color:var(--muted);font-weight:650}
+.numrow input,select{width:100%;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-size:15px;margin-top:3px}
+.vol{padding:10px 14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;font-size:13.5px}
+.vol b{font-weight:800}.vol span{color:var(--muted);font-size:12.5px}
+.today{padding:14px}.today .big{font-size:17px;font-weight:800}.today p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.demo{max-width:392px;margin:0 auto 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.demo select{width:auto;padding:5px 8px;font-size:13px}
+</style>
+</head><body>
+<h1>Mon matériel : maquette</h1>
+<p class="lead">Disponible seulement quand le profil est rempli. Le volume est une option « pour aller plus loin » : une recommandation, pas une vérité.</p>
+<div class="demo">Démo : <select id="dprof"><option value="1">Profil rempli</option><option value="0">Profil vide</option></select> Niveau du profil : <select id="dlvl"><option value="0">Débutant</option><option value="1">Intermédiaire</option><option value="2">Confirmé</option><option value="3" selected>Avancé</option><option value="4">Expert</option></select></div>
+<div class="phone">
+ <div class="top"><span class="back">‹ Réglages</span><h2>Mon matériel</h2></div>
+ <div id="locked" class="card" hidden><div class="lock"><b>Remplis d'abord ton profil</b>Le matériel s'appuie sur ton niveau. Ça prend quelques minutes.<div style="margin-top:12px"><span class="btn pri">Aller au profil</span></div></div></div>
+ <div id="main">
+  <p class="grp">Ma pratique</p>
+  <div class="card" id="pra"></div>
+  <p class="grp">Mes planches</p>
+  <div class="card"><div class="boardrow"><p>Tu surfes sur quoi ?<br><small style="font-weight:500;color:var(--muted)">Plusieurs réponses possibles.</small></p><div class="chips" id="boards"></div></div>
+   <div id="use"></div></div>
+  <p class="grp">Ce que ça donne dans l'appli</p>
+  <div class="card today" id="today"></div>
+  <p class="grp">Pour aller plus loin : le volume</p>
+  <div class="card" id="volcard"></div>
+ </div>
+</div>
+<p class="notes"><b>Ce qui change :</b> le volume ne définit plus ton niveau, et il n'est conseillé que pour les planches où il a du sens (shortboard, fish, twin). Mid-length et longboard : pas de volume « par niveau », le choix se fait selon la vague.</p>
+<script>
+var PR=[{k:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']},
+ {k:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine','Plusieurs fois par jour']},
+ {k:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Quand l\'eau est bonne']}];
+var BO=[['mousse','Mousse'],['long','Longboard'],['mid','Mid-length'],['fish','Fish / twin'],['short','Shortboard']];
+var USE=['Tout le temps','Petit et mou','Longues vagues qui déroulent','Creux et puissant','Gros'];
+var st={since:3,freq:3,season:0,boards:['mid','fish','short'],use:{mid:[2],fish:[1],short:[3,4]},age:45,h:178,w:78,fit:1};
+var LVL=['Débutant','Intermédiaire','Confirmé','Avancé','Expert'],RATIO=[0.66,0.48,0.41,0.37,0.35],FIT=[1,1.05,1.1,1.18],FITN=['Excellente','Bonne','Moyenne','Faible'];
+function lvl(){return +document.getElementById('dlvl').value}
+function ageF(a){return a<=30?1:a<=50?1.08:1.15}
+function wF(w){return 1+0.2*Math.max(0,Math.min(1,(60-w)/25))}
+function base(){return st.w*RATIO[lvl()]*wF(st.w)*ageF(st.age)*FIT[st.fit]}
+function rng(v){return Math.round(v*0.95)+' à '+Math.round(v*1.05)+' L'}
+function pills(k,opts,sel,fn){return '<div class="chips">'+opts.map(function(t,i){return '<button class="chip" data-i="'+i+'" aria-pressed="'+(sel(i))+'">'+t+'</button>'}).join('')+'</div>'}
+function draw(){
+ var on=document.getElementById('dprof').value==='1';
+ document.getElementById('locked').hidden=on;document.getElementById('main').hidden=!on;if(!on)return;
+ document.getElementById('pra').innerHTML=PR.map(function(p){return '<div class="boardrow"><p>'+p.q+'</p>'+pills(p.k,p.o,function(i){return st[p.k]===i})+'</div>'}).join('');
+ document.querySelectorAll('#pra .boardrow').forEach(function(row,ri){row.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){st[PR[ri].k]=+b.dataset.i;draw()}})});
+ var bx=document.getElementById('boards');
+ bx.innerHTML=BO.map(function(b){return '<button class="chip" data-k="'+b[0]+'" aria-pressed="'+(st.boards.indexOf(b[0])>=0)+'">'+b[1]+'</button>'}).join('');
+ bx.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var k=b.dataset.k,i=st.boards.indexOf(k);if(i>=0)st.boards.splice(i,1);else st.boards.push(k);draw()}});
+ var u=document.getElementById('use');
+ u.innerHTML=st.boards.length>1?st.boards.map(function(k){var nm=BO.filter(function(x){return x[0]===k})[0][1];st.use[k]=st.use[k]||[0];
+  return '<div class="boardrow"><p>'+nm+' : tu la sors…</p><div class="chips">'+USE.map(function(t,i){return '<button class="chip" data-k="'+k+'" data-i="'+i+'" aria-pressed="'+(st.use[k].indexOf(i)>=0)+'">'+t+'</button>'}).join('')+'</div></div>'}).join(''):'';
+ u.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var a=st.use[b.dataset.k],i=+b.dataset.i,j=a.indexOf(i);if(j>=0)a.splice(j,1);else a.push(i);draw()}});
+ // résultat
+ var t='';
+ if(st.boards.length===0)t='<div class="big">Choisis au moins une planche</div><p>Sans planche, l\'appli ne peut rien te conseiller.</p>';
+ else if(st.boards.length===1){var nm1=BO.filter(function(x){return x[0]===st.boards[0]})[0][1];t='<div class="big">Tu ne surfes qu\'avec une planche : '+nm1+'</div><p>L\'appli te dit juste si la journée lui convient, sans te proposer une autre planche.</p>'}
+ else t='<div class="big">Samedi, 0,8 m, 9 s, mou : sors ta mid-length</div><p>Tu l\'as réglée pour les longues vagues qui déroulent. Si ça se creuse et monte à 1,5 m, l\'appli te suggérera ton shortboard.</p><p style="margin-top:8px"><b>Ce que ça change :</b> la note de la journée tient compte de la planche qui lui va le mieux dans ton quiver, au lieu d\'une planche unique.</p>';
+ document.getElementById('today').innerHTML=t;
+ // volume
+ var vc=document.getElementById('volcard');
+ var cands=st.boards.filter(function(k){return k==='short'||k==='fish'||k==='mid'});
+ var h='<div class="boardrow"><div class="numrow"><div><label>Âge</label><input type="number" id="age" value="'+st.age+'"></div><div><label>Taille (cm)</label><input type="number" id="hh" value="'+st.h+'"></div><div><label>Poids (kg)</label><input type="number" id="ww" value="'+st.w+'"></div></div>'+
+ '<div style="margin-top:8px"><label style="font-size:12px;color:var(--muted);font-weight:650">Forme physique (tirée de tes réponses entraînement et compétitions)</label><select id="fit">'+FITN.map(function(n,i){return '<option value="'+i+'"'+(i===st.fit?' selected':'')+'>'+n+'</option>'}).join('')+'</select></div></div>';
+ if(!cands.length)h+='<div class="vol"><span>Le volume ne se conseille pas pour une mousse ou un longboard : ça dépend surtout de la longueur de la planche.</span></div>';
+ else{var b=base();h+=cands.map(function(k){var v=k==='short'?b:k==='fish'?b+4:b+10;var nm=BO.filter(function(x){return x[0]===k})[0][1];return '<div class="vol"><div><b>'+nm+'</b><br><span>'+(k==='short'?'référence, niveau '+LVL[lvl()]:k==='fish'?'shortboard + 3 à 5 L':'shortboard + 8 à 12 L (repère large)')+'</span></div><b>'+rng(v)+'</b></div>'}).join('')}
+ h+='<div class="vol"><span>Recommandation indicative, calculée avec ton poids, ton âge, ta forme et ton niveau. Seul ton shaper connaît le bon volume pour toi. Le volume ne change jamais ton niveau.</span></div>';
+ vc.innerHTML=h;
+ ['age:age','hh:h','ww:w'].forEach(function(p){var a=p.split(':');document.getElementById(a[0]).onchange=function(){st[a[1]]=+this.value||0;draw()}});
+ document.getElementById('fit').onchange=function(){st.fit=+this.value;draw()};
+}
+document.getElementById('dprof').onchange=draw;document.getElementById('dlvl').onchange=draw;
+draw();
+</script></body></html>

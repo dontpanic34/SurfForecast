@@ -103,3 +103,7 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Questionnaire (maquette) : « Tu surfes… » devient La mousse / La réforme / Le large (mousse et réforme suivent le parcours Débutant ; seul le large ouvre le parcours complet). « Tu veux passer au large ? » remplace « passer à la vague ». Organigramme pas encore aligné.
 - Questionnaire (maquette) : première réponse de « Où tu surfes ? » : « Chez moi, avec du monde : ça me rassure ».
 - Questionnaire (maquette) : le score n'est plus affiché. Il reste uniquement derrière un petit « i » à côté du nom du niveau (« Ta barre est remplie à X % »). La barre d'XP reste.
+
+## 15 octobre 2026 : maquette Matériel et revue du volume (maquette, pas en ligne)
+- `docs/maquettes/materiel.html` : Matériel verrouillé tant que le profil n'est pas rempli ; « Ma pratique » (depuis, fréquence, saison) ; « Mes planches » en choix multiple avec, pour chaque planche, quand on la sort ; résultat « planche du jour » ; volume en option « pour aller plus loin » (âge, taille, poids, forme).
+- Revue de `BoardVolume.kt` (voir A_FAIRE) : incohérences trouvées, rien modifié dans le code.
