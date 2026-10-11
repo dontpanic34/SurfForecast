@@ -155,7 +155,7 @@ internal val LocalSkyImages = androidx.compose.runtime.compositionLocalOf<SkyIma
 // ciel couvert), canal vert = ombrage. Elle est dessinée en bandes verticales étroites ; un filtre de couleur par bande
 // transforme la densité en opacité selon la couverture, et l'ombrage en teinte du blanc au gris au sombre quand il pleut.
 private const val CLOUD_TEX_SPAN = 0.62f     // part de la largeur de la texture visible à l'écran
-private const val CLOUD_TEX_OFFSET = 60      // décalage de départ dans la texture, en pixels de texture
+private const val CLOUD_TEX_OFFSET_FRAC = 0.078f // décalage de départ dans la texture, en part de sa largeur
 
 private fun smoothstep(a: Float, b: Float, x: Float): Float {
     val t = ((x - a) / (b - a)).coerceIn(0f, 1f)
@@ -242,58 +242,94 @@ private fun backdropKey(scene: SkyScene, isDark: Boolean, size: Size, skyH: Floa
     return k
 }
 
+// Paliers de couverture dessinés : entre deux paliers voisins, deux calques de nuages se fondent horizontalement (somme des poids = 1).
+private val CLOUD_LEVELS = floatArrayOf(0f, 0.12f, 0.3f, 0.5f, 0.7f, 0.85f, 1f)
+
+/** Poids du palier [i] pour la couverture [c] : 1 sur le palier, 0 sur les paliers voisins, linéaire entre les deux. */
+private fun levelWeight(i: Int, c: Float): Float {
+    val l = CLOUD_LEVELS[i]
+    return when {
+        c < l -> if (i == 0) 0f else ((c - CLOUD_LEVELS[i - 1]) / (l - CLOUD_LEVELS[i - 1])).coerceIn(0f, 1f)
+        c > l -> if (i == CLOUD_LEVELS.lastIndex) 0f else ((CLOUD_LEVELS[i + 1] - c) / (CLOUD_LEVELS[i + 1] - l)).coerceIn(0f, 1f)
+        else -> 1f
+    }
+}
+
 /**
- * Fond, soleil puis nuages. Le champ de nuages est dessiné en colonnes d'un pixel de texture : à chacune sa couverture, donc des
- * nuages qui s'épaississent en continu. L'échelle est la même en largeur et en hauteur (sinon les nuages s'étirent), et les
- * colonnes ont des bords entiers, sans trou ni recouvrement (un recouvrement dessinerait deux fois les nuages translucides).
+ * Fond, soleil puis nuages. Les nuages sont dessinés en images entières (jamais en bandes) : une image par palier de couverture
+ * et de pluie, chacune avec son filtre, fondue dans la suivante par un dégradé horizontal. L'échelle est la même en largeur et
+ * en hauteur ; la texture se répète vers le bas si le ciel est plus haut qu'elle.
  */
-private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boolean, w: Float, h: Float, skyH: Float) {
+private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boolean, w: Float, h: Float, n: Int) {
     val tex = im.cloudField
-    val texPer = tex.width * CLOUD_TEX_SPAN / w                 // pixels de texture par pixel d'écran, sur les deux axes
-    val nCols = min(ceil(w * texPer).toInt(), tex.width - CLOUD_TEX_OFFSET)
-    val rows = (skyH * texPer).roundToInt().coerceIn(1, tex.height)
-    fun edge(i: Int): Int = if (i >= nCols) scene.right.roundToInt() else (scene.left + i / texPer).roundToInt()
+    val bounds = Rect(scene.left, scene.top, scene.right, scene.bottom)
+    fun coverAt(x: Float) = scene.cover.at(x).coerceIn(0f, 1f)
+    fun rainShare(x: Float) = min(1f, scene.rain.at(x) / 1.8f)
 
     clipRect(scene.left, scene.top, scene.right, scene.bottom) {
-        // Fond du ciel, stable : bleu net quand c'est dégagé, gris quand c'est couvert (plus foncé en haut).
-        for (i in 0 until nCols) {
-            val x0 = edge(i)
-            val x1 = edge(i + 1)
-            if (x1 <= x0) continue
-            val c = scene.cover.at((x0 + x1) / 2f)
+        // Fond du ciel : bleu net quand c'est dégagé, gris quand c'est couvert, fondu horizontalement.
+        drawRect(
+            brush = Brush.verticalGradient(listOf(skyColor(0f, isDark, false), skyColor(0f, isDark, true)), startY = scene.top, endY = scene.bottom),
+            topLeft = Offset(scene.left, scene.top), size = Size(w, h)
+        )
+        drawIntoCanvas { canvas ->
+            canvas.saveLayer(bounds, Paint())
             drawRect(
-                brush = Brush.verticalGradient(listOf(skyColor(c, isDark, false), skyColor(c, isDark, true)), startY = scene.top, endY = scene.bottom),
-                topLeft = Offset(x0.toFloat(), scene.top), size = Size((x1 - x0).toFloat(), h)
+                brush = Brush.verticalGradient(listOf(skyColor(1f, isDark, false), skyColor(1f, isDark, true)), startY = scene.top, endY = scene.bottom),
+                topLeft = Offset(scene.left, scene.top), size = Size(w, h)
             )
+            val stops = fadeStops(scene, n) { x -> smoothstep(0.2f, 0.95f, coverAt(x)) }
+            drawRect(
+                brush = Brush.horizontalGradient(*stops, startX = scene.left, endX = scene.right),
+                topLeft = Offset(scene.left, scene.top), size = Size(w, h), blendMode = BlendMode.DstIn
+            )
+            canvas.restore()
         }
     }
 
-    // Soleil : derrière les nuages, jamais coupé (donc hors du rognage du ciel) ; il apparaît entre les îlots et s'efface sous la couverture.
-    for (s in scene.suns) {
-        val a = ((1f - smoothstep(0.4f, 0.97f, scene.cover.at(s.x)) * 0.92f) * (if (isDark) 0.85f else 0.95f)).coerceIn(0f, 1f)
+    // Soleil : derrière les nuages, jamais coupé ; il apparaît entre les îlots et s'efface sous la couverture.
+    for (sun in scene.suns) {
+        val a = ((1f - smoothstep(0.4f, 0.97f, scene.cover.at(sun.x)) * 0.92f) * (if (isDark) 0.85f else 0.95f)).coerceIn(0f, 1f)
         if (a <= 0.03f) continue
         drawImage(
             im.sun, srcOffset = IntOffset.Zero, srcSize = IntSize(im.sun.width, im.sun.height),
-            dstOffset = IntOffset((s.x - s.sizePx / 2f).roundToInt(), s.topPx.roundToInt()),
-            dstSize = IntSize(s.sizePx.roundToInt(), s.sizePx.roundToInt()), alpha = a
+            dstOffset = IntOffset((sun.x - sun.sizePx / 2f).roundToInt(), sun.topPx.roundToInt()),
+            dstSize = IntSize(sun.sizePx.roundToInt(), sun.sizePx.roundToInt()), alpha = a
         )
     }
 
+    val spanW = (tex.width * CLOUD_TEX_SPAN).roundToInt()
+    val offX = (tex.width * CLOUD_TEX_OFFSET_FRAC).roundToInt()
+    val scale = w / spanW                                   // pixels d'écran par pixel de texture, sur les deux axes
+    val tileH = tex.height * scale
+    val dstW = w.roundToInt()
     clipRect(scene.left, scene.top, scene.right, scene.bottom) {
-        // Nuages : une colonne par pixel de texture, avec le filtre de sa couverture et de sa pluie.
-        for (i in 0 until nCols) {
-            val x0 = edge(i)
-            val x1 = edge(i + 1)
-            if (x1 <= x0) continue
-            val xm = (x0 + x1) / 2f
-            val c = scene.cover.at(xm).coerceIn(0f, 1f)
-            if (c < 0.02f) continue
-            val r = min(1f, scene.rain.at(xm) / 1.8f)
-            drawImage(
-                tex, srcOffset = IntOffset(CLOUD_TEX_OFFSET + i, 0), srcSize = IntSize(1, rows),
-                dstOffset = IntOffset(x0, scene.top.roundToInt()), dstSize = IntSize(x1 - x0, skyH.roundToInt()),
-                colorFilter = cloudFilter(c, r, isDark)
-            )
+        for (li in 1 until CLOUD_LEVELS.size) for (rainy in 0..1) {
+            val stops = fadeStops(scene, n) { x ->
+                val share = if (rainy == 1) rainShare(x) else 1f - rainShare(x)
+                levelWeight(li, coverAt(x)) * share
+            }
+            if (stops.all { it.second.alpha < 0.01f }) continue
+            val filter = cloudFilter(CLOUD_LEVELS[li], if (rainy == 1) 1f else 0f, isDark)
+            drawIntoCanvas { canvas ->
+                canvas.saveLayer(bounds, Paint())
+                var k = 0
+                while (scene.top + k * tileH < scene.bottom) {
+                    val y0 = (scene.top + k * tileH).roundToInt()
+                    val y1 = (scene.top + (k + 1) * tileH).roundToInt()
+                    drawImage(
+                        tex, srcOffset = IntOffset(offX, 0), srcSize = IntSize(spanW, tex.height),
+                        dstOffset = IntOffset(scene.left.roundToInt(), y0), dstSize = IntSize(dstW, y1 - y0),
+                        colorFilter = filter
+                    )
+                    k++
+                }
+                drawRect(
+                    brush = Brush.horizontalGradient(*stops, startX = scene.left, endX = scene.right),
+                    topLeft = Offset(scene.left, scene.top), size = Size(w, h), blendMode = BlendMode.DstIn
+                )
+                canvas.restore()
+            }
         }
     }
 }
@@ -350,7 +386,6 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
     if (w <= 1f || h <= 1f) return
     val n = max(8, (w / (6f * density)).toInt())
     val bounds = Rect(scene.left, scene.top, scene.right, scene.bottom)
-    // Les nuages couvrent toute la hauteur et passent derrière l'eau (opaque) : aucun trait net là où ils s'arrêteraient avant la courbe.
     val skyH = h
 
     // Fond du ciel, soleil et nuages : dessinés une fois dans une image, refaite seulement quand la couverture, la taille, le
@@ -359,7 +394,7 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
     var backdrop = cache.bitmap
     if (backdrop == null || cache.key != key) {
         val bmp = ImageBitmap(size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))
-        CanvasDrawScope().draw(this, layoutDirection, androidx.compose.ui.graphics.Canvas(bmp), size) { drawBackdrop(scene, im, isDark, w, h, skyH) }
+        CanvasDrawScope().draw(this, layoutDirection, androidx.compose.ui.graphics.Canvas(bmp), size) { drawBackdrop(scene, im, isDark, w, h, n) }
         cache.bitmap = bmp
         cache.key = key
         backdrop = bmp
