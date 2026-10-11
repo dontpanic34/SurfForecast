@@ -1,5 +1,8 @@
 # À faire
 
+## À coder après validation (12 octobre) : side-off / side-on
+- Couper le vent « côté » à 90° dans `windCategoryFromDegrees` (side-off = famille offshore, side-on = famille onshore) : touche les couleurs des flèches, les notes (`windFactorOf`, `windCurves`) et les phrases (`windPhrase`, qui dit encore « sideshore »). Les mots des phrases restent à choisir avec le propriétaire (onglet « Phrases du vent » de `docs/maquettes/niveau.html`). Cas qui l'a révélé : NE 31 km/h à Montalivet (130° de la mer) classé « côté ».
+
 ## Retours du propriétaire à traiter (soir du 11 octobre)
 - **Nuages : transitions entre deux couvertures trop brutales** (on dirait des segments séparés) et couvertures peu jolies. Causes probables : lissage de la couverture trop court (quelques dizaines de pixels) alors que la prévision saute d'une heure à l'autre, mélange de sprites très différents, aplats. Pistes : fondu long (2 à 3 h dans le déroulé, un jour dans la semaine) avec courbe en S, limiter la vitesse de changement de couverture, fond du ciel stable, voile de couvert plus progressif.
 - **Pluie** : le propriétaire la trouve très bien (12 octobre), ne rien changer.
