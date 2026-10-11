@@ -311,6 +311,9 @@ private fun DrawScope.drawSun(scene: SkyScene, im: SkyImages, isDark: Boolean) {
     }
 }
 
+/** Nombre de fois où chaque couche de pluie est dessinée (l'image de pluie est très transparente). */
+private const val RAIN_PASSES = 2
+
 /** Horloge pour les anneaux de pluie sur l'eau : tourne seulement quand il pleut. */
 @Composable
 internal fun rememberRainClock(active: Boolean): State<Float> {
@@ -394,16 +397,20 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
         // sombre sur un ciel clair et redevient claire sur un ciel très sombre.
         val d = density
         class Layer(val img: ImageBitmap, val scale: Float, val ax: Float, val speed: Float, val xoff: Float, val mask: (Float) -> Float, val alpha: Float, val tint: Color?)
-        fun rainMask(x: Float) = min(1f, (scene.rain.at(x) / 1.5f).coerceAtLeast(0f).pow(0.6f))
+        // Pluie plus visible : l'image de pluie est très transparente (opacité max 62 %), donc chaque couche est dessinée deux fois
+        // et le masque est renforcé ; traînées très courtes (0,55 x) et très lentes (0,18 x), épaisseur inchangée (largeur étirée en proportion).
+        fun rainMask(x: Float) = min(1f, 1.5f * (scene.rain.at(x) / 1.5f).coerceAtLeast(0f).pow(0.6f))
         fun lightShare(x: Float) = ((scene.cover.at(x) - 0.7f) / 0.2f).coerceIn(0f, 1f)
         val rainDark = Color(0xFF3A4C66).copy(alpha = 0.97f)
         val snowTint = Color(0xFF70849E).copy(alpha = 0.95f)
         val layers = ArrayList<Layer>()
-        for ((scale, ax, speed, xoff) in listOf(listOf(0.36f, 2.1f, 170f, 0f), listOf(0.28f, 2.4f, 120f, 57f))) {
-            if (isDark) layers.add(Layer(im.rain, scale, ax, speed, xoff, ::rainMask, 0.95f, null))
-            else {
-                layers.add(Layer(im.rain, scale, ax, speed, xoff, { x -> rainMask(x) * (1f - lightShare(x)) }, 0.95f, rainDark))
-                layers.add(Layer(im.rain, scale, ax, speed, xoff, { x -> rainMask(x) * lightShare(x) }, 0.95f, null))
+        for ((scale, ax, speed, xoff) in listOf(listOf(0.198f, 3.818f, 30.6f, 0f), listOf(0.154f, 4.364f, 21.6f, 57f))) {
+            repeat(RAIN_PASSES) {
+                if (isDark) layers.add(Layer(im.rain, scale, ax, speed, xoff, ::rainMask, 0.95f, null))
+                else {
+                    layers.add(Layer(im.rain, scale, ax, speed, xoff, { x -> rainMask(x) * (1f - lightShare(x)) }, 0.95f, rainDark))
+                    layers.add(Layer(im.rain, scale, ax, speed, xoff, { x -> rainMask(x) * lightShare(x) }, 0.95f, null))
+                }
             }
         }
         for ((scale, speed, xoff) in listOf(listOf(0.50f, 45f, 0f), listOf(0.80f, 28f, 91f))) {
