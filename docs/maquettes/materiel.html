@@ -227,8 +227,12 @@ function draw(){
  ['age:age','hh:h','ww:w'].forEach(function(p){var a=p.split(':');document.getElementById(a[0]).onchange=function(){st[a[1]]=+this.value||0;draw()}});
  document.getElementById('fit').onchange=function(){st.fit=+this.value;draw()};
 }
-var PROS=[['Kelly Slater','54 ans','72 kg','24 à 26 L','0,33 à 0,36'],['Mick Fanning','45 ans','75 kg','≈ 26 L','0,35'],['Jordy Smith','38 ans','≈ 88 kg','32 à 34 L','0,36 à 0,38']];
-document.getElementById('pros').innerHTML=PROS.map(function(p){return '<div class="vol"><div><b>'+p[0]+'</b><br><span>'+p[1]+' · '+p[2]+'</span></div><div style="text-align:right"><b>'+p[3]+'</b><br><span>'+p[4]+' L/kg</span></div></div>'}).join('')+'<div class="vol"><span>Shortboard de compétition, en forme olympique : des repères pour comprendre l\'ordre de grandeur, pas pour te comparer. Chiffres issus de sources publiques, à prendre comme approximatifs.</span></div>';
+var PROS=[['Mick Fanning','29–32 ans (2011–2013)','≈ 73 kg','26,3 à 26,7 L','0,36'],
+['Jordy Smith','26 ans (2014)','≈ 86 kg','31,8 L','0,37'],
+['Kelly Slater','≈ 43 ans (milieu des années 2010)','≈ 73 kg','24,8 à 25,8 L','0,34 à 0,36'],
+['Kelly Slater','≈ 51 ans (2023)','≈ 75 kg','≈ 27 L (« un peu bas pour moi »)','0,36'],
+['Gabriel Medina','21 ans (2015)','poids inconnu','28,7 L','—']];
+document.getElementById('pros').innerHTML=PROS.map(function(p){return '<div class="vol"><div><b>'+p[0]+'</b><br><span>'+p[1]+' · '+p[2]+'</span></div><div style="text-align:right"><b>'+p[3]+'</b><br><span>'+p[4]+' L/kg</span></div></div>'}).join('')+'<div class="vol"><span>Shortboards de compétition, surfeurs en forme olympique : l\'ordre de grandeur est de 0,34 à 0,37 L/kg, à tous les âges de la carrière. Poids et dates approximatifs, tirés de sources publiques.</span></div>';
 document.getElementById('dprof').onchange=draw;document.getElementById('dlvl').onchange=draw;
 draw();
 </script></body></html>
