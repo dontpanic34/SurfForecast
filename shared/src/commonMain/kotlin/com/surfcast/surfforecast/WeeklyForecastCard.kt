@@ -449,7 +449,7 @@ fun ContinuousWaveCanvas(
 
         skyImages?.let { im ->
             val rainCurve = SkyCurve(
-                FloatArray(points.size) { points[it].x }, FloatArray(points.size) { rainAmountForCode(allHourlyData[it].weatherCode) }, 1.5f * stepX
+                FloatArray(points.size) { points[it].x }, FloatArray(points.size) { rainAmountForCode(allHourlyData[it].weatherCode) }, 7.dp.toPx()
             )
             drawWater(im, rainCurve.takeIf { weekRainActive }, fillPath, plotLeft, w, points.minOf { p -> p.y } - 2.dp.toPx(), baseY)
             if (weekRainActive) {
@@ -798,10 +798,7 @@ internal fun weekSkyScene(
         val sizePx = 32f * density
         suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 2f * density))
     }
-    // Lissage sur près d'un demi-créneau : un changement de ciel ou de pluie s'étale sur plusieurs heures, sans colonne.
-    val slotW = dayW / 3f
-    val coverSmooth = 0.4f * slotW
-    val rainSmooth = 0.3f * slotW
+    val smooth = 7f * density
     val top = 8f * density
     val bottom = size.height - 18f * density
     // Les nuages sont étalés sur le ciel, au-dessus de la houle la plus haute de la semaine.
@@ -811,9 +808,9 @@ internal fun weekSkyScene(
     val waterline = padTop + usableH * (1f - swellAxisFraction(weekMaxWave.coerceAtLeast(0.3)))
     return SkyScene(
         left = 0f, right = size.width, top = top, bottom = bottom,
-        cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), coverSmooth),
-        rain = SkyCurve(xs.toFloatArray(), rain.toFloatArray(), rainSmooth),
-        snow = SkyCurve(xs.toFloatArray(), snow.toFloatArray(), rainSmooth),
+        cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), smooth),
+        rain = SkyCurve(xs.toFloatArray(), rain.toFloatArray(), smooth),
+        snow = SkyCurve(xs.toFloatArray(), snow.toFloatArray(), smooth),
         suns = suns,
         animate = rain.any { it > 0f } || snow.any { it > 0f },
         skyHeight = waterline - top + 8f * density
