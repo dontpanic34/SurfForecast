@@ -1,5 +1,12 @@
 # À faire
 
+## Retours du propriétaire à traiter (soir du 11 octobre)
+- **Nuages : transitions entre deux couvertures trop brutales** (on dirait des segments séparés) et couvertures peu jolies. Causes probables : lissage de la couverture trop court (quelques dizaines de pixels) alors que la prévision saute d'une heure à l'autre, mélange de sprites très différents, aplats. Pistes : fondu long (2 à 3 h dans le déroulé, un jour dans la semaine) avec courbe en S, limiter la vitesse de changement de couverture, fond du ciel stable, voile de couvert plus progressif.
+- **Pluie plus épaisse et plus courte, comme des gouttes** (aujourd'hui des fils longs et fins) : réduire la hauteur de l'image de pluie plus que sa largeur, ou nouvelle image de gouttes courtes (légère et forte). Maquette d'abord.
+- **Semaine : phrase du jour et température** : maquette avec rendu réel envoyée (https://claude.ai/artifact/Y5cp87SPMmrriFWJhvcYgu). Questions ouvertes : phrase en 4 lignes ou 3 ? faut-il aussi le ressenti de l'heure dans la colonne du vent du déroulé ?
+- **Réglages en 5 pages** : maquette validée en principe (https://claude.ai/artifact/6X9Pg1aQLgtDyXbRMw8EtX), à coder une page à la fois ; retirer l'orientation de la plage des réglages.
+- Rappel : ne pousser sur `unified` et `web` qu'avec le « go » du propriétaire.
+
 ## Bug à traiter en priorité (signalé le 11 octobre, 3 captures de Montalivet)
 La phrase grise en haut du déroulé ne correspond pas au vent affiché :
 - 17 h, vent O (ouest, donc de mer) à 3 km/h : « Vent de côté qui gêne ».
