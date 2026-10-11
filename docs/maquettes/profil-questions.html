@@ -206,7 +206,7 @@ var STEPS=[
  {id:'want',q:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
  {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser. Les reformes et l\'épaule, c\'est plutôt la première réponse.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===1}},
  {id:'goal',q:'Sur la vague, tu cherches surtout à…',o:['Réussir tes take-offs','Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques','Devenir de plus en plus radical, critique et engagé','Affiner ton surf : le style, la précision, chaque détail'],when:function(a){return a.what===1}},
- {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['J\'en apprends encore : certaines passent, pas à chaque fois','Je les tente et ça passe de mieux en mieux, mais pas encore à tous les coups','Elles sont acquises : je travaille surtout les détails, le style, la précision'],when:function(a){return a.what===1&&a.goal>=2}}
+ {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['J\'en apprends encore : certaines passent, pas à chaque fois','Le mouvement est là, je le lance, mais la reprise ne passe pas à chaque fois','Elles sont acquises : je travaille surtout la puissance et le style'],when:function(a){return a.what===1&&a.goal>=2}}
 ];
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}

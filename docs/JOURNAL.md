@@ -90,3 +90,4 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Résultat : score discret, encart « Pour passer à X, ce qui te retient », boutons « Une marche en dessous / au-dessus » (les « + » comptent).
 - Nouveau bloc « Ta tolérance aux conditions » (2 questions), indépendant du niveau, pour les recommandations de couleurs.
 - Statut : maquette, rien en ligne.
+- « Tes manœuvres » : réponse Avancé = « le mouvement est là, je le lance, mais la reprise ne passe pas à chaque fois » ; réponse Expert = « puissance et style ». Idée à valider : une question de tolérance sur la taille (plus gros que d'habitude).
