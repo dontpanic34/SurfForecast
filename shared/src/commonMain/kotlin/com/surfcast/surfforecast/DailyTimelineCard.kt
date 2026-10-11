@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -76,8 +77,6 @@ fun DailyTimelineCard(
     windUnit: String,
     idealSwellDirection: Int?,
     surferLevel: String,
-    // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
-    scaleRawMax: Double? = null,
     // Gardé pour compatibilité : le déroulé n'a plus de vue simple.
     compact: Boolean = false,
     selectedHour: HourlyUiModel?,
@@ -180,7 +179,7 @@ fun DailyTimelineCard(
                 } else {
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
-                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit,
+                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
                         isDark = isDark, onSurfaceColor = onSurfaceColor
                     )
                 }
@@ -213,7 +212,6 @@ private fun DailyTimelineBody(
     sunset: Float,
     ax0: Float,
     ax1: Float,
-    scaleRawMax: Double?,
     windUnit: String,
     isDark: Boolean,
     onSurfaceColor: Color
@@ -297,11 +295,11 @@ private fun DailyTimelineBody(
                 }
 
                 // --- Courbe sur son fond météo ---
-                val rawMax = maxOf(scaleRawMax ?: 0.0, hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
-                val (niceMax, gridValues) = swellAxisScale(rawMax)
-                // La houle la plus haute de la journée atteint la part d'eau réglée (35 % par défaut) ; au-dessus, c'est du ciel.
-                val waterF = SkyGraphSettings.waterFraction
-                val displayMax = (rawMax / waterF).toFloat()
+                // Échelle fixe : seules les graduations changent (elles s'arrêtent à la houle la plus haute de la journée).
+                val rawMax = (hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
+                val gridValues = swellAxisGrid(rawMax)
+                // Part du graphique prise par l'eau, à la houle la plus haute de la journée ; au-dessus, c'est du ciel.
+                val waterF = swellAxisFraction(rawMax)
                 val plotHdp = SkyGraphSettings.dayPlotDp()
                 val plotBottomDp = plotHdp - PLOT_BOTTOM_MARGIN
                 Box(modifier = Modifier.fillMaxWidth().height(plotHdp.dp)) {
@@ -341,7 +339,7 @@ private fun DailyTimelineBody(
                     }
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
-                        gridValues = gridValues, displayMax = displayMax, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
+                        gridValues = gridValues, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
                         nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
                     )
                 }
@@ -435,7 +433,6 @@ private fun DailyCurveCanvas(
     ratings: List<SlotRating>,
     selectedIndex: Int,
     gridValues: List<Double>,
-    displayMax: Float,
     plotBottomDp: Float,
     onSurfaceColor: Color,
     isDark: Boolean,
@@ -449,19 +446,19 @@ private fun DailyCurveCanvas(
     val skyImages = LocalSkyImages.current
     val rainActive = hours.any { rainAmountForCode(it.weatherCode) > 0f }
     val clock = rememberRainClock(rainActive)
-    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
-    val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
     val halo = if (isDark) Color(0xFF0B121A) else Color.White
     val weekTextHalo = Color(0xFF0B121A)
     val labelColor = if (isDark) Color.White else Color(0xFF14202B)
     Canvas(modifier = modifier) {
         val top = PLOT_TOP.dp.toPx()
         val bottom = plotBottomDp.dp.toPx()
-        fun yOf(v: Double): Float = bottom - (bottom - top) * (v / displayMax).toFloat().coerceIn(0f, 1.2f)
+        fun yOf(v: Double): Float = bottom - (bottom - top) * swellAxisFraction(v)
 
         gridValues.forEach { v ->
             val y = yOf(v)
-            drawLine(onSurfaceColor.copy(alpha = 0.10f), Offset(0f, y), Offset(size.width, y), strokeWidth = 0.8.dp.toPx())
+            // Pointillés au-dessus de 2 m, là où l'échelle est resserrée.
+            val dash = if (v > SWELL_AXIS_BREAK) PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())) else null
+            drawLine(onSurfaceColor.copy(alpha = 0.10f), Offset(0f, y), Offset(size.width, y), strokeWidth = 0.8.dp.toPx(), pathEffect = dash)
         }
 
         val pts = hours.map { Offset(xOf(it.rawTime.hour.toFloat()), yOf(it.waveHeight)) }
@@ -527,15 +524,10 @@ private fun DailyCurveCanvas(
         }
 
         // Graduations par-dessus la courbe, sur un fond léger (comme la vue semaine).
+        // Même style que la taille et la période : blanc, gras, contour sombre, sans encart derrière.
+        val axisLabelStyle = TextStyle(color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         gridValues.forEach { v ->
-            val y = yOf(v)
-            val layout = textMeasurer.measure(formatAxisHeight(v), axisTextStyle)
-            val labelTop = y - layout.size.height - 1.dp.toPx()
-            drawRoundRect(
-                labelBg, Offset(2.dp.toPx(), labelTop), Size(layout.size.width + 4.dp.toPx(), layout.size.height.toFloat()),
-                CornerRadius(3.dp.toPx())
-            )
-            drawText(layout, topLeft = Offset(4.dp.toPx(), labelTop))
+            drawHaloTextAtBaseline(textMeasurer, formatAxisHeight(v), axisLabelStyle, weekTextHalo, 4.dp.toPx(), yOf(v) - 3.dp.toPx())
         }
 
         // Le petit point nacré, avec la taille au-dessus et la période en dessous (contour de la couleur du fond, pas d'encart).
@@ -594,16 +586,38 @@ internal fun hourIndexAt(x: Float, width: Float, count: Int): Int {
  * exacts : arrondir "%.1f" en HALF_UP afficherait a tort "0,3" pour 0.25.
  */
 /**
- * Échelle des hauteurs de houle (axe de gauche), commune au déroulé de la journée et à la vue semaine : palier de 0,25 m
- * doublé jusqu'à environ 4 lignes, avec toujours un peu de marge au-dessus du pic. Renvoie (maximum, valeurs des lignes).
+ * Échelle fixe des hauteurs de houle (déroulé de la journée et semaine) : un mètre a toujours la même hauteur à l'écran, d'une
+ * semaine à l'autre. Une houle de 2 m arrive à la part d'eau réglée ([SkyGraphSettings.waterFraction]). Au-delà de 2 m l'échelle
+ * se resserre : de 2 à 6 m, moitié moins de hauteur par mètre ; au-delà de 6 m, un quart. Renvoie la position de [v] mètres
+ * entre 0 (bas du graphique) et 1 (haut).
  */
-internal fun swellAxisScale(rawMax: Double): Pair<Double, List<Double>> {
-    var step = 0.25
-    while (rawMax / step > 4.0) step *= 2.0
-    var niceMax = kotlin.math.ceil(rawMax / step) * step
-    if (niceMax - rawMax < step * 0.2) niceMax += step
-    val gridValues = generateSequence(step) { it + step }.takeWhile { it <= niceMax + step * 0.01 }.toList()
-    return niceMax to gridValues
+internal fun swellAxisFraction(v: Double): Float {
+    val a = SkyGraphSettings.waterFraction / 2.0
+    val f = when {
+        v <= 2.0 -> a * v
+        v <= 6.0 -> a * 2.0 + a * 0.5 * (v - 2.0)
+        else -> a * 4.0 + a * 0.25 * (v - 6.0)
+    }
+    return f.coerceIn(0.0, 1.0).toFloat()
+}
+
+/** Début de la partie resserrée de l'échelle : les lignes au-dessus sont en pointillés. */
+internal const val SWELL_AXIS_BREAK = 2.0
+
+/**
+ * Graduations de l'axe : tous les 0,5 m jusqu'à 2 m, tous les mètres jusqu'à 6 m, tous les 2 m au-delà. On s'arrête à la
+ * première qui atteint [rawMax] : pas de « 2 » si la houle ne dépasse pas 1,5 m.
+ */
+internal fun swellAxisGrid(rawMax: Double): List<Double> {
+    val all = ArrayList<Double>()
+    var v = 0.5
+    while (v <= 2.0 + 1e-9) { all.add(v); v += 0.5 }
+    for (m in 3..6) all.add(m.toDouble())
+    var w = 8.0
+    while (w <= 14.0) { all.add(w); w += 2.0 }
+    var i = 0
+    while (i < all.size - 1 && all[i] < rawMax - 1e-9) i++
+    return all.subList(0, i + 1).toList()
 }
 
 internal fun formatAxisHeight(value: Double): String {

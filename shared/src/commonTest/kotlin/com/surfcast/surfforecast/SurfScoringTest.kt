@@ -436,12 +436,26 @@ class SurfScoringTest {
     }
 
     @Test
-    fun swellAxisAdaptsToTheForecast() {
-        val (smallMax, smallGrid) = swellAxisScale(0.7)
-        val (bigMax, bigGrid) = swellAxisScale(3.2)
-        assertTrue(smallMax < bigMax)
-        assertTrue(smallMax >= 0.7 && bigMax >= 3.2)
-        assertTrue(smallGrid.size in 2..5 && bigGrid.size in 2..5)
+    fun swellAxisGridStopsAtTheHighestSwell() {
+        assertEquals(listOf(0.5, 1.0, 1.5), swellAxisGrid(1.3))
+        assertEquals(listOf(0.5, 1.0, 1.5), swellAxisGrid(1.5))
+        assertEquals(listOf(0.5, 1.0, 1.5, 2.0), swellAxisGrid(1.6))
+        assertEquals(listOf(0.5, 1.0, 1.5, 2.0, 3.0), swellAxisGrid(2.8))
+        assertEquals(8.0, swellAxisGrid(7.0).last())
+    }
+
+    @Test
+    fun swellAxisIsFixedAndTightensAboveTwoMeters() {
+        SkyGraphSettings.load(43, 43, 40)
+        fun near(expected: Float, actual: Float) = assertTrue(kotlin.math.abs(expected - actual) < 1e-5f, "attendu $expected, obtenu $actual")
+        near(0.2f, swellAxisFraction(1.0))
+        near(0.4f, swellAxisFraction(2.0))
+        // De 2 à 6 m : moitié moins de hauteur par mètre ; au-delà de 6 m : un quart.
+        near(0.6f, swellAxisFraction(4.0))
+        near(0.8f, swellAxisFraction(6.0))
+        near(0.9f, swellAxisFraction(8.0))
+        near(1.0f, swellAxisFraction(20.0))
+        near(0f, swellAxisFraction(0.0))
     }
 }
 

@@ -11,7 +11,7 @@ import androidx.compose.runtime.setValue
 object SkyGraphSettings {
     const val DEFAULT_WEEK = 43
     const val DEFAULT_DAY = 43
-    const val DEFAULT_WATER = 35
+    const val DEFAULT_WATER = 40
 
     var weekPct by mutableIntStateOf(DEFAULT_WEEK)
         private set
@@ -34,7 +34,7 @@ object SkyGraphSettings {
     fun setWater(p: Int) { waterPct = p.coerceIn(20, 60); persist("graph_water_pct", waterPct) }
     fun reset() { setWeek(DEFAULT_WEEK); setDay(DEFAULT_DAY); setWater(DEFAULT_WATER) }
 
-    /** Part d'eau, de 0 à 1. */
+    /** Hauteur de l'échelle : part du graphique à laquelle arrive une houle de 2 m (de 0 à 1). */
     val waterFraction: Float get() = waterPct / 100f
 
     // Le reste de l'encart (titre, jours, vent, énergie ; titre, jauge, bande horaire) fait environ 151 dp pour la semaine et
