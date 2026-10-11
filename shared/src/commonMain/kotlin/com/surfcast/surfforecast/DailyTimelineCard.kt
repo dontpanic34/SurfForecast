@@ -1,6 +1,7 @@
 @file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,7 +53,8 @@ import kotlin.math.sin
 
 
 // Dimensions (dp) du déroulé : mêmes proportions que la maquette validée.
-private const val WIND_ROW_H = 40
+private const val SELECTED_WIND_DROP = 9 // la colonne de vent de l'heure choisie descend de ce nombre de dp pour la repérer
+private const val WIND_ROW_H = 40 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
 private const val BAND_H = 28
@@ -262,13 +264,16 @@ private fun DailyTimelineBody(
                 Box(modifier = Modifier.fillMaxWidth().height(WIND_ROW_H.dp)) {
                     for (h in windHours) {
                         val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
+                        key(h) {
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
                         val color = SurfUnitsHelper.getSurfWindColor(dirFr, effectiveWindKmh(hourly).roundToInt())
                         val textColor = SurfUnitsHelper.windTextColor(color, isDark)
                         val rotation = (SurfUnitsHelper.cardinalToDegrees(dirFr) + 180f) % 360f
                         val itemW = 34.dp
+                        // La colonne de l'heure choisie descend un peu, avec une petite animation : c'est celle à lire.
+                        val drop by animateDpAsState(if (h == selHour) SELECTED_WIND_DROP.dp else 0.dp, label = "windDrop")
                         Column(
-                            modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), 0) }.width(itemW),
+                            modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Canvas(modifier = Modifier.size((windFont + 3f).dp)) {
@@ -290,6 +295,11 @@ private fun DailyTimelineBody(
                                 SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit), fontSize = windFont.sp,
                                 fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp
                             )
+                            // Soulignement de la colonne de l'heure choisie, de la couleur de son vent.
+                            if (h == selHour) {
+                                Box(modifier = Modifier.padding(top = 2.dp).width(16.dp).height(2.dp).background(textColor, RoundedCornerShape(1.dp)))
+                            }
+                        }
                         }
                     }
                 }
@@ -311,10 +321,12 @@ private fun DailyTimelineBody(
                         isDark = isDark
                     ) { size ->
                         val xs = FloatArray(hours.size) { xOf(hours[it].rawTime.hour.toFloat()) }
-                        val smooth = with(density) { 6.dp.toPx() }
-                        val cover = SkyCurve(xs, FloatArray(hours.size) { hours[it].cloudCover / 100f }, smooth)
-                        val rain = SkyCurve(xs, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, smooth)
-                        val snow = SkyCurve(xs, FloatArray(hours.size) { snowAmountForCode(hours[it].weatherCode) }, smooth)
+                        // Lissage sur plusieurs heures : le ciel et la pluie passent d'un état à l'autre sans colonne.
+                        val hourPx = if (xs.size > 1) (xs.last() - xs.first()) / (hours.last().rawTime.hour - hours.first().rawTime.hour).coerceAtLeast(1)
+                            else with(density) { 30.dp.toPx() }
+                        val cover = SkyCurve(xs, FloatArray(hours.size) { hours[it].cloudCover / 100f }, 1.25f * hourPx)
+                        val rain = SkyCurve(xs, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, 0.75f * hourPx)
+                        val snow = SkyCurve(xs, FloatArray(hours.size) { snowAmountForCode(hours[it].weatherCode) }, 0.75f * hourPx)
                         // Le soleil suit l'heure choisie : il se lève en bas à l'heure du lever, monte au zénith à la mi-journée
                         // près du vent, puis redescend et se couche en bas à l'heure du coucher.
                         val suns = ArrayList<SunSpot>()
@@ -481,7 +493,8 @@ private fun DailyCurveCanvas(
             }
             if (skyImages != null) {
                 val rainCurve = SkyCurve(
-                    FloatArray(hours.size) { pts[it].x }, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, 6.dp.toPx()
+                    FloatArray(hours.size) { pts[it].x }, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) },
+                    0.75f * (if (pts.size > 1) (pts.last().x - pts.first().x) / (pts.size - 1) else 30.dp.toPx())
                 )
                 drawWater(skyImages, rainCurve.takeIf { rainActive }, fill, line.first().x, line.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
                 if (rainActive) {
