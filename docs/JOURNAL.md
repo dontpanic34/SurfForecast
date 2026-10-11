@@ -3,7 +3,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 11 octobre 2026
-- **Nuages : vrais sprites détourés posés par `CloudPlan`** (atlas net 4096 px, atlas flou pour la brume, voile de couvert, couleurs sous la pluie), remplace les images par paliers. Photos agrandies par Real-ESRGAN (réseau réimplémenté en numpy), voir `scripts/nuages/`. État : **branche**, à publier après vérification de la compilation.
+- **Nuages : vrais sprites détourés posés par `CloudPlan`** (atlas net 4096 px, atlas flou pour la brume, voile de couvert, couleurs sous la pluie), remplace les images par paliers. Photos agrandies par Real-ESRGAN (réseau réimplémenté en numpy), voir `scripts/nuages/`. État : **en ligne** (publié le 11 octobre sur `unified` et `web`, builds verts, déploiement du site et APK). Rendu réel à juger sur téléphone.
 - Les nuages en images par paliers (fondu additif) sont **en ligne** (builds verts) mais jugés insuffisants : remplacés ci-dessus.
 - **Nuages en images prêtes, fondues en additionnant** : 14 images (5 paliers x 2 thèmes + variantes pluie), `BlendMode.Plus`, fond du ciel en deux calques. Remplace la grosse texture. Un oubli (`LocalSkyImages`) avait fait échouer la première publication, corrigé. État : **publié sur `unified` et `web`, en attente du résultat de la compilation et du déploiement.**
 - **Phrases sans « pour toi »** : « Taille limite », « Taille un peu juste », « Gros jour, à jauger sur place », « Creux et puissant ». État : **branche**. Les badges « Trop petit » et « Trop gros » ne sont pas encore renommés (à décider).
