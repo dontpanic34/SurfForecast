@@ -76,3 +76,8 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## Avant le 11 octobre
 Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-coucher), fond météo en images, semaine sans icônes météo, code couleur du vent à seuils fixes, océan opaque sous la courbe, graphiques à 43 %, eau à 35 % réglables.
+
+## 14 octobre 2026 : questionnaire du niveau, barre d'XP (maquette, pas en ligne)
+- `docs/maquettes/profil-questions.html` : le résultat s'affiche comme une barre qui se remplit (0–100, sans chiffre) avec le nom du niveau. 9 tranches égales : Débutant 0–16, Débutant + 16–21, Intermédiaire 21–37, + 37–42, Confirmé 42–58, + 58–63, Avancé 63–79, Avancé + 79–84, Expert 84–100. « Avancé + » est possible.
+- Question « Tes manœuvres » (remplace « pourri ») pour séparer Avancé et Expert ; `organigramme.html` aligné.
+- Statut : maquette, en attente de validation du propriétaire. Rien de codé.
