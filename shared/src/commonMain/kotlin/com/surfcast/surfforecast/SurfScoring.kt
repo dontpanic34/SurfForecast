@@ -325,16 +325,30 @@ private const val MINOR_LIMIT = 0.85
 private const val STRONG_LIMIT = 0.55
 
 /**
+ * La phrase du vent, avec sa force : quatre niveaux d'après le facteur de vent (léger de 0,9 à 0,75, gêne jusqu'à 0,6,
+ * fort jusqu'à 0,3, très fort en dessous), les mêmes mots pour l'onshore et le sideshore.
+ */
+internal fun windPhrase(windCategory: String, windFactor: Double): String {
+    val level = when {
+        windFactor >= 0.75 -> 0
+        windFactor >= WIND_STRONG -> 1
+        windFactor >= 0.3 -> 2
+        else -> 3
+    }
+    return when (windCategory) {
+        "onshore" -> listOf("Un peu d'onshore", "Onshore dégrade la vague", "Onshore fort, ça sectionne", "Onshore très fort, c'est démonté")[level]
+        "cross" -> listOf("Un peu de sideshore", "Sideshore dégrade la vague", "Sideshore fort, ça sectionne", "Sideshore très fort, c'est démonté")[level]
+        else -> listOf("Offshore soutenu", "Offshore un peu fort", "Offshore fort", "Offshore très fort")[level]
+    }
+}
+
+/**
  * Phrase courte qui dit pourquoi la note est ce qu'elle est (voir les maquettes du profil) : ce qui pèse vraiment
  * (taille, vent, rafales, clapot, période, direction de la houle), ou « Bonne taille, vent propre » quand rien ne pèse.
  */
 private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, windMemory: Boolean = false): String = when (kind) {
     ConditionKind.TOO_SMALL -> WHY_TOO_SMALL
-    ConditionKind.TOO_WINDY -> when (windCategory) {
-        "onshore" -> "Onshore abîme la vague"
-        "cross" -> "Sideshore abîme la vague"
-        else -> "Offshore trop fort"
-    }
+    ConditionKind.TOO_WINDY -> windPhrase(windCategory, l.wind)
     ConditionKind.TOO_BIG -> WHY_TOO_BIG
     ConditionKind.CHALLENGING -> when (windCategory) {
         "offshore" -> "Creux et puissant"
@@ -356,12 +370,7 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, wi
             val strong = worst.value < worst.strong
             when (worst.name) {
                 "size" -> if (strong) "Taille limite" else "Taille un peu juste"
-                "wind" -> when {
-                    windMemory -> WHY_WIND_MEMORY
-                    windCategory == "onshore" -> if (strong) "Onshore, gâche la vague" else "Un peu d'onshore"
-                    windCategory == "cross" -> if (strong) "Vent de côté fort" else "Vent de côté qui gêne"
-                    else -> if (strong) "Offshore trop fort" else "Offshore un peu fort"
-                }
+                "wind" -> if (windMemory) WHY_WIND_MEMORY else windPhrase(windCategory, l.wind)
                 "gusts" -> if (strong) "Rafales fortes" else "Des rafales gênent"
                 "chop" -> if (strong) "Beaucoup de clapot" else "Un peu de clapot"
                 "period" -> if (strong) "Houle trop courte" else "Houle un peu courte"
