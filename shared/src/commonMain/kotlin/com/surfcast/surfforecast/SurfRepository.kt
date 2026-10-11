@@ -609,7 +609,8 @@ class SurfRepository(
                     dailyMap[parsedDate] = DailyTideInfo(
                         highTideTime = dayPm?.time,
                         lowTideTime = dayBm?.time,
-                        coefficient = coef
+                        coefficient = coef,
+                        extrema = extrema
                     )
                 }
                 TidesBundle(dailyMap, rawMap)
