@@ -2,7 +2,7 @@
 
 
 ## État au passage de relais (11 octobre 2026, fin de soirée)
-- **En ligne** (site `web` et appli `unified`, publiés le 11 octobre) : nuages en sprites corrigés, vent ressenti dans le déroulé et la semaine (35 % des rafales), phrases sans « pour toi », graduations de houle visibles, marées dans l'eau. Les deux déploiements (runs 269 et 270) étaient encore en cours quand j'ai écrit : **à vérifier**.
+- **En ligne** (site `web` et appli `unified`, publiés le 11 octobre) : nuages en sprites corrigés, vent ressenti dans le déroulé et la semaine (35 % des rafales), phrases sans « pour toi », graduations de houle visibles, marées dans l'eau. Déploiements vérifiés verts (runs 269 et 270) : **en ligne** sur le site et l’appli.
 - **Sur la branche `claude/new-session-pume8w`, pas en ligne** : « ressenti partout » (commit `6dabadc`) : température ressentie, mot du ciel dans Maintenant, vent ressenti dans Maintenant / carte Vent / heures / détail, « i » du vent en trois lignes, `Ressenti.kt` et `RessentiTest.kt`. Run 271 : les tests Android et partagés passent, le job `web` a échoué sur une erreur réseau (502 de Google Maven), pas sur le code : **relancer `build-kmp.yml` sur la branche**, puis demander le go.
 - **Maquettes en attente de validation** (dans le scratchpad de la session, à refaire si perdues) : `semaine_phrase.html` (phrase du jour choisi à la place du titre « Prévisions de la semaine » en quatre lignes titre / houle / vent / météo, et un seul chiffre de température ressentie par jour sous les étoiles) ; `profil_exemples.html` (profil par 12 situations).
 - **Décisions du jour** : le ressenti vaut pour le vent, la température et les nuages ; la houle reste brute ; en cas de doute, poser la question ; pas de min/max de température.
