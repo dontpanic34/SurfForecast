@@ -1,5 +1,8 @@
 # À faire
 
+## Plus tard : le volume de planche et la fréquence (12 octobre)
+- Conserver dans le profil la fréquence (quelques fois par an… plusieurs fois par semaine) et la saison (toute l'année / surtout l'été). Au moment de reprendre le volume recommandé (`BoardVolume.kt`, « Mon matériel »), en tenir compte : plus de volume pour quelqu'un qui surfe peu ou seulement l'été. Sujet compliqué, à traiter à part ; rien dans le niveau en attendant.
+
 ## Tâche ajoutée le 12 octobre : toutes les marées de la journée d'ensoleillement dans le déroulé
 - **Aujourd'hui** (`DaylightTides.kt`, `daylightTides`) : on n'affiche que **deux** marées (`take(2)`), les plus proches du milieu de la journée dans la fenêtre « une demi-heure avant le lever à une demi-heure après le coucher ».
 - **Demandé** : afficher **autant de marées que possible** dans la journée d'ensoleillement. Exemple du propriétaire : pleine mer vers 8 h et lever du soleil vers 8 h, on la garde ; la suivante, 6 h plus tard (vers 14 h) ; puis la troisième si elle tombe dans la fenêtre. Deux pleines mers dans la même journée de soleil, c'est normal et il y a la place.
