@@ -54,7 +54,7 @@ import kotlin.math.sin
 
 // Dimensions (dp) du déroulé : mêmes proportions que la maquette validée.
 private const val SELECTED_WIND_DROP = 9 // la colonne de vent de l'heure choisie descend de ce nombre de dp pour la repérer
-private const val WIND_ROW_H = 40 + SELECTED_WIND_DROP
+private const val WIND_ROW_H = 46 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
 private const val BAND_H = 28
@@ -231,7 +231,7 @@ private fun DailyTimelineBody(
 
     // Une indication de vent par heure d'ensoleillement ; on masque seulement ce qui toucherait l'heure choisie (mesuré en pixels).
     val sunnyHours = hours.map { it.rawTime.hour }.filter { it >= ceil(sunrise).toInt() && it <= floor(sunset).toInt() }
-    val windFont = 6.6f
+    val windFont = 10f // texte du vent : lisible, une colonne mesure environ 30 dp
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val wPx = with(density) { maxWidth.toPx() }
@@ -277,20 +277,7 @@ private fun DailyTimelineBody(
                             modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Canvas(modifier = Modifier.size((windFont + 3f).dp)) {
-                                val w = size.width
-                                val hh = size.height
-                                rotate(rotation, pivot = Offset(w / 2f, hh / 2f)) {
-                                    val p = Path().apply {
-                                        moveTo(w * 0.5f, 0f)
-                                        lineTo(w * 0.9f, hh * 0.55f)
-                                        lineTo(w * 0.5f, hh * 0.38f)
-                                        lineTo(w * 0.1f, hh * 0.55f)
-                                        close()
-                                    }
-                                    drawPath(p, color = color)
-                                }
-                            }
+                            WindArrow(color, rotation, (windFont * 1.5f).dp)
                             Text(dirFr, fontSize = windFont.sp, fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp)
                             Text(
                                 SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit), fontSize = windFont.sp,

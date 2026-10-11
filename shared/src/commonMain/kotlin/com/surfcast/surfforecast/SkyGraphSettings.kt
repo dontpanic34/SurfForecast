@@ -37,8 +37,8 @@ object SkyGraphSettings {
     /** Hauteur de l'échelle : part du graphique à laquelle arrive une houle de 2 m (de 0 à 1). */
     val waterFraction: Float get() = waterPct / 100f
 
-    // Le reste de l'encart (titre, jours, vent, énergie ; titre, jauge, bande horaire) fait environ 151 dp pour la semaine et
-    // 218 dp pour le jour : la hauteur du graphique en découle pour une part donnée de l'encart.
-    fun weekHeightDp(): Float = weekPct.toFloat() / (100 - weekPct) * 151f
-    fun dayPlotDp(): Float = dayPct.toFloat() / (100 - dayPct) * 218f
+    // Le reste de l'encart (titre, jours, vent, énergie ; titre, jauge, bande horaire) fait environ 155 dp pour la semaine et
+    // 224 dp pour le jour : la hauteur du graphique en découle pour une part donnée de l'encart.
+    fun weekHeightDp(): Float = weekPct.toFloat() / (100 - weekPct) * 155f
+    fun dayPlotDp(): Float = dayPct.toFloat() / (100 - dayPct) * 224f
 }

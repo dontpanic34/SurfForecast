@@ -717,29 +717,8 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
         verticalArrangement = Arrangement.Center
     ) {
         if (showArrow) {
-        Canvas(modifier = Modifier.size(12.dp)) {
-            val w = size.width
-            val h = size.height
-
-            rotate(rotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                val path = Path().apply {
-                    moveTo(w * 0.5f, 0.5.dp.toPx())
-                    lineTo(w * 0.95f, h * 0.48f)
-                    lineTo(w * 0.68f, h * 0.48f)
-                    lineTo(w * 0.68f, h * 0.98f)
-                    lineTo(w * 0.32f, h * 0.98f)
-                    lineTo(w * 0.32f, h * 0.48f)
-                    lineTo(w * 0.05f, h * 0.48f)
-                    close()
-                }
-                drawPath(path = path, color = arrowColor)
-                drawPath(
-                    path = path,
-                    color = Color.Gray,
-                    style = Stroke(width = 0.9.dp.toPx())
-                )
-            }
-        }
+        // Même flèche que dans le déroulé de la journée, un peu plus grande qu'avant.
+        WindArrow(arrowColor, rotationAngle, 16.dp)
         }
 
         if (showText) {
