@@ -188,8 +188,6 @@ class SurfController(
             .also { if (prefs.getString("display_size", null) == null) prefs.putString("display_size", it) }
     )
         private set
-    // Vent du déroulé de la journée : "2h" (toutes les 2 h), "auto" (autant que la place le permet), "1h" (toutes les heures).
-        private set
     // Place des graphiques de houle (semaine, jour, eau), modifiable dans Affichage.
     @Suppress("unused")
     private val skyGraphInit = run {
