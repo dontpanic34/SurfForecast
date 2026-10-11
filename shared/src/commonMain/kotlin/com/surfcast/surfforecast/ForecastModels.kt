@@ -36,7 +36,9 @@ data class HourlyUiModel(
 data class DailyTideInfo(
     val highTideTime: String? = null,
     val lowTideTime: String? = null,
-    val coefficient: Int? = null
+    val coefficient: Int? = null,
+    // Toutes les marées du jour, nuit comprise : le déroulé en retient les deux qui tombent le mieux dans la journée.
+    val extrema: List<MareeExtremum> = emptyList()
 )
 
 data class DailySunInfo(
