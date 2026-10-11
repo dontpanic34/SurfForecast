@@ -312,9 +312,9 @@ private fun DailyTimelineBody(
                         // Lissage sur plusieurs heures : le ciel et la pluie passent d'un état à l'autre sans colonne.
                         val hourPx = if (xs.size > 1) (xs.last() - xs.first()) / (hours.last().rawTime.hour - hours.first().rawTime.hour).coerceAtLeast(1)
                             else with(density) { 30.dp.toPx() }
-                        val cover = SkyCurve(xs, FloatArray(hours.size) { hours[it].cloudCover / 100f }, 1.25f * hourPx)
-                        val rain = SkyCurve(xs, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, 0.75f * hourPx)
-                        val snow = SkyCurve(xs, FloatArray(hours.size) { snowAmountForCode(hours[it].weatherCode) }, 0.75f * hourPx)
+                        val cover = SkyCurve(xs, FloatArray(hours.size) { hours[it].cloudCover / 100f }, 1.6f * hourPx)
+                        val rain = SkyCurve(xs, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, 1.0f * hourPx)
+                        val snow = SkyCurve(xs, FloatArray(hours.size) { snowAmountForCode(hours[it].weatherCode) }, 1.0f * hourPx)
                         // Le soleil suit l'heure choisie : il se lève en bas à l'heure du lever, monte au zénith à la mi-journée
                         // près du vent, puis redescend et se couche en bas à l'heure du coucher.
                         val suns = ArrayList<SunSpot>()
