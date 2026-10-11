@@ -203,11 +203,10 @@ var STEPS=[
  {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['Je n\'en suis pas là : je cherche surtout à comprendre et suivre le rythme de la vague','Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],when:function(a){return a.what===1&&gmax(a)>=2}},
  {id:'feel',q:'Quand tu passes la barre, tu te sens…',sub:'Condition physique : elle ne change pas ton niveau, elle fait monter ou descendre ta note à l\'intérieur.',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===1}},
  {id:'train',q:'Tu t\'entraînes en dehors du surf ?',sub:'Condition physique : elle ne change pas ton niveau.',o:['Non','De temps en temps (course, natation, yoga…)','Régulièrement, pour le surf (cardio, renfo, apnée…)']},
- {id:'where',q:'Où tu surfes ?',sub:'Engagement : ça ne change pas ton niveau.',o:['Chez moi, sur mon spot habituel','Je me déplace selon les conditions, parfois des kilomètres','Je suis les conditions : je fais la route dès que ça vaut le coup']},
- {id:'trips',q:'Tu fais des surf trips ?',sub:'Engagement : ça ne change pas ton niveau.',o:['Non','Quelques fois, en vacances','Régulièrement : je pars à l\'étranger chercher les vagues']},
+ {id:'where',q:'Où tu surfes ?',sub:'Engagement : ça ne change pas ton niveau.',o:['Chez moi, toujours au même spot : j\'ai la flemme de bouger','Autour de chez moi : je choisis le meilleur spot, j\'évite le monde','Je me déplace pour suivre les conditions, si ça vaut le coup','Je pars à l\'étranger chercher les vagues (surf trips)']},
  {id:'comp',q:'Tu fais des compétitions ?',sub:'Condition physique : elle ne change pas ton niveau.',o:['Jamais','De temps en temps, en loisir','Régulièrement']}
 ];
-var PP={feel:[1,0.6,0.3,0.5],train:[0,0.5,1],comp:[0,0.5,1],where:[0,0.6,1],trips:[0,0.5,1]};
+var PP={feel:[1,0.6,0.3,0.5],train:[0,0.5,1],comp:[0,0.5,1],where:[0,0.35,0.7,1]};
 function gmax(a){return Math.max.apply(null,(a.goal||[]).length?a.goal:[-1])}
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
@@ -236,7 +235,7 @@ function compute(){
   var baseL=Math.max(0,Math.min(4,m));
   var plus0=((ans.what===1&&bind.length===1&&m<=3)||forcePlus)&&baseL<4;
   // Position : la part des limites qui sont déjà au-dessus de la plus basse remplit la tranche.
-  var pp=['feel','train','comp','where','trips'].filter(function(k){return ans[k]!==undefined}).map(function(k){return PP[k][ans[k]]});pp=pp.length?pp.reduce(function(x,y){return x+y},0)/pp.length:0.5;
+  var pp=['feel','train','comp','where'].filter(function(k){return ans[k]!==undefined}).map(function(k){return PP[k][ans[k]]});pp=pp.length?pp.reduce(function(x,y){return x+y},0)/pp.length:0.5;
   var above=m>=4?1:Math.max(0,(L.reduce(function(t,x){return t+(x.p!==undefined?x.p:x.v)},0)/L.length-m)/(4-m));
   above=(m>=4?1:above*0.7+pp*0.3);
   var bi0=bandIndex(baseL,plus0),bi=Math.max(0,Math.min(8,bi0+adj)),B=BANDS[bi],lvl=B.L,plus=bi%2===1&&bi<8,score;
