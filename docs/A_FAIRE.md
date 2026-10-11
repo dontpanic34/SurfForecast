@@ -97,4 +97,4 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Deux échelles coexistent : 6 profils de volume (VOLUME_LEVELS) et 4 niveaux (ratioRangeFor, levelForRatio) : à aligner sur les 5 niveaux.
 - Le niveau « pour le volume » est un réglage séparé dans Matériel : il doit venir du profil.
 - Volume mid-length et longboard dans le code : remplacer les multiplicateurs ×1,6 et ×2,1 par des fourchettes selon le poids seul (mid-length 0,65 à 0,85 L/kg, longboard 55 à 80 L et plus), sans niveau. À faire après validation de la maquette Matériel.
-- Facteur poids léger du volume : les fiches JS montrent un ratio qui monte dès 70 kg (0,39 vers 67 kg, 0,42 à 59 kg, 0,35 à 80 kg et plus), alors que le calcul n'ajoute rien au-dessus de 60 kg. Proposition à valider : +20 % progressif jusqu'à 85 kg (au lieu de 60 kg).
+- Facteur poids léger du volume (validé par le propriétaire le 15 octobre) : +20 % progressif de 85 kg à 55 kg (au lieu de 25 kg d écart à partir de 60 kg), à coder dans `weightFactor`. Les fiches JS montrent 0,42 L/kg à 59 kg, 0,39 vers 67 kg, 0,34 à 0,37 de 75 à 95 kg.
