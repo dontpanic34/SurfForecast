@@ -477,7 +477,7 @@ fun MainScreen(
                         val dailyLabels: List<SlotRating?> = availableDates.mapIndexed { i, date ->
                             val best = bestRatingOfDay(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel)
                             val score = dailyScores[i]
-                            if (best == null) null else if (best.kind != ConditionKind.NORMAL || score == null) best else SlotRating(score, false)
+                            if (best == null) null else if (best.kind != ConditionKind.NORMAL || score == null) best else SlotRating(score, false, why = best.why)
                         }
 
                         val dailyBands: List<List<ScoreBand>> = availableDates.map { date ->
