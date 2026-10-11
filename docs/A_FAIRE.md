@@ -38,4 +38,4 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Vent : fait dans le déroulé et la semaine ; reste « Maintenant », cartes vent, détail, bandeau.
 - Nuages : ressenti = ce qu'on voit du ciel (éclaircies, soleil voilé) plutôt que le % brut.
 - Température : température ressentie (vent, humidité, soleil) plutôt que la température de l'air ; eau et combinaison à voir.
-- Houle : ressenti = ce que la vague donne sur place (taille perçue selon période, direction, marée), plutôt que la hauteur brute ; à définir avec le propriétaire.
+- Houle : **pas de ressenti**, on garde la donnée brute (décision du propriétaire).
