@@ -134,6 +134,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .xp b{position:absolute;top:0;bottom:0;width:2px;background:var(--surface);opacity:.9}
 .xpl{display:flex;justify-content:space-between;margin:0 14px;font-size:10.5px;color:var(--muted)}
 .res .nm{font-size:24px;font-weight:800}
+.ibtn{float:right;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font:700 12px/20px system-ui;padding:0;cursor:pointer}
 .res .sc{font-size:12px;color:var(--muted);margin-top:2px}
 .next{margin:0 14px 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px}
 .tol .q2{padding:12px 14px;border-top:1px solid var(--line)}
@@ -169,7 +170,7 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
     <p class="grp">Ton profil</p>
     <div class="card">
       <div class="xp" id="rxp" role="img" aria-label="Barre de niveau"><i id="rxpf" style="width:0"></i></div><div class="xpl" id="rxpl"></div>
-      <div class="res"><div class="nm" id="rname"></div><div class="sc" id="rsc"></div><p class="df" id="rdef"></p><div class="goal" id="rgoal"></div></div>
+      <div class="res"><div class="nm" id="rname"></div><button class="ibtn" id="rinfo" aria-expanded="false" aria-label="Plus d'information sur ta barre">i</button><div class="sc" id="rsc" hidden></div><p class="df" id="rdef"></p><div class="goal" id="rgoal"></div></div>
       <div class="why" id="rwhy"></div><div class="next" id="rnext"></div>
       <div class="blk" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn" id="dn">− Une marche en dessous</button><button class="btn" id="up">+ Une marche au-dessus</button></div>
     </div>
@@ -269,13 +270,14 @@ function drawResult(){
   document.getElementById('rxp').querySelectorAll('b').forEach(function(x){x.remove()});[16,37,58,79].forEach(function(t){var b=document.createElement('b');b.style.left=t+'%';document.getElementById('rxp').appendChild(b)});
   document.getElementById('rxpl').innerHTML='<span>Débutant</span><span>Intermédiaire</span><span>Confirmé</span><span>Avancé</span><span>Expert</span>';
   document.getElementById('rname').textContent=r.band+(adj?' (corrigé)':'');
-  document.getElementById('rdef').textContent=L.def;document.getElementById('rsc').textContent='Score '+r.score+' / 100';document.getElementById('rnext').innerHTML=r.nxt?'<b>Pour passer à « '+r.nxt+' »</b>, ce qui te retient : '+r.hold.join(' ; ')+'.':'<b>Tu es au sommet de l\'échelle.</b> Tu perfectionnes.';
+  document.getElementById('rdef').textContent=L.def;document.getElementById('rsc').textContent='Ta barre est remplie à '+r.score+' % : elle monte avec tes réponses, à l\'intérieur de ton niveau.';document.getElementById('rnext').innerHTML=r.nxt?'<b>Pour passer à « '+r.nxt+' »</b>, ce qui te retient : '+r.hold.join(' ; ')+'.':'<b>Tu es au sommet de l\'échelle.</b> Tu perfectionnes.';
   document.getElementById('rgoal').innerHTML='<b>Sur la vague, tu cherches :</b> '+L.goal;
   document.getElementById('rwhy').textContent=r.why.join(' ');
   var rows=active().map(function(st){var v=ans[st.id];var t=st.multi?(v||[]).map(function(i){return st.o[i]}).join(', ')||'—':(v===undefined?'—':st.o[v]);return '<div class="r"><span>'+title(st).replace(/ \?$/,'')+'</span><b>'+t+'</b></div>'}).join('');
   document.getElementById('rec').innerHTML=rows;
   document.getElementById('lv5').innerHTML='<summary>Voir les définitions</summary>'+LEVELS.map(function(l,i){return '<p><b>'+(i+1)+' · '+l.n+'</b> — '+l.def+'</p>'}).join('');
 }
+document.getElementById('rinfo').onclick=function(){var t=document.getElementById('rsc');t.hidden=!t.hidden;this.setAttribute('aria-expanded',!t.hidden)};
 document.getElementById('prev').onclick=function(){if(cur>0)cur--;draw()};
 document.getElementById('next').onclick=function(){advance()};
 document.getElementById('up').onclick=function(){if(compute().bi<8){adj++;drawResult()}};

@@ -102,3 +102,4 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Questionnaire (maquette) : « Où tu surfes ? » en choix multiple (celui qui part en trip se déplace aussi et évite le monde chez lui) : la réponse la plus haute compte, chaque réponse en plus ajoute un petit bonus.
 - Questionnaire (maquette) : « Tu surfes… » devient La mousse / La réforme / Le large (mousse et réforme suivent le parcours Débutant ; seul le large ouvre le parcours complet). « Tu veux passer au large ? » remplace « passer à la vague ». Organigramme pas encore aligné.
 - Questionnaire (maquette) : première réponse de « Où tu surfes ? » : « Chez moi, avec du monde : ça me rassure ».
+- Questionnaire (maquette) : le score n'est plus affiché. Il reste uniquement derrière un petit « i » à côté du nom du niveau (« Ta barre est remplie à X % »). La barre d'XP reste.
