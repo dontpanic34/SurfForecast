@@ -213,7 +213,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <p class="grp">Ce que ça donne</p>
     <div class="card"><div class="pv" id="p3pv"></div></div>
   </div>
-  <p class="notes"><b>Le questionnaire d'un prof de surf :</b> une question à la fois, et la suite dépend des réponses. Mousse ou lisse d'abord ; dans la mousse (ou si on veut passer au lisse), on regarde le take-off : parfait, à travailler, en plusieurs temps ? ; dans le lisse, quelles vagues (réformes, épaule, peak, tube) et le take-off aussi ; puis jusqu'à quelle taille on passe la barre, et comment on se sent ; enfin la rame, pour voir si le physique suit. Les deux dernières questions donnent la taille où on s'éclate et la plus grosse sans stress.</p>
+  <p class="notes"><b>Le questionnaire d'un prof de surf :</b> une question à la fois, et la suite dépend des réponses. Mousse ou lisse d'abord ; dans la mousse (ou si on veut passer au lisse), on regarde le take-off : parfait, à travailler, en plusieurs temps ? ; dans le lisse, quelles vagues (réformes, épaule, peak, tube) et le take-off aussi ; puis jusqu'à quelle taille on passe la barre, et comment on la passe (prêt à surfer, impressionné, en galère, ou seulement au bon moment) ; enfin la rame, pour voir si le physique suit. Les deux dernières questions donnent la taille où on s'éclate et la plus grosse sans stress.</p>
 </section>
 
 <!-- 4. PHRASES -->
@@ -398,7 +398,7 @@ function Ruler(el,handles,opts){
    {id:'tkSmooth',q:'Dans le lisse, ton take-off',sub:'Le lever sur la planche.',o:TAKE,when:function(a){return a.what===1||a.what===2}},
    {id:'waves',q:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles.',multi:true,o:['Les réformes','L\'épaule','Le peak','Le tube'],when:function(a){return a.what===1||a.what===2}},
    {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore'].concat(SZ.map(function(z){return z[0]}))},
-   {id:'feel',q:'À cette taille, une fois la barre passée, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Mitigé']},
+   {id:'feel',q:'À cette taille, une fois la barre passée, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si c\'est le bon moment']},
    {id:'rame',q:'Ta rame : tu suis physiquement ?',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite']},
    {id:'ideal',q:'La taille où tu t\'éclates',o:SZ.map(function(z){return z[0]})},
    {id:'big',q:'La plus grosse que tu surfes sans stress',o:SZ.map(function(z){return z[0]})}];
@@ -412,7 +412,7 @@ function Ruler(el,handles,opts){
     var tk=function(v){return v===0?1:v===1?.5:0};
     var take=ans.what===0?tk(ans.tkFoam)*.5:smooth?tk(ans.tkSmooth):tk(ans.tkFoam);
     var bar=ans.barre===0?0:Math.min(3,ans.barre-1)/3;
-    var feel=[1,.6,.3][ans.feel];
+    var feel=[1,.6,.3,.5][ans.feel];
     var s=(ans.since/3+ans.freq/2+wv/3+take+bar+feel+(2-ans.rame)/2)/7*3;
     var L=Math.round(s);
     if(ans.what===0)L=Math.min(L,take<.5?0:1);       // mousse seule : débutant, ou intermédiaire si le take-off est parfait

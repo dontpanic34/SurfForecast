@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 12 octobre 2026
+- **Maquette `niveau.html` : « mitigé » remplacé** par « Je passe, mais en galère » et « Je passe si c'est le bon moment » (propositions du propriétaire).
 - **Maquette `niveau.html` : la force du vent en mots, plus de km/h** (retour du propriétaire : beaucoup de surfeurs ne connaissent pas la force du vent qu'ils surfent) : exemples du profil en « Offshore léger · la surface est lisse », curseur « Vent maximum » en cinq crans (léger, modéré, soutenu, fort, très fort), cas de phrases décrits par le type et la direction du vent. En attente de choix, pas de code.
 - **Maquette `niveau.html` : l'onglet 3 devient le questionnaire d'un prof de surf** (demande du propriétaire, qui est prof de surf) : une question à la fois avec branches (mousse / lisse / les deux, take-off, passer au lisse, quelles vagues, taille à laquelle on passe la barre, rame). Le niveau se met à jour en direct. En attente de validation, pas de code.
 - **Maquette `niveau.html` : questions de physique ajoutées** (demande du propriétaire) : « Ta rame » et « Quand tu passes la barre… » (quatre réponses : prêt à surfer, impressionné, mitigé, je ne passe pas). Elles entrent dans le niveau proposé. En attente de choix, pas de code.
