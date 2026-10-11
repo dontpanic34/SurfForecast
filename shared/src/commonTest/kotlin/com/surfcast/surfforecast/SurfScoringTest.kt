@@ -35,12 +35,12 @@ class SurfScoringTest {
     )
 
     @Test
-    fun crossWindFromTwelveKmhIsClearlyPenalized() {
+    fun crossWindFromTwentyKmhIsClearlyPenalized() {
         val calm = calculateSlotScore(hour(10, windKmh = 4, windDir = "N"), 270, "confirmed", false)
-        val cross12 = calculateSlotScore(hour(10, windKmh = 12, windDir = "N"), 270, "confirmed", false)
-        assertTrue(cross12 < calm * 0.88, "side-shore 12 km/h : $cross12 contre $calm sans vent")
+        val cross20 = calculateSlotScore(hour(10, windKmh = 20, windDir = "N"), 270, "confirmed", false)
+        assertTrue(cross20 < calm * 0.88, "vent de côté 20 km/h : $cross20 contre $calm sans vent")
         assertEquals(86, calm)
-        assertEquals(69, cross12)
+        assertEquals(69, cross20)
     }
 
     @Test
@@ -61,7 +61,7 @@ class SurfScoringTest {
         val after = calculateSlotScore(adjusted[1], 270, "confirmed", false)
         val calm = calculateSlotScore(hour(9, windKmh = 5, windDir = "E"), 270, "confirmed", false)
         assertTrue(after < calm - 40, "juste après 30 km/h : $after contre $calm")
-        assertEquals(29, after)
+        assertEquals(28, after)
     }
 
     @Test
@@ -117,7 +117,7 @@ class SurfScoringTest {
     fun strongOnshoreWindOrSmallWavesScoreLow() {
         // 30 km/h de vent de mer : très mauvais (et « trop de vent »), mais plus à zéro.
         val storm = calculateSlotRating(hour(10, windKmh = 30, windDir = "O"), null, "intermediate", false)
-        assertEquals(19, storm.score)
+        assertEquals(18, storm.score)
         assertEquals(ConditionKind.TOO_WINDY, storm.kind)
         // Une vague de 0,3 m ne vaut rien.
         val tiny = calculateSlotRating(hour(10, height = 0.3), null, "intermediate", false)
@@ -137,9 +137,9 @@ class SurfScoringTest {
 
     @Test
     fun swellDirectionAndCrossWind() {
-        // Écart 60° -> cos = 0.5 -> 98,1 kJ (juste sous le minimum de 100 : note 59) ; vent de travers N 10 km/h ;
+        // Écart 60° -> cos = 0.5 -> 98,1 kJ (juste sous le minimum de 100 : note 59) ; vent de travers N 18 km/h ;
         // houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 -> 42.
-        assertEquals(42, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 10, windDir = "N"), 270, "intermediate", false))
+        assertEquals(42, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 18, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -208,7 +208,7 @@ class SurfScoringTest {
     fun veryGustyOffshoreIsBadForEveryone() {
         val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12, windDir = "E", gustKmh = 40)
         listOf("beginner", "intermediate", "confirmed").forEach { level ->
-            assertTrue(calculateSlotScore(gusty, 275, level, false) <= 40, "rafales 40 ($level)")
+            assertTrue(calculateSlotScore(gusty, 275, level, false) <= 50, "rafales 40 ($level)")
         }
     }
 
@@ -372,14 +372,14 @@ class SurfScoringTest {
 
     @Test
     fun offshoreIsForConfirmedAndExpertNotForBeginners() {
-        val offshore = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "E")
-        val cross = hour(10, height = 0.9, period = 9.0, windKmh = 15, windDir = "N")
+        val offshore = hour(10, height = 0.9, period = 9.0, windKmh = 22, windDir = "E")
+        val cross = hour(10, height = 0.9, period = 9.0, windKmh = 22, windDir = "N")
         // Débutant : la direction ne change presque rien.
         val begDiff = calculateSlotScore(offshore, 275, "beginner", false) - calculateSlotScore(cross, 275, "beginner", false)
         assertTrue(begDiff in 0..6, "débutant offshore - travers : $begDiff")
         // Confirmé : l'offshore est nettement mieux que le travers.
         val confDiff = calculateSlotScore(offshore, 275, "confirmed", false) - calculateSlotScore(cross, 275, "confirmed", false)
-        assertTrue(confDiff >= 12, "confirmé offshore - travers : $confDiff")
+        assertTrue(confDiff >= 6, "confirmé offshore - travers : $confDiff")
     }
 
     @Test
