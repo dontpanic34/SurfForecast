@@ -50,9 +50,9 @@ fun WindCardComponent(
     val dirFr = SurfUnitsHelper.formatCardinalFr(selectedHour.windDirectionStr)
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
-    val currentArrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, selectedHour.windSpeedKmh)
+    val currentArrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, windFeelKmh(selectedHour))
 
-    val formattedSpeed = SurfUnitsHelper.formatWindValue(selectedHour.windSpeedKmh, windUnit)
+    val formattedSpeed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(selectedHour), windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val formattedGust = SurfUnitsHelper.formatWindValue(selectedHour.windGustKmh, windUnit)
 
@@ -110,6 +110,18 @@ fun WindCardComponent(
                             color = onSurfaceColor.copy(alpha = 0.7f)
                         )
                     }
+                    var showInfo by remember { mutableStateOf(false) }
+                    IconButton(onClick = { showInfo = true }, modifier = Modifier.size(22.dp)) {
+                        Icon(SurfIcons.Info, contentDescription = "Comment le vent ressenti est calculé", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                    }
+                    if (showInfo) {
+                        AlertDialog(
+                            onDismissRequest = { showInfo = false },
+                            title = { Text(WIND_FEEL_INFO_TITLE) },
+                            text = { Text(WIND_FEEL_INFO_TEXT) },
+                            confirmButton = { TextButton(onClick = { showInfo = false }) { Text("OK") } }
+                        )
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -160,9 +172,9 @@ fun WindCardComponent(
                     allHoursOfDay.forEach { hourly ->
                         val isSelected = hourly.rawTime == selectedHour.rawTime
                         val isCurrentHour = isToday && hourly.rawTime.hour == currentHourNow
-                        val heightRatio = (hourly.windSpeedKmh / maxWind).toFloat().coerceIn(0.15f, 1f)
+                        val heightRatio = (effectiveWindKmh(hourly) / maxWind).toFloat().coerceIn(0.15f, 1f)
                         val barHourlyDirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
-                        val barColor = SurfUnitsHelper.getSurfWindColor(barHourlyDirFr, hourly.windSpeedKmh)
+                        val barColor = SurfUnitsHelper.getSurfWindColor(barHourlyDirFr, windFeelKmh(hourly))
 
                         Box(
                             modifier = Modifier
@@ -232,7 +244,7 @@ fun WindCardComponent(
                             strokeWidth = 1.8f
                         )
 
-                        val currentBarHeight = size.height * (1f - (selectedHour.windSpeedKmh / maxWind).toFloat().coerceIn(0.15f, 1f))
+                        val currentBarHeight = size.height * (1f - (effectiveWindKmh(selectedHour) / maxWind).toFloat().coerceIn(0.15f, 1f))
                         drawCircle(
                             color = onSurfaceColor,
                             radius = 3.2f,

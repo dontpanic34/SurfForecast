@@ -187,10 +187,10 @@ private fun WeatherHeroSection(
     todayHours: List<HourlyUiModel>,
     windUnit: String
 ) {
-    val maxTemp = todayHours.maxOfOrNull { it.temperature } ?: currentHourModel.temperature
-    val minTemp = todayHours.minOfOrNull { it.temperature } ?: currentHourModel.temperature
+    val maxTemp = todayHours.maxOfOrNull { it.feelsLike } ?: currentHourModel.feelsLike
+    val minTemp = todayHours.minOfOrNull { it.feelsLike } ?: currentHourModel.feelsLike
     val dirFr = SurfUnitsHelper.formatCardinalFr(currentHourModel.windDirectionStr)
-    val windSpeed = SurfUnitsHelper.formatWindValue(currentHourModel.windSpeedKmh, windUnit)
+    val windSpeed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(currentHourModel), windUnit)
     val windUnitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
 
     Column(
@@ -211,7 +211,7 @@ private fun WeatherHeroSection(
         }
 
         Text(
-            text = "${currentHourModel.temperature}°",
+            text = "${currentHourModel.feelsLike}°",
             color = Color.White,
             fontSize = 78.sp,
             fontWeight = FontWeight.Light,
@@ -219,7 +219,7 @@ private fun WeatherHeroSection(
         )
 
         Text(
-            text = "Ressenti ${currentHourModel.feelsLike}°",
+            text = "Ressenti · air ${currentHourModel.temperature}°",
             color = Color.White.copy(alpha = 0.85f),
             fontSize = 15.sp
         )
@@ -295,12 +295,12 @@ private fun HourlyStripCard(
             items(items) { hourly ->
                 val isNow = nowRawTime != null && hourly.rawTime == nowRawTime
                 val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
-                val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourly.windSpeedKmh)
-                val windSpeed = SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit)
+                val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, windFeelKmh(hourly))
+                val windSpeed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourly), windUnit)
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "${hourly.temperature}°",
+                        text = "${hourly.feelsLike}°",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold

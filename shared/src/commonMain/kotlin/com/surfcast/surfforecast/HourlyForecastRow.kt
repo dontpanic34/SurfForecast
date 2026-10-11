@@ -45,8 +45,8 @@ fun HourlyForecastRow(
 
     // Code couleur vent (jaune = vent de terre, orange = vent de mer modere, rouge = vent
     // de mer fort) : texte simple dans la teinte vive d'origine, sans fond ni ombre.
-    val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyData.windSpeedKmh)
-    val speedFormatted = SurfUnitsHelper.formatWindValue(hourlyData.windSpeedKmh, windUnit)
+    val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, windFeelKmh(hourlyData))
+    val speedFormatted = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyData), windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
 
     val rowShape = RoundedCornerShape(8.dp)
@@ -154,7 +154,7 @@ fun HourlyForecastRow(
             WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(hourlyData), 14.dp)
             Spacer(modifier = Modifier.width(2.dp))
             Text(
-                text = "${hourlyData.temperature}°",
+                text = "${hourlyData.feelsLike}°",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = onSurfaceColor,

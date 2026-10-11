@@ -39,7 +39,8 @@ fun NowTideCard(
 ) {
     val colors = MaterialTheme.colorScheme
     val dirFr = SurfUnitsHelper.formatCardinalFr(hourlyModel.windDirectionStr)
-    val speed = SurfUnitsHelper.formatWindValue(hourlyModel.windSpeedKmh, windUnit)
+    val speed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyModel), windUnit)
+    val gust = SurfUnitsHelper.formatWindValue(hourlyModel.windGustKmh, windUnit)
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val high = tideInfo?.highTideTime
     val low = tideInfo?.lowTideTime
@@ -75,8 +76,13 @@ fun NowTideCard(
                 "Houle ${formatDecimal(hourlyModel.waveHeight, 1)} m · ${hourlyModel.wavePeriod.toInt()} s",
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface
             )
-            Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text("Nuages ${hourlyModel.cloudCover} %", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
+            Text(
+                if (hourlyModel.windGustKmh > hourlyModel.windSpeedKmh) "Vent $dirFr $speed $unit · rafales $gust" else "Vent $dirFr $speed $unit",
+                fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+            Text(
+                "${skyWord(hourlyModel.cloudCover)} · ${hourlyModel.cloudCover} %",
+                fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
+            Text("Ressenti ${hourlyModel.feelsLike}° · air ${hourlyModel.temperature}°", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
             if (seaTemperature != null) {
                 Text("Eau $seaTemperature °C", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
             }
