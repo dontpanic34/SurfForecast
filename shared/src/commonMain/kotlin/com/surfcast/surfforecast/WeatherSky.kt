@@ -141,6 +141,18 @@ internal class SkyImages(
     val water: ImageBitmap, val waterRain: ImageBitmap
 )
 
+/** Taille minimale de l'atlas des nuages et de la brume : tant qu'une image n'a pas sa vraie taille, elle n'est pas encore chargée. */
+private val ATLAS_NEED_W = CloudAtlas.rects.maxOf { it[0] + it[2] }
+private val ATLAS_NEED_H = CloudAtlas.rects.maxOf { it[1] + it[3] }
+
+/**
+ * Vrai quand toutes les images du ciel sont chargées. Avant, le site les remplace par des images vides : dessiner le ciel avec
+ * elles donnait des blocs puis des taches floues à l'ouverture. Tant que ce n'est pas prêt, on ne dessine rien.
+ */
+internal fun SkyImages.ready(): Boolean =
+    atlas.width >= ATLAS_NEED_W && atlas.height >= ATLAS_NEED_H && sun.width > 1 && rain.width > 1 && snow.width > 1 &&
+        water.width > 1 && waterRain.width > 1
+
 /** Les images du ciel, chargées dès le lancement de l'appli (voir SurfLogApp) pour être prêtes quand la semaine s'affiche. */
 internal val LocalSkyImages = androidx.compose.runtime.compositionLocalOf<SkyImages?> { null }
 
@@ -260,6 +272,9 @@ private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boole
             coverAt = { u -> coverAt(scene.left + u * w) * 100f }, rainAt = { u -> rainShare(scene.left + u * w) }, dark = isDark
         )
         for (p in plan) {
+            // La brume (sprites flous agrandis) laissait des rectangles et des taches : elle n'est plus dessinée, le voile de couvert
+            // suffit à relier les nuages quand le ciel se ferme.
+            if (p.haze) continue
             val r = CloudAtlas.rects[p.spriteId]
             val src = if (p.haze) IntOffset(r[4], r[5]) to IntSize(r[6], r[7]) else IntOffset(r[0], r[1]) to IntSize(r[2], r[3])
             val img = if (p.haze) im.haze else im.atlas
@@ -346,6 +361,8 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
     val w = scene.right - scene.left
     val h = scene.bottom - scene.top
     if (w <= 1f || h <= 1f) return
+    // Images pas encore chargées : on n'affiche rien plutôt qu'un ciel faux, il apparaît d'un coup, complet, dès qu'elles arrivent.
+    if (!im.ready()) return
     val n = max(8, (w / (6f * density)).toInt())
     val bounds = Rect(scene.left, scene.top, scene.right, scene.bottom)
     val skyH = h
