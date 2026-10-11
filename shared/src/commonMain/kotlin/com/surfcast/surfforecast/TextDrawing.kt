@@ -25,7 +25,11 @@ fun DrawScope.drawTextAtBaseline(
     drawText(layout, topLeft = Offset(x, baselineY - layout.firstBaseline))
 }
 
-/** Texte lisible sur n'importe quel fond : un contour de la couleur [halo] sous le texte. */
+/**
+ * Texte lisible sur n'importe quel fond : un contour fin de la couleur [halo] sous le texte.
+ * Le contour est fait de copies décalées (8 directions) plutôt que d'un Stroke de texte, qui empâtait
+ * les chiffres à 11-12 sp et les rendait illisibles.
+ */
 fun DrawScope.drawHaloTextAtBaseline(
     textMeasurer: TextMeasurer,
     text: String,
@@ -34,11 +38,15 @@ fun DrawScope.drawHaloTextAtBaseline(
     x: Float,
     baselineY: Float
 ) {
-    val outline = style.copy(
-        color = halo,
-        drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round)
-    )
-    drawTextAtBaseline(textMeasurer, text, outline, x, baselineY)
+    val outline = style.copy(color = halo)
+    val r = 1.1.dp.toPx()
+    val d = r * 0.7071f
+    val offsets = floatArrayOf(r, 0f, -r, 0f, 0f, r, 0f, -r, d, d, d, -d, -d, d, -d, -d)
+    var i = 0
+    while (i < offsets.size) {
+        drawTextAtBaseline(textMeasurer, text, outline, x + offsets[i], baselineY + offsets[i + 1])
+        i += 2
+    }
     drawTextAtBaseline(textMeasurer, text, style, x, baselineY)
 }
 
