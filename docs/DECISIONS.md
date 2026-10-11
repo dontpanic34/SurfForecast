@@ -85,3 +85,4 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - Plus de question sur la rame pour prendre la vague (doublon).
 - Pas de nom de marque dans les réponses.
 - Le niveau (note) et la tolérance aux conditions (motivation, vent, onshore) sont deux choses séparées : la tolérance ne change pas la note, elle sert aux recommandations.
+- Tolérance aux conditions (vent, taille, motivation) : des questions à trois réponses, pas de curseur. Validé par le propriétaire.
