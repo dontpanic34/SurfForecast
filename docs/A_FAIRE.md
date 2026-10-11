@@ -65,6 +65,7 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 6. **Hauteur du soleil selon la saison**, vérifier le libellé « 1,0 m 10 s » de la semaine.
 
 ## Idées à garder
+- **Comparer les niveaux dans l'appli** (idée du propriétaire, 12 octobre) : on choisit son niveau et on regarde ceux d'après (« Mon niveau, et le suivant »), ou deux niveaux au choix, avec les réponses qui permettent chacun et les lignes où ils se séparent. Maquette dans `docs/maquettes/organigramme.html` (section « Comparer deux niveaux »). Servirait à comprendre ce qu'il faut pour passer au niveau suivant.
 - Contour de la flèche de vent de la semaine si elle est peu visible sur ciel clair.
 
 ## Le ressenti pour tout (règle du 11 octobre 2026, à cadrer par maquette)
