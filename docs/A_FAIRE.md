@@ -12,7 +12,12 @@ Cause très probable trouvée (à confirmer par test) : la note et la phrase son
 Correction à décider : afficher le vent pris en compte quand il diffère du vent réel (et les rafales), phrase qui explique la mémoire du vent, et revoir la courbe du vent de côté (étape 2 : règles du vent).
 Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la note mais ne sont pas affichées, donc un vent moyen faible peut donner une phrase de vent ; (2) la phrase de vent n'apparaît que si le vent est le pire facteur sous 0,85, ce qui ne devrait pas arriver à 3 km/h : vérifier que la phrase correspond bien à l'heure sélectionnée (décalage possible entre la colonne de vent, l'heure sélectionnée et l'heure notée) ; (3) la catégorie de vent (de mer, de côté, de terre) doit venir de l'orientation réelle de la plage partout. À faire avec la maquette du banc d'essai du vent : afficher les rafales et la raison exacte, et ajouter un test sur ces trois cas.
 
+## Vent : à coder après choix de la phrase (étape 2 et 4)
+- Coder le vent ressenti (35 %), l'afficher en un chiffre, le détail à l'heure choisie, la couleur et la phrase par la même règle, test sur les trois cas des captures.
+- **Texte du « i » du vent (à intégrer dans l'appli)** : « Le vent affiché est le vent ressenti : le vent moyen plus 35 % de l'écart avec les rafales (8 km/h de moyenne et rafales à 22 km/h donnent 13 km/h). Les rafales froissent la mer par à-coups mais durent peu, on n'en garde donc qu'une part. Jaune : le vent ne gêne pas ; orange : il gêne ; rouge : il est fort. Le vent de terre (de derrière la plage) lisse et creuse la vague, le vent de mer la hache, le vent de côté est entre les deux. La note tient aussi compte du vent des heures précédentes, car la mer met un moment à se calmer. »
+
 ## En attente de validation du propriétaire
+- **Phrase de la mémoire du vent** : A « Mer encore marquée par le vent d'avant », B « Le vent d'avant se fait encore sentir », C « Vent tombé, mer encore agitée ».
 - **Choix du niveau par exemples** (maquette faite, 12 situations x 5 réponses). Après accord : coder l'assistant « Mon profil » (remplacer les questions taille / période / clapot / vent par ces exemples) et brancher les réponses sur le calcul du profil (`ProfileWizard.kt`, `applyExampleAnswers`).
 - **Badges « Trop petit » / « Trop gros »** : proposition « Taille limite » et « Gros jour » (orange). À décider.
 - **Phrases restantes** (guide, réglages, accueil, explications du profil) contenant « pour toi » ou « trop gros » : repasser avec des tournures du même ton.
