@@ -177,7 +177,7 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
   <p class="grp">Ce que ça donne dans l'appli</p>
   <div class="card today" id="today"></div>
   <p class="grp">Pour aller plus loin : le volume <button class="ibtn" id="vinfo" aria-expanded="false" aria-label="Comment ce volume est calculé">i</button></p>
-  <div class="card" id="vexp" hidden><div class="boardrow" style="font-size:13.5px"><p>Comment on l'a calculé</p><p style="font-weight:500;margin-bottom:6px"><b>Volume = poids × ratio de ton niveau × corrections.</b></p><ul style="margin:0 0 8px;padding-left:18px;color:var(--ink)"><li><b>Ratio de ton niveau</b> (litres par kilo, shortboard) : Débutant 0,66 · Intermédiaire 0,48 · Confirmé 0,41 · Avancé 0,37 · Expert 0,35. Il vient des calculateurs publics (débutant à intermédiaire) et des planches de pros (expert).</li><li><b>Poids :</b> jusqu'à +20 % de litres par kilo pour un surfeur léger (35 kg), rien à partir de 60 kg.</li><li><b>Âge :</b> ×1 jusqu'à 30 ans, ×1,08 de 31 à 50 ans, ×1,15 au-delà.</li><li><b>Forme physique :</b> ×1 (excellente) jusqu'à ×1,18 (faible).</li><li><b>Fish / twin :</b> le shortboard + 3 à 5 L (repère de boutique pour les hybrides).</li><li><b>Mid-length :</b> environ 0,55 à 0,80 L par kilo, sans tenir compte du niveau. Pros JS : Luke Egan (90 kg) 48,7 L en 7'0, Harrison Roach (72 kg) 50 L en 7'6. Boutiques : 46 à 56 L pour 59 à 68 kg, 52 à 64 L pour 70 à 77 kg (Suayhype).</li><li><b>Longboard :</b> 55 à 80 L et plus, selon le poids (un calculateur en ligne). Pas de calcul plus fin : la forme et l'épaisseur comptent autant que le volume.</li></ul><p style="font-weight:500;margin:0 0 6px"><b>Vérification :</b> Fanning, Smith, Slater et une quinzaine de pilotes de JS Industries surfent entre 0,34 et 0,42 L/kg en shortboard, avec un ratio plus haut pour les surfeurs légers. Ça colle au ratio Expert et à la majoration pour le poids léger.</p><p style="font-weight:500;margin:0;color:var(--muted)">Une recommandation, pas une vérité exacte : seul ton shaper connaît le volume qui te va. Le volume ne définit jamais ton niveau.</p></div></div>
+  <div class="card" id="vexp" hidden><div class="boardrow" style="font-size:13.5px"><p>Comment on l'a calculé</p><p style="font-weight:500;margin-bottom:6px"><b>Volume = poids × ratio de ton niveau × corrections.</b></p><ul style="margin:0 0 8px;padding-left:18px;color:var(--ink)"><li><b>Ratio de ton niveau</b> (litres par kilo, shortboard) : Débutant 0,66 · Intermédiaire 0,48 · Confirmé 0,41 · Avancé 0,37 · Expert 0,35. Il vient des calculateurs publics (débutant à intermédiaire) et des planches de pros (expert).</li><li><b>Poids :</b> jusqu'à +20 % de litres par kilo pour un surfeur léger (35 kg), rien à partir de 60 kg.</li><li><b>Âge :</b> ×1 jusqu'à 30 ans, ×1,08 de 31 à 50 ans, ×1,15 au-delà.</li><li><b>Forme physique :</b> ×1 (excellente) jusqu'à ×1,18 (faible).</li><li><b>Fish / twin :</b> le shortboard + 1 à 4 L. On l'a mesuré sur les pilotes JS : Wilson 28,6 L en shortboard, 29 L en twin ; Coffin 27 L, 27,5 L ; Parkinson 28,3 L, 32 L.</li><li><b>Mid-length :</b> environ 0,55 à 0,80 L par kilo, sans tenir compte du niveau. Pros JS : Luke Egan (90 kg) 48,7 L en 7'0, Harrison Roach (72 kg) 50 L en 7'6. Boutiques : 46 à 56 L pour 59 à 68 kg, 52 à 64 L pour 70 à 77 kg (Suayhype).</li><li><b>Longboard :</b> 55 à 80 L et plus, selon le poids (un calculateur en ligne). Pas de calcul plus fin : la forme et l'épaisseur comptent autant que le volume.</li></ul><p style="font-weight:500;margin:0 0 6px"><b>Vérification :</b> Fanning, Smith, Slater et une quinzaine de pilotes de JS Industries surfent entre 0,34 et 0,42 L/kg en shortboard, avec un ratio plus haut pour les surfeurs légers. Ça colle au ratio Expert et à la majoration pour le poids léger.</p><p style="font-weight:500;margin:0;color:var(--muted)">Une recommandation, pas une vérité exacte : seul ton shaper connaît le volume qui te va. Le volume ne définit jamais ton niveau.</p></div></div>
   <div class="card" id="volcard"></div>
   <p class="grp">Repères : des pros</p>
   <div class="card" id="pros"></div>
@@ -224,7 +224,7 @@ function draw(){
  if(!cands.length)h+='<div class="vol"><span>Le volume ne se conseille pas pour une mousse ou un longboard : ça dépend surtout de la longueur de la planche.</span></div>';
  else{var b=base();h+=cands.map(function(k){var nm=BO.filter(function(x){return x[0]===k})[0][1],r,sub;
   if(k==='short'){r=rng(b);sub='référence, niveau '+LVL[lvl()]}
-  else if(k==='fish'){r=rng(b+4);sub='shortboard + 3 à 5 L'}
+  else if(k==='fish'){r=rng(b+2.5);sub='shortboard + 1 à 4 L (fiches JS)'}
   else if(k==='mid'){r=Math.round(st.w*0.55)+' à '+Math.round(st.w*0.8)+' L';sub='selon ton poids, pas ton niveau'}
   else{r='55 à 80 L et +';sub='selon ton poids, pas ton niveau'}
   return '<div class="vol"><div><b>'+nm+'</b><br><span>'+sub+'</span></div><b>'+r+'</b></div>'}).join('')}
@@ -233,27 +233,32 @@ function draw(){
  ['age:age','hh:h','ww:w'].forEach(function(p){var a=p.split(':');document.getElementById(a[0]).onchange=function(){st[a[1]]=+this.value||0;draw()}});
  document.getElementById('fit').onchange=function(){st.fit=+this.value;draw()};
 }
-var PROS=[['Mick Fanning','29–32 ans (2011–2013)','≈ 73 kg','26,3 à 26,7 L','0,36'],
-['Jordy Smith','26 ans (2014)','≈ 86 kg','31,8 L','0,37'],
-['Kelly Slater','≈ 43 ans (milieu des années 2010)','≈ 73 kg','24,8 à 25,8 L','0,34 à 0,36'],
-['Kelly Slater','≈ 51 ans (2023)','≈ 75 kg','≈ 27 L (« un peu bas pour moi »)','0,36'],
-['Gabriel Medina','21 ans (2015)','poids inconnu','28,7 L','—'],
-['Julian Wilson (JS)','183 cm · 80 kg','','28,6 L','0,36'],
-['Jeremy Flores (JS)','175 cm · 70 kg','','25,6 L','0,37'],
-['Conner Coffin (JS)','172 cm · 75 kg','','27 L','0,36'],
-['Mikey Wright (JS)','182 cm · 75 kg','','27 à 27,3 L','0,36'],
-['Joel Parkinson (JS)','183 cm · 83 kg','','28,3 L','0,34'],
-['Adrian Buchan (JS)','175 cm · 76 kg','','26,3 L','0,35'],
-['Mark Occhilupo (JS)','175 cm · 95 kg','','35,6 L','0,37'],
-['Pete Devries (JS)','175 cm · 67 kg','','26 L','0,39'],
-['Kai Hing (JS)','178 cm · 68 kg','','26,4 L','0,39'],
-['Aelan Vaast (JS)','170 cm · 59 kg','','24,5 L','0,42'],
-['Jason Stevenson (JS)','180 cm · 88 kg','','32,7 L','0,37'],
-['Harrison Roach · mid-length 7\'6 (JS)','177 cm · 72 kg','','50 L','0,69'],
-['Luke Egan · mid-length 7\'0 (JS)','180 cm · 90 kg','','48,7 L','0,54'],
-['Joel Parkinson · 6\'8 (JS)','183 cm · 87 kg','','38,4 L','0,44']];
-document.getElementById('pros').innerHTML=PROS.map(function(p){return '<div class="vol"><div><b>'+p[0]+'</b><br><span>'+p[1]+(p[2]?' · '+p[2]:'')+'</span></div><div style="text-align:right"><b>'+p[3]+'</b><br><span>'+p[4]+' L/kg</span></div></div>'}).join('')+'<div class="vol"><span>Shortboards de compétition, surfeurs en forme olympique : shortboards : de 0,34 à 0,37 L/kg entre 75 et 95 kg, mais 0,39 vers 67 kg et 0,42 à 59 kg : plus on est léger, plus le ratio monte. Pour les planches plus grosses (6\'8 à 7\'6), les pros utilisent 0,44 à 0,69 L/kg. Fiches « team rider reference » de JS Industries, tailles converties en cm. Poids et dates approximatifs, tirés de sources publiques.</span></div>';
-document.getElementById('vinfo').onclick=function(){var t=document.getElementById('vexp');t.hidden=!t.hidden;this.setAttribute('aria-expanded',!t.hidden)};
+var PROS=[
+['Shortboard (Xero Gravity, Monsta, JS)',[
+['Mick Fanning','≈ 73 kg','26,3 à 26,7 L','0,36'],
+['Jordy Smith','≈ 86 kg','31,8 L','0,37'],
+['Kelly Slater, ≈ 43 ans','≈ 73 kg','24,8 à 25,8 L','0,34 à 0,36'],
+['Kelly Slater, ≈ 51 ans','≈ 75 kg','≈ 27 L','0,36'],
+['Julian Wilson','183 cm · 80 kg','28,6 L','0,36'],
+['Jeremy Flores','175 cm · 70 kg','25,6 L','0,37'],
+['Conner Coffin','172 cm · 75 kg','27 L','0,36'],
+['Mikey Wright','182 cm · 75 kg','27 à 27,3 L','0,36'],
+['Joel Parkinson','183 cm · 83 kg','28,3 L','0,34'],
+['Adrian Buchan','175 cm · 76 kg','26,3 L','0,35']]],
+['Twin (Black Baron, JS)',[
+['Luke','180 cm · 90 kg','33,5 L','0,37'],
+['Parko','183 cm · 87 kg','32 L','0,37'],
+['Julian','183 cm · 84 kg','29 L','0,35'],
+['Ace','175 cm · 73 kg','27,5 L','0,38'],
+['Conner','172 cm · 75 kg','27,5 L','0,37'],
+['Pete Devries','175 cm · 67 kg','26 L','0,39'],
+['Aelan Vaast','170 cm · 59 kg','24,5 L','0,42']]],
+['Mid-length (Big Baron, El Baron, JS)',[
+['Luke Egan, 7\'0','180 cm · 90 kg','48,7 L','0,54'],
+['Harrison Roach, 7\'6','177 cm · 72 kg','50 L','0,69'],
+['Harrison Roach, 6\'4','177 cm · 72 kg','34,3 à 34,4 L','0,48'],
+['Joel Parkinson, 6\'8','183 cm · 87 kg','38,4 L','0,44']]]];
+document.getElementById('pros').innerHTML=PROS.map(function(g){return '<div class="boardrow" style="padding-bottom:4px"><p style="margin:0">'+g[0]+'</p></div>'+g[1].map(function(p){return '<div class="vol"><div><b>'+p[0]+'</b><br><span>'+p[1]+'</span></div><div style="text-align:right"><b>'+p[2]+'</b><br><span>'+p[3]+' L/kg</span></div></div>'}).join('')}).join('')+'<div class="vol"><span>Shortboards : de 0,34 à 0,37 L/kg entre 75 et 95 kg, mais 0,39 vers 67 kg et 0,42 à 59 kg : plus on est léger, plus le ratio monte. Le twin d\'un même pilote est à peine plus gros que son shortboard. Fiches « team rider reference » de JS Industries, tailles converties en cm ; Fanning, Smith, Slater, sources de presse (poids approximatifs).</span></div>';
 document.getElementById('dprof').onchange=draw;document.getElementById('dlvl').onchange=draw;
 draw();
 </script></body></html>
