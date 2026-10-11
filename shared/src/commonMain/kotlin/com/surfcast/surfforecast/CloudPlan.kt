@@ -135,6 +135,7 @@ object CloudPlan {
         // Brume : sprites flous agrandis, gris, qui relient les nuages dès 55 % environ.
         for (c in candidates(sprites, wPx, hPx, seed + 5, 2.2f)) {
             val ec = e(c.u)
+            if (ec < 0.01f) continue   // ciel dégagé : aucune brume
             val vis = smooth(c.p * 0.55f - 0.05f, c.p * 0.55f + 0.10f, ec) * smooth(0.35f, 0.8f, ec)
             if (vis < 0.01f) continue
             val ru = r(c.u)
@@ -146,6 +147,7 @@ object CloudPlan {
         val clouds = ArrayList<CloudPlacement>()
         for (c in candidates(sprites, wPx, hPx, seed, 3.4f)) {
             val ec = e(c.u)
+            if (ec < 0.01f) continue   // ciel dégagé : les nuages à seuil très bas ne doivent pas apparaître
             val ru = r(c.u)
             val vis = smooth(c.p - 0.05f, c.p + 0.05f, ec)
             if (vis < 0.01f) continue
