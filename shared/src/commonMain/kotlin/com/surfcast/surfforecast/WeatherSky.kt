@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
+import kotlin.math.ceil
+import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.pow
 import kotlin.math.sin
@@ -23,6 +25,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Paint
@@ -34,10 +37,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.surfcast.surfforecast.resources.Res
-import com.surfcast.surfforecast.resources.sky_clouds_1
-import com.surfcast.surfforecast.resources.sky_clouds_2
-import com.surfcast.surfforecast.resources.sky_clouds_3
-import com.surfcast.surfforecast.resources.sky_clouds_4
+import com.surfcast.surfforecast.resources.sky_cloud_field
 import com.surfcast.surfforecast.resources.sky_rain
 import com.surfcast.surfforecast.resources.sky_snow
 import com.surfcast.surfforecast.resources.sky_sun
@@ -49,9 +49,9 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
- * Fond météo vivant de la vue semaine et du déroulé du jour : de vraies images de nuages (quatre niveaux, du blanc au gris
- * foncé, fondus entre eux selon la couverture de chaque heure), un soleil qui s'efface sous les nuages, de la pluie et de la
- * neige qui tombent. Il remplace les icônes météo. Pas de ciel bleu : le fond de la carte reste le nôtre.
+ * Fond météo vivant de la vue semaine et du déroulé du jour : un ciel stable (bleu net, gris quand c'est couvert), un seul
+ * champ de nuages dont la quantité suit la couverture de chaque heure (îlots blancs, puis gris, puis couvert), un soleil
+ * derrière les nuages, de la pluie et de la neige qui tombent. Il remplace les icônes météo.
  */
 
 /** Pluie estimée (de 0 à environ 2,5 mm/h) d'après le code météo de la prévision, qui ne donne pas de quantité. */
@@ -82,7 +82,7 @@ fun snowAmountForCode(code: Int): Float = when (code) {
     else -> 0f
 }
 
-/** Une valeur qui varie le long de l'axe horizontal : interpolée entre des points, puis lissée (pas de marche brusque). */
+/** Une valeur qui varie le long de l'axe horizontal : interpolée entre des points, puis lissée (pas de marche brusque). [smooth] : écart-type du lissage, en pixels. */
 class SkyCurve(private val xs: FloatArray, private val vs: FloatArray, private val smooth: Float) {
     private fun raw(x: Float): Float {
         if (xs.isEmpty()) return 0f
@@ -96,10 +96,19 @@ class SkyCurve(private val xs: FloatArray, private val vs: FloatArray, private v
         return vs.last()
     }
 
+    /** Moyenne gaussienne d'écart-type [smooth] (pixels) : un changement brusque s'étale en rampe douce, sans colonne. */
     fun at(x: Float): Float {
+        if (smooth < 0.5f) return raw(x)
         var a = 0f
-        for (k in -3..3) a += raw(x + k * smooth)
-        return a / 7f
+        var ws = 0f
+        var k = -3f
+        while (k <= 3.001f) {
+            val wgt = exp(-0.5f * k * k)
+            a += wgt * raw(x + k * smooth)
+            ws += wgt
+            k += 0.5f
+        }
+        return a / ws
     }
 }
 
@@ -124,16 +133,13 @@ class SkyScene(
 )
 
 internal class SkyImages(
-    val clouds: List<ImageBitmap>, val sun: ImageBitmap, val rain: ImageBitmap, val snow: ImageBitmap,
+    val cloudField: ImageBitmap, val sun: ImageBitmap, val rain: ImageBitmap, val snow: ImageBitmap,
     val water: ImageBitmap, val waterRain: ImageBitmap
 )
 
 @Composable
 internal fun rememberSkyImages(): SkyImages = SkyImages(
-    clouds = listOf(
-        imageResource(Res.drawable.sky_clouds_1), imageResource(Res.drawable.sky_clouds_2),
-        imageResource(Res.drawable.sky_clouds_3), imageResource(Res.drawable.sky_clouds_4)
-    ),
+    cloudField = imageResource(Res.drawable.sky_cloud_field),
     sun = imageResource(Res.drawable.sky_sun),
     rain = imageResource(Res.drawable.sky_rain),
     snow = imageResource(Res.drawable.sky_snow),
@@ -144,42 +150,72 @@ internal fun rememberSkyImages(): SkyImages = SkyImages(
 /** Les images du ciel, chargées dès le lancement de l'appli (voir SurfLogApp) pour être prêtes quand la semaine s'affiche. */
 internal val LocalSkyImages = androidx.compose.runtime.compositionLocalOf<SkyImages?> { null }
 
-// Trois ambiances reliées en continu selon la couverture : blanc et éclaircies (30 %), gris (70 %), couvert sombre et bas (100 %).
-private val KF_COVER = floatArrayOf(0f, 0.3f, 0.7f, 1f)
-private val KF_LAYERS = arrayOf(
-    floatArrayOf(0f, 0f, 0f, 0f), floatArrayOf(1f, 0f, 0f, 0f), floatArrayOf(0.3f, 0.3f, 1f, 0f), floatArrayOf(0f, 0f, 0.3f, 1f)
-)
-private val KF_WASH = floatArrayOf(0f, 0f, 0.12f, 0.5f)
-private val KF_SUN = floatArrayOf(1f, 0.9f, 0.18f, 0f)
-// Fond du ciel en thème clair, du bleu clair au gris ardoise (rouge, vert, bleu).
-private val KF_SKY_LIGHT = arrayOf(
-    floatArrayOf(206f, 224f, 244f), floatArrayOf(170f, 194f, 224f), floatArrayOf(134f, 150f, 170f), floatArrayOf(90f, 102f, 118f)
-)
-// Recadrage vertical de chaque niveau de nuages sur la zone où se trouvent vraiment les nuages de l'image.
-private val CLOUD_CROP = arrayOf(0.28f to 0.62f, 0.12f to 0.82f, 0.06f to 0.90f, 0.05f to 0.95f)
-private val CLOUD_TINT_LIGHT = listOf(
-    Color(0xFFC8D2E0).copy(alpha = 0.10f), Color(0xFF8FA0B3).copy(alpha = 0.45f),
-    Color(0xFFA5B0BE).copy(alpha = 0.28f), Color(0xFF4A586B).copy(alpha = 0.70f)
-)
+// Texture des nuages (sky_cloud_field.png) : canal rouge = densité, répartie de 0 à 1 (donc « couverture 30 % » donne 30 % de
+// ciel couvert), canal vert = ombrage. Elle est dessinée en bandes verticales étroites ; un filtre de couleur par bande
+// transforme la densité en opacité selon la couverture, et l'ombrage en teinte du blanc au gris au sombre quand il pleut.
+private const val CLOUD_TEX_SPAN = 0.62f     // part de la largeur de la texture visible à l'écran
+private const val CLOUD_TEX_OFFSET = 60      // décalage de départ dans la texture, en pixels de texture
+private const val CLOUD_STRIP_TEX = 4        // largeur d'une bande, en pixels de texture
 
-private fun kfSegment(c: Float): Pair<Int, Float> {
-    val cc = c.coerceIn(0f, 1f)
-    for (i in 1 until KF_COVER.size) if (cc <= KF_COVER[i]) return (i - 1) to ((cc - KF_COVER[i - 1]) / (KF_COVER[i] - KF_COVER[i - 1]))
-    return (KF_COVER.size - 2) to 1f
+private fun smoothstep(a: Float, b: Float, x: Float): Float {
+    val t = ((x - a) / (b - a)).coerceIn(0f, 1f)
+    return t * t * (3f - 2f * t)
+}
+private fun mix(a: Float, b: Float, t: Float): Float = a + (b - a) * t
+
+// Fond du ciel, haut puis bas (rouge, vert, bleu) : du bleu net au gris selon la couverture.
+private val SKY_LIGHT_CLEAR = arrayOf(floatArrayOf(58f, 126f, 203f), floatArrayOf(150f, 200f, 242f))
+private val SKY_LIGHT_OVERCAST = arrayOf(floatArrayOf(112f, 124f, 138f), floatArrayOf(158f, 170f, 182f))
+private val SKY_DARK_CLEAR = arrayOf(floatArrayOf(9f, 34f, 68f), floatArrayOf(22f, 74f, 118f))
+private val SKY_DARK_OVERCAST = arrayOf(floatArrayOf(14f, 20f, 29f), floatArrayOf(30f, 40f, 52f))
+
+private fun skyColor(cover: Float, isDark: Boolean, bottom: Boolean): Color {
+    val k = smoothstep(0.2f, 0.95f, cover)
+    val i = if (bottom) 1 else 0
+    val a = if (isDark) SKY_DARK_CLEAR[i] else SKY_LIGHT_CLEAR[i]
+    val b = if (isDark) SKY_DARK_OVERCAST[i] else SKY_LIGHT_OVERCAST[i]
+    return Color(mix(a[0], b[0], k) / 255f, mix(a[1], b[1], k) / 255f, mix(a[2], b[2], k) / 255f)
 }
 
-private fun kfLerp(c: Float, v: (Int) -> Float): Float {
-    val (i, t) = kfSegment(c)
-    return v(i) + (v(i + 1) - v(i)) * t
+// Un filtre par palier de (couverture, pluie, thème), gardé en mémoire : il n'est calculé qu'une fois.
+private val cloudFilters = HashMap<Int, ColorFilter>()
+
+private fun cloudFilter(cover: Float, rain: Float, isDark: Boolean): ColorFilter {
+    val cq = (cover.coerceIn(0f, 1f) * 64f).roundToInt()
+    val rq = (rain.coerceIn(0f, 1f) * 16f).roundToInt()
+    val key = (cq * 17 + rq) * 2 + if (isDark) 1 else 0
+    return cloudFilters.getOrPut(key) { buildCloudFilter(cq / 64f, rq / 16f, isDark) }
 }
 
-private fun cloudWeight(c: Float, layer: Int): Float = kfLerp(c) { KF_LAYERS[it][layer] }
-private fun washAmount(c: Float): Float = kfLerp(c) { KF_WASH[it] }
-private fun sunAmount(c: Float): Float = kfLerp(c) { KF_SUN[it] }
-private fun skyColorLight(c: Float): Color {
-    val (i, t) = kfSegment(c)
-    fun ch(k: Int) = (KF_SKY_LIGHT[i][k] + (KF_SKY_LIGHT[i + 1][k] - KF_SKY_LIGHT[i][k]) * t) / 255f
-    return Color(ch(0), ch(1), ch(2))
+/**
+ * Opacité : A' = maxA × (densité − seuil) / douceur, avec seuil = 1 − couverture × (1 + douceur) ; elle monte de 0 à 1 autour du
+ * seuil, donc plus la couverture grandit, plus les îlots s'élargissent et se rejoignent. Couleur : base × (kLo + kHi × ombrage),
+ * la base passant du blanc au gris avec la couverture, puis au sombre sous la pluie. Les décalages de la matrice sont sur 0 à 255.
+ */
+private fun buildCloudFilter(cover: Float, rain: Float, isDark: Boolean): ColorFilter {
+    val soft = mix(0.20f, 0.11f, cover)
+    val threshold = 1f - cover * (1f + soft)
+    val maxA = mix(0.9f, 1f, smoothstep(0.4f, 0.9f, cover))
+    val g1 = smoothstep(0.45f, 0.95f, cover)
+    val rd = (rain * 0.9f + smoothstep(0.88f, 1f, cover) * 0.3f).coerceIn(0f, 1f)
+    val base: FloatArray
+    val kLo: Float
+    val kHi: Float
+    if (isDark) {
+        // Thème sombre : nuages gris-bleu clairs, bien plus clairs que le fond, pour rester lisibles.
+        base = floatArrayOf(mix(mix(222f, 168f, g1), 104f, rd), mix(mix(231f, 182f, g1), 118f, rd), mix(mix(244f, 202f, g1), 140f, rd))
+        kLo = 0.74f; kHi = 0.26f
+    } else {
+        base = floatArrayOf(mix(mix(252f, 205f, g1), 92f, rd), mix(mix(253f, 212f, g1), 102f, rd), mix(mix(255f, 222f, g1), 116f, rd))
+        kLo = 0.56f; kHi = 0.44f
+    }
+    val m = floatArrayOf(
+        0f, base[0] * kHi / 255f, 0f, 0f, base[0] * kLo,
+        0f, base[1] * kHi / 255f, 0f, 0f, base[1] * kLo,
+        0f, base[2] * kHi / 255f, 0f, 0f, base[2] * kLo,
+        maxA / soft, 0f, 0f, 0f, -255f * maxA * threshold / soft
+    )
+    return ColorFilter.colorMatrix(ColorMatrix(m))
 }
 
 /** Horloge pour les anneaux de pluie sur l'eau : tourne seulement quand il pleut. */
@@ -235,52 +271,49 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
     val bounds = Rect(scene.left, scene.top, scene.right, scene.bottom)
     val skyH = if (scene.skyHeight > 1f) scene.skyHeight.coerceIn(h * 0.2f, h) else h
 
+    // Bandes verticales étroites : à chacune sa couverture, donc des nuages qui s'épaississent en continu, sans rupture.
+    val tex = im.cloudField
+    val texPer = tex.width * CLOUD_TEX_SPAN / w                // pixels de texture par pixel d'écran
+    val stripScreen = CLOUD_STRIP_TEX / texPer                 // largeur d'une bande à l'écran
+    val nStrips = ceil(w / stripScreen).toInt()
+
     clipRect(scene.left, scene.top, scene.right, scene.bottom) {
-        // Fond du ciel (thème clair seulement) : bleu clair quand c'est dégagé, gris ardoise quand c'est couvert.
-        if (!isDark) {
-            val stops = Array(n + 1) { i ->
-                val f = i.toFloat() / n
-                f to skyColorLight(scene.cover.at(scene.left + w * f))
-            }
+        // Fond du ciel, stable : bleu net quand c'est dégagé, gris quand c'est couvert (plus foncé en haut).
+        for (i in 0 until nStrips) {
+            val x0 = scene.left + i * stripScreen
+            val c = scene.cover.at(x0 + stripScreen / 2f)
             drawRect(
-                brush = Brush.horizontalGradient(*stops, startX = scene.left, endX = scene.right),
-                topLeft = Offset(scene.left, scene.top), size = Size(w, h)
+                brush = Brush.verticalGradient(listOf(skyColor(c, isDark, false), skyColor(c, isDark, true)), startY = scene.top, endY = scene.bottom),
+                topLeft = Offset(x0, scene.top), size = Size(stripScreen + 1f, h)
             )
         }
-        // Nuages : quatre calques recadrés et étalés sur le ciel, chacun plus ou moins opaque le long de l'axe.
-        for (l in 0 until 4) {
-            val stops = fadeStops(scene, n) { x -> cloudWeight(scene.cover.at(x), l) }
-            if (stops.all { it.second.alpha < 0.02f }) continue
-            drawIntoCanvas { canvas ->
-                canvas.saveLayer(bounds, Paint())
-                val img = im.clouds[l]
-                val (c0, c1) = CLOUD_CROP[l]
-                drawImage(
-                    img, srcOffset = IntOffset(0, (img.height * c0).roundToInt()), srcSize = IntSize(img.width, (img.height * (c1 - c0)).roundToInt()),
-                    dstOffset = IntOffset(scene.left.roundToInt(), scene.top.roundToInt()),
-                    dstSize = IntSize(w.roundToInt(), skyH.roundToInt()),
-                    colorFilter = if (!isDark) ColorFilter.tint(CLOUD_TINT_LIGHT[l], BlendMode.SrcAtop) else null
-                )
-                drawRect(
-                    brush = Brush.horizontalGradient(*stops, startX = scene.left, endX = scene.right),
-                    topLeft = Offset(scene.left, scene.top), size = Size(w, h), blendMode = BlendMode.DstIn
-                )
-                canvas.restore()
-            }
-        }
-        // Voile sombre quand le ciel est couvert : ciel bas, menaçant.
-        run {
-            val wash = Color(if (isDark) 0xFF080D14 else 0xFF3A4656)
-            val stops = Array(n + 1) { i ->
-                val f = i.toFloat() / n
-                f to wash.copy(alpha = washAmount(scene.cover.at(scene.left + w * f)).coerceIn(0f, 1f))
-            }
-            if (stops.any { it.second.alpha > 0.01f }) {
-                drawRect(
-                    brush = Brush.horizontalGradient(*stops, startX = scene.left, endX = scene.right),
-                    topLeft = Offset(scene.left, scene.top), size = Size(w, h)
-                )
-            }
+    }
+
+    // Soleil : derrière les nuages, jamais coupé (donc hors du rognage du ciel) ; il apparaît entre les îlots et s'efface sous la couverture.
+    for (s in scene.suns) {
+        val a = ((1f - smoothstep(0.4f, 0.97f, scene.cover.at(s.x)) * 0.92f) * (if (isDark) 0.85f else 0.95f)).coerceIn(0f, 1f)
+        if (a <= 0.03f) continue
+        drawImage(
+            im.sun, srcOffset = IntOffset.Zero, srcSize = IntSize(im.sun.width, im.sun.height),
+            dstOffset = IntOffset((s.x - s.sizePx / 2f).roundToInt(), s.topPx.roundToInt()),
+            dstSize = IntSize(s.sizePx.roundToInt(), s.sizePx.roundToInt()), alpha = a
+        )
+    }
+
+    clipRect(scene.left, scene.top, scene.right, scene.bottom) {
+        // Nuages : un seul champ, une bande par tranche de texture, chacune avec le filtre de sa couverture et de sa pluie.
+        for (i in 0 until nStrips) {
+            val x0 = scene.left + i * stripScreen
+            val xm = x0 + stripScreen / 2f
+            val c = scene.cover.at(xm).coerceIn(0f, 1f)
+            if (c < 0.02f) continue
+            val r = min(1f, scene.rain.at(xm) / 1.8f)
+            drawImage(
+                tex, srcOffset = IntOffset(CLOUD_TEX_OFFSET + i * CLOUD_STRIP_TEX, 0), srcSize = IntSize(CLOUD_STRIP_TEX, tex.height),
+                dstOffset = IntOffset(x0.roundToInt(), scene.top.roundToInt()),
+                dstSize = IntSize(ceil(stripScreen).toInt() + 1, skyH.roundToInt()),
+                colorFilter = cloudFilter(c, r, isDark)
+            )
         }
         // Pluie et neige : deux couches chacune, qui tombent à des vitesses différentes. En thème clair, la pluie est
         // sombre sur un ciel clair et redevient claire sur un ciel très sombre.
@@ -330,17 +363,6 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
                 canvas.restore()
             }
         }
-    }
-
-    // Soleil : au premier plan, devant les nuages, jamais coupé (donc hors du rognage du ciel) ; il s'efface sous la couverture.
-    for (s in scene.suns) {
-        val a = (sunAmount(scene.cover.at(s.x)) * (if (isDark) 0.85f else 0.95f)).coerceIn(0f, 1f)
-        if (a <= 0.03f) continue
-        drawImage(
-            im.sun, srcOffset = IntOffset.Zero, srcSize = IntSize(im.sun.width, im.sun.height),
-            dstOffset = IntOffset((s.x - s.sizePx / 2f).roundToInt(), s.topPx.roundToInt()),
-            dstSize = IntSize(s.sizePx.roundToInt(), s.sizePx.roundToInt()), alpha = a
-        )
     }
 }
 
