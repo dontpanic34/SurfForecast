@@ -350,7 +350,8 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
     if (w <= 1f || h <= 1f) return
     val n = max(8, (w / (6f * density)).toInt())
     val bounds = Rect(scene.left, scene.top, scene.right, scene.bottom)
-    val skyH = if (scene.skyHeight > 1f) scene.skyHeight.coerceIn(h * 0.2f, h) else h
+    // Les nuages couvrent toute la hauteur et passent derrière l'eau (opaque) : aucun trait net là où ils s'arrêteraient avant la courbe.
+    val skyH = h
 
     // Fond du ciel, soleil et nuages : dessinés une fois dans une image, refaite seulement quand la couverture, la taille, le
     // thème ou l'heure du soleil changent. La pluie, qui anime l'écran, ne les recalcule donc pas à chaque image.
