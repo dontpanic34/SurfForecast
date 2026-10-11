@@ -79,6 +79,7 @@ canvas{display:block}
 </div>
 <div class="dl" id="dl2"><b>Ce que ça change</b>
  <span>• <b>Semaine :</b> phrase du jour en 3 lignes (titre, houle, vent). Plus de chiffre sous les étoiles : la température du jour est dans le ciel, à droite du soleil, en petit et discret ; la température de l'eau est dans l'eau, sous la courbe de houle, tout aussi discrète. Aucun mot « ressenti » à l'écran. On dit « offshore » et « onshore ».</span>
+ <span>• <b>Maintenant :</b> seulement la houle, le vent et la marée (montante, descendante, pleine haute ou pleine basse). Plus de température, de ciel, d'eau ni de coefficient.</span>
  <span>• <b>Déroulé :</b> au clic sur une heure, seulement l'heure, le libellé et une phrase (plus de troisième ligne).</span>
 </div>
 <script>
@@ -216,7 +217,7 @@ function buildDay(){
  document.getElementById('dhrs').innerHTML='<span>08:14</span><span>10 h</span><span>12 h</span><span>14 h</span><b>'+hsel+':00</b><span>18 h</span><span>19:26</span>';
  document.querySelectorAll('#dband i').forEach(function(b){b.onclick=function(){hsel=+b.dataset.h;buildDay()}});
  document.getElementById('nowt').textContent='Maintenant · Capbreton · 20 h';
- document.getElementById('nowb').innerHTML='<b>Houle '+d.m.toFixed(1).replace('.',',')+' m · '+d.per+' s</b> &nbsp; '+rt+'° <span style="font-size:11px">(air '+(rt+2)+'°)</span> · '+sky+' '+cov+' %';
+ var wn=d.w[Math.min(2,Math.floor(i/4))];document.getElementById('nowb').innerHTML='<b>Houle '+d.m.toFixed(1).replace('.',',')+' m · '+d.per+' s</b> &nbsp; Vent '+wn[0]+' '+wn[1]+' km/h &nbsp; Marée '+['montante','descendante','pleine haute','pleine basse'][sel%4];
 }
 /* ---------- courbes ---------- */
 function swell(ctx,x0,x1,top,bot,ys,week,dark,lab,rainFn,t){
