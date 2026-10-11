@@ -1,5 +1,11 @@
 # À faire
 
+## Tâche ajoutée le 12 octobre : encart « Maintenant », la marée avec flèche et heure de la prochaine
+- **Aujourd'hui** (`NowTideCard.kt`, `tideStateWord` dans `HourlyForecastRow.kt`) : un mot, « Marée descendante », sans flèche ni heure.
+- **Demandé** : « Marée descendante » avec une **flèche vers le bas** ▼ et **l'heure de la prochaine marée basse** ; « Marée montante » avec une flèche vers le haut ▲ et l'heure de la prochaine marée haute. Les mots « pleine haute » / « pleine basse » gardent leur flèche (▲ / ▼) et leur heure.
+- **Cas à prévoir** : après la dernière marée du jour, la prochaine est le lendemain (il faut les marées du jour suivant, dans `dailyTides`) ; sans horaires de marée, ne rien afficher.
+- **Rafales** : le propriétaire veut retirer le « km/h » des rafales dans « Maintenant ». Dans l'encart « Maintenant », elles s'affichent déjà sans unité (« Vent SE 13 km/h · rafales 16 »). L'unité reste dans la carte Vent détaillée (`WindCardComponent.kt`, « Rafales 22 km/h ») : **à demander au propriétaire** s'il parle de celle-là.
+
 ## Plus tard : la condition physique dans « Mon matériel » (12 octobre)
 - « Ta rame pour passer la barre » (sans souci / je fatigue au bout d'un moment / je fatigue vite / je n'avance pas aussi vite que je devrais) sort du questionnaire du niveau : c'est de la condition physique. À reprendre avec le volume de planche dans « Mon matériel » (déjà « Forme physique : excellente, bonne, moyenne, faible » aujourd'hui) : probablement la fusionner avec cette « forme physique ».
 
