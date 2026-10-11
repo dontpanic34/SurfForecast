@@ -181,18 +181,18 @@ private fun skyColor(cover: Float, isDark: Boolean, bottom: Boolean): Color {
 
 /** Le fond du ciel gardé en image : [key] résume ce qui l'a produit. */
 internal class SkyBackdropCache {
-    var bitmap: ImageBitmap? = null
+    var bitmap: ImageBitmap? = null   // fond du ciel (derrière le soleil)
+    var front: ImageBitmap? = null    // voile, brume et nuages (devant le soleil)
     var key: Long = 0L
 }
 
-/** Résumé de ce qui change le fond du ciel : taille, thème, soleil, et la couverture et la pluie le long de l'axe. */
+/** Résumé de ce qui change le fond du ciel : taille, thème, images, et la couverture et la pluie le long de l'axe (pas le soleil, qui suit l'heure choisie). */
 private fun backdropKey(scene: SkyScene, isDark: Boolean, size: Size, skyH: Float, im: SkyImages): Long {
     var k = 17L
     fun add(v: Int) { k = k * 31L + v }
     add(size.width.roundToInt()); add(size.height.roundToInt()); add(skyH.roundToInt()); add(if (isDark) 1 else 0)
     add(im.atlas.width); add(im.atlas.height); add(im.haze.width); add(im.sun.width)   // images pas encore chargées : on refait le ciel quand elles arrivent
     add(scene.left.roundToInt()); add(scene.top.roundToInt()); add(scene.right.roundToInt()); add(scene.bottom.roundToInt())
-    for (s in scene.suns) { add(s.x.roundToInt()); add(s.sizePx.roundToInt()); add(s.topPx.roundToInt()) }
     val w = scene.right - scene.left
     for (i in 0..63) {
         val x = scene.left + w * i / 63f
@@ -207,12 +207,12 @@ private fun backdropKey(scene: SkyScene, isDark: Boolean, size: Size, skyH: Floa
  * [CloudPlan] selon la couverture et la pluie le long de l'axe, à leur taille d'affichage, en composition normale. Tout est dessiné
  * une seule fois dans une image en cache ; seule la pluie est animée.
  */
-private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boolean, w: Float, h: Float, n: Int) {
+private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boolean, w: Float, h: Float, n: Int, front: Boolean) {
     val bounds = Rect(scene.left, scene.top, scene.right, scene.bottom)
     fun coverAt(x: Float) = scene.cover.at(x).coerceIn(0f, 1f)
     fun rainShare(x: Float) = min(1f, scene.rain.at(x) / 1.8f)
 
-    clipRect(scene.left, scene.top, scene.right, scene.bottom) {
+    if (!front) clipRect(scene.left, scene.top, scene.right, scene.bottom) {
         // Fond du ciel : bleu net quand c'est dégagé, gris quand c'est couvert, fondu horizontalement.
         drawRect(
             brush = Brush.verticalGradient(listOf(skyColor(0f, isDark, false), skyColor(0f, isDark, true)), startY = scene.top, endY = scene.bottom),
@@ -233,16 +233,7 @@ private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boole
         }
     }
 
-    // Soleil : derrière les nuages, jamais coupé ; il apparaît entre les îlots et s'efface sous la couverture.
-    for (sun in scene.suns) {
-        val a = ((1f - smoothstep(0.4f, 0.97f, scene.cover.at(sun.x)) * 0.92f) * (if (isDark) 0.85f else 0.95f)).coerceIn(0f, 1f)
-        if (a <= 0.03f) continue
-        drawImage(
-            im.sun, srcOffset = IntOffset.Zero, srcSize = IntSize(im.sun.width, im.sun.height),
-            dstOffset = IntOffset((sun.x - sun.sizePx / 2f).roundToInt(), sun.topPx.roundToInt()),
-            dstSize = IntSize(sun.sizePx.roundToInt(), sun.sizePx.roundToInt()), alpha = a
-        )
-    }
+    if (!front) return
 
     // Voile de couvert : grisaille à plat derrière les nuages quand la couverture approche 100 %.
     val th = if (isDark) CLOUD_THEME_DARK else CLOUD_THEME_LIGHT
@@ -289,6 +280,19 @@ private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boole
                 )
             }
         }
+    }
+}
+
+/** Soleil : derrière les nuages, jamais coupé ; il apparaît entre les îlots et s'efface sous la couverture. Dessiné à chaque image (il suit l'heure choisie). */
+private fun DrawScope.drawSun(scene: SkyScene, im: SkyImages, isDark: Boolean) {
+    for (sun in scene.suns) {
+        val a = ((1f - smoothstep(0.4f, 0.97f, scene.cover.at(sun.x)) * 0.92f) * (if (isDark) 0.85f else 0.95f)).coerceIn(0f, 1f)
+        if (a <= 0.03f) continue
+        drawImage(
+            im.sun, srcOffset = IntOffset.Zero, srcSize = IntSize(im.sun.width, im.sun.height),
+            dstOffset = IntOffset((sun.x - sun.sizePx / 2f).roundToInt(), sun.topPx.roundToInt()),
+            dstSize = IntSize(sun.sizePx.roundToInt(), sun.sizePx.roundToInt()), alpha = a
+        )
     }
 }
 
@@ -349,15 +353,24 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
     // Fond du ciel, soleil et nuages : dessinés une fois dans une image, refaite seulement quand la couverture, la taille, le
     // thème ou l'heure du soleil changent. La pluie, qui anime l'écran, ne les recalcule donc pas à chaque image.
     val key = backdropKey(scene, isDark, size, skyH, im)
-    var backdrop = cache.bitmap
-    if (backdrop == null || cache.key != key) {
-        val bmp = ImageBitmap(size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))
-        CanvasDrawScope().draw(this, layoutDirection, androidx.compose.ui.graphics.Canvas(bmp), size) { drawBackdrop(scene, im, isDark, w, h, n) }
-        cache.bitmap = bmp
+    var back = cache.bitmap
+    var front = cache.front
+    if (back == null || front == null || cache.key != key) {
+        val pw = size.width.roundToInt().coerceAtLeast(1)
+        val ph = size.height.roundToInt().coerceAtLeast(1)
+        val bmpBack = ImageBitmap(pw, ph)
+        CanvasDrawScope().draw(this, layoutDirection, androidx.compose.ui.graphics.Canvas(bmpBack), size) { drawBackdrop(scene, im, isDark, w, h, n, front = false) }
+        val bmpFront = ImageBitmap(pw, ph)
+        CanvasDrawScope().draw(this, layoutDirection, androidx.compose.ui.graphics.Canvas(bmpFront), size) { drawBackdrop(scene, im, isDark, w, h, n, front = true) }
+        cache.bitmap = bmpBack
+        cache.front = bmpFront
         cache.key = key
-        backdrop = bmp
+        back = bmpBack
+        front = bmpFront
     }
-    drawImage(backdrop)
+    drawImage(back)
+    drawSun(scene, im, isDark)
+    drawImage(front)
 
     clipRect(scene.left, scene.top, scene.right, scene.bottom) {
         // Pluie et neige : deux couches chacune, qui tombent à des vitesses différentes. En thème clair, la pluie est
