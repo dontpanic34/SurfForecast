@@ -1,0 +1,346 @@
+<title>Réglages Surf Log</title>
+<style>
+/* Mise en page : une navigation par pages à gauche (en haut sur téléphone), un écran de téléphone au centre. */
+:root{
+  --bg:#EDF1F6; --surface:#FFFFFF; --surface2:#E4EAF2; --ink:#14202B; --muted:#5D6E80; --line:#D5DDE7;
+  --accent:#2F6FE4; --accent-ink:#FFFFFF; --good:#1FA463; --warn:#E08A00; --bad:#D6403A; --frame:#C9D3DF;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B121A; --surface:#141E2A; --surface2:#1C2938; --ink:#E8EEF5; --muted:#8FA0B3; --line:#243345;
+  --accent:#4C8DFF; --accent-ink:#06101F; --good:#2ED47A; --warn:#FFA826; --bad:#F2554F; --frame:#2A3A4D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B121A; --surface:#141E2A; --surface2:#1C2938; --ink:#E8EEF5; --muted:#8FA0B3; --line:#243345;
+  --accent:#4C8DFF; --accent-ink:#06101F; --good:#2ED47A; --warn:#FFA826; --bad:#F2554F; --frame:#2A3A4D; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-inline:16px;padding-block:20px;line-height:1.4}
+h1{font-size:22px;margin:0 0 4px;text-wrap:balance}
+.lead{color:var(--muted);font-size:14px;margin:0 0 16px;max-width:62ch}
+.shell{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:start;max-width:960px;margin:0 auto}
+nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:env(safe-area-inset-top,0px)}
+nav button{all:unset;cursor:pointer;padding:9px 12px;border-radius:10px;font-size:14px;color:var(--muted);font-weight:600}
+nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+nav button:focus-visible{outline:2px solid var(--accent)}
+nav small{display:block;font-weight:500;font-size:11.5px;opacity:.85}
+@media (max-width:720px){.shell{grid-template-columns:minmax(0,1fr)}nav{flex-direction:row;overflow-x:auto;position:static;padding-bottom:4px}nav button{white-space:nowrap}nav small{display:none}}
+.phone{width:min(100%,392px);margin:0 auto;background:var(--bg);border:1px solid var(--frame);border-radius:30px;padding:14px 12px 22px;min-height:560px}
+.notes{max-width:392px;margin:14px auto 0;color:var(--muted);font-size:13px}
+.notes b{color:var(--ink)}
+.top{display:flex;align-items:center;gap:8px;padding:2px 6px 12px}
+.top .back{color:var(--accent);font-size:13px;font-weight:600}
+.top h2{font-size:17px;margin:0;font-weight:800}
+.grp{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 6px 6px}
+.card{background:var(--surface);border-radius:14px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-size:14.5px;font-weight:650}
+.row .t span{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.row .v{color:var(--muted);font-size:13px;white-space:nowrap}
+.row .chev{color:var(--muted);font-size:18px;line-height:1}
+.ico{width:30px;height:30px;border-radius:9px;background:var(--surface2);display:grid;place-items:center;font-size:15px;flex:none}
+.seg{display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px;width:100%}
+.seg button{all:unset;cursor:pointer;flex:1;text-align:center;padding:7px 4px;border-radius:8px;font-size:13px;font-weight:650;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.blk{padding:12px 14px;border-top:1px solid var(--line)}
+.blk:first-child{border-top:0}
+.blk .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:14px;font-weight:650}
+.blk .lab span{font-weight:500;font-size:12.5px;color:var(--muted)}
+.sw{all:unset;cursor:pointer;width:42px;height:25px;border-radius:99px;background:var(--surface2);position:relative;flex:none;box-shadow:inset 0 0 0 1px var(--line)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--muted);transition:transform .15s}
+.sw[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.sw[aria-checked="true"]::after{transform:translateX(17px);background:var(--accent-ink)}
+.sw:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grip{color:var(--muted);letter-spacing:-2px;font-size:15px;width:16px;flex:none;cursor:grab}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.rangeends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:2px}
+.lv{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.lv button{all:unset;cursor:pointer;background:var(--surface2);border-radius:12px;padding:10px 11px;box-shadow:inset 0 0 0 1px transparent}
+.lv button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent);background:var(--surface)}
+.lv b{display:block;font-size:14px}.lv span{font-size:12px;color:var(--muted)}
+.lv button:focus-visible{outline:2px solid var(--accent)}
+.btn{all:unset;cursor:pointer;display:block;text-align:center;padding:11px;border-radius:12px;background:var(--surface2);font-weight:700;font-size:14px}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+.btn:focus-visible{outline:2px solid var(--accent)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.fld{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px 14px}
+.fld div{background:var(--surface2);border-radius:10px;padding:8px 10px}
+.fld small{display:block;color:var(--muted);font-size:11px}.fld b{font-size:17px}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:99px;background:var(--accent);color:var(--accent-ink);vertical-align:middle;margin-left:6px}
+.adv[hidden]{display:none}
+/* page « plan » */
+.map{display:grid;gap:10px;max-width:640px;margin:0 auto}
+.map .it{background:var(--surface);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 12px}
+.map .it .ico{grid-row:span 2}
+.map .it b{font-size:15px}.map .it p{margin:0;color:var(--muted);font-size:13px}
+.cut{max-width:640px;margin:16px auto 0;background:var(--surface);border-radius:14px;padding:14px}
+.cut h3{margin:0 0 8px;font-size:14px}
+.cut ul{margin:0;padding-left:18px;color:var(--muted);font-size:13px;display:grid;gap:4px}
+.cut li b{color:var(--ink)}
+/* page « note et vent » */
+.chain{display:grid;gap:6px;padding:12px}
+.chain .st{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start}
+.chain .st i{font-style:normal;font-weight:800;width:30px;height:30px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-size:13px}
+.chain .st p{margin:0;font-size:13px;color:var(--muted)}.chain .st b{font-size:14px;color:var(--ink)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line)}
+th{color:var(--muted);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;border-top:0}
+.tw{overflow-x:auto}
+</style>
+
+<h1>Réglages Surf Log</h1>
+<p class="lead">Maquette de la refonte : cinq pages courtes au lieu d'une longue liste, un vocabulaire unique, et une seule règle pour la note et pour le vent. Touche les contrôles, ils réagissent.</p>
+
+<div class="shell">
+<nav id="nav" aria-label="Pages de la maquette">
+  <button data-p="plan" aria-selected="true">Plan <small>Ce qui change</small></button>
+  <button data-p="home" aria-selected="false">Réglages <small>Page d'accueil</small></button>
+  <button data-p="profil" aria-selected="false">Profil <small>Niveau, plage</small></button>
+  <button data-p="materiel" aria-selected="false">Matériel <small>Moi, planches</small></button>
+  <button data-p="affichage" aria-selected="false">Affichage <small>Thème, taille, unités</small></button>
+  <button data-p="ecran" aria-selected="false">Écran principal <small>Encarts, semaine, déroulé</small></button>
+  <button data-p="donnees" aria-selected="false">Prévisions et données <small>Sources, journal</small></button>
+  <button data-p="appli" aria-selected="false">Appli <small>Installer, aide</small></button>
+  <button data-p="note" aria-selected="false">Note et vent <small>La règle unique</small></button>
+</nav>
+
+<main>
+
+<!-- PLAN -->
+<section data-s="plan">
+  <div class="map">
+    <div class="it"><div class="ico">1</div><b>Profil</b><p>Ton niveau en un geste, trois curseurs pour affiner.</p></div>
+    <div class="it"><div class="ico">2</div><b>Matériel</b><p>Toi (taille, poids, âge) et tes planches, avec le volume.</p></div>
+    <div class="it"><div class="ico">3</div><b>Affichage</b><p>Thème, taille du texte, unité du vent, place de l'océan, langue.</p></div>
+    <div class="it"><div class="ico">4</div><b>Écran principal</b><p>Quels encarts, dans quel ordre, et comment la semaine et le déroulé s'affichent.</p></div>
+    <div class="it"><div class="ico">5</div><b>Prévisions et données</b><p>Sources de prévision (automatique par défaut), journal de bord, sauvegarde.</p></div>
+    <div class="it"><div class="ico">6</div><b>Appli</b><p>Installer, widget, visite guidée, version.</p></div>
+  </div>
+  <div class="cut">
+    <h3>Ce qui disparaît ou devient automatique</h3>
+    <ul>
+      <li><b>Rafales gênantes, compter les rafales, clapot gênant :</b> calculés par l'app, plus à régler.</li>
+      <li><b>Les 13 nombres du profil personnalisé :</b> remplacés par trois curseurs lisibles.</li>
+      <li><b>Icônes par jour :</b> devient « Créneaux par jour », qui règle aussi le vent.</li>
+      <li><b>Quatre menus de modèles (vent et vagues, court et long terme) :</b> cachés sous « Avancé », automatique par défaut.</li>
+      <li><b>Boutons ▲ ▼ pour l'ordre des encarts :</b> une seule liste avec poignée et interrupteur.</li>
+      <li><b>Numéros « 1. 2. 3. » et textes d'explication longs :</b> une ligne d'aide au plus, le détail dans un « i ».</li>
+    </ul>
+  </div>
+</section>
+
+<!-- RÉGLAGES -->
+<section data-s="home" hidden>
+  <div class="phone">
+    <div class="top"><h2>Réglages</h2></div>
+    <div class="card">
+      <div class="row"><div class="ico">🏄</div><div class="t"><b>Profil</b><span>Intermédiaire</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="ico">🧍</div><div class="t"><b>Matériel</b><span>1,78 m · 72 kg · 3 planches</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="ico">🎨</div><div class="t"><b>Affichage</b><span>Sombre · Grand · km/h · Français</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="ico">▦</div><div class="t"><b>Écran principal</b><span>6 encarts · 3 créneaux par jour</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="ico">☁</div><div class="t"><b>Prévisions et données</b><span>Sources automatiques · journal</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="ico">📲</div><div class="t"><b>Appli</b><span>Installer · widget · aide</span></div><div class="chev">›</div></div>
+    </div>
+    <p class="grp">À propos</p>
+    <div class="card">
+      <div class="row"><div class="t"><b>Comment la note est calculée</b></div><div class="chev">›</div></div>
+      <div class="row"><div class="t"><b>Version</b></div><div class="v">1.0.211</div></div>
+    </div>
+  </div>
+  <p class="notes"><b>Une page, six lignes.</b> Chaque ligne résume son contenu, on voit l'état sans ouvrir.</p>
+</section>
+
+<!-- PROFIL -->
+<section data-s="profil" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Profil</h2></div>
+    <p class="grp">Ton niveau</p>
+    <div class="card">
+      <div class="lv" id="lv">
+        <button aria-pressed="false"><b>Débutant</b><span>Petites vagues, vent toléré</span></button>
+        <button aria-pressed="true"><b>Intermédiaire</b><span>0,8 à 1,6 m</span></button>
+        <button aria-pressed="false"><b>Confirmé</b><span>1 à 2,2 m</span></button>
+        <button aria-pressed="false"><b>Expert</b><span>1,5 m et plus</span></button>
+      </div>
+      <div class="row"><div class="t"><b>Régler avec 10 exemples</b><span>Un assistant ajuste le profil pour toi</span></div><div class="chev">›</div></div>
+    </div>
+    <p class="grp">Affiner</p>
+    <div class="card">
+      <div class="blk"><div class="lab">Vagues que tu aimes <span id="o1">0,8 – 1,6 m</span></div>
+        <input type="range" id="r1" min="3" max="30" value="16" aria-label="Taille idéale"><div class="rangeends"><span>Petit</span><span>Gros</span></div></div>
+      <div class="blk"><div class="lab">Tolérance au vent <span id="o2">Moyenne</span></div>
+        <input type="range" id="r2" min="0" max="4" value="2" aria-label="Tolérance au vent"><div class="rangeends"><span>Sensible</span><span>Tolérant</span></div></div>
+      <div class="row"><div class="t"><b>Vagues creuses (offshore fort)</b><span>Oui, ça me va</span></div><button class="sw" role="switch" aria-checked="true" aria-label="Vagues creuses"></button></div>
+    </div>
+  </div>
+  <p class="notes"><b>Trois réglages au lieu de treize.</b> Rafales et clapot sont gérés par le calcul. L'orientation de la plage n'est plus un réglage : chaque spot a la sienne, et elle sert à la note <i>et</i> à la couleur du vent.</p>
+</section>
+
+<!-- MATÉRIEL -->
+<section data-s="materiel" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Matériel</h2></div>
+    <p class="grp">Moi</p>
+    <div class="card"><div class="fld"><div><small>Taille</small><b>1,78 m</b></div><div><small>Poids</small><b>72 kg</b></div><div><small>Âge</small><b>34 ans</b></div></div>
+      <div class="row"><div class="t"><span>Sert à estimer le volume qu'il te faut.</span></div></div></div>
+    <p class="grp">Mes planches</p>
+    <div class="card">
+      <div class="row"><div class="t"><b>Shortboard 6'0</b><span>Thruster · 28,5 L</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="t"><b>Fish 5'8</b><span>Quad · 32 L</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="t"><b>Mid-length 7'2</b><span>Twin + trailer · 42 L</span></div><div class="chev">›</div></div>
+    </div>
+    <div style="margin-top:10px"><button class="btn pri">Ajouter une planche</button></div>
+  </div>
+  <p class="notes"><b>Même contenu qu'aujourd'hui, en deux blocs.</b> Le quiver reste partagé avec le journal de bord.</p>
+</section>
+
+<!-- AFFICHAGE -->
+<section data-s="affichage" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Affichage</h2></div>
+    <div class="card">
+      <div class="blk"><div class="lab">Thème</div><div class="seg" data-seg><button aria-pressed="false">Clair</button><button aria-pressed="true">Sombre</button><button aria-pressed="false">Auto</button></div></div>
+      <div class="blk"><div class="lab">Taille du texte</div><div class="seg" data-seg><button aria-pressed="false">Normal</button><button aria-pressed="true">Grand</button><button aria-pressed="false">Très grand</button></div></div>
+      <div class="blk"><div class="lab">Unité du vent</div><div class="seg" data-seg><button aria-pressed="true">km/h</button><button aria-pressed="false">nœuds</button><button aria-pressed="false">m/s</button></div></div>
+      <div class="blk"><div class="lab">Place de l'océan <span id="oc">35 %</span></div>
+        <input type="range" id="ocr" min="20" max="60" value="35" aria-label="Place de l'océan dans les graphiques"><div class="rangeends"><span>Plus de ciel</span><span>Plus d'eau</span></div></div>
+      <div class="row"><div class="t"><b>Langue</b></div><div class="v">Français</div><div class="chev">›</div></div>
+    </div>
+  </div>
+  <p class="notes"><b>Cinq réglages, une page, aucun texte d'explication.</b> Le curseur de l'océan règle la part d'eau dans les graphiques de la semaine et du jour (35 % par défaut), le reste est du ciel.</p>
+</section>
+
+<!-- ÉCRAN PRINCIPAL -->
+<section data-s="ecran" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Écran principal</h2></div>
+    <p class="grp">Encarts · glisse pour réordonner</p>
+    <div class="card">
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Prévisions de la semaine</b></div><button class="sw" role="switch" aria-checked="true" aria-label="Semaine"></button></div>
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Déroulé de la journée</b></div><button class="sw" role="switch" aria-checked="true" aria-label="Déroulé"></button></div>
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Houle</b></div><button class="sw" role="switch" aria-checked="true" aria-label="Houle"></button></div>
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Vent</b></div><button class="sw" role="switch" aria-checked="true" aria-label="Vent"></button></div>
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Vent et mer</b></div><button class="sw" role="switch" aria-checked="false" aria-label="Vent et mer"></button></div>
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Météo</b></div><button class="sw" role="switch" aria-checked="false" aria-label="Météo"></button></div>
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Heure par heure</b></div><button class="sw" role="switch" aria-checked="true" aria-label="Heure par heure"></button></div>
+      <div class="row"><span class="grip">⋮⋮</span><div class="t"><b>Bandeau « Maintenant »</b><span>Houle, vent, eau, marée</span></div><button class="sw" role="switch" aria-checked="true" aria-label="Maintenant"></button></div>
+    </div>
+    <p class="grp">Semaine</p>
+    <div class="card">
+      <div class="blk"><div class="lab">Créneaux par jour <span>règle aussi le vent</span></div><div class="seg" data-seg><button aria-pressed="false">1</button><button aria-pressed="false">2</button><button aria-pressed="true">3</button></div></div>
+      <div class="blk"><div class="lab">Étoiles</div><div class="seg" data-seg><button aria-pressed="false">Souple</button><button aria-pressed="true">Normal</button><button aria-pressed="false">Exigeant</button></div></div>
+    </div>
+    <p class="grp">Déroulé de la journée</p>
+    <div class="card">
+      <div class="blk"><div class="lab">Vent affiché</div><div class="seg" data-seg><button aria-pressed="true">2 h</button><button aria-pressed="false">Adaptatif</button><button aria-pressed="false">1 h</button></div></div>
+    </div>
+  </div>
+  <p class="notes"><b>Une liste, un interrupteur, une poignée.</b> Fini les flèches ▲ ▼ et la double liste (cocher puis ordonner). Le choix du vent du déroulé vit ici, et reste aussi à portée de doigt dans le déroulé.</p>
+</section>
+
+<!-- DONNÉES -->
+<section data-s="donnees" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Prévisions et données</h2></div>
+    <p class="grp">Sources de prévision</p>
+    <div class="card">
+      <div class="blk"><div class="seg" data-seg id="srcseg"><button aria-pressed="true">Automatique <span class="tag">conseillé</span></button><button aria-pressed="false">Avancé</button></div>
+        <p style="margin:8px 2px 0;font-size:12px;color:var(--muted)" id="srctxt">Le meilleur modèle est choisi selon le spot et l'échéance.</p></div>
+      <div class="adv" id="adv" hidden>
+        <div class="row"><div class="t"><b>Court terme · vent</b></div><div class="v">AROME</div><div class="chev">›</div></div>
+        <div class="row"><div class="t"><b>Court terme · vagues</b></div><div class="v">Meteo-France</div><div class="chev">›</div></div>
+        <div class="row"><div class="t"><b>Long terme · vent</b></div><div class="v">ECMWF</div><div class="chev">›</div></div>
+        <div class="row"><div class="t"><b>Long terme · vagues</b></div><div class="v">ECMWF WAM</div><div class="chev">›</div></div>
+      </div>
+    </div>
+    <p class="grp">Journal de bord</p>
+    <div class="card"><div class="btns"><button class="btn">Sauvegarder</button><button class="btn">Restaurer</button></div></div>
+    <p class="grp">Diagnostic</p>
+    <div class="card"><div class="row"><div class="t"><b>Journal d'actualisation</b><span>Dernière mise à jour 21:42</span></div><div class="chev">›</div></div></div>
+  </div>
+  <p class="notes"><b>Les quatre menus de modèles ne se voient plus par défaut.</b> Ils apparaissent seulement en mode Avancé.</p>
+</section>
+
+<!-- APPLI -->
+<section data-s="appli" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Appli</h2></div>
+    <div class="card">
+      <div class="row"><div class="ico">📲</div><div class="t"><b>Installer l'appli</b><span>Android (APK) ou raccourci du site</span></div><div class="chev">›</div></div>
+      <div class="row"><div class="ico">▣</div><div class="t"><b>Widget d'accueil</b><span>Épingler sur l'écran d'accueil</span></div><div class="chev">›</div></div>
+    </div>
+    <p class="grp">Aide</p>
+    <div class="card">
+      <div class="row"><div class="t"><b>Visite guidée</b></div><div class="chev">›</div></div>
+      <div class="row"><div class="t"><b>Écran de bienvenue</b></div><div class="chev">›</div></div>
+      <div class="row"><div class="t"><b>Version</b></div><div class="v">1.0.211</div></div>
+    </div>
+  </div>
+  <p class="notes"><b>Tout ce qui ne règle rien est regroupé ici,</b> hors des réglages de prévision.</p>
+</section>
+
+<!-- NOTE ET VENT -->
+<section data-s="note" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Comment la note est calculée</h2></div>
+    <div class="card">
+      <div class="chain">
+        <div class="st"><i>1</i><div><b>La houle</b><p>Énergie (hauteur × période), comparée aux vagues que tu aimes. Puis direction de la houle par rapport à la plage.</p></div></div>
+        <div class="st"><i>2</i><div><b>Le vent</b><p>Catégorie selon l'orientation réelle de la plage (offshore, travers, onshore), force avec la moitié des rafales, adoucie quand les vagues sont grosses, réglée par ta tolérance.</p></div></div>
+        <div class="st"><i>3</i><div><b>Le clapot</b><p>Une houle propre coiffée de mer de vent perd des points.</p></div></div>
+        <div class="st"><i>4</i><div><b>La note</b><p>De 0 à 100, puis les 5 segments, l'étoile et la couleur. <b>La marée n'entre pas dans la note.</b></p></div></div>
+      </div>
+    </div>
+    <p class="grp">Le vent a une seule règle</p>
+    <div class="card">
+      <div style="padding:12px 14px;font-size:13px;color:var(--muted)">La couleur d'un vent est le facteur vent de la note, pas un second calcul.
+        <div style="margin-top:8px;display:grid;gap:4px">
+          <div><span class="dot" style="background:#FDD835"></span>Jaune : le vent ne gêne pas (facteur 0,9 et plus)</div>
+          <div><span class="dot" style="background:var(--warn)"></span>Orange : il gêne un peu (0,6 à 0,9)</div>
+          <div><span class="dot" style="background:var(--bad)"></span>Rouge : il gâche la session (moins de 0,6)</div>
+        </div></div>
+      <div class="tw"><table>
+        <tr><th>Vent</th><th>Jaune</th><th>Orange</th><th>Rouge</th></tr>
+        <tr><td>Offshore</td><td>≤ 19</td><td>≤ 30</td><td>&gt; 30</td></tr>
+        <tr><td>Travers</td><td>≤ 9</td><td>≤ 16</td><td>&gt; 16</td></tr>
+        <tr><td>Onshore</td><td>≤ 5</td><td>≤ 15</td><td>&gt; 15</td></tr>
+      </table></div>
+      <div class="row"><div class="t"><span>Km/h, profil intermédiaire, vague de 1 m. Un profil plus tolérant ou de plus grosses vagues décalent ces seuils, et la couleur suit.</span></div></div>
+    </div>
+  </div>
+  <p class="notes"><b>C'est le point qui règle l'incohérence de tout à l'heure</b> (vent rouge et libellé « vent propre »). Ce tableau serait le contenu du « i » de la carte Vent. Les valeurs ci-dessus sont indicatives, à confirmer au calcul.</p>
+</section>
+
+</main>
+</div>
+
+<script>
+(function(){
+  var nav=document.getElementById('nav');
+  function show(p){
+    document.querySelectorAll('[data-s]').forEach(function(s){s.hidden=s.getAttribute('data-s')!==p});
+    nav.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.p===p?'true':'false')});
+    try{location.hash=p}catch(e){}
+  }
+  nav.addEventListener('click',function(e){var b=e.target.closest('button');if(b)show(b.dataset.p)});
+  var h='';try{h=(location.hash||'').slice(1)}catch(e){}
+  if(h&&document.querySelector('[data-s="'+h+'"]'))show(h);
+  document.addEventListener('click',function(e){
+    var sw=e.target.closest('.sw');if(sw){sw.setAttribute('aria-checked',sw.getAttribute('aria-checked')==='true'?'false':'true');return}
+    var b=e.target.closest('.seg button');
+    if(b){b.parentNode.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+      if(b.parentNode.id==='srcseg'){var adv=b.textContent.indexOf('Avancé')===0;document.getElementById('adv').hidden=!adv;
+        document.getElementById('srctxt').textContent=adv?'Choisis chaque modèle toi-même.':'Le meilleur modèle est choisi selon le spot et l’échéance.'}
+      return}
+    var lv=e.target.closest('#lv button');
+    if(lv){document.querySelectorAll('#lv button').forEach(function(x){x.setAttribute('aria-pressed',x===lv?'true':'false')})}
+  });
+  var r1=document.getElementById('r1'),o1=document.getElementById('o1');
+  function f1(){var v=+r1.value/10,a=Math.max(0.3,v-0.8),c=v;o1.textContent=a.toFixed(1).replace('.',',')+' – '+(c).toFixed(1).replace('.',',')+' m'}
+  r1.addEventListener('input',f1);f1();
+  var r2=document.getElementById('r2'),o2=document.getElementById('o2'),n2=['Très sensible','Sensible','Moyenne','Tolérant','Très tolérant'];
+  var ocr=document.getElementById('ocr');ocr.addEventListener('input',function(){document.getElementById('oc').textContent=ocr.value+' %'});
+  r2.addEventListener('input',function(){o2.textContent=n2[+r2.value]});
+})();
+</script>
