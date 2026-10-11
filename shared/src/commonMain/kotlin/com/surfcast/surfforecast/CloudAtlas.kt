@@ -1,22 +1,22 @@
 package com.surfcast.surfforecast
 
-// Généré par le script d'atlas (voir docs/DECISIONS.md) : rectangles des sprites dans l'atlas net (sky_atlas_nuages.webp, x2 par
-// rapport aux photos d'origine) et dans l'atlas flou de la brume (sky_atlas_flou.webp, taille d'origine).
+// Généré par le script d'atlas (voir docs/DECISIONS.md) : rectangles des sprites dans l'atlas net (sky_atlas_nuages.webp, taille d'origine,
+// réduit de moitié pour charger vite) et dans l'atlas flou de la brume (sky_atlas_flou.webp, taille d'origine).
 internal object CloudAtlas {
     /** x, y, largeur, hauteur dans l'atlas net ; x, y, largeur, hauteur dans l'atlas flou. */
     val rects: List<IntArray> = listOf(
-        intArrayOf(0, 0, 2316, 924, 0, 0, 1158, 462),
-        intArrayOf(2320, 0, 1283, 840, 1162, 0, 641, 420),
-        intArrayOf(0, 928, 1012, 821, 1807, 0, 506, 410),
-        intArrayOf(1016, 928, 1148, 482, 2317, 0, 574, 241),
-        intArrayOf(2168, 928, 616, 267, 2895, 0, 308, 133),
-        intArrayOf(2788, 928, 554, 237, 3207, 0, 277, 118),
-        intArrayOf(3346, 928, 462, 246, 3488, 0, 231, 123),
-        intArrayOf(3812, 928, 284, 201, 3723, 0, 142, 100),
-        intArrayOf(0, 1753, 237, 201, 3869, 0, 118, 100),
-        intArrayOf(241, 1753, 240, 172, 0, 466, 120, 86),
-        intArrayOf(485, 1753, 243, 187, 124, 466, 121, 93),
-        intArrayOf(732, 1753, 299, 121, 249, 466, 149, 60)
+        intArrayOf(0, 0, 1158, 462, 0, 0, 1158, 462),
+        intArrayOf(1160, 0, 641, 420, 1162, 0, 641, 420),
+        intArrayOf(0, 464, 506, 410, 1807, 0, 506, 410),
+        intArrayOf(508, 464, 574, 241, 2317, 0, 574, 241),
+        intArrayOf(1084, 464, 308, 133, 2895, 0, 308, 133),
+        intArrayOf(1394, 464, 277, 118, 3207, 0, 277, 118),
+        intArrayOf(1673, 464, 231, 123, 3488, 0, 231, 123),
+        intArrayOf(1906, 464, 142, 100, 3723, 0, 142, 100),
+        intArrayOf(0, 876, 118, 100, 3869, 0, 118, 100),
+        intArrayOf(120, 876, 120, 86, 0, 466, 120, 86),
+        intArrayOf(242, 876, 121, 93, 124, 466, 121, 93),
+        intArrayOf(366, 876, 149, 60, 249, 466, 149, 60)
     )
     /** Aire d'origine (photo non agrandie) : classe les sprites en grands, moyens et petits. */
     val sprites: List<CloudSprite> = listOf(
