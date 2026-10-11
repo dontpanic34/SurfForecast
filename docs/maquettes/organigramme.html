@@ -128,6 +128,7 @@ var Q={
  freq:{n:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine'],info:true},
  season:{n:'Sur l\'année, tu surfes…',o:['Toute l\'année','Surtout l\'été (ou en vacances)'],info:true},
  what:{n:'Tu surfes…',o:['La mousse seulement','Le lisse']},
+ board:{n:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse (type Décathlon)','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard'],lim:[0,4,4,4]},
  barre:{n:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux','Taille','Poitrine','Tête','Au-dessus de la tête'],base:[0,0,1,2,3,4]},
  feel:{n:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment']},
  rameBarre:{n:'Ta rame pour passer la barre',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite','Je n\'avance pas aussi vite que je devrais'],lim:[4,3,1,2]},
@@ -138,12 +139,12 @@ var Q={
  peak:{n:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['Je me place là où il y a du monde','Je repère la vague tout seul, et j\'y vais si c\'est accessible','Je sais où est le pic, et j\'y vais tout le temps'],lim:[1,2,4]},
  goal:{n:'Sur la vague, tu cherches surtout à…',o:['Te lever, et garder la mousse le plus longtemps possible','Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Encore au-dessus (à définir avec toi)'],lim:[0,1,2,3,4]}
 };
-var FLOW=[['since','freq','season','rameVague','tk','want','goal'],
-          ['since','freq','season','barre','feel','rameBarre','rameVague','tk','waves','peak','goal']];
+var FLOW=[['since','freq','season','board','rameVague','tk','want','goal'],
+          ['since','freq','season','board','barre','feel','rameBarre','rameVague','tk','waves','peak','goal']];
 
 /* ---------- La règle : la marche la plus basse ---------- */
 function limitsOf(a){
-  var L=[{k:'goal',v:a.goal,t:'ce que tu cherches'},{k:'rameVague',v:Q.rameVague.lim[a.rameVague],t:'ta rame pour prendre la vague'}];
+  var L=[{k:'goal',v:a.goal,t:'ce que tu cherches'},{k:'rameVague',v:Q.rameVague.lim[a.rameVague],t:'ta rame pour prendre la vague'},{k:'board',v:Q.board.lim[a.board],t:'ta planche en mousse'}];
   if(a.what===0){L.push({k:'what',v:(a.tk===0&&a.want===0)?1:0,t:'tu ne surfes que la mousse'})}
   else{
     var bar=Q.barre.base[a.barre];if(a.feel!==0)bar=Math.max(0,bar-1);
@@ -219,9 +220,9 @@ lb.onclick=function(e){var b=e.target.closest('button');if(b)showLevel(+b.datase
 document.getElementById('ruleBody').innerHTML='<p style="margin:0 0 8px;font-size:14px"><b>Le niveau est la marche la plus basse</b> parmi ce que tu vises et chacune des limites posées par tes réponses.</p><p style="margin:0;font-size:13px;color:var(--muted)">Exemple : tu vises Confirmé, tu surfes l\'épaule, tu repères la vague tout seul, tu passes la barre jusqu\'à poitrine, mais tu fatigues vite pour la passer. Les limites sont Confirmé, Confirmé, Confirmé, Confirmé et Intermédiaire (la rame) : le niveau est <b>Intermédiaire</b>. Depuis quand, fréquence et saison ne changent pas le niveau.</p>';
 document.getElementById('overBody').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Deux chemins seulement, qui se rejoignent à « ce que tu cherches ». La rame vient avant le take-off : on réussit un take-off si on a assez de vitesse.</p><div class="cols">'+[0,1].map(function(b){return '<div class="branch"><div class="bt">'+(b===0?'La mousse seulement':'Le lisse')+'</div>'+FLOW[b].map(function(id){return '<div class="nd'+(Q[id].info?' info':'')+'"><div class="nq">'+Q[id].n+'</div></div>'}).join('<div class="ar">↓</div>')+'</div>'}).join('')+'</div>';
 (function(){
-  var a={what:1,barre:4,feel:0,rameBarre:0,rameVague:0,tk:0,waves:[2],peak:2,goal:3};
+  var a={what:1,board:3,barre:4,feel:0,rameBarre:0,rameVague:0,tk:0,waves:[2],peak:2,goal:3};
   var el=document.getElementById('sel');
-  var ORDER=['what','barre','feel','rameBarre','rameVague','tk','want','waves','peak','goal'];
+  var ORDER=['what','board','barre','feel','rameBarre','rameVague','tk','want','waves','peak','goal'];
   function act(id){if(['barre','feel','rameBarre','waves','peak'].indexOf(id)>=0)return a.what===1;if(id==='want')return a.what===0;return true}
   function draw(){
     el.innerHTML=ORDER.filter(act).map(function(id){var q=Q[id];return '<div class="qq"><p>'+q.n+'</p><div class="chips">'+q.o.map(function(o,i){var on=id==='waves'?a.waves.indexOf(i)>=0:a[id]===i;return '<button class="chip" data-q="'+id+'" data-i="'+i+'" aria-pressed="'+on+'">'+o+'</button>'}).join('')+'</div></div>'}).join('');

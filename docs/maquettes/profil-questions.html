@@ -186,6 +186,7 @@ var STEPS=[
  {id:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine']},
  {id:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Surtout l\'été (ou en vacances)']},
  {id:'what',q:'Tu surfes…',sub:'Celui qui surfe le lisse surfe aussi la mousse.',o:['La mousse seulement','Le lisse']},
+ {id:'board',q:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse (type Décathlon)','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard']},
  {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux','Taille','Poitrine','Tête','Au-dessus de la tête'],when:function(a){return a.what===1}},
  {id:'feel',q:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],
    osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===1}},
@@ -207,6 +208,7 @@ function compute(){
   var L=[];
   L.push({v:ans.goal,t:'ce que tu cherches'});
   L.push({v:[4,2,1][ans.rameVague],t:'ta rame pour prendre la vague'});
+  L.push({v:[0,4,4,4][ans.board],t:'ta planche en mousse'});
   if(ans.what===0){L.push({v:(ans.tk===0&&ans.want===0)?1:0,t:'tu ne surfes que la mousse'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')})}
   else{
     var bar=[0,0,1,2,3,4][ans.barre];if(ans.feel!==0)bar=Math.max(0,bar-1);
