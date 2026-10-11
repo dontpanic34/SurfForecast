@@ -80,3 +80,8 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - Le niveau s'affiche en barre qui se remplit avec le nom du niveau, sans chiffre.
 - 9 tranches égales (16 points par niveau principal, 5 par « + »). « Avancé + » existe.
 - Question « Tes manœuvres » pour distinguer Avancé et Expert.
+
+## Questionnaire : retours du 14 octobre
+- Plus de question sur la rame pour prendre la vague (doublon).
+- Pas de nom de marque dans les réponses.
+- Le niveau (note) et la tolérance aux conditions (motivation, vent, onshore) sont deux choses séparées : la tolérance ne change pas la note, elle sert aux recommandations.

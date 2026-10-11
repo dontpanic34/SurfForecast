@@ -134,6 +134,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .xp b{position:absolute;top:0;bottom:0;width:2px;background:var(--surface);opacity:.9}
 .xpl{display:flex;justify-content:space-between;margin:0 14px;font-size:10.5px;color:var(--muted)}
 .res .nm{font-size:24px;font-weight:800}
+.res .sc{font-size:12px;color:var(--muted);margin-top:2px}
+.next{margin:0 14px 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px}
+.tol .q2{padding:12px 14px;border-top:1px solid var(--line)}
+.tol .q2 p{margin:0 0 8px;font-weight:700;font-size:14px}
+.tol .q2 button{display:block;width:100%;text-align:left;margin-top:6px}
 .res .df{margin:8px 0 0;font-size:14px}
 .res .goal{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--surface2);font-size:13.5px}
 .why{padding:10px 14px 14px;color:var(--muted);font-size:12.5px}
@@ -164,12 +169,15 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
     <p class="grp">Ton profil</p>
     <div class="card">
       <div class="xp" id="rxp" role="img" aria-label="Barre de niveau"><i id="rxpf" style="width:0"></i></div><div class="xpl" id="rxpl"></div>
-      <div class="res"><div class="nm" id="rname"></div><p class="df" id="rdef"></p><div class="goal" id="rgoal"></div></div>
-      <div class="why" id="rwhy"></div>
-      <div class="blk" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn" id="dn">− Un cran en dessous</button><button class="btn" id="up">+ Un cran au-dessus</button></div>
+      <div class="res"><div class="nm" id="rname"></div><div class="sc" id="rsc"></div><p class="df" id="rdef"></p><div class="goal" id="rgoal"></div></div>
+      <div class="why" id="rwhy"></div><div class="next" id="rnext"></div>
+      <div class="blk" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn" id="dn">− Une marche en dessous</button><button class="btn" id="up">+ Une marche au-dessus</button></div>
     </div>
     <p class="grp">Tes réponses</p>
     <div class="card rec" id="rec"></div>
+    <p class="grp">Ta tolérance aux conditions</p>
+    <div class="card tol" id="tol"></div>
+    <p class="notes" style="margin:6px 2px 10px">Deux questions de plus, <b>indépendantes du niveau</b> : elles ne changent pas ta note, elles servent aux recommandations (couleurs des créneaux, choix des heures).</p>
     <p class="grp">Les cinq niveaux</p>
     <div class="card"><details class="lv5" id="lv5"><summary>Voir les définitions</summary></details></div>
     <div style="margin-top:10px;display:grid;gap:8px"><button class="btn pri" id="ok">C'est mon niveau</button><button class="btn" id="redo">Refaire le questionnaire</button></div>
@@ -187,19 +195,18 @@ var LEVELS=[
 var TK=['En un seul temps, tout le temps','En un seul temps, souvent','Parfois en un seul temps, ou en plusieurs temps'];
 var STEPS=[
  {id:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']},
- {id:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine']},
- {id:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Surtout l\'été (ou en vacances)']},
+ {id:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine','Plusieurs fois par jour']},
+ {id:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Quand l\'eau est bonne']},
  {id:'what',q:'Tu surfes…',sub:'Celui qui surfe le lisse surfe aussi la mousse.',o:['La mousse seulement','Le lisse']},
- {id:'board',q:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse (type Décathlon)','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard']},
+ {id:'board',q:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard']},
  {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===1}},
  {id:'feel',q:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],
    osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===1}},
- {id:'rameVague',q:'Ta rame pour prendre la vague',sub:'Tu as assez de vitesse au moment du take-off ?',o:['Oui, à chaque fois','Pas toujours : je rate des vagues faute de vitesse','Souvent non : je manque de vitesse']},
  {id:'tk',q:'Ton take-off',sub:'Tu pars en un seul temps ?',o:TK,dyn:function(a){return a.what===0?'Dans la mousse, ton take-off':'Dans le lisse, ton take-off'}},
  {id:'want',q:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
  {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser. Les reformes et l\'épaule, c\'est plutôt la première réponse.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===1}},
- {id:'goal',q:'Sur la vague, tu cherches surtout à…',o:LEVELS.slice(1).map(function(l){return l.goal}),when:function(a){return a.what===1}},
- {id:'man',q:'Tes manœuvres',sub:'Les manœuvres d\'un expert : tu les fais ?',o:['J\'en apprends encore : j\'en réussis certaines, pas tout le temps','Je sais déjà en faire, mais je ne suis pas régulier : j\'ai encore de la marge','Je les fais toutes, c\'est acquis : je les perfectionne'],when:function(a){return a.what===1&&a.goal>=2}}
+ {id:'goal',q:'Sur la vague, tu cherches surtout à…',o:['Réussir tes take-offs','Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques','Devenir de plus en plus radical, critique et engagé','Affiner ton surf : le style, la précision, chaque détail'],when:function(a){return a.what===1}},
+ {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['J\'en apprends encore : certaines passent, pas à chaque fois','Je les tente et ça passe de mieux en mieux, mais pas encore à tous les coups','Elles sont acquises : je travaille surtout les détails, le style, la précision'],when:function(a){return a.what===1&&a.goal>=2}}
 ];
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
@@ -213,8 +220,7 @@ var BANDS=[{n:'Débutant',a:0,b:16,L:0},{n:'Débutant +',a:16,b:21,L:0},{n:'Inte
 function bandIndex(L,plus){return L===4?8:L*2+(plus?1:0)}
 function compute(){
   var L=[];
-  L.push({v:[4,2,1][ans.rameVague],t:'ta rame pour prendre la vague'});
-  L.push({v:[0,4,4,4][ans.board],t:'ta planche en mousse'});
+   L.push({v:[0,4,4,4][ans.board],t:'ta planche en mousse'});
   var forcePlus=false;
   if(ans.what===0){L.push({v:0,t:'tu ne surfes que la mousse'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
   else{
@@ -227,17 +233,19 @@ function compute(){
   }
   var m=4;L.forEach(function(x){if(x.v!==undefined&&!isNaN(x.v))m=Math.min(m,x.v)});
   var bind=L.filter(function(x){return x.v===m});
-  var lvl=Math.max(0,Math.min(4,m+adj));
-  var plus=((ans.what===1&&bind.length===1&&m<=3)||forcePlus)&&adj===0&&lvl<4;
+  var baseL=Math.max(0,Math.min(4,m));
+  var plus0=((ans.what===1&&bind.length===1&&m<=3)||forcePlus)&&baseL<4;
   // Position : la part des limites qui sont déjà au-dessus de la plus basse remplit la tranche.
   var above=L.filter(function(x){return x.v>m}).length/L.length;
-  var bi=bandIndex(lvl,plus),B=BANDS[bi],score;
-  if(lvl===4)score=100;
+  var bi0=bandIndex(baseL,plus0),bi=Math.max(0,Math.min(8,bi0+adj)),B=BANDS[bi],lvl=B.L,plus=bi%2===1&&bi<8,score;
+  if(bi===8)score=100;
+  else if(adj!==0)score=(B.a+B.b)/2;
   else if(ans.what===0)score=forcePlus?B.a+3:B.a+[5,11,16][ans.tk]*(B.b-B.a)/16;
   else score=B.a+Math.min(0.98,above)*(B.b-B.a);
   var why='Le niveau est la marche la plus basse : '+bind.map(function(x){return x.t}).join(', ')+'.';
   if(plus)why+=(forcePlus?' Ton take-off est sûr et tu veux passer au lisse : tu es « Débutant + ».':' Un seul point te retient : tu es « '+LEVELS[lvl].n+' + ».');
-  return {L:lvl,plus:plus,band:B.n,score:Math.round(score),why:[why]};
+  var nxt=bi<8?BANDS[bi+1].n:null;
+  return {L:lvl,plus:plus,band:B.n,score:Math.round(score),why:[why],nxt:nxt,hold:bind.map(function(x){return x.t}),bi:bi};
 }
 function draw(){
   var list=active(),st=list[Math.min(cur,list.length-1)];
@@ -260,17 +268,22 @@ function drawResult(){
   document.getElementById('rxp').querySelectorAll('b').forEach(function(x){x.remove()});[16,37,58,79].forEach(function(t){var b=document.createElement('b');b.style.left=t+'%';document.getElementById('rxp').appendChild(b)});
   document.getElementById('rxpl').innerHTML='<span>Débutant</span><span>Intermédiaire</span><span>Confirmé</span><span>Avancé</span><span>Expert</span>';
   document.getElementById('rname').textContent=r.band+(adj?' (corrigé)':'');
-  document.getElementById('rdef').textContent=L.def;
+  document.getElementById('rdef').textContent=L.def;document.getElementById('rsc').textContent='Score '+r.score+' / 100';document.getElementById('rnext').innerHTML=r.nxt?'<b>Pour passer à « '+r.nxt+' »</b>, ce qui te retient : '+r.hold.join(' ; ')+'.':'<b>Tu es au sommet de l\'échelle.</b> Tu perfectionnes.';
   document.getElementById('rgoal').innerHTML='<b>Sur la vague, tu cherches :</b> '+L.goal;
   document.getElementById('rwhy').textContent=r.why.join(' ');
   var rows=active().map(function(st){var v=ans[st.id];var t=st.multi?(v||[]).map(function(i){return st.o[i]}).join(', ')||'—':(v===undefined?'—':st.o[v]);return '<div class="r"><span>'+title(st).replace(/ \?$/,'')+'</span><b>'+t+'</b></div>'}).join('');
   document.getElementById('rec').innerHTML=rows;
   document.getElementById('lv5').innerHTML='<summary>Voir les définitions</summary>'+LEVELS.map(function(l,i){return '<p><b>'+(i+1)+' · '+l.n+'</b> — '+l.def+'</p>'}).join('');
 }
+var TOL=[{q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},{q:'Ça souffle onshore, ou c\'est dur physiquement…',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']}];
+var tol={};
+function drawTol(){document.getElementById('tol').innerHTML=TOL.map(function(t,k){return '<div class="q2"><p>'+t.q+'</p>'+t.o.map(function(o,i){return '<button class="ans" data-k="'+k+'" data-i="'+i+'" aria-pressed="'+(tol[k]===i)+'">'+o+'</button>'}).join('')+'</div>'}).join('')}
+document.getElementById('tol').onclick=function(e){var b=e.target.closest('button');if(!b)return;tol[+b.dataset.k]=+b.dataset.i;drawTol()};
+drawTol();
 document.getElementById('prev').onclick=function(){if(cur>0)cur--;draw()};
 document.getElementById('next').onclick=function(){advance()};
-document.getElementById('up').onclick=function(){if(compute().L<4){adj++;drawResult()}};
-document.getElementById('dn').onclick=function(){if(compute().L>0){adj--;drawResult()}};
+document.getElementById('up').onclick=function(){if(compute().bi<8){adj++;drawResult()}};
+document.getElementById('dn').onclick=function(){if(compute().bi>0){adj--;drawResult()}};
 document.getElementById('redo').onclick=function(){ans={};cur=0;adj=0;done=false;draw()};
 document.getElementById('ok').onclick=function(){this.textContent='Enregistré (maquette)'};
 document.getElementById('back').onclick=function(){if(done){done=false;cur=active().length-1;draw()}};
