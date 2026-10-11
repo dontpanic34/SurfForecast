@@ -3,7 +3,8 @@
 ## Comment travailler avec le propriétaire
 - **Maquette d'abord** (HTML), puis validation du propriétaire, puis code. On ne code pas avant le « go » sur la maquette.
 - **Rien n'est mis en ligne sans « go » explicite.** « En ligne » veut dire le site ET l'appli (APK).
-- **Règle du 12 octobre 2026 : quand le propriétaire dit « go », on publie et on met en ligne tout de suite, sans redemander.** Ordre inchangé : `unified` d'abord (appli), puis `web` (site), en vérifiant à chaque étape que la construction est verte (jamais de poussée sur `web` si `unified` est rouge). Sans « go », rien n'est publié.
+- **Règle du 12 octobre 2026 : quand le propriétaire dit « go », on publie et on met en ligne tout de suite, sans redemander.** Sans « go », rien n'est publié.
+- **Ordre de publication (changé le 12 octobre 2026) : `web` (le site) d'abord, `unified` (l'appli) seulement si le propriétaire le demande.** Cela gagne du temps. Attention : la construction du site fabrique l'APK à partir de `unified` ; tant que `unified` n'est pas poussé, l'APK téléchargeable sur surflog.fr reste celui de la dernière version de `unified`. Pour les deux branches : reprendre les commits par cherry-pick (les historiques divergent), vérifier que le code est identique à celui validé, et contrôler que la construction est verte.
 - Pas de compilation en local possible : on compile et teste par l'intégration continue (`workflow_dispatch` de `build-kmp.yml` sur une branche de travail ; le déploiement ne se fait que pour les branches `web` et `unified`).
 - Une publication = `unified` (fusion de la branche de travail) puis `web` (avance rapide). Les pushs sur ces branches compilent et testent avant de déployer.
 - Parler simplement, en français, sans jargon.
