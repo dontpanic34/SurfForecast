@@ -1015,6 +1015,7 @@ fun DynamicCardsSection(
                                 selectedIndex = selectedIndex,
                                 surferLevel = surferLevel,
                                 windUnit = viewModel.windUnit,
+                                idealSwellDirection = idealSwellDirection,
                                 weeklyDensity = viewModel.weeklyDensity,
                                 weeklyWindMode = viewModel.weeklyWindMode,
                                 primaryColor = primaryColor,

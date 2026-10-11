@@ -39,10 +39,10 @@ data class SlotRating(
 /** Courbes du facteur vent (de 0 à 1) selon la vitesse effective (km/h) : offshore, travers, onshore. */
 private val windCurves: Map<String, List<Pair<Double, Double>>> = mapOf(
     "offshore" to listOf(0.0 to 1.0, 15.0 to 1.0, 25.0 to 0.75, 35.0 to 0.45, 45.0 to 0.25, 55.0 to 0.15),
-    // Vent de travers (side-shore) : plus sévère qu'avant (Surf-Forecast / Yadusurf le pénalisent tôt) ; 12 km/h ≈ 0,8.
-    "cross" to listOf(0.0 to 1.0, 6.0 to 1.0, 12.0 to 0.8, 20.0 to 0.5, 30.0 to 0.25, 45.0 to 0.1),
-    // Onshore : adouci (sur la côte atlantique il y en a souvent) : 14 km/h reste correct, 20 km/h médiocre, 30 km/h mauvais.
-    "onshore" to listOf(0.0 to 0.95, 8.0 to 0.88, 14.0 to 0.65, 20.0 to 0.42, 30.0 to 0.15, 40.0 to 0.0)
+    // Vent de côté : propre jusqu'à environ 12 km/h ressentis, il gêne ensuite (18 km/h : 0,88 ; 24 km/h : 0,65).
+    "cross" to listOf(0.0 to 1.0, 12.0 to 1.0, 18.0 to 0.88, 24.0 to 0.65, 32.0 to 0.4, 45.0 to 0.15),
+    // Vent de mer : propre sans vent, il abîme la vague dès 10 km/h (14 km/h : 0,62 ; 20 km/h : 0,4 ; 30 km/h : 0,15).
+    "onshore" to listOf(0.0 to 1.0, 6.0 to 0.95, 10.0 to 0.82, 14.0 to 0.62, 20.0 to 0.4, 30.0 to 0.15, 40.0 to 0.0)
 )
 
 internal fun interpolate(x: Double, points: List<Pair<Double, Double>>): Double {
@@ -190,7 +190,9 @@ fun calculateSlotRating(
     surferLevel: String,
     isHighTide: Boolean = false,
     tidePreference: String = "any",
-    tide: DailyTideInfo? = null
+    tide: DailyTideInfo? = null,
+    // L'heure telle qu'elle est affichée (vent réel) quand [hourlyModel] porte la mémoire du vent : sert à le dire dans la phrase.
+    displayedWind: HourlyUiModel? = null
 ): SlotRating {
     val h = hourlyModel.waveHeight
     val t = hourlyModel.wavePeriod
@@ -233,18 +235,8 @@ fun calculateSlotRating(
     // Clapot (mer de vent) : une houle propre coiffée de clapot est moins bonne qu'une houle seule.
     val chopF = chopFactor(h, hourlyModel.windWaveHeight, profile.chopThreshold)
     score *= chopF
-    // Vent « ressenti » sur l'eau : les rafales comptent à moitié. Plus la vague est grosse, moins le vent la gêne
-    // (les faces sont assez hautes pour que 16 km/h restent surfables à 1,5 m).
-    val windKmh = effectiveWindKmh(hourlyModel, if (profile.countGusts) GUST_WEIGHT else 0.0) / windSizeDivisor(h)
-    // La tolérance au vent décale les courbes : un profil tolérant « voit » moins de vent.
-    val scaledWind = if (windCategory == "onshore") windKmh * 12.0 / profile.onshoreMax else windKmh * 25.0 / profile.windTolerance
-    val categoryFactor = interpolate(scaledWind, windCurves.getValue(windCategory))
-    // Direction : un débutant (mousse) s'en moque, un confirmé / expert cherche l'offshore qui creuse la vague.
-    val neutralFactor = interpolate(windKmh * 25.0 / profile.windTolerance, windCurves.getValue("offshore"))
-    // L'onshore, lui, abîme la vague pour tout le monde (tolérance [SurfProfile.onshoreMax]) : seule la différence
-    // offshore / travers est modulée par le niveau.
-    val windFactor = if (windCategory == "onshore") categoryFactor
-    else neutralFactor + (categoryFactor - neutralFactor) * profile.directionMatters
+    // Vent « ressenti » sur l'eau (voir [windFactorOf]).
+    val windFactor = windFactorOf(hourlyModel, h, profile, windCategory)
     score *= windFactor
     // Rafales fortes : mauvaises pour tout le monde, quelle que soit la direction.
     val gust = hourlyModel.windGustKmh
@@ -270,16 +262,58 @@ fun calculateSlotRating(
         else -> ConditionKind.NORMAL
     }
     val limits = ScoreLimits(fit, windFactor, gustF, chopF, periodF, directionF)
-    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits))
+    // La note a retenu un vent qui gêne alors que le vent réel affiché est propre : c'est la mémoire du vent qui parle.
+    val windMemory = displayedWind != null && windFactor < WIND_CLEAN &&
+        windFactorOf(displayedWind, h, profile, windCategoryFor(displayedWind.windDirectionStr, idealSwellDirection)) >= WIND_CLEAN
+    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits, windMemory))
 }
 
-/** Les rafales comptent à moitié de leur écart avec le vent moyen. */
-const val GUST_WEIGHT = 0.5
+/** Vent ressenti : le vent moyen plus cette part de l'écart avec les rafales (35 % : 8 km/h moyen et 22 km/h de rafales donnent 13 km/h). */
+const val GUST_WEIGHT = 0.35
 private const val TOO_SMALL_RATIO = 0.85
 private const val TOO_WINDY_FACTOR = 0.4
 const val WHY_TOO_SMALL = "Taille limite"
 const val WHY_TOO_BIG = "Gros jour, à jauger sur place"
 const val WHY_TOO_HOLLOW = "Creux et puissant"
+const val WHY_WIND_MEMORY = "Mer encore marquée par le vent d'avant"
+
+/** Facteur de vent à partir duquel le vent est « propre » (jaune), puis « gêne » (orange) jusqu'à [WIND_STRONG], « fort » (rouge) en dessous. */
+const val WIND_CLEAN = 0.9
+const val WIND_STRONG = 0.6
+
+
+/**
+ * Facteur de vent (de 0 à 1) d'une heure : le vent ressenti (rafales comprises, atténué quand la vague est grosse) lu dans la
+ * courbe de sa direction (offshore, travers, onshore), selon le profil. Sert à la note, à la phrase et à la couleur du vent.
+ */
+internal fun windFactorOf(hour: HourlyUiModel, waveHeight: Double, profile: SurfProfile, windCategory: String): Double {
+    val windKmh = effectiveWindKmh(hour, if (profile.countGusts) GUST_WEIGHT else 0.0) / windSizeDivisor(waveHeight)
+    // La tolérance au vent décale les courbes : un profil tolérant « voit » moins de vent.
+    val scaledWind = if (windCategory == "onshore") windKmh * 12.0 / profile.onshoreMax else windKmh * 25.0 / profile.windTolerance
+    val categoryFactor = interpolate(scaledWind, windCurves.getValue(windCategory))
+    // Direction : un débutant (mousse) s'en moque, un confirmé / expert cherche l'offshore qui creuse la vague.
+    val neutralFactor = interpolate(windKmh * 25.0 / profile.windTolerance, windCurves.getValue("offshore"))
+    // L'onshore, lui, abîme la vague pour tout le monde (tolérance [SurfProfile.onshoreMax]) : seule la différence
+    // offshore / travers est modulée par le niveau.
+    return if (windCategory == "onshore") categoryFactor else neutralFactor + (categoryFactor - neutralFactor) * profile.directionMatters
+}
+
+/** Facteur de vent d'une heure affichée (vent réel, sans mémoire) pour le spot orienté vers [beachFacing]. */
+fun windFeelFactor(hour: HourlyUiModel, beachFacing: Int?, surferLevel: String): Double =
+    windFactorOf(hour, hour.waveHeight, profileFor(surferLevel), windCategoryFor(hour.windDirectionStr, beachFacing))
+
+/** Le chiffre de vent affiché : le vent ressenti, arrondi. */
+fun windFeelKmh(hour: HourlyUiModel): Int = effectiveWindKmh(hour).roundToInt()
+
+/** Couleur du vent d'une heure : jaune (propre), orange (gêne) ou rouge (fort), par la même règle que la phrase et la note. */
+fun windFeelColor(hour: HourlyUiModel, beachFacing: Int?, surferLevel: String): androidx.compose.ui.graphics.Color {
+    val f = windFeelFactor(hour, beachFacing, surferLevel)
+    return when {
+        f >= WIND_CLEAN -> SurfUnitsHelper.WIND_YELLOW
+        f >= WIND_STRONG -> SurfUnitsHelper.WIND_ORANGE
+        else -> SurfUnitsHelper.WIND_RED
+    }
+}
 
 /** Diviseur du vent selon la hauteur : 1 sous 1 m, jusqu'à 1,6 pour les grosses vagues. */
 private fun windSizeDivisor(heightM: Double): Double = heightM.pow(0.9).coerceIn(0.8, 1.6)
@@ -294,7 +328,7 @@ private const val STRONG_LIMIT = 0.55
  * Phrase courte qui dit pourquoi la note est ce qu'elle est (voir les maquettes du profil) : ce qui pèse vraiment
  * (taille, vent, rafales, clapot, période, direction de la houle), ou « Bonne taille, vent propre » quand rien ne pèse.
  */
-private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits): String = when (kind) {
+private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, windMemory: Boolean = false): String = when (kind) {
     ConditionKind.TOO_SMALL -> WHY_TOO_SMALL
     ConditionKind.TOO_WINDY -> when (windCategory) {
         "onshore" -> "Onshore abîme la vague"
@@ -308,17 +342,24 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits): S
         else -> "Gros, vent de côté"
     }
     ConditionKind.NORMAL -> {
-        val factors = listOf("size" to l.size, "wind" to l.wind, "gusts" to l.gusts, "chop" to l.chop, "period" to l.period, "direction" to l.direction)
-        val worst = factors.minByOrNull { it.second }!!
-        if (worst.second >= MINOR_LIMIT) {
-            if (l.wind >= 0.9) "Bonne taille, vent propre" else "Bonne taille, vent léger"
+        // (nom, facteur, seuil « un peu », seuil « fort ») : le vent suit la règle du vent, les autres facteurs 0,85 / 0,55.
+        class Limit(val name: String, val value: Double, val minor: Double, val strong: Double)
+        val factors = listOf(
+            Limit("size", l.size, MINOR_LIMIT, STRONG_LIMIT), Limit("wind", l.wind, WIND_CLEAN, WIND_STRONG),
+            Limit("gusts", l.gusts, MINOR_LIMIT, STRONG_LIMIT), Limit("chop", l.chop, MINOR_LIMIT, STRONG_LIMIT),
+            Limit("period", l.period, MINOR_LIMIT, STRONG_LIMIT), Limit("direction", l.direction, MINOR_LIMIT, STRONG_LIMIT)
+        )
+        val worst = factors.maxByOrNull { it.minor - it.value }!!
+        if (worst.minor - worst.value <= 0.0) {
+            "Bonne taille, vent propre"
         } else {
-            val strong = worst.second < STRONG_LIMIT
-            when (worst.first) {
+            val strong = worst.value < worst.strong
+            when (worst.name) {
                 "size" -> if (strong) "Taille limite" else "Taille un peu juste"
-                "wind" -> when (windCategory) {
-                    "onshore" -> if (strong) "Onshore, gâche la vague" else "Un peu de vent de mer"
-                    "cross" -> if (strong) "Vent de côté fort" else "Vent de côté qui gêne"
+                "wind" -> when {
+                    windMemory -> WHY_WIND_MEMORY
+                    windCategory == "onshore" -> if (strong) "Onshore, gâche la vague" else "Un peu de vent de mer"
+                    windCategory == "cross" -> if (strong) "Vent de côté fort" else "Vent de côté qui gêne"
                     else -> if (strong) "Offshore trop fort" else "Offshore un peu fort"
                 }
                 "gusts" -> if (strong) "Rafales fortes" else "Des rafales gênent"

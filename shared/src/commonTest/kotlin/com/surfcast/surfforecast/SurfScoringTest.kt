@@ -257,7 +257,7 @@ class SurfScoringTest {
         val calm = calculateSlotScore(hour(10, windKmh = 12, windDir = "E"), 275, "intermediate", false)
         val gusty = calculateSlotScore(hour(10, windKmh = 12, windDir = "E", gustKmh = 40), 275, "intermediate", false)
         assertTrue(gusty < calm, "rafales ($gusty) < calme ($calm)")
-        assertEquals(12.0 + 0.5 * (40 - 12), effectiveWindKmh(hour(10, windKmh = 12, gustKmh = 40)))
+        assertEquals(12.0 + 0.35 * (40 - 12), effectiveWindKmh(hour(10, windKmh = 12, gustKmh = 40)))
     }
 
     @Test
