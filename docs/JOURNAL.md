@@ -107,3 +107,4 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 ## 15 octobre 2026 : maquette Matériel et revue du volume (maquette, pas en ligne)
 - `docs/maquettes/materiel.html` : Matériel verrouillé tant que le profil n'est pas rempli ; « Ma pratique » (depuis, fréquence, saison) ; « Mes planches » en choix multiple avec, pour chaque planche, quand on la sort ; résultat « planche du jour » ; volume en option « pour aller plus loin » (âge, taille, poids, forme).
 - Revue de `BoardVolume.kt` (voir A_FAIRE) : incohérences trouvées, rien modifié dans le code.
+- Maquettes (15 octobre, suite) : question « compétitions » supprimée du profil (pas un vrai signe de forme). Matériel : « tu la sors… » en étiquettes libres (tout le temps, petit, gros, mou, creux, puissant, longues vagues qui déroulent), shortboard = puissance et un peu de taille, même creux ; ajout de repères pros pour le volume (Slater, Fanning, Smith, chiffres publics approximatifs).

@@ -178,6 +178,8 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
   <div class="card today" id="today"></div>
   <p class="grp">Pour aller plus loin : le volume</p>
   <div class="card" id="volcard"></div>
+  <p class="grp">Repères : des pros</p>
+  <div class="card" id="pros"></div>
  </div>
 </div>
 <p class="notes"><b>Ce qui change :</b> le volume ne définit plus ton niveau, et il n'est conseillé que pour les planches où il a du sens (shortboard, fish, twin). Mid-length et longboard : pas de volume « par niveau », le choix se fait selon la vague.</p>
@@ -186,8 +188,8 @@ var PR=[{k:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 �
  {k:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine','Plusieurs fois par jour']},
  {k:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Quand l\'eau est bonne']}];
 var BO=[['mousse','Mousse'],['long','Longboard'],['mid','Mid-length'],['fish','Fish / twin'],['short','Shortboard']];
-var USE=['Tout le temps','Petit et mou','Longues vagues qui déroulent','Creux et puissant','Gros'];
-var st={since:3,freq:3,season:0,boards:['mid','fish','short'],use:{mid:[2],fish:[1],short:[3,4]},age:45,h:178,w:78,fit:1};
+var USE=['Tout le temps','Petit','Gros','Mou','Creux','Puissant','Longues vagues qui déroulent'];
+var st={since:3,freq:3,season:0,boards:['mid','fish','short'],use:{mid:[3,6],fish:[1,3],short:[4,5]},age:45,h:178,w:78,fit:1};
 var LVL=['Débutant','Intermédiaire','Confirmé','Avancé','Expert'],RATIO=[0.66,0.48,0.41,0.37,0.35],FIT=[1,1.05,1.1,1.18],FITN=['Excellente','Bonne','Moyenne','Faible'];
 function lvl(){return +document.getElementById('dlvl').value}
 function ageF(a){return a<=30?1:a<=50?1.08:1.15}
@@ -211,13 +213,13 @@ function draw(){
  var t='';
  if(st.boards.length===0)t='<div class="big">Choisis au moins une planche</div><p>Sans planche, l\'appli ne peut rien te conseiller.</p>';
  else if(st.boards.length===1){var nm1=BO.filter(function(x){return x[0]===st.boards[0]})[0][1];t='<div class="big">Tu ne surfes qu\'avec une planche : '+nm1+'</div><p>L\'appli te dit juste si la journée lui convient, sans te proposer une autre planche.</p>'}
- else t='<div class="big">Samedi, 0,8 m, 9 s, mou : sors ta mid-length</div><p>Tu l\'as réglée pour les longues vagues qui déroulent. Si ça se creuse et monte à 1,5 m, l\'appli te suggérera ton shortboard.</p><p style="margin-top:8px"><b>Ce que ça change :</b> la note de la journée tient compte de la planche qui lui va le mieux dans ton quiver, au lieu d\'une planche unique.</p>';
+ else t='<div class="big">Samedi, 0,8 m, 9 s, mou : sors ta mid-length</div><p>Tu l\'as réglée pour le mou et les longues vagues qui déroulent. Si ça se creuse, que ça prend de la puissance et un peu de taille, l\'appli te suggérera ton shortboard.</p><p style="margin-top:8px"><b>Ce que ça change :</b> la note de la journée tient compte de la planche qui lui va le mieux dans ton quiver, au lieu d\'une planche unique.</p>';
  document.getElementById('today').innerHTML=t;
  // volume
  var vc=document.getElementById('volcard');
  var cands=st.boards.filter(function(k){return k==='short'||k==='fish'||k==='mid'});
  var h='<div class="boardrow"><div class="numrow"><div><label>Âge</label><input type="number" id="age" value="'+st.age+'"></div><div><label>Taille (cm)</label><input type="number" id="hh" value="'+st.h+'"></div><div><label>Poids (kg)</label><input type="number" id="ww" value="'+st.w+'"></div></div>'+
- '<div style="margin-top:8px"><label style="font-size:12px;color:var(--muted);font-weight:650">Forme physique (tirée de tes réponses entraînement et compétitions)</label><select id="fit">'+FITN.map(function(n,i){return '<option value="'+i+'"'+(i===st.fit?' selected':'')+'>'+n+'</option>'}).join('')+'</select></div></div>';
+ '<div style="margin-top:8px"><label style="font-size:12px;color:var(--muted);font-weight:650">Forme physique (tirée de tes réponses sur l\'entraînement)</label><select id="fit">'+FITN.map(function(n,i){return '<option value="'+i+'"'+(i===st.fit?' selected':'')+'>'+n+'</option>'}).join('')+'</select></div></div>';
  if(!cands.length)h+='<div class="vol"><span>Le volume ne se conseille pas pour une mousse ou un longboard : ça dépend surtout de la longueur de la planche.</span></div>';
  else{var b=base();h+=cands.map(function(k){var v=k==='short'?b:k==='fish'?b+4:b+10;var nm=BO.filter(function(x){return x[0]===k})[0][1];return '<div class="vol"><div><b>'+nm+'</b><br><span>'+(k==='short'?'référence, niveau '+LVL[lvl()]:k==='fish'?'shortboard + 3 à 5 L':'shortboard + 8 à 12 L (repère large)')+'</span></div><b>'+rng(v)+'</b></div>'}).join('')}
  h+='<div class="vol"><span>Recommandation indicative, calculée avec ton poids, ton âge, ta forme et ton niveau. Seul ton shaper connaît le bon volume pour toi. Le volume ne change jamais ton niveau.</span></div>';
@@ -225,6 +227,8 @@ function draw(){
  ['age:age','hh:h','ww:w'].forEach(function(p){var a=p.split(':');document.getElementById(a[0]).onchange=function(){st[a[1]]=+this.value||0;draw()}});
  document.getElementById('fit').onchange=function(){st.fit=+this.value;draw()};
 }
+var PROS=[['Kelly Slater','54 ans','72 kg','24 à 26 L','0,33 à 0,36'],['Mick Fanning','45 ans','75 kg','≈ 26 L','0,35'],['Jordy Smith','38 ans','≈ 88 kg','32 à 34 L','0,36 à 0,38']];
+document.getElementById('pros').innerHTML=PROS.map(function(p){return '<div class="vol"><div><b>'+p[0]+'</b><br><span>'+p[1]+' · '+p[2]+'</span></div><div style="text-align:right"><b>'+p[3]+'</b><br><span>'+p[4]+' L/kg</span></div></div>'}).join('')+'<div class="vol"><span>Shortboard de compétition, en forme olympique : des repères pour comprendre l\'ordre de grandeur, pas pour te comparer. Chiffres issus de sources publiques, à prendre comme approximatifs.</span></div>';
 document.getElementById('dprof').onchange=draw;document.getElementById('dlvl').onchange=draw;
 draw();
 </script></body></html>

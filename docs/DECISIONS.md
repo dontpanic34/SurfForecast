@@ -88,3 +88,4 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - Tolérance aux conditions (vent, taille, motivation) : des questions à trois réponses, pas de curseur. Validé par le propriétaire.
 - Condition physique (ressenti à la barre, entraînement hors surf, compétitions) : points qui font évoluer la note dans le niveau, sans changer le niveau. Taille de la barre : reste dans le niveau. Validé par le propriétaire.
 - Score : jamais affiché en clair. Seule la barre d'XP avec le nom du niveau ; le chiffre est dans un « i ». Validé par le propriétaire.
+- Compétitions : retirées (pas un indicateur de condition physique). Valable pour la maquette et pour l'appli.
