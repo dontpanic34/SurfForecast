@@ -311,10 +311,12 @@ private fun DailyTimelineBody(
                         isDark = isDark
                     ) { size ->
                         val xs = FloatArray(hours.size) { xOf(hours[it].rawTime.hour.toFloat()) }
-                        val smooth = with(density) { 6.dp.toPx() }
-                        val cover = SkyCurve(xs, FloatArray(hours.size) { hours[it].cloudCover / 100f }, smooth)
-                        val rain = SkyCurve(xs, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, smooth)
-                        val snow = SkyCurve(xs, FloatArray(hours.size) { snowAmountForCode(hours[it].weatherCode) }, smooth)
+                        // Lissage sur plusieurs heures : le ciel et la pluie passent d'un état à l'autre sans colonne.
+                        val hourPx = if (xs.size > 1) (xs.last() - xs.first()) / (hours.last().rawTime.hour - hours.first().rawTime.hour).coerceAtLeast(1)
+                            else with(density) { 30.dp.toPx() }
+                        val cover = SkyCurve(xs, FloatArray(hours.size) { hours[it].cloudCover / 100f }, 1.25f * hourPx)
+                        val rain = SkyCurve(xs, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, 0.75f * hourPx)
+                        val snow = SkyCurve(xs, FloatArray(hours.size) { snowAmountForCode(hours[it].weatherCode) }, 0.75f * hourPx)
                         // Le soleil suit l'heure choisie : il se lève en bas à l'heure du lever, monte au zénith à la mi-journée
                         // près du vent, puis redescend et se couche en bas à l'heure du coucher.
                         val suns = ArrayList<SunSpot>()
@@ -481,7 +483,8 @@ private fun DailyCurveCanvas(
             }
             if (skyImages != null) {
                 val rainCurve = SkyCurve(
-                    FloatArray(hours.size) { pts[it].x }, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) }, 6.dp.toPx()
+                    FloatArray(hours.size) { pts[it].x }, FloatArray(hours.size) { rainAmountForCode(hours[it].weatherCode) },
+                    0.75f * (if (pts.size > 1) (pts.last().x - pts.first().x) / (pts.size - 1) else 30.dp.toPx())
                 )
                 drawWater(skyImages, rainCurve.takeIf { rainActive }, fill, line.first().x, line.last().x, pts.minOf { it.y } - 2.dp.toPx(), bottom)
                 if (rainActive) {
