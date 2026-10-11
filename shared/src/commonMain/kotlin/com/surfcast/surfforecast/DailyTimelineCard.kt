@@ -58,7 +58,7 @@ private const val WIND_ROW_H = 46 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
 private const val BAND_H = 28
-private const val HOURS_H = 28 // la ligne des heures : les libellés en haut, les repères de marée en dessous
+private const val HOURS_H = 28 // la ligne des heures (les repères de marée sont dans l’eau, sur la courbe)
 private const val SIDE_PAD = 4
 
 /**
@@ -354,7 +354,8 @@ private fun DailyTimelineBody(
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
                         gridValues = gridValues, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
-                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour,
+                        tideMarks = tideMarks
                     )
                 }
 
@@ -417,10 +418,6 @@ private fun DailyTimelineBody(
                             }
                         ) kept.add(lb)
                     }
-                    // Repères de marée : un triangle à l'heure de chaque marée, sous les libellés (mêmes triangles que la ligne sous la jauge).
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        for (m in tideMarks) drawTideTriangle(Offset(xOf(m.hour), size.height - 4.dp.toPx()), m.high, 7.dp.toPx())
-                    }
                     for (l in kept) {
                         val color = when (l.kind) {
                             0 -> nacre
@@ -459,7 +456,8 @@ private fun DailyCurveCanvas(
     xOf: (Float) -> Float,
     edgeLeft: Float,
     edgeRight: Float,
-    nowHour: Float? = null
+    nowHour: Float? = null,
+    tideMarks: List<TideMark> = emptyList()
 ) {
     val skyImages = LocalSkyImages.current
     val rainActive = hours.any { rainAmountForCode(it.weatherCode) > 0f }
@@ -476,7 +474,9 @@ private fun DailyCurveCanvas(
             val y = yOf(v)
             // Pointillés au-dessus de 2 m, là où l'échelle est resserrée.
             val dash = if (v > SWELL_AXIS_BREAK) PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())) else null
-            drawLine(onSurfaceColor.copy(alpha = 0.10f), Offset(0f, y), Offset(size.width, y), strokeWidth = 0.8.dp.toPx(), pathEffect = dash)
+            // Un trait sombre dessous et un trait clair dessus : lisible sur le ciel clair comme sur l'eau.
+            drawLine(Color(0xFF0B121A).copy(alpha = 0.28f), Offset(0f, y), Offset(size.width, y), strokeWidth = 2.6.dp.toPx(), pathEffect = dash)
+            drawLine(Color.White.copy(alpha = 0.60f), Offset(0f, y), Offset(size.width, y), strokeWidth = 1.2.dp.toPx(), pathEffect = dash)
         }
 
         val pts = hours.map { Offset(xOf(it.rawTime.hour.toFloat()), yOf(it.waveHeight)) }
@@ -547,6 +547,13 @@ private fun DailyCurveCanvas(
         val axisLabelStyle = TextStyle(color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         gridValues.forEach { v ->
             drawHaloTextAtBaseline(textMeasurer, formatAxisHeight(v), axisLabelStyle, weekTextHalo, 4.dp.toPx(), yOf(v) - 3.dp.toPx())
+        }
+
+        // Marées : un triangle dans l'eau, en bas de la courbe, à l'heure de chaque marée (bleu en haut = pleine mer, vert en bas = basse mer).
+        for (m in tideMarks) {
+            val c = Offset(xOf(m.hour), bottom - 11.dp.toPx())
+            drawCircle(Color(0xFF0B121A).copy(alpha = 0.45f), radius = 9.dp.toPx(), center = c)
+            drawTideTriangle(c, m.high, 9.dp.toPx())
         }
 
         // Le petit point nacré, avec la taille au-dessus et la période en dessous (contour de la couleur du fond, pas d'encart).
