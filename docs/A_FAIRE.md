@@ -40,3 +40,4 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Maquette `ressenti_temp_nuages.html` envoyée au propriétaire (température ressentie : gros chiffre = ressenti, air en petit ; nuages : un mot pour le ciel) : validée, codée sur la branche.
 - Température : température ressentie (vent, humidité, soleil) plutôt que la température de l'air ; eau et combinaison à voir.
 - Houle : **pas de ressenti**, on garde la donnée brute (décision du propriétaire).
+- Semaine : phrase du jour choisi à la place du titre + température ressentie par jour : maquette `semaine_phrase.html` envoyée, en attente de validation.
