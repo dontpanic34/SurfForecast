@@ -10,6 +10,11 @@
 
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
+## 12 octobre 2026
+- **Retours du propriétaire** : la pluie est très bien, on n'y touche plus (elle semble déborder sur les déroulés voisins dans la semaine : cause probable, trois créneaux par jour qui prennent le maximum de pluie de leur plage, puis un lissage d'un demi-créneau, `weekSkyScene` ; pas encore vérifié, à voir seulement si ça gêne) ; phrase du jour en **3 lignes** ; le ressenti du vent et de la température partout dans l'appli, mais **le mot « ressenti » n'apparaît nulle part sauf dans le « i »**.
+- **Maquette** `docs/maquettes/ecran-semaine.html` mise à jour : phrase du jour en 3 lignes (deux versions : titre / houle / vent, ou titre / houle + vent / eau + ciel), plus aucun mot « ressenti », air en petit à côté du chiffre. État : **maquette en attente de validation**, pas de code.
+- **Construction locale** : possible avec `sh ./gradlew :shared:wasmJsBrowserDistribution -x kotlinWasmToolingSetup --max-workers=1` après avoir installé à la main les paquets webpack dans `~/.kotlin/kotlin-npm-tooling/yarn/<hash>` (`codeload.github.com` reste refusé en 403 pour `Kotlin/karma`). Open-Meteo refuse les requêtes de cet environnement : captures avec données simulées.
+
 ## 11 octobre 2026
 - **Fin de séance du 11 octobre (état et décisions)** :
   - **En ligne (site et appli)** : « Ressenti partout » (température ressentie, mot du ciel, vent ressenti dans les cartes, « i » du vent), correction des nuages (ciel non dessiné tant que les images ne sont pas chargées, plus de brume floue, atlas des nuages réduit de moitié : 0,5 Mo) et suppression d'un reste de fusion (`MainScreen.kt.orig`). Constructions #273 (`unified`) et #274 (`web`) vertes. Rendu sur téléphone encore à juger.
