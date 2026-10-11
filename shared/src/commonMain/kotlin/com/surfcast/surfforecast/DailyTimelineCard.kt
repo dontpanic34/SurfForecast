@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -73,8 +74,6 @@ fun DailyTimelineCard(
     dailySunInfo: Map<LocalDate, DailySunInfo>,
     dailyTides: Map<LocalDate, DailyTideInfo>,
     windUnit: String,
-    windStep: String = "2h",
-    onWindStepChange: () -> Unit = {},
     idealSwellDirection: Int?,
     surferLevel: String,
     // Plus grosse houle de la semaine (échelle partagée avec la vue semaine).
@@ -181,7 +180,7 @@ fun DailyTimelineCard(
                 } else {
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
-                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit, windStep = windStep, onWindStepChange = onWindStepChange,
+                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, scaleRawMax = scaleRawMax, windUnit = windUnit,
                         isDark = isDark, onSurfaceColor = onSurfaceColor
                     )
                 }
@@ -216,8 +215,6 @@ private fun DailyTimelineBody(
     ax1: Float,
     scaleRawMax: Double?,
     windUnit: String,
-    windStep: String,
-    onWindStepChange: () -> Unit,
     isDark: Boolean,
     onSurfaceColor: Color
 ) {
@@ -227,11 +224,13 @@ private fun DailyTimelineBody(
     val sunGold = if (isDark) Color(0xFFFFD9A0) else Color(0xFFB9740A)
     val selHour = hours.getOrNull(selectedIndex)?.rawTime?.hour
     val selH = selHour?.toFloat()
+    // Heure actuelle (avec les minutes), mise à jour chaque minute ; seulement pour le jour en cours.
+    val nowTick by produceState(nowLocalDateTime()) { while (true) { delay(60_000); value = nowLocalDateTime() } }
+    val nowHour: Float? = hours.firstOrNull()?.rawTime?.date?.takeIf { it == nowTick.date }?.let { nowTick.hour + nowTick.minute / 60f }
 
-    // Une indication de vent par heure d'ensoleillement : heures paires, plus l'heure choisie, sans heure imposée ; on masque
-    // ce qui toucherait sa voisine (mesuré en pixels).
+    // Une indication de vent par heure d'ensoleillement ; on masque seulement ce qui toucherait l'heure choisie (mesuré en pixels).
     val sunnyHours = hours.map { it.rawTime.hour }.filter { it >= ceil(sunrise).toInt() && it <= floor(sunset).toInt() }
-    val windFont = if (windStep == "1h") 6.6f else if (sunnyHours.size > 12) 7.4f else if (sunnyHours.size > 9) 8.6f else 9.6f
+    val windFont = 6.6f
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val wPx = with(density) { maxWidth.toPx() }
@@ -251,16 +250,10 @@ private fun DailyTimelineBody(
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // --- Vent ---
-                val windMinGap = if (windStep == "1h") windFont * 2.1f else windFont * 2.5f + 2f
+                val windMinGap = windFont * 2.1f
                 val windHours: List<Int> = run {
                     val cand = ArrayList<Pair<Int, Int>>() // heure, priorité
-                    when (windStep) {
-                        // Toutes les heures : on ne masque que ce qui toucherait l'heure choisie.
-                        "1h" -> sunnyHours.forEach { cand.add(it to 1) }
-                        // Adaptatif : les heures paires d'abord, puis les impaires tant qu'il y a de la place.
-                        "auto" -> sunnyHours.forEach { cand.add(it to if (it % 2 == 0) 1 else 2) }
-                        else -> sunnyHours.filter { it % 2 == 0 }.forEach { cand.add(it to 1) }
-                    }
+                    sunnyHours.forEach { cand.add(it to 1) }
                     if (selHour != null && selHour in sunnyHours) cand.add(selHour to 0)
                     val kept = ArrayList<Int>()
                     cand.sortedBy { it.second }.forEach { (h, _) ->
@@ -269,13 +262,6 @@ private fun DailyTimelineBody(
                     kept.sorted()
                 }
                 Box(modifier = Modifier.fillMaxWidth().height(WIND_ROW_H.dp)) {
-                    Text(
-                        when (windStep) { "1h" -> "Vent 1 h"; "auto" -> "Vent auto"; else -> "Vent 2 h" },
-                        fontSize = 8.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.7f),
-                        modifier = Modifier.align(Alignment.TopEnd)
-                            .clip(RoundedCornerShape(6.dp)).background(onSurfaceColor.copy(alpha = 0.10f))
-                            .clickable { onWindStepChange() }.padding(horizontal = 5.dp, vertical = 2.dp)
-                    )
                     for (h in windHours) {
                         val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
@@ -356,7 +342,7 @@ private fun DailyTimelineBody(
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
                         gridValues = gridValues, displayMax = displayMax, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
-                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1)
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
                     )
                 }
 
@@ -457,7 +443,8 @@ private fun DailyCurveCanvas(
     textMeasurer: TextMeasurer,
     xOf: (Float) -> Float,
     edgeLeft: Float,
-    edgeRight: Float
+    edgeRight: Float,
+    nowHour: Float? = null
 ) {
     val skyImages = LocalSkyImages.current
     val rainActive = hours.any { rainAmountForCode(it.weatherCode) > 0f }
@@ -517,6 +504,25 @@ private fun DailyCurveCanvas(
                 val rating = ratings.getOrElse(ri) { SlotRating(50, false) }
                 drawPath(seg, color = conditionBand(rating).color(), style = Stroke(1.6.dp.toPx(), cap = StrokeCap.Round))
             }
+            // L'heure qu'il est : un petit point discret, sans texte, qui glisse sur la courbe. Le toucher choisit l'heure comme ailleurs.
+            if (nowHour != null) {
+                val nx = xOf(nowHour)
+                if (nx >= line.first().x && nx <= line.last().x) {
+                    val c = Offset(nx, curveYAt(line, nx))
+                    drawCircle(halo.copy(alpha = 0.85f), radius = 4.dp.toPx(), center = c)
+                    drawCircle(nacre.copy(alpha = 0.75f), radius = 2.6.dp.toPx(), center = c)
+                    // « Now » au-dessus du point, tant que l'heure en cours n'est pas l'heure choisie : une fois choisie, ce sont la
+                    // taille et la période qui s'affichent à sa place. On l'omet s'il toucherait la taille de l'heure choisie.
+                    val nowIdx = hours.indices.minByOrNull { kotlin.math.abs(hours[it].rawTime.hour - nowHour) }
+                    val selX = pts.getOrNull(selectedIndex)?.x
+                    if (selectedIndex != nowIdx && (selX == null || kotlin.math.abs(selX - nx) > 26.dp.toPx())) {
+                        val style = TextStyle(color = nacre, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+                        val w = textMeasurer.measure("Now", style).size.width
+                        val tx = (nx - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx())
+                        drawHaloTextAtBaseline(textMeasurer, "Now", style, halo, tx, c.y - 8.dp.toPx())
+                    }
+                }
+            }
         }
 
         // Graduations par-dessus la courbe, sur un fond léger (comme la vue semaine).
@@ -549,6 +555,28 @@ private fun DailyCurveCanvas(
             drawCircle(nacre.copy(alpha = 0.35f), radius = 6.dp.toPx(), center = p, style = Stroke(1.2.dp.toPx()))
         }
     }
+}
+
+/**
+ * Hauteur de la courbe de houle à la position [x] : même tracé que le chemin dessiné (une cubique à tangentes horizontales
+ * entre deux points, dont l'abscisse suit 1,5t − 1,5t² + t³ et l'ordonnée 3t² − 2t³), pour que le point colle à la courbe.
+ */
+internal fun curveYAt(line: List<Offset>, x: Float): Float {
+    for (i in 1 until line.size) {
+        val p = line[i - 1]; val c = line[i]
+        if (x > c.x) continue
+        val dx = c.x - p.x
+        if (dx < 1e-3f) return c.y
+        val u = ((x - p.x) / dx).coerceIn(0f, 1f)
+        var lo = 0f; var hi = 1f
+        repeat(24) {
+            val t = (lo + hi) / 2f
+            if (1.5f * t - 1.5f * t * t + t * t * t < u) lo = t else hi = t
+        }
+        val t = (lo + hi) / 2f
+        return p.y + (c.y - p.y) * (3f * t * t - 2f * t * t * t)
+    }
+    return line.last().y
 }
 
 /** Heure la plus proche d'une position horizontale : les points de la courbe vont de 0 à la largeur (n - 1 intervalles). */
