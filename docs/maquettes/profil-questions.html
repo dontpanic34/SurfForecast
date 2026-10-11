@@ -194,6 +194,7 @@ var STEPS=[
  {id:'tk',q:'Ton take-off',sub:'Tu pars en un seul temps ?',o:TK,dyn:function(a){return a.what===0?'Dans la mousse, ton take-off':'Dans le lisse, ton take-off'}},
  {id:'want',q:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
  {id:'waves',q:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles : c\'est la plus haute qui compte.',multi:true,o:['Les réformes','L\'épaule','Le peak'],when:function(a){return a.what===1}},
+ {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['Je me place là où il y a du monde','Je repère la vague tout seul, et j\'y vais si c\'est accessible','Je sais où est le pic, et j\'y vais tout le temps'],when:function(a){return a.what===1}},
  {id:'goal',q:'Sur la vague, tu cherches surtout à…',o:LEVELS.map(function(l){return l.goal})}];
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
@@ -213,6 +214,7 @@ function compute(){
     L.push({v:[4,3,1,2][ans.rameBarre],t:'ta rame pour passer la barre'});
     L.push({v:[4,2,1][ans.tk],t:'ton take-off dans le lisse'});
     var top=-1;(ans.waves||[]).forEach(function(w){top=Math.max(top,w)});L.push({v:[1,2,4][Math.max(0,top)],t:'les vagues que tu surfes dans le lisse'});
+    L.push({v:[1,2,4][ans.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
   }
   var m=4;L.forEach(function(x){if(x.v!==undefined&&!isNaN(x.v))m=Math.min(m,x.v)});
   var bind=L.filter(function(x){return x.v===m}).map(function(x){return x.t});
