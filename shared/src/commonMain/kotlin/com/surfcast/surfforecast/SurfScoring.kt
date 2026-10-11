@@ -277,9 +277,9 @@ fun calculateSlotRating(
 const val GUST_WEIGHT = 0.5
 private const val TOO_SMALL_RATIO = 0.85
 private const val TOO_WINDY_FACTOR = 0.4
-const val WHY_TOO_SMALL = "Trop petit pour toi"
-const val WHY_TOO_BIG = "Trop gros pour toi"
-const val WHY_TOO_HOLLOW = "Trop creux pour toi"
+const val WHY_TOO_SMALL = "Petite vague"
+const val WHY_TOO_BIG = "Très grosse houle"
+const val WHY_TOO_HOLLOW = "Creux et puissant"
 
 /** Diviseur du vent selon la hauteur : 1 sous 1 m, jusqu'à 1,6 pour les grosses vagues. */
 private fun windSizeDivisor(heightM: Double): Double = heightM.pow(0.9).coerceIn(0.8, 1.6)
@@ -315,7 +315,7 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits): S
         } else {
             val strong = worst.second < STRONG_LIMIT
             when (worst.first) {
-                "size" -> if (strong) "Petite pour toi" else "Un peu petite pour toi"
+                "size" -> if (strong) "Petite vague" else "Vague plutôt petite"
                 "wind" -> when (windCategory) {
                     "onshore" -> if (strong) "Onshore, gâche la vague" else "Un peu de vent de mer"
                     "cross" -> if (strong) "Vent de côté fort" else "Vent de côté qui gêne"

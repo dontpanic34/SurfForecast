@@ -190,7 +190,7 @@ class ProfileWizardTest {
         // Rien ne pèse : bonne taille, vent propre.
         assertEquals("Bonne taille, vent propre", calculateSlotRating(hour(10), 270, "intermediate").why)
         // Un peu petite : la note part de 60 au minimum.
-        assertEquals("Un peu petite pour toi", calculateSlotRating(hour(10, height = 0.8, period = 9.0), 270, "intermediate").why)
+        assertEquals("Vague plutôt petite", calculateSlotRating(hour(10, height = 0.8, period = 9.0), 270, "intermediate").why)
         // Vent de mer modéré sur une vague moyenne.
         assertEquals("Un peu de vent de mer", calculateSlotRating(hour(10, height = 1.2, period = 10.0, windKmh = 16, windDir = "O"), 270, "confirmed").why)
         // Rafales fortes : c'est elles qui gâchent la surface.
