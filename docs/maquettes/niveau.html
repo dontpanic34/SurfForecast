@@ -199,23 +199,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <section data-s="p3" hidden>
   <div class="phone">
     <div class="top"><span class="back">‹ Réglages</span><h2>Profil</h2></div>
+    <p class="grp" id="p3count">Question 1</p>
     <div class="card">
-      <div class="q"><p>Tu surfes depuis…</p><div class="chips" data-q="0"></div></div>
-      <div class="q"><p>Tu surfes combien de fois par mois ?</p><div class="chips" data-q="1"></div></div>
-      <div class="q"><p>Qu'est-ce que tu surfes ? <span style="font-weight:500;color:var(--muted)">(plusieurs choix)</span></p><div class="chips" id="p3multi"></div></div>
-      <div class="q"><p>Ta rame : comment tu te sens physiquement ?</p><div class="chips" data-q="6"></div></div>
-      <div class="q"><p>Quand tu passes la barre…</p><div class="chips" data-q="3"></div></div>
-      <div class="q"><p>La taille où tu t'éclates</p><div class="chips" data-q="4"></div></div>
-      <div class="q"><p>La plus grosse que tu surfes sans stress</p><div class="chips" data-q="5"></div></div>
+      <div class="prog"><i id="p3prog" style="width:10%"></i></div>
+      <div class="q" style="border-top:0"><p id="p3q" style="font-size:17px;font-weight:800;margin-bottom:4px"></p><p id="p3sub" style="font-weight:500;color:var(--muted);font-size:13px;margin:0 0 10px"></p><div id="p3opts" style="display:grid;gap:6px"></div></div>
+      <div style="padding:0 14px 12px;display:flex;justify-content:space-between;font-size:13px;color:var(--accent);font-weight:650"><span id="p3prev">‹ Précédent</span><span id="p3skip">Passer ›</span></div>
     </div>
-    <p class="grp">Ton niveau</p>
+    <p class="grp">Ton niveau, en direct</p>
     <div class="card"><div class="lvl" id="p3lvl"></div><div class="lvname" id="p3lvn"></div>
       <div class="blk" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn" id="p3dn">− Un cran en dessous</button><button class="btn" id="p3up">+ Un cran au-dessus</button></div>
     </div>
     <p class="grp">Ce que ça donne</p>
     <div class="card"><div class="pv" id="p3pv"></div></div>
   </div>
-  <p class="notes"><b>Ce qui change :</b> « Au large, tu te sens… » est supprimée. « Qu'est-ce que tu surfes ? » remplace la confusion : mousse, réformes, épaule, peak, tube. Deux questions de physique : « Ta rame » (je rame longtemps, je fatigue au bout d'un moment, je fatigue vite) et « Quand tu passes la barre… » (prêt à surfer, impressionné : je m'éloigne du pic, je me repose, j'analyse, mitigé, je ne passe pas). « La taille où tu t'éclates » et « la plus grosse que tu surfes sans stress » sont deux questions séparées, avec les repères du surf (genoux, taille, poitrine, tête, surcote).</p>
+  <p class="notes"><b>Le questionnaire d'un prof de surf :</b> une question à la fois, et la suite dépend des réponses. Mousse ou lisse d'abord ; dans la mousse (ou si on veut passer au lisse), on regarde le take-off : parfait, à travailler, en plusieurs temps ? ; dans le lisse, quelles vagues (réformes, épaule, peak, tube) et le take-off aussi ; puis jusqu'à quelle taille on passe la barre, et comment on se sent ; enfin la rame, pour voir si le physique suit. Les deux dernières questions donnent la taille où on s'éclate et la plus grosse sans stress.</p>
 </section>
 
 <!-- 4. PHRASES -->
@@ -384,34 +381,67 @@ function Ruler(el,handles,opts){
   draw();
 })();
 
-/* ---------- 3. Questions ---------- */
+/* ---------- 3. Le questionnaire du prof de surf ---------- */
 (function(){
   var SZ=[['Genoux',.5],['Taille',.9],['Poitrine',1.3],['Tête',1.8],['Surcote',2.6]];
-  var Q={0:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans'],1:['1 à 2 fois','Chaque semaine','Plusieurs fois par semaine'],3:['Ça y est, je suis prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Mitigé','Je ne passe pas la barre'],6:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite'],4:SZ.map(function(s){return s[0]}),5:SZ.map(function(s){return s[0]})};
-  var A={0:1,1:1,3:1,4:2,5:3,6:0},adj=0,MULTI=['La mousse','Les réformes','L\'épaule','Le peak','Le tube'],sel={1:true,2:true};
-  document.querySelectorAll('[data-q]').forEach(function(el){var q=+el.dataset.q;el.innerHTML=Q[q].map(function(t,i){return '<button class="chip" aria-pressed="'+(i===A[q])+'" data-i="'+i+'">'+t+'</button>'}).join('');
-    el.onclick=function(e){var b=e.target.closest('button');if(!b)return;A[q]=+b.dataset.i;adj=0;el.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});draw()}});
-  var mEl=document.getElementById('p3multi');
-  function drawMulti(){mEl.innerHTML=MULTI.map(function(t,i){return '<button class="chip" aria-pressed="'+(!!sel[i])+'" data-i="'+i+'">'+t+'</button>'}).join('')}
-  mEl.onclick=function(e){var b=e.target.closest('button');if(!b)return;var i=+b.dataset.i;sel[i]=!sel[i];adj=0;drawMulti();draw()};
+  var TAKE=['Parfait, en un seul temps','À travailler','En plusieurs temps'];
+  var STEPS=[
+   {id:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']},
+   {id:'freq',q:'Tu surfes combien de fois par mois ?',o:['1 à 2 fois','Chaque semaine','Plusieurs fois par semaine']},
+   {id:'what',q:'Tu surfes…',o:['La mousse','Le lisse','Les deux']},
+   {id:'tkFoam',q:'Dans la mousse, ton take-off',sub:'Le lever sur la planche.',o:TAKE,when:function(a){return a.what===0||a.what===2}},
+   {id:'wantSmooth',q:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
+   {id:'tkSmooth',q:'Dans le lisse, ton take-off',sub:'Le lever sur la planche.',o:TAKE,when:function(a){return a.what===1||a.what===2}},
+   {id:'waves',q:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles.',multi:true,o:['Les réformes','L\'épaule','Le peak','Le tube'],when:function(a){return a.what===1||a.what===2}},
+   {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore'].concat(SZ.map(function(z){return z[0]}))},
+   {id:'feel',q:'À cette taille, une fois la barre passée, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Mitigé']},
+   {id:'rame',q:'Ta rame : tu suis physiquement ?',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite']},
+   {id:'ideal',q:'La taille où tu t\'éclates',o:SZ.map(function(z){return z[0]})},
+   {id:'big',q:'La plus grosse que tu surfes sans stress',o:SZ.map(function(z){return z[0]})}];
+  var ans={since:1,freq:1,what:2,tkFoam:0,tkSmooth:1,waves:[1],barre:3,feel:0,rame:0,ideal:2,big:3,wantSmooth:0};
+  var cur=0,adj=0;
+  function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
   function level(){
-    var top=-1;Object.keys(sel).forEach(function(k){if(sel[k])top=Math.max(top,+k)});if(top<0)top=0;
-    var m=[0,0,1,2,3][top];
-    var s=(A[0]/3+A[1]/2+m/3+(3-A[3])/3+(2-A[6])/2)/5*3;
-    return Math.max(0,Math.min(3,Math.round(s)+adj));
+    var top=-1;(ans.waves||[]).forEach(function(w){top=Math.max(top,w)});
+    var smooth=(ans.what===1||ans.what===2);
+    var wv=smooth?[1,1,2,3][Math.max(0,top)]:0;      // réformes 1, épaule 1, peak 2, tube 3
+    var tk=function(v){return v===0?1:v===1?.5:0};
+    var take=ans.what===0?tk(ans.tkFoam)*.5:smooth?tk(ans.tkSmooth):tk(ans.tkFoam);
+    var bar=ans.barre===0?0:Math.min(3,ans.barre-1)/3;
+    var feel=[1,.6,.3][ans.feel];
+    var s=(ans.since/3+ans.freq/2+wv/3+take+bar+feel+(2-ans.rame)/2)/7*3;
+    var L=Math.round(s);
+    if(ans.what===0)L=Math.min(L,take<.5?0:1);       // mousse seule : débutant, ou intermédiaire si le take-off est parfait
+    return Math.max(0,Math.min(3,L+adj));
   }
   function profile(){
     var L=level(),P=Object.assign({},PRESETS[L]);
-    P.lo=Math.max(.3,SZ[A[4]][1]*.8);P.hi=Math.max(P.lo+.2,SZ[A[4]][1]*1.2);P.max=Math.max(P.hi,SZ[A[5]][1]*1.1);
+    P.lo=Math.max(.3,SZ[ans.ideal][1]*.8);P.hi=Math.max(P.lo+.2,SZ[ans.ideal][1]*1.2);
+    var bigSz=SZ[ans.big][1],barSz=ans.barre===0?.4:SZ[ans.barre-1][1];
+    P.max=Math.max(P.hi,Math.min(bigSz,barSz*1.15)*1.1);
     return P;
   }
-  function draw(){var L=level(),P=profile();
+  function draw(){
+    var list=active();cur=Math.min(cur,list.length-1);var st=list[cur];
+    document.getElementById('p3count').textContent='Question '+(cur+1)+' sur '+list.length;
+    document.getElementById('p3prog').style.width=((cur+1)/list.length*100)+'%';
+    document.getElementById('p3q').textContent=st.q;
+    document.getElementById('p3sub').textContent=st.sub||'';
+    var box=document.getElementById('p3opts');
+    box.innerHTML=st.o.map(function(t,i){var on=st.multi?(ans[st.id]||[]).indexOf(i)>=0:ans[st.id]===i;return '<button class="ans" data-i="'+i+'" aria-pressed="'+on+'" style="margin-top:0;text-align:left;padding:11px 12px">'+t+'</button>'}).join('');
+    box.querySelectorAll('.ans').forEach(function(b){b.onclick=function(){var i=+b.dataset.i;adj=0;
+      if(st.multi){var v=ans[st.id]||[],k=v.indexOf(i);if(k>=0)v.splice(k,1);else v.push(i);ans[st.id]=v;draw()}
+      else{ans[st.id]=i;var l2=active();if(cur<l2.length-1)cur=l2.indexOf(st)+1;draw()}}});
+    var L=level(),P=profile();
     renderLvl(document.getElementById('p3lvl'),null,P,'');
     document.getElementById('p3lvn').innerHTML=NAMES[L]+' <span>· vagues idéales '+fr(P.lo)+' à '+fr(P.hi)+' m · la plus grosse '+fr(P.max)+' m'+(adj?' · corrigé':'')+'</span>';
-    renderPV(document.getElementById('p3pv'),P)}
+    renderPV(document.getElementById('p3pv'),P);
+  }
+  document.getElementById('p3prev').onclick=function(){if(cur>0)cur--;draw()};
+  document.getElementById('p3skip').onclick=function(){if(cur<active().length-1)cur++;draw()};
   document.getElementById('p3up').onclick=function(){if(level()<3){adj++;draw()}};
   document.getElementById('p3dn').onclick=function(){if(level()>0){adj--;draw()}};
-  drawMulti();draw();
+  draw();
 })();
 
 /* ---------- 4. Phrases : cas concrets ---------- */
