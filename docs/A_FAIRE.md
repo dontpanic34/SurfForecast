@@ -85,3 +85,6 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - On n'écrit « sideshore » que si le vent est pile de côté (pour Montalivet : nord ou sud).
 - Un vent de nord-est est « side-off », un vent de sud-ouest est « side-on » (la plage regarde l'ouest). Même règle pour les autres plages, selon leur orientation.
 - À intégrer avec le codage des catégories side-off / side-on déjà listé plus haut (couleurs, notes, phrases).
+
+## Matériel : ancienneté, fréquence, saison (demandé)
+- Déplacer « Tu surfes depuis », la fréquence (avec « plusieurs fois par jour ») et la saison (« toute l'année » / « quand l'eau est bonne ») dans Matériel, avec la condition physique. À traiter quand on s'occupe de Matériel.

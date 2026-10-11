@@ -194,9 +194,6 @@ var STEPS=[
  {id:'tol1',q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},
  {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['J\'y vais, c\'est l\'occasion de progresser','Je regarde d\'abord, j\'y vais si ça me rassure','Je reste au sec']},
  {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
- {id:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']},
- {id:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine','Plusieurs fois par jour']},
- {id:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Quand l\'eau est bonne']},
  {id:'what',q:'Tu surfes…',sub:'Celui qui surfe le lisse surfe aussi la mousse.',o:['La mousse seulement','Le lisse']},
  {id:'board',q:'Tu surfes sur quoi ?',sub:'Plusieurs réponses possibles.',multi:true,o:['Une planche en mousse','Un longboard','Un mid-length','Un fish','Un shortboard']},
  {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===1}},
@@ -225,7 +222,7 @@ function compute(){
   var forcePlus=false;
   if(ans.what===0){L.push({v:0,t:'tu ne surfes que la mousse'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
   else{
-    L.push({v:gmax(ans)+1,t:'ce que tu cherches'});
+    L.push({v:gmax(ans)+1,p:ans.goal.reduce(function(x,y){return x+y},0)/ans.goal.length+1,t:'ce que tu cherches'});
     var bar=[0,0,1,2,3,4][ans.barre];if(ans.feel!==0)bar=Math.max(0,bar-1);
     L.push({v:bar,t:ans.barre===0?'tu ne passes pas encore la barre':'la taille où tu passes la barre'+(ans.feel!==0?' et la façon dont tu la passes':'')});
     L.push({v:[4,1,0][ans.tk],t:'ton take-off dans le lisse'});
@@ -237,7 +234,7 @@ function compute(){
   var baseL=Math.max(0,Math.min(4,m));
   var plus0=((ans.what===1&&bind.length===1&&m<=3)||forcePlus)&&baseL<4;
   // Position : la part des limites qui sont déjà au-dessus de la plus basse remplit la tranche.
-  var above=L.filter(function(x){return x.v>m}).length/L.length;
+  var above=m>=4?1:Math.max(0,(L.reduce(function(t,x){return t+(x.p!==undefined?x.p:x.v)},0)/L.length-m)/(4-m));
   var bi0=bandIndex(baseL,plus0),bi=Math.max(0,Math.min(8,bi0+adj)),B=BANDS[bi],lvl=B.L,plus=bi%2===1&&bi<8,score;
   if(bi===8)score=100;
   else if(adj!==0)score=(B.a+B.b)/2;
