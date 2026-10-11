@@ -25,6 +25,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -339,35 +340,23 @@ internal const val WEEK_VISIBLE_DAYS = 3.7f
 /** Hauteur de la courbe de la semaine (partagée avec son échelle fixe). */
 internal val WEEK_CANVAS_H: Dp get() = SkyGraphSettings.weekHeightDp().dp
 
-/** Hauteur maximale de la houle de la semaine à l'échelle : elle atteint la part d'eau réglée (35 % par défaut). */
-internal fun weekDisplayMax(allHourlyData: List<HourlyUiModel>): Double =
-    (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3) / SkyGraphSettings.waterFraction
-
 /** Échelle des hauteurs de la semaine, fixe à gauche pendant que les jours défilent. */
 @Composable
 internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifier = Modifier) {
     if (allHourlyData.isEmpty()) return
     val textMeasurer = rememberTextMeasurer()
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.45f), fontSize = 10.sp)
-    val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
+    // Même style que la taille et la période : blanc, gras, contour sombre, sans encart derrière.
+    val axisLabelStyle = TextStyle(color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+    val axisHalo = Color(0xFF0B121A)
     Canvas(modifier = modifier) {
         val padTop = 16.dp.toPx()
         val usableH = size.height - padTop - 16.dp.toPx()
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
-        val (_, gridValues) = swellAxisScale(rawMax)
-        gridValues.forEach { value ->
-            val y = padTop + usableH * (1f - (value / weekDisplayMax(allHourlyData)).toFloat())
-            val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
+        swellAxisGrid(rawMax).forEach { value ->
+            val y = padTop + usableH * (1f - swellAxisFraction(value))
             // Graduations DANS la courbe, collées à gauche : mêmes marges à gauche et à droite, comme le déroulé.
-            val labelTop = y - layout.size.height - 1.dp.toPx()
-            drawRoundRect(
-                color = labelBg,
-                topLeft = Offset(2.dp.toPx(), labelTop),
-                size = Size(layout.size.width + 4.dp.toPx(), layout.size.height.toFloat()),
-                cornerRadius = CornerRadius(3.dp.toPx())
-            )
-            drawText(layout, topLeft = Offset(4.dp.toPx(), labelTop))
+            drawHaloTextAtBaseline(textMeasurer, formatAxisHeight(value), axisLabelStyle, axisHalo, 4.dp.toPx(), y - 3.dp.toPx())
         }
     }
 }
@@ -414,17 +403,19 @@ fun ContinuousWaveCanvas(
         val usableH = h - padTop - padBottom
         val baseY = padTop + usableH
 
-        // Échelle des hauteurs à gauche, qui s'adapte aux prévisions de la semaine (comme le déroulé de la journée).
+        // Échelle fixe : seules les graduations changent, elles s'arrêtent à la houle la plus haute de la semaine.
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
-        val (_, gridValues) = swellAxisScale(rawMax)
-        val displayMaxW = weekDisplayMax(allHourlyData)
+        val gridValues = swellAxisGrid(rawMax)
         gridValues.forEach { value ->
-            val y = padTop + usableH * (1f - (value / displayMaxW).toFloat())
+            val y = padTop + usableH * (1f - swellAxisFraction(value))
+            // Pointillés au-dessus de 2 m, là où l'échelle est resserrée.
+            val dash = if (value > SWELL_AXIS_BREAK) PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())) else null
             drawLine(
                 color = onSurfaceColor.copy(alpha = 0.10f),
                 start = Offset(plotLeft, y),
                 end = Offset(w, y),
-                strokeWidth = 0.8.dp.toPx()
+                strokeWidth = 0.8.dp.toPx(),
+                pathEffect = dash
             )
             if (axisW > 0f) {
                 val layout = textMeasurer.measure(formatAxisHeight(value), axisTextStyle)
@@ -440,8 +431,7 @@ fun ContinuousWaveCanvas(
 
         val stepX = plotW / (allHourlyData.size - 1).coerceAtLeast(1).toFloat()
         val points = allHourlyData.mapIndexed { index, item ->
-            val ratio = (item.waveHeight / displayMaxW).coerceIn(0.0, 1.0).toFloat()
-            Offset(plotLeft + index * stepX, padTop + usableH * (1f - ratio))
+            Offset(plotLeft + index * stepX, padTop + usableH * (1f - swellAxisFraction(item.waveHeight)))
         }
 
         val fillPath = Path().apply {
@@ -811,10 +801,11 @@ internal fun weekSkyScene(
     val smooth = 7f * density
     val top = 8f * density
     val bottom = size.height - 18f * density
-    // La houle la plus haute de la semaine atteint la part d'eau réglée ; les nuages sont étalés sur le ciel au-dessus.
+    // Les nuages sont étalés sur le ciel, au-dessus de la houle la plus haute de la semaine.
     val padTop = 16f * density
     val usableH = size.height - 32f * density
-    val waterline = padTop + usableH * (1f - SkyGraphSettings.waterFraction)
+    val weekMaxWave = dates.flatMap { daylightHoursFor(it, groupedByDate, sunInfo) }.maxOfOrNull { it.waveHeight } ?: 1.0
+    val waterline = padTop + usableH * (1f - swellAxisFraction(weekMaxWave.coerceAtLeast(0.3)))
     return SkyScene(
         left = 0f, right = size.width, top = top, bottom = bottom,
         cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), smooth),

@@ -483,7 +483,7 @@ fun SurfPreferencesDialog(
                             }
                             graphSlider("Place du graphique, semaine", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
                             graphSlider("Place du graphique, jour", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
-                            graphSlider("Place de l'océan (le reste est du ciel)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
+                            graphSlider("Hauteur de l'échelle (où arrive 2 m)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
                             TextButton(onClick = { SkyGraphSettings.reset() }) { Text("Valeurs par défaut", fontSize = 12.sp) }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
