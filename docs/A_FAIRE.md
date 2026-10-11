@@ -4,7 +4,8 @@
 - **Nuages : transitions entre deux couvertures trop brutales** (on dirait des segments séparés) et couvertures peu jolies. Causes probables : lissage de la couverture trop court (quelques dizaines de pixels) alors que la prévision saute d'une heure à l'autre, mélange de sprites très différents, aplats. Pistes : fondu long (2 à 3 h dans le déroulé, un jour dans la semaine) avec courbe en S, limiter la vitesse de changement de couverture, fond du ciel stable, voile de couvert plus progressif.
 - **Pluie** : le propriétaire la trouve très bien (12 octobre), ne rien changer.
 - **Semaine : phrase du jour et température** : maquette avec rendu réel envoyée (https://claude.ai/artifact/Y5cp87SPMmrriFWJhvcYgu). Phrase en 3 lignes (choisi le 12 octobre) : maquette mise à jour dans `docs/maquettes/ecran-semaine.html`, deux versions de lignes à départager. Option A, offshore/onshore, déroulé sans 3e ligne, températures discrètes dans le ciel et l'eau (2e maquette du 12 octobre, à valider). Règle : aucun mot « ressenti » à l'écran, sauf dans le « i » (à retirer de `NowTideCard.kt` et `WeatherDetailScreen.kt`).
-- **Réglages en 5 pages** : maquette validée en principe (https://claude.ai/artifact/6X9Pg1aQLgtDyXbRMw8EtX), à coder une page à la fois ; retirer l'orientation de la plage des réglages.
+- **Refonte du niveau (priorité du propriétaire) et des réglages** : maquette `docs/maquettes/niveau.html` envoyée, à choisir (4 façons de dire son niveau, 3 structures d'accueil). Ensuite coder une page à la fois.
+- **Réglages en 5 pages** (ancienne maquette) : maquette validée en principe (https://claude.ai/artifact/6X9Pg1aQLgtDyXbRMw8EtX), à coder une page à la fois ; retirer l'orientation de la plage des réglages.
 - Rappel : ne pousser sur `unified` et `web` qu'avec le « go » du propriétaire.
 
 ## Semaine : codée sur la branche, à relancer en intégration continue puis à publier avec ton « go »
