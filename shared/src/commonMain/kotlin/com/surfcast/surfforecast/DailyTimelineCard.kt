@@ -1,6 +1,7 @@
 @file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,7 +53,8 @@ import kotlin.math.sin
 
 
 // Dimensions (dp) du déroulé : mêmes proportions que la maquette validée.
-private const val WIND_ROW_H = 40
+private const val SELECTED_WIND_DROP = 9 // la colonne de vent de l'heure choisie descend de ce nombre de dp pour la repérer
+private const val WIND_ROW_H = 40 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
 private const val BAND_H = 28
@@ -262,13 +264,16 @@ private fun DailyTimelineBody(
                 Box(modifier = Modifier.fillMaxWidth().height(WIND_ROW_H.dp)) {
                     for (h in windHours) {
                         val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
+                        key(h) {
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
                         val color = SurfUnitsHelper.getSurfWindColor(dirFr, effectiveWindKmh(hourly).roundToInt())
                         val textColor = SurfUnitsHelper.windTextColor(color, isDark)
                         val rotation = (SurfUnitsHelper.cardinalToDegrees(dirFr) + 180f) % 360f
                         val itemW = 34.dp
+                        // La colonne de l'heure choisie descend un peu, avec une petite animation : c'est celle à lire.
+                        val drop by animateDpAsState(if (h == selHour) SELECTED_WIND_DROP.dp else 0.dp, label = "windDrop")
                         Column(
-                            modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), 0) }.width(itemW),
+                            modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Canvas(modifier = Modifier.size((windFont + 3f).dp)) {
@@ -290,6 +295,11 @@ private fun DailyTimelineBody(
                                 SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit), fontSize = windFont.sp,
                                 fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp
                             )
+                            // Soulignement de la colonne de l'heure choisie, de la couleur de son vent.
+                            if (h == selHour) {
+                                Box(modifier = Modifier.padding(top = 2.dp).width(16.dp).height(2.dp).background(textColor, RoundedCornerShape(1.dp)))
+                            }
+                        }
                         }
                     }
                 }
