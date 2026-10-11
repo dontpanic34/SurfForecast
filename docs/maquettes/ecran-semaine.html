@@ -47,7 +47,7 @@ canvas{display:block}
 <div class="top">
  <h1>Écran principal : phrase du jour et température</h1>
  <p>Rendu réel des nuages, du soleil, de l'eau et de la pluie de l'appli. Touche un jour dans la semaine, ou une heure dans le déroulé.</p>
- <div class="seg" id="pt" style="flex-wrap:wrap;margin-bottom:8px"><button data-v="G" aria-pressed="true">7 · Sur le bord haut du ciel</button><button data-v="A" aria-pressed="false">1 · Ciel, sous le soleil</button><button data-v="B" aria-pressed="false">2 · Sur le soleil</button><button data-v="C" aria-pressed="false">3 · Dans la barre colorée</button><button data-v="D" aria-pressed="false">4 · Avec les étoiles</button><button data-v="E" aria-pressed="false">5 · Ligne seule</button><button data-v="F" aria-pressed="false">6 · Avec les kJ</button><button data-v="N" aria-pressed="false">Sans</button></div><br>
+ <div class="seg" id="pt" style="flex-wrap:wrap;margin-bottom:8px"><button data-v="G" aria-pressed="true">7 · Bord haut, style de l'eau</button><button data-v="H" aria-pressed="false">8 · Bord haut, style du soleil</button><button data-v="J" aria-pressed="false">Bord haut, blanc (avant)</button><button data-v="A" aria-pressed="false">1 · Ciel, sous le soleil</button><button data-v="B" aria-pressed="false">2 · Sur le soleil</button><button data-v="C" aria-pressed="false">3 · Dans la barre colorée</button><button data-v="D" aria-pressed="false">4 · Avec les étoiles</button><button data-v="E" aria-pressed="false">5 · Ligne seule</button><button data-v="F" aria-pressed="false">6 · Avec les kJ</button><button data-v="N" aria-pressed="false">Sans</button></div><br>
  <div class="seg" id="th"><button data-v="d" aria-pressed="true">Sombre</button><button data-v="l" aria-pressed="false">Clair</button></div>
 </div>
 <div id="load">Chargement des images…</div>
@@ -242,7 +242,9 @@ function frame(now){
  var wc=document.getElementById('wcv');if(wback){wc.width=wback.W;wc.height=WH*DPR;wc.style.width=DAYS.length*WCOL+'px';wc.style.height=WH+'px';var x=wc.getContext('2d');
   var top=8*DPR,bot=wback.H+top-0;x.drawImage(wback.bd.back,0,top);
   DAYS.forEach(function(d,i){var cx=(i+.5)*WCOL*DPR;sun(x,cx,top+4*DPR,32*DPR,wback.cf(cx),dark)});
-  x.drawImage(wback.bd.front,0,top);DAYS.forEach(function(d,i){var pt=window.PT||'G';if(pt==='G'){halo(x,d.tp+'°',(i+.5)*WCOL*DPR,top+4*DPR,11.5,'rgba(255,255,255,.95)','rgba(10,20,35,.6)');return}if(pt!=='A'&&pt!=='B')return;var cxx=(i+.5)*WCOL*DPR,yy=pt==='A'?top+52*DPR:top+24*DPR;halo(x,d.tp+'°',cxx,yy,pt==='A'?11.5:10.5,pt==='A'?'rgba(255,255,255,.92)':'#4a2a00',pt==='A'?'rgba(10,20,35,.55)':'rgba(255,240,200,.85)')});
+  x.drawImage(wback.bd.front,0,top);DAYS.forEach(function(d,i){var pt=window.PT||'G';if(pt==='G'){x.font='600 '+9.5*DPR+'px Roboto,system-ui,sans-serif';x.textAlign='center';x.fillStyle='rgba(255,255,255,.5)';x.fillText(d.tp+'°',(i+.5)*WCOL*DPR,top+4*DPR);return}
+ if(pt==='H'){halo(x,d.tp+'°',(i+.5)*WCOL*DPR,top+4*DPR,10.5,'#4a2a00','rgba(255,240,200,.85)');return}
+ if(pt==='J'){halo(x,d.tp+'°',(i+.5)*WCOL*DPR,top+4*DPR,11.5,'rgba(255,255,255,.95)','rgba(10,20,35,.6)');return}if(pt!=='A'&&pt!=='B')return;var cxx=(i+.5)*WCOL*DPR,yy=pt==='A'?top+52*DPR:top+24*DPR;halo(x,d.tp+'°',cxx,yy,pt==='A'?11.5:10.5,pt==='A'?'rgba(255,255,255,.92)':'#4a2a00',pt==='A'?'rgba(10,20,35,.55)':'rgba(255,240,200,.85)')});
   // pluie
   [[IM.rain,.36,170,0,2.1],[IM.rain,.28,120,57,2.4]].forEach(function(L){var lay=tiles(x,L[0],L[1],t,L[2],L[3],L[4],wback.W,wback.H,function(px){return Math.min(1,Math.pow(Math.max(0,wback.rf(px)/1.5),.6))},dark&&false?null:(dark?null:'rgba(58,76,102,.97)'));x.drawImage(lay,0,top)});
   var ys=[],H1=bot-top;DAYS.forEach(function(d,i){[.15,.5,.85].forEach(function(f,j){ys.push(WATERF*d.m/1.8*(.92+.08*Math.sin(i*2+j)))})});
