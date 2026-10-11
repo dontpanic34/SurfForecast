@@ -75,39 +75,43 @@ h1{font-size:19px;margin:0}
 <div class="slide" id="slide" aria-live="polite"></div>
 
 <script>
-/* ---------- Les cinq niveaux ---------- */
 var LV=['Débutant','Intermédiaire','Confirmé','Avancé','Expert'];
 function tag(n){return '<span class="tag t'+n+'">'+LV[n]+'</span>'}
+var TK=['En un seul temps, tout le temps','En un seul temps, parfois','En plusieurs temps'];
 
-/* ---------- Les questions, leurs réponses, la limite que chaque réponse pose et la question suivante ---------- */
+/* ---------- Les questions : réponses, limite posée par chaque réponse ([niveau, remarque] ou null) ---------- */
 var Q={
- since:{n:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans'],next:'freq',info:true},
- freq:{n:'Tu surfes combien de fois par mois ?',o:['1 à 2 fois','Chaque semaine','Plusieurs fois par semaine'],next:'what',info:true},
- what:{n:'Tu surfes…',o:['La mousse','Le lisse','Les deux'],
-   lim:['Voir la suite : « tu veux passer au lisse ? »','Pas de limite ici','Pas de limite ici'],
-   nx:['tkFoam','tkSmooth','tkFoam']},
- tkFoam:{n:'Dans la mousse, ton take-off',sub:'Le lever sur la planche.',o:['Parfait, en un seul temps','À travailler','En plusieurs temps'],
-   lim:[[1,'si tu veux passer au lisse'],[0],[0]],note:'Compte seulement si tu ne surfes que la mousse. Si tu surfes aussi le lisse, c\'est le take-off dans le lisse qui compte.',nx:['wantSmooth|tu ne surfes que la mousse','tkSmooth|tu surfes les deux']},
- wantSmooth:{n:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],lim:[[1,'si le take-off est parfait, sinon Débutant'],[0]],next:'barre'},
- tkSmooth:{n:'Dans le lisse, ton take-off',sub:'Le lever sur la planche.',o:['Parfait, en un seul temps','À travailler','En plusieurs temps'],lim:[null,[2],[1]],next:'waves'},
- waves:{n:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles : c\'est la plus haute qui compte.',o:['Les réformes','L\'épaule','Le peak','Le tube'],lim:[[1],[2],[3],[4]],next:'barre'},
- barre:{n:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux','Taille','Poitrine','Tête','Surcote'],lim:[[0],[0],[1],[2],[3],[4]],next:'feel'},
- feel:{n:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si c\'est le bon moment'],lim:['La limite de la barre reste la même','La limite de la barre baisse d\'une marche','La limite de la barre baisse d\'une marche','La limite de la barre baisse d\'une marche'],next:'rame'},
- rame:{n:'Ta rame : tu suis physiquement ?',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite'],lim:[null,[3],[1]],next:'goal'},
- goal:{n:'Sur la vague, tu cherches surtout à…',o:['Te lever, et garder la mousse le plus longtemps possible','Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Encore au-dessus (à définir avec toi)'],lim:[[0],[1],[2],[3],[4]],next:'END'}
+ since:{n:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans'],info:true},
+ freq:{n:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine'],info:true},
+ season:{n:'Sur l\'année, tu surfes…',o:['Toute l\'année','Surtout l\'été (ou en vacances)'],info:true},
+ what:{n:'Tu surfes…',sub:'Celui qui surfe le lisse surfe aussi la mousse.',o:['La mousse seulement','Le lisse'],lim:[[0,'sauf take-off sûr et envie de lisse : Intermédiaire'],null],branch:true},
+ barre:{n:'Jusqu\'à quelle taille tu passes la barre ?',sub:'Seulement si tu surfes le lisse.',o:['Je ne passe pas encore','Genoux','Taille','Poitrine','Tête','Au-dessus de la tête'],lim:[[0],[0],[1],[2],[3],[4]]},
+ feel:{n:'Quand tu passes la barre, tu te sens…',sub:'Seulement si tu surfes le lisse.',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],
+   osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],lim:['La limite de la barre reste la même','La limite de la barre baisse d\'une marche','La limite de la barre baisse d\'une marche','La limite de la barre baisse d\'une marche'],text:true},
+ rameBarre:{n:'Ta rame pour passer la barre',sub:'Seulement si tu surfes le lisse.',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite','Je n\'avance pas aussi vite que je devrais'],lim:[null,[3],[1],[2]]},
+ rameVague:{n:'Ta rame pour prendre la vague',sub:'Tu as assez de vitesse au moment du take-off ?',o:['Oui, à chaque fois','Pas toujours : je rate des vagues faute de vitesse','Souvent non : je manque de vitesse'],lim:[null,[2],[1]]},
+ tk:{n:'Ton take-off',sub:'Tu pars en un seul temps ?',o:TK,lim:[[4,'ou Intermédiaire si mousse seule et envie de lisse'],[2,'dans le lisse ; mousse seule : Débutant'],[1,'dans le lisse ; mousse seule : Débutant']],lim0:[null,[2],[1]]},
+ want:{n:'Tu veux passer au lisse ?',sub:'Seulement si tu ne surfes que la mousse.',o:['Oui, bientôt','Pas pour l\'instant'],lim:[[1,'si le take-off est « tout le temps en un seul temps »'],[0]]},
+ waves:{n:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles : c\'est la plus haute qui compte. Le tube n\'est plus dans la liste : c\'est une manœuvre.',o:['Les réformes','L\'épaule','Le peak'],lim:[[1],[2],[4,'pas de limite']]},
+ goal:{n:'Sur la vague, tu cherches surtout à…',o:['Te lever, et garder la mousse le plus longtemps possible','Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Encore au-dessus (à définir avec toi)'],lim:[[0],[1],[2],[3],[4]]}
 };
-var ORDER=['since','freq','what','tkFoam','wantSmooth','tkSmooth','waves','barre','feel','rame','goal'];
+/* Deux chemins : mousse seulement, ou le lisse */
+var FLOW=[['since','freq','season','what','rameVague','tk','want','goal'],
+          ['since','freq','season','what','barre','feel','rameBarre','rameVague','tk','waves','goal']];
+var ORDER=['since','freq','season','what','barre','feel','rameBarre','rameVague','tk','want','waves','goal'];
+var BR=['si mousse seulement','si le lisse'];
 
-/* ---------- La règle : le niveau est la marche la plus basse parmi les limites ---------- */
+/* ---------- La règle : la marche la plus basse ---------- */
 function limitsOf(a){
-  var L=[];
-  L.push({k:'goal',v:a.goal,t:'ce que tu cherches'});
-  if(a.what===0){L.push({k:'what',v:(a.tkFoam===0&&a.wantSmooth===0)?1:0,t:'tu ne surfes que la mousse'})}
-  else{L.push({k:'tkSmooth',v:[4,2,1][a.tkSmooth],t:'ton take-off dans le lisse'});
-       var top=-1;(a.waves||[]).forEach(function(w){top=Math.max(top,w)});L.push({k:'waves',v:[1,2,3,4][top],t:'les vagues que tu surfes dans le lisse'})}
-  var bar=[0,0,1,2,3,4][a.barre];if(a.feel!==0)bar=Math.max(0,bar-1);
-  L.push({k:'barre',v:bar,t:'la taille où tu passes la barre'+(a.feel!==0?' (et la façon dont tu la passes)':'')});
-  L.push({k:'rame',v:[4,3,1][a.rame],t:'ta rame'});
+  var L=[{k:'goal',v:a.goal,t:'ce que tu cherches'},{k:'rameVague',v:[4,2,1][a.rameVague],t:'ta rame pour prendre la vague'}];
+  if(a.what===0){L.push({k:'what',v:(a.tk===0&&a.want===0)?1:0,t:'tu ne surfes que la mousse'})}
+  else{
+    var bar=[0,0,1,2,3,4][a.barre];if(a.feel!==0)bar=Math.max(0,bar-1);
+    L.push({k:'barre',v:bar,t:'la taille où tu passes la barre'+(a.feel!==0?' (et la façon dont tu la passes)':'')});
+    L.push({k:'rameBarre',v:[4,3,1,2][a.rameBarre],t:'ta rame pour passer la barre'});
+    L.push({k:'tk',v:[4,2,1][a.tk],t:'ton take-off dans le lisse'});
+    var top=-1;(a.waves||[]).forEach(function(w){top=Math.max(top,w)});L.push({k:'waves',v:[1,2,4][top],t:'les vagues que tu surfes dans le lisse'});
+  }
   return L;
 }
 function levelFor(a){var L=limitsOf(a),m=4;L.forEach(function(x){m=Math.min(m,x.v)});return {level:m,binding:L.filter(function(x){return x.v===m}),all:L}}
@@ -115,66 +119,63 @@ function levelFor(a){var L=limitsOf(a),m=4;L.forEach(function(x){m=Math.min(m,x.
 /* ---------- Diapos ---------- */
 var slides=[];
 function goBox(id,label){return '<button class="go" data-go="'+id+'">'+label+'</button>'}
-slides.push({name:'Comment lire',html:function(){return '<h2>Comment lire</h2><div class="box q">Une diapo par question<small>Question, réponses, limite posée par chaque réponse, question suivante</small></div><div class="spine"><div class="box ans"><div class="a">Chaque réponse peut poser une limite</div><div class="lim">Par exemple « Je fatigue vite » ne laisse pas dépasser '+tag(1)+'.</div></div><div class="box ans"><div class="a">Le niveau final = la marche la plus basse</div><div class="lim">Parmi ce que tu vises et toutes les limites. Voir la diapo « La règle ».</div></div><div class="box ans"><div class="a">Les questions « Depuis » et « Combien de fois » ne changent pas le niveau</div><div class="lim">Elles restent pour connaître le surfeur.</div></div></div><p class="note">Utilise ◀ ▶ (ou les flèches du clavier). Les boutons bleus sautent à la diapo indiquée.</p>'}});
+function nextIds(id){var out=[];[0,1].forEach(function(b){var i=FLOW[b].indexOf(id);if(i>=0&&FLOW[b][i+1]){var n=FLOW[b][i+1];var e=out.filter(function(o){return o.id===n})[0];if(e)e.br.push(BR[b]);else out.push({id:n,br:[BR[b]]})}});return out}
+function qTitle(id){return id==='tk'?'Ton take-off (dans la mousse ou dans le lisse)':Q[id].n}
+
+slides.push({name:'Comment lire',html:function(){return '<h2>Comment lire</h2><div class="box q">Une diapo par question<small>Question, réponses, limite posée par chaque réponse, question suivante</small></div><div class="spine"><div class="box ans"><div class="a">Chaque réponse peut poser une limite</div><div class="lim">Par exemple « Je fatigue vite » (rame pour passer la barre) ne laisse pas dépasser '+tag(1)+'.</div></div><div class="box ans"><div class="a">Le niveau final = la marche la plus basse</div><div class="lim">Parmi ce que tu vises et toutes les limites. Voir la diapo « La règle ».</div></div><div class="box ans"><div class="a">Depuis quand, fréquence et saison ne changent pas le niveau</div><div class="lim">Elles restent pour connaître le surfeur.</div></div></div><p class="note">Utilise ◀ ▶ (ou les flèches du clavier). Les boutons bleus sautent à la diapo indiquée. Il n\'y a que deux chemins : « la mousse seulement » et « le lisse ».</p>'}});
 
 slides.push({name:'Vue d\'ensemble',html:function(){
   function n(t,c){return '<div class="fn'+(c?' '+c:'')+'">'+t+'</div>'}var A='<div class="fa">↓</div>';
-  return '<h2>Vue d\'ensemble</h2><div class="flow">'+n('Tu surfes depuis…','info')+A+n('Combien de fois par mois ?','info')+A+n('Tu surfes : mousse, lisse, ou les deux ?')+A+
-  '<div class="fork">'+
-   '<div class="col"><div class="lab">LA MOUSSE</div>'+n('Take-off dans la mousse')+A+n('Tu veux passer au lisse ?')+'</div>'+
-   '<div class="col"><div class="lab">LE LISSE</div>'+n('Take-off dans le lisse')+A+n('Quelles vagues ?')+'</div>'+
-   '<div class="col"><div class="lab">LES DEUX</div>'+n('Take-off dans la mousse')+A+n('Take-off dans le lisse')+A+n('Quelles vagues ?')+'</div>'+
-  '</div>'+A+n('Jusqu\'à quelle taille tu passes la barre ?')+A+n('Comment tu la passes ?')+A+n('Ta rame')+A+n('Ce que tu cherches sur la vague')+A+n('Le niveau : la marche la plus basse','end')+'</div><p class="note">Pointillés : questions qui ne changent pas le niveau. Les trois colonnes sont les trois seules vraies branches ; elles se rejoignent à « la barre ».</p>'}});
+  return '<h2>Vue d\'ensemble</h2><div class="flow">'+n('Tu surfes depuis…','info')+A+n('À quelle fréquence ?','info')+A+n('Toute l\'année ou surtout l\'été ?','info')+A+n('Tu surfes : la mousse seulement, ou le lisse ?')+A+
+  '<div class="fork" style="grid-template-columns:repeat(2,minmax(0,1fr))">'+
+   '<div class="col"><div class="lab">LA MOUSSE SEULEMENT</div>'+n('Ta rame pour prendre la vague')+A+n('Take-off dans la mousse')+A+n('Tu veux passer au lisse ?')+'</div>'+
+   '<div class="col"><div class="lab">LE LISSE</div>'+n('Jusqu\'à quelle taille tu passes la barre ?')+A+n('Comment tu la passes ?')+A+n('Ta rame pour passer la barre')+A+n('Ta rame pour prendre la vague')+A+n('Take-off dans le lisse')+A+n('Quelles vagues ?')+'</div>'+
+  '</div>'+A+n('Ce que tu cherches sur la vague')+A+n('Le niveau : la marche la plus basse','end')+'</div><p class="note">Pointillés : questions qui ne changent pas le niveau. Deux chemins seulement, qui se rejoignent à « ce que tu cherches ». La rame vient avant le take-off : on réussit un take-off si on a assez de vitesse.</p>'}});
 
 ORDER.forEach(function(id,i){
-  slides.push({name:Q[id].n,id:id,html:function(){
-    var q=Q[id],h='<h2>Question '+(i+1)+' sur '+ORDER.length+(q.info?' · ne change pas le niveau':'')+'</h2><div class="box q">'+q.n+(q.sub?'<small>'+q.sub+'</small>':'')+'</div><div class="spine">';
+  slides.push({name:qTitle(id),id:id,html:function(){
+    var q=Q[id],h='<h2>Question '+(i+1)+' sur '+ORDER.length+(q.info?' · ne change pas le niveau':'')+'</h2><div class="box q">'+qTitle(id)+(q.sub?'<small>'+q.sub+'</small>':'')+'</div><div class="spine">';
     q.o.forEach(function(o,k){
       var lim='';
       if(q.info)lim='<div class="lim">Pas de limite : informatif.</div>';
-      else if(id==='feel')lim='<div class="lim">'+q.lim[k]+'</div>';
-      else if(id==='what')lim='<div class="lim">'+q.lim[k]+' · mène à : '+(q.nx[k]==='tkFoam'?'take-off dans la mousse':'take-off dans le lisse')+'</div>';
+      else if(q.text)lim='<div class="lim">'+q.lim[k]+'</div>';
       else{var l=q.lim[k];lim='<div class="lim">'+(l?'Limite : '+tag(l[0])+(l[1]?' <span>'+l[1]+'</span>':''):'Pas de limite')+'</div>'}
-      h+='<div class="box ans"><div class="a">'+o+'</div>'+lim+'</div>'});
+      if(id==='tk')lim='<div class="lim">Dans le lisse : '+(q.lim0[k]?'limite '+tag(q.lim0[k][0]):'pas de limite')+'<br>Mousse seulement : '+(k===0?'limite '+tag(0)+', ou '+tag(1)+' si tu veux passer au lisse':'limite '+tag(0))+'</div>';
+      h+='<div class="box ans"><div class="a">'+o+(q.osub&&q.osub[k]?'<div style="font-weight:500;font-size:12.5px;color:var(--muted)">'+q.osub[k]+'</div>':'')+'</div>'+lim+'</div>'});
     h+='</div><div class="next"><div class="arrow">↓ puis</div>';
-    if(q.nx&&id==='tkFoam')h+=goBox('wantSmooth','Tu veux passer au lisse ? (si mousse seule)')+goBox('tkSmooth','Take-off dans le lisse (si les deux)');
-    else if(id==='what')h+=goBox('tkFoam','Si mousse ou les deux : take-off dans la mousse')+goBox('tkSmooth','Si lisse : take-off dans le lisse');
-    else if(q.next==='END')h+=goBox('RULE','Le niveau : la marche la plus basse');
-    else h+=goBox(q.next,Q[q.next].n);
-    h+='</div>'+(q.note?'<p class="note">'+q.note+'</p>':'');return h}});
+    if(id==='goal')h+=goBox('RULE','Le niveau : la marche la plus basse');
+    else nextIds(id).forEach(function(x){h+=goBox(x.id,qTitle(x.id)+(nextIds(id).length>1||x.br.length<2?' ('+x.br.join(', ')+')':''))});
+    h+='</div>';return h}});
 });
 
 slides.push({name:'La règle',id:'RULE',html:function(){
   return '<h2>La règle</h2><div class="box q">Le niveau est la marche la plus basse<small>parmi ce que tu vises et chacune de ces limites</small></div><div class="spine">'+
-  ['Ce que tu cherches sur la vague','Le take-off (mousse seule, ou lisse)','Les vagues que tu surfes dans le lisse','La taille où tu passes la barre, et comment','Ta rame'].map(function(t){return '<div class="box ans"><div class="a">'+t+'</div></div>'}).join('')+'</div>'+
-  '<div class="stairs">'+LV.map(function(l,i){return '<div class="step t'+i+'" style="margin-left:'+(i*4)+'%">'+(i+1)+' · '+l+'</div>'}).join('')+'</div><p class="note">Exemple : tu vises Confirmé, tu surfes le peak, tu passes la barre jusqu\'à poitrine, mais tu fatigues vite. Les limites sont Avancé, Confirmé (poitrine), Intermédiaire (la rame) : le niveau est <b>Intermédiaire</b>.</p>'}});
+  ['Ce que tu cherches sur la vague','Ta rame pour prendre la vague','Mousse seulement : le take-off et l\'envie de passer au lisse','Le lisse : la taille où tu passes la barre, et comment','Le lisse : ta rame pour passer la barre, ton take-off, les vagues que tu surfes'].map(function(t){return '<div class="box ans"><div class="a">'+t+'</div></div>'}).join('')+'</div>'+
+  '<div class="stairs">'+LV.map(function(l,i){return '<div class="step t'+i+'" style="margin-left:'+(i*4)+'%">'+(i+1)+' · '+l+'</div>'}).join('')+'</div><p class="note">Exemple : tu vises Confirmé, tu surfes l\'épaule, tu passes la barre jusqu\'à poitrine, mais tu fatigues vite pour la passer. Les limites sont Confirmé, Confirmé, Confirmé, Intermédiaire : le niveau est <b>Intermédiaire</b>.</p>'}});
 
 slides.push({name:'Tous les chemins',id:'ALL',html:function(){
-  var total=0,cnt=[0,0,0,0,0],why={},byLevel=[{},{},{},{},{}];
-  function rec(a,ctx){ }
-  // énumération de toutes les combinaisons de réponses qui comptent pour le niveau
-  var subsets=[];for(var m=1;m<16;m++){var s=[];for(var b=0;b<4;b++)if(m&(1<<b))s.push(b);subsets.push(s)}
-  function add(a){var r=levelFor(a);total++;cnt[r.level]++;r.binding.forEach(function(b){why[b.k]=(why[b.k]||0)+1;byLevel[r.level][b.k]=(byLevel[r.level][b.k]||0)+1})}
-  for(var barre=0;barre<6;barre++)for(var feel=0;feel<4;feel++)for(var rame=0;rame<3;rame++)for(var goal=0;goal<5;goal++){
-    var base={barre:barre,feel:feel,rame:rame,goal:goal};
-    for(var tf=0;tf<3;tf++)for(var ws=0;ws<2;ws++)add(Object.assign({what:0,tkFoam:tf,wantSmooth:ws},base));
-    for(var ts=0;ts<3;ts++)subsets.forEach(function(w){add(Object.assign({what:1,tkSmooth:ts,waves:w},base));for(var tf2=0;tf2<3;tf2++)add(Object.assign({what:2,tkFoam:tf2,tkSmooth:ts,waves:w},base))});
+  var total=0,cnt=[0,0,0,0,0],why={};
+  var subsets=[];for(var m=1;m<8;m++){var s=[];for(var b=0;b<3;b++)if(m&(1<<b))s.push(b);subsets.push(s)}
+  function add(a){var r=levelFor(a);total++;cnt[r.level]++;r.binding.forEach(function(b){why[b.k]=(why[b.k]||0)+1})}
+  for(var goal=0;goal<5;goal++)for(var rv=0;rv<3;rv++)for(var tk=0;tk<3;tk++){
+    for(var want=0;want<2;want++)add({what:0,tk:tk,want:want,rameVague:rv,goal:goal});
+    for(var barre=0;barre<6;barre++)for(var feel=0;feel<4;feel++)for(var rb=0;rb<4;rb++)subsets.forEach(function(w){add({what:1,barre:barre,feel:feel,rameBarre:rb,rameVague:rv,tk:tk,waves:w,goal:goal})});
   }
-  var NAMEK={goal:'ce que tu cherches',what:'tu ne surfes que la mousse',tkSmooth:'ton take-off dans le lisse',waves:'les vagues que tu surfes',barre:'la barre',rame:'ta rame'};
+  var NAMEK={goal:'ce que tu cherches',what:'tu ne surfes que la mousse',tk:'ton take-off dans le lisse',waves:'les vagues que tu surfes',barre:'la barre',rameBarre:'ta rame pour passer la barre',rameVague:'ta rame pour prendre la vague'};
   var mx=Math.max.apply(null,cnt);
-  var h='<h2>Tous les chemins</h2><p style="margin:0 0 8px;font-size:14px"><b>'+total.toLocaleString('fr-FR')+'</b> combinaisons de réponses possibles (sans compter « depuis » et « combien de fois »). Le niveau que chacune donne :</p><div class="bars">';
-  cnt.forEach(function(c,i){h+='<div class="bar"><span>'+tag(i)+'</span><i class="t'+i+'" style="width:'+Math.max(2,c/mx*100)+'%"></i><span>'+(c>0&&c/total*100<.1?'moins de 0,1 %':(c/total*100).toFixed(1).replace('.',',')+' %')+'</span></div>'});
+  var h='<h2>Tous les chemins</h2><p style="margin:0 0 8px;font-size:14px"><b>'+total.toLocaleString('fr-FR')+'</b> combinaisons de réponses possibles (sans compter « depuis », la fréquence et la saison). Le niveau que chacune donne :</p><div class="bars">';
+  cnt.forEach(function(c,i){var pc=c/total*100;h+='<div class="bar"><span>'+tag(i)+'</span><i class="t'+i+'" style="width:'+Math.max(2,c/mx*100)+'%"></i><span>'+(c>0&&pc<.1?'moins de 0,1 %':pc.toFixed(1).replace('.',',')+' %')+'</span></div>'});
   h+='</div><p style="margin:12px 0 6px;font-size:14px"><b>Ce qui fixe le niveau</b> (la limite la plus basse) :</p><div class="why">';
   Object.keys(NAMEK).sort(function(a,b){return (why[b]||0)-(why[a]||0)}).forEach(function(k){h+='<div><b>'+((why[k]||0)/total*100).toFixed(0)+' %</b><span>'+NAMEK[k]+'</span></div>'});
-  return h+'</div><p class="note">Chaque combinaison compte pour une : ce n\'est pas la proportion de vrais surfeurs (peu de gens répondent « Expert » à tout). Plusieurs limites peuvent être à égalité : le total dépasse alors 100 %. La même règle sert à la diapo suivante et au questionnaire du profil.</p>'}});
+  return h+'</div><p class="note">Chaque combinaison compte pour une : ce n\'est pas la proportion de vrais surfeurs (peu de gens répondent « Expert » à tout). Plusieurs limites peuvent être à égalité : le total dépasse alors 100 %.</p>'}});
 
 slides.push({name:'Teste un chemin',id:'TEST',html:function(){return '<h2>Teste un chemin</h2><div class="sel" id="sel"></div><div class="res" id="tres"></div>'},after:function(){
-  var a={since:1,freq:1,what:2,tkFoam:0,tkSmooth:0,wantSmooth:0,waves:[2],barre:4,feel:0,rame:0,goal:3};
+  var a={what:1,barre:4,feel:0,rameBarre:0,rameVague:0,tk:0,waves:[2],goal:3};
   var el=document.getElementById('sel');
-  function active(id){if(id==='tkFoam')return a.what===0||a.what===2;if(id==='wantSmooth')return a.what===0;if(id==='tkSmooth'||id==='waves')return a.what!==0;return id!=='since'&&id!=='freq'}
+  function act(id){if(id==='since'||id==='freq'||id==='season')return false;if(['barre','feel','rameBarre','waves'].indexOf(id)>=0)return a.what===1;if(id==='want')return a.what===0;return true}
   function draw(){
-    el.innerHTML=ORDER.filter(active).map(function(id){var q=Q[id];return '<div class="qq"><p>'+q.n+'</p><div class="chips">'+q.o.map(function(o,i){var on=id==='waves'?a.waves.indexOf(i)>=0:a[id]===i;return '<button class="chip" data-q="'+id+'" data-i="'+i+'" aria-pressed="'+on+'">'+o+'</button>'}).join('')+'</div></div>'}).join('');
-    el.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var id=b.dataset.q,i=+b.dataset.i;if(id==='waves'){var k=a.waves.indexOf(i);if(k>=0){if(a.waves.length>1)a.waves.splice(k,1)}else a.waves.push(i)}else a[id]=i;draw()}});
+    el.innerHTML=ORDER.filter(act).map(function(id){var q=Q[id];return '<div class="qq"><p>'+qTitle(id)+'</p><div class="chips">'+q.o.map(function(o,i){var on=id==='waves'?a.waves.indexOf(i)>=0:a[id]===i;return '<button class="chip" data-q="'+id+'" data-i="'+i+'" aria-pressed="'+on+'">'+o+'</button>'}).join('')+'</div></div>'}).join('');
+    el.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var id=b.dataset.q,i=+b.dataset.i;if(id==='waves'){var k=a.waves.indexOf(i);if(k>=0){if(a.waves.length>1)a.waves.splice(k,1)}else a.waves.push(i)}else{a[id]=i;if(id==='what'&&i===0&&a.want===undefined)a.want=0}draw()}});
     var r=levelFor(a);
     document.getElementById('tres').innerHTML='<b class="big">'+tag(r.level)+'</b><div style="margin-top:8px">Limites : '+r.all.map(function(x){return '<div>'+(x.v===r.level?'➜ ':'• ')+x.t+' : '+tag(x.v)+'</div>'}).join('')+'</div>'+
       '<div style="margin-top:8px;font-size:13px;color:var(--muted)">Le niveau est la marche la plus basse : '+r.binding.map(function(b){return b.t}).join(', ')+'.</div>';
@@ -182,7 +183,6 @@ slides.push({name:'Teste un chemin',id:'TEST',html:function(){return '<h2>Teste 
   draw();
 }});
 
-/* ---------- Navigation ---------- */
 var cur=0;
 function show(i){
   cur=Math.max(0,Math.min(slides.length-1,i));
