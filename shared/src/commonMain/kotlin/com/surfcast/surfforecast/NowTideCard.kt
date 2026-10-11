@@ -76,6 +76,7 @@ fun NowTideCard(
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface
             )
             Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+            Text("Nuages ${hourlyModel.cloudCover} %", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
             if (seaTemperature != null) {
                 Text("Eau $seaTemperature °C", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
             }
