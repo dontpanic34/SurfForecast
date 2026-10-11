@@ -196,14 +196,16 @@ var STEPS=[
  {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
  {id:'what',q:'Tu surfes…',sub:'Celui qui surfe la vague surfe aussi la mousse.',o:['La mousse seulement','La vague']},
  {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===1}},
- {id:'feel',q:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],
-   osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===1}},
  {id:'tk',q:'Définis ton take-off',o:TK},
  {id:'want',q:'Tu veux passer à la vague ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
  {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser. Les reformes et l\'épaule, c\'est plutôt la première réponse.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===1}},
  {id:'goal',q:'Sur la vague, tu cherches surtout à…',sub:'Plusieurs réponses possibles : on retient la plus haute.',multi:true,o:['Réussir tes take-offs','Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques','Devenir de plus en plus radical, critique et engagé','Affiner ton surf : le style, la précision, chaque détail'],when:function(a){return a.what===1}},
- {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['Je n\'en suis pas là : je cherche surtout à comprendre et suivre le rythme de la vague','Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],when:function(a){return a.what===1&&gmax(a)>=2}}
+ {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['Je n\'en suis pas là : je cherche surtout à comprendre et suivre le rythme de la vague','Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],when:function(a){return a.what===1&&gmax(a)>=2}},
+ {id:'feel',q:'Quand tu passes la barre, tu te sens…',sub:'Condition physique : elle ne change pas ton niveau, elle fait monter ou descendre ta note à l\'intérieur.',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===1}},
+ {id:'train',q:'Tu t\'entraînes en dehors du surf ?',sub:'Condition physique : elle ne change pas ton niveau.',o:['Non','De temps en temps (course, natation, yoga…)','Régulièrement, pour le surf (cardio, renfo, apnée…)']},
+ {id:'comp',q:'Tu fais des compétitions ?',sub:'Condition physique : elle ne change pas ton niveau.',o:['Jamais','De temps en temps, en loisir','Régulièrement']}
 ];
+var PP={feel:[1,0.6,0.3,0.5],train:[0,0.5,1],comp:[0,0.5,1]};
 function gmax(a){return Math.max.apply(null,(a.goal||[]).length?a.goal:[-1])}
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
@@ -221,8 +223,8 @@ function compute(){
   if(ans.what===0){L.push({v:0,t:'tu ne surfes que la mousse'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
   else{
     L.push({v:gmax(ans)+1,p:Math.min(4,gmax(ans)+1+0.25*(ans.goal.length-1)),t:'ce que tu cherches'});
-    var bar=[0,0,1,2,3,4][ans.barre];if(ans.feel!==0)bar=Math.max(0,bar-1);
-    L.push({v:bar,t:ans.barre===0?'tu ne passes pas encore la barre':'la taille où tu passes la barre'+(ans.feel!==0?' et la façon dont tu la passes':'')});
+    var bar=[0,0,1,2,3,4][ans.barre];
+    L.push({v:bar,t:ans.barre===0?'tu ne passes pas encore la barre':'la taille où tu passes la barre'});
     L.push({v:[4,1,0][ans.tk],t:'ton take-off'});
     L.push({v:[1,2,4][ans.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
     if(ans.man!==undefined)L.push({v:[2,2,3,4][ans.man],t:'tes manœuvres (pas encore replaquées à chaque fois)'});
@@ -232,9 +234,11 @@ function compute(){
   var baseL=Math.max(0,Math.min(4,m));
   var plus0=((ans.what===1&&bind.length===1&&m<=3)||forcePlus)&&baseL<4;
   // Position : la part des limites qui sont déjà au-dessus de la plus basse remplit la tranche.
+  var pp=['feel','train','comp'].filter(function(k){return ans[k]!==undefined}).map(function(k){return PP[k][ans[k]]});pp=pp.length?pp.reduce(function(x,y){return x+y},0)/pp.length:0.5;
   var above=m>=4?1:Math.max(0,(L.reduce(function(t,x){return t+(x.p!==undefined?x.p:x.v)},0)/L.length-m)/(4-m));
+  above=(m>=4?1:above*0.7+pp*0.3);
   var bi0=bandIndex(baseL,plus0),bi=Math.max(0,Math.min(8,bi0+adj)),B=BANDS[bi],lvl=B.L,plus=bi%2===1&&bi<8,score;
-  if(bi===8)score=100;
+  if(bi===8)score=84+16*pp;
   else if(adj!==0)score=(B.a+B.b)/2;
   else if(ans.what===0)score=forcePlus?B.a+3:B.a+[5,11,16][ans.tk]*(B.b-B.a)/16;
   else score=B.a+Math.min(0.98,above)*(B.b-B.a);

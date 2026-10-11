@@ -86,3 +86,4 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - Pas de nom de marque dans les réponses.
 - Le niveau (note) et la tolérance aux conditions (motivation, vent, onshore) sont deux choses séparées : la tolérance ne change pas la note, elle sert aux recommandations.
 - Tolérance aux conditions (vent, taille, motivation) : des questions à trois réponses, pas de curseur. Validé par le propriétaire.
+- Condition physique (ressenti à la barre, entraînement hors surf, compétitions) : points qui font évoluer la note dans le niveau, sans changer le niveau. Taille de la barre : reste dans le niveau. Validé par le propriétaire.
