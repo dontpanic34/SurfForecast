@@ -109,7 +109,7 @@ fun DailyTimelineCard(
     // Notation avec la mémoire du vent : la mer ne devient pas « glacée » une heure après 30 km/h de vent de mer.
     val scoring = hoursWithWindMemory(selectedDate, groupedByDate).associateBy { it.rawTime }
     val ratings = curveHours.map { shown ->
-        calculateSlotRating(scoring[shown.rawTime] ?: shown, idealSwellDirection, surferLevel)
+        calculateSlotRating(scoring[shown.rawTime] ?: shown, idealSwellDirection, surferLevel, displayedWind = shown)
     }
     // Une heure choisie hors de la fenêtre (la nuit) se ramène à l'heure visible la plus proche.
     val selectedIndex = selectedHour?.let { sel ->
@@ -160,6 +160,17 @@ fun DailyTimelineCard(
                             }
                         }
                     }
+                    // Le vent ressenti est affiché dans la colonne des heures ; le détail (moyen et rafales) seulement pour l'heure choisie.
+                    curveHours[selectedIndex].let { sel ->
+                        if (sel.windGustKmh > sel.windSpeedKmh) {
+                            Text(
+                                "Vent moyen " + SurfUnitsHelper.formatWindValue(sel.windSpeedKmh, windUnit) + " · rafales " +
+                                    SurfUnitsHelper.formatWindValue(sel.windGustKmh, windUnit) + " " + SurfUnitsHelper.getWindUnitSymbol(windUnit),
+                                fontSize = 11.sp, color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1,
+                                modifier = Modifier.padding(top = 3.dp)
+                            )
+                        }
+                    }
                     // Coefficient puis les deux marées de la journée, sur une ligne sous la jauge.
                     dailyTides[selectedDate]?.let { TideLine(dayTides, it.coefficient, onSurfaceColor) }
                 }
@@ -182,7 +193,8 @@ fun DailyTimelineCard(
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
                         sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
-                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1)
+                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1),
+                        beachFacing = idealSwellDirection, surferLevel = surferLevel
                     )
                 }
             }
@@ -217,7 +229,9 @@ private fun DailyTimelineBody(
     windUnit: String,
     isDark: Boolean,
     onSurfaceColor: Color,
-    tideMarks: List<TideMark>
+    tideMarks: List<TideMark>,
+    beachFacing: Int?,
+    surferLevel: String
 ) {
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
@@ -267,7 +281,7 @@ private fun DailyTimelineBody(
                         val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
                         key(h) {
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
-                        val color = SurfUnitsHelper.getSurfWindColor(dirFr, effectiveWindKmh(hourly).roundToInt())
+                        val color = windFeelColor(hourly, beachFacing, surferLevel)
                         val textColor = SurfUnitsHelper.windTextColor(color, isDark)
                         val rotation = (SurfUnitsHelper.cardinalToDegrees(dirFr) + 180f) % 360f
                         val itemW = 34.dp
@@ -280,7 +294,7 @@ private fun DailyTimelineBody(
                             WindArrow(color, rotation, (windFont * 1.5f).dp)
                             Text(dirFr, fontSize = windFont.sp, fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp)
                             Text(
-                                SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit), fontSize = windFont.sp,
+                                SurfUnitsHelper.formatWindValue(windFeelKmh(hourly), windUnit), fontSize = windFont.sp,
                                 fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp
                             )
                             // Soulignement de la colonne de l'heure choisie, de la couleur de son vent.

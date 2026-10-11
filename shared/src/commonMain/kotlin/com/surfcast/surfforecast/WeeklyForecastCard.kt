@@ -97,6 +97,8 @@ fun WeeklyForecastCard(
     selectedIndex: Int,
     surferLevel: String,
     windUnit: String,
+    // Direction vers laquelle regarde la plage : classe le vent (de mer, de côté, de terre) pour la couleur des flèches.
+    idealSwellDirection: Int? = null,
     weeklyDensity: Int,
     weeklyWindMode: String,
     primaryColor: Color,
@@ -228,7 +230,9 @@ fun WeeklyForecastCard(
                                             dailyData = dailyData,
                                             windUnit = windUnit,
                                             density = weeklyDensity,
-                                            windMode = weeklyWindMode
+                                            windMode = weeklyWindMode,
+                                            beachFacing = idealSwellDirection,
+                                            surferLevel = surferLevel
                                         )
                                     }
                                 }
@@ -676,6 +680,8 @@ fun DayWindThreeSlots(
     windUnit: String,
     density: Int = 3,
     windMode: String = "both",
+    beachFacing: Int? = null,
+    surferLevel: String = "intermediate",
     modifier: Modifier = Modifier
 ) {
     val targetHours = hoursForDensity(density)
@@ -687,7 +693,7 @@ fun DayWindThreeSlots(
         verticalAlignment = Alignment.CenterVertically
     ) {
         slots.forEach { slot ->
-            MiniWindSlot(slot = slot, windUnit = windUnit, windMode = windMode)
+            MiniWindSlot(slot = slot, windUnit = windUnit, windMode = windMode, beachFacing = beachFacing, surferLevel = surferLevel)
         }
     }
 }
@@ -700,15 +706,15 @@ private fun hoursForDensity(density: Int): List<Int> = when (density) {
 }
 
 @Composable
-fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both") {
+fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both", beachFacing: Int? = null, surferLevel: String = "intermediate") {
     val dirFr = SurfUnitsHelper.formatCardinalFr(slot.windDirectionStr)
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, effectiveWindKmh(slot).roundToInt())
+    val arrowColor = windFeelColor(slot, beachFacing, surferLevel)
     val windTextColor = SurfUnitsHelper.windTextColor(arrowColor, isDarkSurfaceTheme())
 
-    val formattedSpeed = SurfUnitsHelper.formatWindValue(slot.windSpeedKmh, windUnit)
+    val formattedSpeed = SurfUnitsHelper.formatWindValue(windFeelKmh(slot), windUnit)
     val showArrow = windMode == "arrow" || windMode == "both"
     val showText = windMode == "text" || windMode == "both"
 
