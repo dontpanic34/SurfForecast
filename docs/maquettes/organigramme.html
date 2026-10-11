@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Organigramme du profil</title>
+<style>
+:root{--bg:#EDF1F6;--surface:#FFFFFF;--surface2:#E4EAF2;--ink:#14202B;--muted:#5D6E80;--line:#B9C6D6;--accent:#2F6FE4;--accent-ink:#FFFFFF;--good:#1FA463;--warn:#E08A00;--bad:#D6403A;
+--l0:#6C8EBF;--l1:#3FA7A0;--l2:#4FAE5B;--l3:#E0A100;--l4:#D6603A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#2E4258;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--warn:#FFA826;--bad:#F2554F;--l0:#7FA3D8;--l1:#52C0B8;--l2:#62C66E;--l3:#F2B91A;--l4:#F27A55;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#2E4258;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--warn:#FFA826;--bad:#F2554F;--l0:#7FA3D8;--l1:#52C0B8;--l2:#62C66E;--l3:#F2B91A;--l4:#F27A55;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:14px 14px 30px;line-height:1.4}
+header{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;max-width:900px;margin:0 auto 10px}
+h1{font-size:19px;margin:0}
+.theme button{all:unset;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12.5px;color:var(--muted);background:var(--surface2)}
+.theme button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.nav{display:flex;align-items:center;gap:8px;max-width:900px;margin:0 auto 10px}
+.nav button{all:unset;cursor:pointer;padding:9px 14px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px}
+.nav button:disabled{opacity:.35;cursor:default}
+.nav button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.nav .ct{flex:1;text-align:center;font-size:13px;color:var(--muted)}
+.slide{max-width:900px;margin:0 auto;background:var(--surface);border-radius:18px;padding:18px 16px 22px;min-height:420px}
+.slide h2{font-size:15px;margin:0 0 12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.box{background:var(--surface2);border-radius:12px;padding:11px 13px;font-size:14px;border:2px solid transparent}
+.box.q{background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:17px;text-align:center}
+.box.q small{display:block;font-weight:500;font-size:12.5px;opacity:.9;margin-top:2px}
+.spine{margin-left:18px;border-left:3px solid var(--line);padding:10px 0 10px 18px;display:grid;gap:8px}
+.ans{position:relative}
+.ans::before{content:"";position:absolute;left:-18px;top:22px;width:18px;height:3px;background:var(--line)}
+.ans .a{font-weight:700;font-size:14.5px}
+.ans .lim{margin-top:5px;font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:800;color:#0b1520;margin-right:4px}
+.t0{background:var(--l0)}.t1{background:var(--l1)}.t2{background:var(--l2)}.t3{background:var(--l3)}.t4{background:var(--l4)}.tn{background:var(--surface);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.next{margin:6px 0 0 18px;padding-left:18px;border-left:3px solid var(--line);position:relative}
+.next .arrow{color:var(--muted);font-size:12.5px;margin:6px 0}
+.go{all:unset;cursor:pointer;display:inline-block;background:var(--surface2);padding:8px 12px;border-radius:10px;font-weight:700;font-size:13.5px;margin:3px 6px 3px 0;box-shadow:inset 0 0 0 2px var(--accent)}
+.go:focus-visible{outline:3px solid var(--ink)}
+.note{margin-top:12px;font-size:12.5px;color:var(--muted)}
+/* vue d'ensemble */
+.flow{display:grid;justify-items:center;gap:0}
+.fn{background:var(--surface2);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:650;text-align:center;min-width:170px;max-width:100%;border:2px solid transparent}
+.fn.info{opacity:.7;border-style:dashed;border-color:var(--line)}
+.fn.end{background:var(--accent);color:var(--accent-ink);font-weight:800}
+.fa{color:var(--line);font-size:18px;line-height:1.1;height:20px}
+.fork{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin-top:2px}
+.fork .col{display:grid;justify-items:center;align-content:start;border-top:3px solid var(--line);padding-top:6px;position:relative}
+.fork .col .lab{font-size:11.5px;font-weight:800;color:var(--accent);margin-bottom:4px}
+.fork .fn{min-width:0;width:100%;font-size:12px;padding:7px 8px}
+@media (max-width:560px){.fork{grid-template-columns:1fr}.fork .col{border-top:3px solid var(--line)}}
+/* marches */
+.stairs{display:grid;gap:6px;margin:10px 0}
+.step{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;font-weight:800;color:#0b1520}
+.step small{font-weight:600;opacity:.85}
+/* chemins */
+.bars{display:grid;gap:8px;margin:8px 0}
+.bar{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;font-size:13px}
+.bar i{display:block;height:16px;border-radius:8px}
+.why{margin-top:12px;display:grid;gap:6px;font-size:13px}
+.why div{display:flex;gap:8px;align-items:baseline}
+.sel{display:grid;gap:10px}
+.sel .qq{background:var(--surface2);border-radius:10px;padding:9px 11px}
+.sel .qq p{margin:0 0 6px;font-size:13.5px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;padding:7px 11px;border-radius:99px;background:var(--surface);font-size:12.5px;font-weight:650;box-shadow:inset 0 0 0 1px var(--line)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+.chip:focus-visible{outline:2px solid var(--accent)}
+.res{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--surface2);font-size:14px}
+.res b.big{font-size:20px}
+</style>
+</head>
+<body>
+<header><h1>Comment on arrive à un niveau</h1><div class="theme" id="theme"><button data-v="auto" aria-pressed="true">Auto</button><button data-v="light" aria-pressed="false">Clair</button><button data-v="dark" aria-pressed="false">Sombre</button></div></header>
+<div class="nav"><button id="prev">◀</button><div class="ct" id="ct"></div><button id="next">▶</button></div>
+<div class="slide" id="slide" aria-live="polite"></div>
+
+<script>
+/* ---------- Les cinq niveaux ---------- */
+var LV=['Débutant','Intermédiaire','Confirmé','Avancé','Expert'];
+function tag(n){return '<span class="tag t'+n+'">'+LV[n]+'</span>'}
+
+/* ---------- Les questions, leurs réponses, la limite que chaque réponse pose et la question suivante ---------- */
+var Q={
+ since:{n:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans'],next:'freq',info:true},
+ freq:{n:'Tu surfes combien de fois par mois ?',o:['1 à 2 fois','Chaque semaine','Plusieurs fois par semaine'],next:'what',info:true},
+ what:{n:'Tu surfes…',o:['La mousse','Le lisse','Les deux'],
+   lim:['Voir la suite : « tu veux passer au lisse ? »','Pas de limite ici','Pas de limite ici'],
+   nx:['tkFoam','tkSmooth','tkFoam']},
+ tkFoam:{n:'Dans la mousse, ton take-off',sub:'Le lever sur la planche.',o:['Parfait, en un seul temps','À travailler','En plusieurs temps'],
+   lim:[[1,'si tu veux passer au lisse'],[0],[0]],note:'Compte seulement si tu ne surfes que la mousse. Si tu surfes aussi le lisse, c\'est le take-off dans le lisse qui compte.',nx:['wantSmooth|tu ne surfes que la mousse','tkSmooth|tu surfes les deux']},
+ wantSmooth:{n:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],lim:[[1,'si le take-off est parfait, sinon Débutant'],[0]],next:'barre'},
+ tkSmooth:{n:'Dans le lisse, ton take-off',sub:'Le lever sur la planche.',o:['Parfait, en un seul temps','À travailler','En plusieurs temps'],lim:[null,[2],[1]],next:'waves'},
+ waves:{n:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles : c\'est la plus haute qui compte.',o:['Les réformes','L\'épaule','Le peak','Le tube'],lim:[[1],[2],[3],[4]],next:'barre'},
+ barre:{n:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux','Taille','Poitrine','Tête','Surcote'],lim:[[0],[0],[1],[2],[3],[4]],next:'feel'},
+ feel:{n:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si c\'est le bon moment'],lim:['La limite de la barre reste la même','La limite de la barre baisse d\'une marche','La limite de la barre baisse d\'une marche','La limite de la barre baisse d\'une marche'],next:'rame'},
+ rame:{n:'Ta rame : tu suis physiquement ?',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite'],lim:[null,[3],[1]],next:'goal'},
+ goal:{n:'Sur la vague, tu cherches surtout à…',o:['Te lever, et garder la mousse le plus longtemps possible','Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Encore au-dessus (à définir avec toi)'],lim:[[0],[1],[2],[3],[4]],next:'END'}
+};
+var ORDER=['since','freq','what','tkFoam','wantSmooth','tkSmooth','waves','barre','feel','rame','goal'];
+
+/* ---------- La règle : le niveau est la marche la plus basse parmi les limites ---------- */
+function limitsOf(a){
+  var L=[];
+  L.push({k:'goal',v:a.goal,t:'ce que tu cherches'});
+  if(a.what===0){L.push({k:'what',v:(a.tkFoam===0&&a.wantSmooth===0)?1:0,t:'tu ne surfes que la mousse'})}
+  else{L.push({k:'tkSmooth',v:[4,2,1][a.tkSmooth],t:'ton take-off dans le lisse'});
+       var top=-1;(a.waves||[]).forEach(function(w){top=Math.max(top,w)});L.push({k:'waves',v:[1,2,3,4][top],t:'les vagues que tu surfes dans le lisse'})}
+  var bar=[0,0,1,2,3,4][a.barre];if(a.feel!==0)bar=Math.max(0,bar-1);
+  L.push({k:'barre',v:bar,t:'la taille où tu passes la barre'+(a.feel!==0?' (et la façon dont tu la passes)':'')});
+  L.push({k:'rame',v:[4,3,1][a.rame],t:'ta rame'});
+  return L;
+}
+function levelFor(a){var L=limitsOf(a),m=4;L.forEach(function(x){m=Math.min(m,x.v)});return {level:m,binding:L.filter(function(x){return x.v===m}),all:L}}
+
+/* ---------- Diapos ---------- */
+var slides=[];
+function goBox(id,label){return '<button class="go" data-go="'+id+'">'+label+'</button>'}
+slides.push({name:'Comment lire',html:function(){return '<h2>Comment lire</h2><div class="box q">Une diapo par question<small>Question, réponses, limite posée par chaque réponse, question suivante</small></div><div class="spine"><div class="box ans"><div class="a">Chaque réponse peut poser une limite</div><div class="lim">Par exemple « Je fatigue vite » ne laisse pas dépasser '+tag(1)+'.</div></div><div class="box ans"><div class="a">Le niveau final = la marche la plus basse</div><div class="lim">Parmi ce que tu vises et toutes les limites. Voir la diapo « La règle ».</div></div><div class="box ans"><div class="a">Les questions « Depuis » et « Combien de fois » ne changent pas le niveau</div><div class="lim">Elles restent pour connaître le surfeur.</div></div></div><p class="note">Utilise ◀ ▶ (ou les flèches du clavier). Les boutons bleus sautent à la diapo indiquée.</p>'}});
+
+slides.push({name:'Vue d\'ensemble',html:function(){
+  function n(t,c){return '<div class="fn'+(c?' '+c:'')+'">'+t+'</div>'}var A='<div class="fa">↓</div>';
+  return '<h2>Vue d\'ensemble</h2><div class="flow">'+n('Tu surfes depuis…','info')+A+n('Combien de fois par mois ?','info')+A+n('Tu surfes : mousse, lisse, ou les deux ?')+A+
+  '<div class="fork">'+
+   '<div class="col"><div class="lab">LA MOUSSE</div>'+n('Take-off dans la mousse')+A+n('Tu veux passer au lisse ?')+'</div>'+
+   '<div class="col"><div class="lab">LE LISSE</div>'+n('Take-off dans le lisse')+A+n('Quelles vagues ?')+'</div>'+
+   '<div class="col"><div class="lab">LES DEUX</div>'+n('Take-off dans la mousse')+A+n('Take-off dans le lisse')+A+n('Quelles vagues ?')+'</div>'+
+  '</div>'+A+n('Jusqu\'à quelle taille tu passes la barre ?')+A+n('Comment tu la passes ?')+A+n('Ta rame')+A+n('Ce que tu cherches sur la vague')+A+n('Le niveau : la marche la plus basse','end')+'</div><p class="note">Pointillés : questions qui ne changent pas le niveau. Les trois colonnes sont les trois seules vraies branches ; elles se rejoignent à « la barre ».</p>'}});
+
+ORDER.forEach(function(id,i){
+  slides.push({name:Q[id].n,id:id,html:function(){
+    var q=Q[id],h='<h2>Question '+(i+1)+' sur '+ORDER.length+(q.info?' · ne change pas le niveau':'')+'</h2><div class="box q">'+q.n+(q.sub?'<small>'+q.sub+'</small>':'')+'</div><div class="spine">';
+    q.o.forEach(function(o,k){
+      var lim='';
+      if(q.info)lim='<div class="lim">Pas de limite : informatif.</div>';
+      else if(id==='feel')lim='<div class="lim">'+q.lim[k]+'</div>';
+      else if(id==='what')lim='<div class="lim">'+q.lim[k]+' · mène à : '+(q.nx[k]==='tkFoam'?'take-off dans la mousse':'take-off dans le lisse')+'</div>';
+      else{var l=q.lim[k];lim='<div class="lim">'+(l?'Limite : '+tag(l[0])+(l[1]?' <span>'+l[1]+'</span>':''):'Pas de limite')+'</div>'}
+      h+='<div class="box ans"><div class="a">'+o+'</div>'+lim+'</div>'});
+    h+='</div><div class="next"><div class="arrow">↓ puis</div>';
+    if(q.nx&&id==='tkFoam')h+=goBox('wantSmooth','Tu veux passer au lisse ? (si mousse seule)')+goBox('tkSmooth','Take-off dans le lisse (si les deux)');
+    else if(id==='what')h+=goBox('tkFoam','Si mousse ou les deux : take-off dans la mousse')+goBox('tkSmooth','Si lisse : take-off dans le lisse');
+    else if(q.next==='END')h+=goBox('RULE','Le niveau : la marche la plus basse');
+    else h+=goBox(q.next,Q[q.next].n);
+    h+='</div>'+(q.note?'<p class="note">'+q.note+'</p>':'');return h}});
+});
+
+slides.push({name:'La règle',id:'RULE',html:function(){
+  return '<h2>La règle</h2><div class="box q">Le niveau est la marche la plus basse<small>parmi ce que tu vises et chacune de ces limites</small></div><div class="spine">'+
+  ['Ce que tu cherches sur la vague','Le take-off (mousse seule, ou lisse)','Les vagues que tu surfes dans le lisse','La taille où tu passes la barre, et comment','Ta rame'].map(function(t){return '<div class="box ans"><div class="a">'+t+'</div></div>'}).join('')+'</div>'+
+  '<div class="stairs">'+LV.map(function(l,i){return '<div class="step t'+i+'" style="margin-left:'+(i*4)+'%">'+(i+1)+' · '+l+'</div>'}).join('')+'</div><p class="note">Exemple : tu vises Confirmé, tu surfes le peak, tu passes la barre jusqu\'à poitrine, mais tu fatigues vite. Les limites sont Avancé, Confirmé (poitrine), Intermédiaire (la rame) : le niveau est <b>Intermédiaire</b>.</p>'}});
+
+slides.push({name:'Tous les chemins',id:'ALL',html:function(){
+  var total=0,cnt=[0,0,0,0,0],why={},byLevel=[{},{},{},{},{}];
+  function rec(a,ctx){ }
+  // énumération de toutes les combinaisons de réponses qui comptent pour le niveau
+  var subsets=[];for(var m=1;m<16;m++){var s=[];for(var b=0;b<4;b++)if(m&(1<<b))s.push(b);subsets.push(s)}
+  function add(a){var r=levelFor(a);total++;cnt[r.level]++;r.binding.forEach(function(b){why[b.k]=(why[b.k]||0)+1;byLevel[r.level][b.k]=(byLevel[r.level][b.k]||0)+1})}
+  for(var barre=0;barre<6;barre++)for(var feel=0;feel<4;feel++)for(var rame=0;rame<3;rame++)for(var goal=0;goal<5;goal++){
+    var base={barre:barre,feel:feel,rame:rame,goal:goal};
+    for(var tf=0;tf<3;tf++)for(var ws=0;ws<2;ws++)add(Object.assign({what:0,tkFoam:tf,wantSmooth:ws},base));
+    for(var ts=0;ts<3;ts++)subsets.forEach(function(w){add(Object.assign({what:1,tkSmooth:ts,waves:w},base));for(var tf2=0;tf2<3;tf2++)add(Object.assign({what:2,tkFoam:tf2,tkSmooth:ts,waves:w},base))});
+  }
+  var NAMEK={goal:'ce que tu cherches',what:'tu ne surfes que la mousse',tkSmooth:'ton take-off dans le lisse',waves:'les vagues que tu surfes',barre:'la barre',rame:'ta rame'};
+  var mx=Math.max.apply(null,cnt);
+  var h='<h2>Tous les chemins</h2><p style="margin:0 0 8px;font-size:14px"><b>'+total.toLocaleString('fr-FR')+'</b> combinaisons de réponses possibles (sans compter « depuis » et « combien de fois »). Le niveau que chacune donne :</p><div class="bars">';
+  cnt.forEach(function(c,i){h+='<div class="bar"><span>'+tag(i)+'</span><i class="t'+i+'" style="width:'+Math.max(2,c/mx*100)+'%"></i><span>'+(c>0&&c/total*100<.1?'moins de 0,1 %':(c/total*100).toFixed(1).replace('.',',')+' %')+'</span></div>'});
+  h+='</div><p style="margin:12px 0 6px;font-size:14px"><b>Ce qui fixe le niveau</b> (la limite la plus basse) :</p><div class="why">';
+  Object.keys(NAMEK).sort(function(a,b){return (why[b]||0)-(why[a]||0)}).forEach(function(k){h+='<div><b>'+((why[k]||0)/total*100).toFixed(0)+' %</b><span>'+NAMEK[k]+'</span></div>'});
+  return h+'</div><p class="note">Chaque combinaison compte pour une : ce n\'est pas la proportion de vrais surfeurs (peu de gens répondent « Expert » à tout). Plusieurs limites peuvent être à égalité : le total dépasse alors 100 %. La même règle sert à la diapo suivante et au questionnaire du profil.</p>'}});
+
+slides.push({name:'Teste un chemin',id:'TEST',html:function(){return '<h2>Teste un chemin</h2><div class="sel" id="sel"></div><div class="res" id="tres"></div>'},after:function(){
+  var a={since:1,freq:1,what:2,tkFoam:0,tkSmooth:0,wantSmooth:0,waves:[2],barre:4,feel:0,rame:0,goal:3};
+  var el=document.getElementById('sel');
+  function active(id){if(id==='tkFoam')return a.what===0||a.what===2;if(id==='wantSmooth')return a.what===0;if(id==='tkSmooth'||id==='waves')return a.what!==0;return id!=='since'&&id!=='freq'}
+  function draw(){
+    el.innerHTML=ORDER.filter(active).map(function(id){var q=Q[id];return '<div class="qq"><p>'+q.n+'</p><div class="chips">'+q.o.map(function(o,i){var on=id==='waves'?a.waves.indexOf(i)>=0:a[id]===i;return '<button class="chip" data-q="'+id+'" data-i="'+i+'" aria-pressed="'+on+'">'+o+'</button>'}).join('')+'</div></div>'}).join('');
+    el.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var id=b.dataset.q,i=+b.dataset.i;if(id==='waves'){var k=a.waves.indexOf(i);if(k>=0){if(a.waves.length>1)a.waves.splice(k,1)}else a.waves.push(i)}else a[id]=i;draw()}});
+    var r=levelFor(a);
+    document.getElementById('tres').innerHTML='<b class="big">'+tag(r.level)+'</b><div style="margin-top:8px">Limites : '+r.all.map(function(x){return '<div>'+(x.v===r.level?'➜ ':'• ')+x.t+' : '+tag(x.v)+'</div>'}).join('')+'</div>'+
+      '<div style="margin-top:8px;font-size:13px;color:var(--muted)">Le niveau est la marche la plus basse : '+r.binding.map(function(b){return b.t}).join(', ')+'.</div>';
+  }
+  draw();
+}});
+
+/* ---------- Navigation ---------- */
+var cur=0;
+function show(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  var s=slides[cur];document.getElementById('slide').innerHTML=s.html();
+  document.getElementById('ct').textContent=(cur+1)+' / '+slides.length+' · '+s.name;
+  document.getElementById('prev').disabled=cur===0;document.getElementById('next').disabled=cur===slides.length-1;
+  document.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){var id=b.dataset.go;var k=slides.findIndex(function(x){return x.id===id});if(k>=0)show(k)}});
+  if(s.after)s.after();window.scrollTo(0,0);
+}
+document.getElementById('prev').onclick=function(){show(cur-1)};
+document.getElementById('next').onclick=function(){show(cur+1)};
+document.addEventListener('keydown',function(e){if(e.key==='ArrowRight')show(cur+1);if(e.key==='ArrowLeft')show(cur-1)});
+document.getElementById('theme').onclick=function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});var v=b.dataset.v;if(v==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',v)};
+show(0);
+</script>
+</body>
+</html>
