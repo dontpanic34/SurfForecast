@@ -26,7 +26,7 @@ h1{font-size:19px;margin:0 0 4px}.top p{margin:0 0 10px;color:var(--muted);font-
 .dcol[aria-pressed="true"] .n{color:var(--accent);font-weight:800}
 .st{color:#F5B50A;font-weight:800;font-size:13px}
 .tp{font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}.tp small{font-weight:600;color:var(--muted);font-size:9.5px;margin-left:2px}
-.bars{display:flex;gap:3px;justify-content:center;margin:3px 8px 3px}.bars i{flex:1;height:3px;border-radius:2px}
+.bars{display:flex;gap:3px;justify-content:center;margin:3px 8px 3px}.bars i{flex:1;height:3px;border-radius:2px}.bars{position:relative}.bars .bt{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--card);padding:0 5px;font-size:11px;font-weight:800;line-height:1.2;border-radius:6px}.dcol[aria-pressed="true"] .bars .bt{background:#2b4468}
 .winds{display:flex;height:40px}.winds div{flex:1;font-size:10px;font-weight:800;line-height:1.05;text-align:center}
 .winds svg{display:block;margin:2px auto 0}
 canvas{display:block}
@@ -47,6 +47,7 @@ canvas{display:block}
 <div class="top">
  <h1>Écran principal : phrase du jour et température</h1>
  <p>Rendu réel des nuages, du soleil, de l'eau et de la pluie de l'appli. Touche un jour dans la semaine, ou une heure dans le déroulé.</p>
+ <div class="seg" id="pt" style="flex-wrap:wrap;margin-bottom:8px"><button data-v="A" aria-pressed="true">1 · Ciel, sous le soleil</button><button data-v="B" aria-pressed="false">2 · Sur le soleil</button><button data-v="C" aria-pressed="false">3 · Dans la barre colorée</button><button data-v="D" aria-pressed="false">4 · Avec les étoiles</button><button data-v="E" aria-pressed="false">5 · Ligne seule</button><button data-v="F" aria-pressed="false">6 · Avec les kJ</button><button data-v="N" aria-pressed="false">Sans</button></div><br>
  <div class="seg" id="th"><button data-v="d" aria-pressed="true">Sombre</button><button data-v="l" aria-pressed="false">Clair</button></div>
 </div>
 <div id="load">Chargement des images…</div>
@@ -79,6 +80,7 @@ canvas{display:block}
 </div>
 <div class="dl" id="dl2"><b>Ce que ça change</b>
  <span>• <b>Semaine :</b> phrase du jour en 3 lignes (titre, houle, vent). Plus de chiffre sous les étoiles : la température du jour est dans le ciel, à droite du soleil, en petit et discret ; la température de l'eau est dans l'eau, sous la courbe de houle, tout aussi discrète. Aucun mot « ressenti » à l'écran. On dit « offshore » et « onshore ».</span>
+ <span>• <b>Température de l'air, centrée dans la semaine :</b> 6 emplacements à comparer avec les boutons en haut (1 sous le soleil, 2 sur le soleil, 3 dans la barre colorée, 4 avec les étoiles, 5 ligne seule, 6 avec les kJ), ou « Sans ».</span>
  <span>• <b>Maintenant :</b> seulement la houle, le vent et la marée (montante, descendante, pleine haute ou pleine basse). Plus de température, de ciel, d'eau ni de coefficient.</span>
  <span>• <b>Déroulé :</b> au clic sur une heure, seulement l'heure, le libellé et une phrase (plus de troisième ligne).</span>
 </div>
@@ -182,9 +184,9 @@ function buildDom(){
  L1.textContent=d.a;L2.textContent=d.b;L2.className='ln';L3.style.display='none';
  var cols='',winds='',kj='';
  DAYS.forEach(function(x,i){
-  cols+='<button class="dcol" data-i="'+i+'" aria-pressed="'+(i===sel)+'"><div class="n">'+x.n+'</div><div class="st">'+stars(x.st>3?4:x.st)+(x.st===5?'':'')+'</div><div class="bars">'+x.bars.map(function(c){return '<i style="background:'+barc(c)+'"></i>'}).join('')+'</div></button>';
+  cols+='<button class="dcol" data-i="'+i+'" aria-pressed="'+(i===sel)+'"><div class="n">'+x.n+'</div><div class="st">'+stars(x.st>3?4:x.st)+(window.PT==='D'?' <span class="tp" style="color:var(--ink)">'+x.tp+'°</span>':'')+'</div>'+(window.PT==='E'?'<div class="tp">'+x.tp+'°</div>':'')+'<div class="bars">'+x.bars.map(function(c){return '<i style="background:'+barc(c)+'"></i>'}).join('')+(window.PT==='C'?'<span class="bt">'+x.tp+'°</span>':'')+'</div></button>';
   winds+='<div style="width:'+WCOL+'px;flex:none;display:flex">'+x.w.map(function(w){return '<div style="flex:1;font-size:10px;font-weight:800;text-align:center;line-height:1.05">'+wind(w[0],w[1],w[2],w[3],16)+'</div>'}).join('')+'</div>';
-  kj+='<span>'+x.kj+'kJ</span>'});
+  kj+='<span>'+x.kj+'kJ'+(window.PT==='F'?' <span style="color:var(--ink);font-weight:700">· '+x.tp+'°</span>':'')+'</span>'});
  document.getElementById('wcols').innerHTML=cols;
  var wd=document.getElementById('wwinds');wd.style.display='flex';wd.innerHTML=winds;
  document.getElementById('wkj').innerHTML=kj;
@@ -240,7 +242,7 @@ function frame(now){
  var wc=document.getElementById('wcv');if(wback){wc.width=wback.W;wc.height=WH*DPR;wc.style.width=DAYS.length*WCOL+'px';wc.style.height=WH+'px';var x=wc.getContext('2d');
   var top=8*DPR,bot=wback.H+top-0;x.drawImage(wback.bd.back,0,top);
   DAYS.forEach(function(d,i){var cx=(i+.5)*WCOL*DPR;sun(x,cx,top+4*DPR,32*DPR,wback.cf(cx),dark)});
-  x.drawImage(wback.bd.front,0,top);DAYS.forEach(function(d,i){halo(x,d.tp+'°',((i+.5)*WCOL+32)*DPR,top+20*DPR,10.5,'rgba(255,255,255,.85)','rgba(10,20,35,.45)')});
+  x.drawImage(wback.bd.front,0,top);DAYS.forEach(function(d,i){var pt=window.PT||'A';if(pt!=='A'&&pt!=='B')return;var cxx=(i+.5)*WCOL*DPR,yy=pt==='A'?top+52*DPR:top+24*DPR;halo(x,d.tp+'°',cxx,yy,pt==='A'?11.5:10.5,pt==='A'?'rgba(255,255,255,.92)':'#4a2a00',pt==='A'?'rgba(10,20,35,.55)':'rgba(255,240,200,.85)')});
   // pluie
   [[IM.rain,.36,170,0,2.1],[IM.rain,.28,120,57,2.4]].forEach(function(L){var lay=tiles(x,L[0],L[1],t,L[2],L[3],L[4],wback.W,wback.H,function(px){return Math.min(1,Math.pow(Math.max(0,wback.rf(px)/1.5),.6))},dark&&false?null:(dark?null:'rgba(58,76,102,.97)'));x.drawImage(lay,0,top)});
   var ys=[],H1=bot-top;DAYS.forEach(function(d,i){[.15,.5,.85].forEach(function(f,j){ys.push(WATERF*d.m/1.8*(.92+.08*Math.sin(i*2+j)))})});
@@ -265,5 +267,6 @@ function frame(now){
  requestAnimationFrame(frame)}
 window.start=function(){document.getElementById('load').hidden=true;document.getElementById('phone').hidden=false;dayChanged();requestAnimationFrame(frame)}
 if(window.__pending)start();
+document.getElementById('pt').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});window.PT=b.dataset.v;buildDom()});
 document.getElementById('th').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});TH=b.dataset.v;document.documentElement.dataset.theme=TH==='d'?'dark':'light';if(IM.atlas){dayChanged()}});
 </script>
