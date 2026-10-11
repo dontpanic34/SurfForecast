@@ -161,6 +161,9 @@ private fun smoothstep(a: Float, b: Float, x: Float): Float {
 }
 private fun mix(a: Float, b: Float, t: Float): Float = a + (b - a) * t
 
+/** Part de ciel gris du fond selon la couverture (0 à 1) : suit la couverture ressentie, donc les éclaircies restent bleues et seul un ciel presque couvert vire au gris. */
+private fun overcastShare(cover: Float): Float = smoothstep(0.45f, 0.95f, CloudPlan.effective(cover * 100f))
+
 
 // Fond du ciel, haut puis bas (rouge, vert, bleu) : du bleu net au gris selon la couverture.
 private val SKY_LIGHT_CLEAR = arrayOf(floatArrayOf(58f, 126f, 203f), floatArrayOf(150f, 200f, 242f))
@@ -169,7 +172,7 @@ private val SKY_DARK_CLEAR = arrayOf(floatArrayOf(9f, 34f, 68f), floatArrayOf(22
 private val SKY_DARK_OVERCAST = arrayOf(floatArrayOf(14f, 20f, 29f), floatArrayOf(30f, 40f, 52f))
 
 private fun skyColor(cover: Float, isDark: Boolean, bottom: Boolean): Color {
-    val k = smoothstep(0.2f, 0.95f, cover)
+    val k = smoothstep(0.2f, 0.95f, cover)  // (un seul calque de fond : voir [overcastShare] pour le fondu horizontal)
     val i = if (bottom) 1 else 0
     val a = if (isDark) SKY_DARK_CLEAR[i] else SKY_LIGHT_CLEAR[i]
     val b = if (isDark) SKY_DARK_OVERCAST[i] else SKY_LIGHT_OVERCAST[i]
@@ -183,10 +186,11 @@ internal class SkyBackdropCache {
 }
 
 /** Résumé de ce qui change le fond du ciel : taille, thème, soleil, et la couverture et la pluie le long de l'axe. */
-private fun backdropKey(scene: SkyScene, isDark: Boolean, size: Size, skyH: Float): Long {
+private fun backdropKey(scene: SkyScene, isDark: Boolean, size: Size, skyH: Float, im: SkyImages): Long {
     var k = 17L
     fun add(v: Int) { k = k * 31L + v }
     add(size.width.roundToInt()); add(size.height.roundToInt()); add(skyH.roundToInt()); add(if (isDark) 1 else 0)
+    add(im.atlas.width); add(im.atlas.height); add(im.haze.width); add(im.sun.width)   // images pas encore chargées : on refait le ciel quand elles arrivent
     add(scene.left.roundToInt()); add(scene.top.roundToInt()); add(scene.right.roundToInt()); add(scene.bottom.roundToInt())
     for (s in scene.suns) { add(s.x.roundToInt()); add(s.sizePx.roundToInt()); add(s.topPx.roundToInt()) }
     val w = scene.right - scene.left
@@ -220,7 +224,7 @@ private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boole
                 brush = Brush.verticalGradient(listOf(skyColor(1f, isDark, false), skyColor(1f, isDark, true)), startY = scene.top, endY = scene.bottom),
                 topLeft = Offset(scene.left, scene.top), size = Size(w, h)
             )
-            val stops = fadeStops(scene, n) { x -> smoothstep(0.2f, 0.95f, coverAt(x)) }
+            val stops = fadeStops(scene, n) { x -> overcastShare(coverAt(x)) }
             drawRect(
                 brush = Brush.horizontalGradient(*stops, startX = scene.left, endX = scene.right),
                 topLeft = Offset(scene.left, scene.top), size = Size(w, h), blendMode = BlendMode.DstIn
@@ -281,7 +285,7 @@ private fun DrawScope.drawBackdrop(scene: SkyScene, im: SkyImages, isDark: Boole
                 drawImage(
                     img, srcOffset = src.first, srcSize = src.second,
                     dstOffset = IntOffset(x0.roundToInt(), y0.roundToInt()), dstSize = IntSize(p.w.roundToInt().coerceAtLeast(1), p.h.roundToInt().coerceAtLeast(1)),
-                    alpha = p.alpha, colorFilter = filter, filterQuality = FilterQuality.High
+                    alpha = p.alpha, colorFilter = filter, filterQuality = FilterQuality.Medium
                 )
             }
         }
@@ -344,7 +348,7 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
 
     // Fond du ciel, soleil et nuages : dessinés une fois dans une image, refaite seulement quand la couverture, la taille, le
     // thème ou l'heure du soleil changent. La pluie, qui anime l'écran, ne les recalcule donc pas à chaque image.
-    val key = backdropKey(scene, isDark, size, skyH)
+    val key = backdropKey(scene, isDark, size, skyH, im)
     var backdrop = cache.bitmap
     if (backdrop == null || cache.key != key) {
         val bmp = ImageBitmap(size.width.roundToInt().coerceAtLeast(1), size.height.roundToInt().coerceAtLeast(1))
