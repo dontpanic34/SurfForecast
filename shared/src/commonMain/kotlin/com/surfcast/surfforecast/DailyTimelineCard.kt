@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -223,6 +224,9 @@ private fun DailyTimelineBody(
     val sunGold = if (isDark) Color(0xFFFFD9A0) else Color(0xFFB9740A)
     val selHour = hours.getOrNull(selectedIndex)?.rawTime?.hour
     val selH = selHour?.toFloat()
+    // Heure actuelle (avec les minutes), mise à jour chaque minute ; seulement pour le jour en cours.
+    val nowTick by produceState(nowLocalDateTime()) { while (true) { delay(60_000); value = nowLocalDateTime() } }
+    val nowHour: Float? = hours.firstOrNull()?.rawTime?.date?.takeIf { it == nowTick.date }?.let { nowTick.hour + nowTick.minute / 60f }
 
     // Une indication de vent par heure d'ensoleillement ; on masque seulement ce qui toucherait l'heure choisie (mesuré en pixels).
     val sunnyHours = hours.map { it.rawTime.hour }.filter { it >= ceil(sunrise).toInt() && it <= floor(sunset).toInt() }
@@ -338,7 +342,7 @@ private fun DailyTimelineBody(
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
                         gridValues = gridValues, displayMax = displayMax, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
-                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1)
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
                     )
                 }
 
@@ -439,7 +443,8 @@ private fun DailyCurveCanvas(
     textMeasurer: TextMeasurer,
     xOf: (Float) -> Float,
     edgeLeft: Float,
-    edgeRight: Float
+    edgeRight: Float,
+    nowHour: Float? = null
 ) {
     val skyImages = LocalSkyImages.current
     val rainActive = hours.any { rainAmountForCode(it.weatherCode) > 0f }
@@ -499,6 +504,15 @@ private fun DailyCurveCanvas(
                 val rating = ratings.getOrElse(ri) { SlotRating(50, false) }
                 drawPath(seg, color = conditionBand(rating).color(), style = Stroke(1.6.dp.toPx(), cap = StrokeCap.Round))
             }
+            // L'heure qu'il est : un petit point discret, sans texte, qui glisse sur la courbe. Le toucher choisit l'heure comme ailleurs.
+            if (nowHour != null) {
+                val nx = xOf(nowHour)
+                if (nx >= line.first().x && nx <= line.last().x) {
+                    val c = Offset(nx, curveYAt(line, nx))
+                    drawCircle(halo.copy(alpha = 0.85f), radius = 4.dp.toPx(), center = c)
+                    drawCircle(nacre.copy(alpha = 0.75f), radius = 2.6.dp.toPx(), center = c)
+                }
+            }
         }
 
         // Graduations par-dessus la courbe, sur un fond léger (comme la vue semaine).
@@ -531,6 +545,28 @@ private fun DailyCurveCanvas(
             drawCircle(nacre.copy(alpha = 0.35f), radius = 6.dp.toPx(), center = p, style = Stroke(1.2.dp.toPx()))
         }
     }
+}
+
+/**
+ * Hauteur de la courbe de houle à la position [x] : même tracé que le chemin dessiné (une cubique à tangentes horizontales
+ * entre deux points, dont l'abscisse suit 1,5t − 1,5t² + t³ et l'ordonnée 3t² − 2t³), pour que le point colle à la courbe.
+ */
+internal fun curveYAt(line: List<Offset>, x: Float): Float {
+    for (i in 1 until line.size) {
+        val p = line[i - 1]; val c = line[i]
+        if (x > c.x) continue
+        val dx = c.x - p.x
+        if (dx < 1e-3f) return c.y
+        val u = ((x - p.x) / dx).coerceIn(0f, 1f)
+        var lo = 0f; var hi = 1f
+        repeat(24) {
+            val t = (lo + hi) / 2f
+            if (1.5f * t - 1.5f * t * t + t * t * t < u) lo = t else hi = t
+        }
+        val t = (lo + hi) / 2f
+        return p.y + (c.y - p.y) * (3f * t * t - 2f * t * t * t)
+    }
+    return line.last().y
 }
 
 /** Heure la plus proche d'une position horizontale : les points de la courbe vont de 0 à la largeur (n - 1 intervalles). */
