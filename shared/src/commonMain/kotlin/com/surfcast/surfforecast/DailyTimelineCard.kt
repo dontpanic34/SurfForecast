@@ -511,6 +511,16 @@ private fun DailyCurveCanvas(
                     val c = Offset(nx, curveYAt(line, nx))
                     drawCircle(halo.copy(alpha = 0.85f), radius = 4.dp.toPx(), center = c)
                     drawCircle(nacre.copy(alpha = 0.75f), radius = 2.6.dp.toPx(), center = c)
+                    // « Now » au-dessus du point, tant que l'heure en cours n'est pas l'heure choisie : une fois choisie, ce sont la
+                    // taille et la période qui s'affichent à sa place. On l'omet s'il toucherait la taille de l'heure choisie.
+                    val nowIdx = hours.indices.minByOrNull { kotlin.math.abs(hours[it].rawTime.hour - nowHour) }
+                    val selX = pts.getOrNull(selectedIndex)?.x
+                    if (selectedIndex != nowIdx && (selX == null || kotlin.math.abs(selX - nx) > 26.dp.toPx())) {
+                        val style = TextStyle(color = nacre, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+                        val w = textMeasurer.measure("Now", style).size.width
+                        val tx = (nx - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx())
+                        drawHaloTextAtBaseline(textMeasurer, "Now", style, halo, tx, c.y - 8.dp.toPx())
+                    }
                 }
             }
         }
