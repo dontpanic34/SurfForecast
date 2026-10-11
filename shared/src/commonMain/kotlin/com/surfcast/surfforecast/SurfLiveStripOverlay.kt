@@ -33,13 +33,13 @@ fun SurfLiveStripOverlay(
     val dirFr = SurfUnitsHelper.formatCardinalFr(hourlyModel.windDirectionStr)
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
-    val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyModel.windSpeedKmh)
-    val speedValue = SurfUnitsHelper.formatWindValue(hourlyModel.windSpeedKmh, windUnit)
+    val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, windFeelKmh(hourlyModel))
+    val speedValue = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyModel), windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
 
     val formattedH = "${formatDecimal(hourlyModel.waveHeight, 1)}m"
     val periodSec = hourlyModel.wavePeriod.toInt()
-    val tempVal = hourlyModel.temperature
+    val tempVal = hourlyModel.feelsLike
 
     val highTime = tideInfo?.highTideTime ?: "--h--"
     val lowTime = tideInfo?.lowTideTime ?: "--h--"

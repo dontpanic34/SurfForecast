@@ -313,7 +313,7 @@ fun WeatherCanvasMain(dayData: List<HourlyUiModel>, density: Int = 3, modifier: 
             ) {
                 WeatherIcon(emoji, 16.dp)
                 Text(
-                    text = "${slot.temperature}°",
+                    text = "${slot.feelsLike}°",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,

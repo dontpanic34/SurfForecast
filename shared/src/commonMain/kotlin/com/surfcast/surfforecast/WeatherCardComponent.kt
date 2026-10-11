@@ -85,7 +85,7 @@ fun WeatherCardComponent(
                 ) {
                     WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(selectedHour), 22.dp)
                     Text(
-                        text = "${selectedHour.temperature}°C",
+                        text = "${selectedHour.feelsLike}°C",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = onSurfaceColor
