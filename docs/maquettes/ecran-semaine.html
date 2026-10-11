@@ -249,7 +249,7 @@ function frame(now){
   [[IM.rain,.36,170,0,2.1],[IM.rain,.28,120,57,2.4]].forEach(function(L){var lay=tiles(x,L[0],L[1],t,L[2],L[3],L[4],wback.W,wback.H,function(px){return Math.min(1,Math.pow(Math.max(0,wback.rf(px)/1.5),.6))},dark&&false?null:(dark?null:'rgba(58,76,102,.97)'));x.drawImage(lay,0,top)});
   var ys=[],H1=bot-top;DAYS.forEach(function(d,i){[.15,.5,.85].forEach(function(f,j){ys.push(WATERF*d.m/1.8*(.92+.08*Math.sin(i*2+j)))})});
   var rainFn=function(px){return wback.rf(px)};
-  grid(x,0,wback.W,top,bot,dark,false);
+  grid(x,0,wback.W,top,bot,dark,true);
   var res=swell(x,0,wback.W,top,bot,ys,true,dark,{},rainFn,t);
   var d=DAYS[sel],cxs=(sel+.5)*WCOL*DPR,k=sel*3+1,py=res.py[k],px=res.xs[k];
   x.beginPath();x.arc(px,py,4*DPR,0,6.3);x.fillStyle='#fff';x.fill();x.beginPath();x.arc(px,py,2.6*DPR,0,6.3);x.fillStyle='#1F5FD0';x.fill();
