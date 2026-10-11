@@ -33,3 +33,9 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 
 ## Idées à garder
 - Contour de la flèche de vent de la semaine si elle est peu visible sur ciel clair.
+
+## Le ressenti pour tout (règle du 11 octobre 2026, à cadrer par maquette)
+- Vent : fait dans le déroulé et la semaine ; reste « Maintenant », cartes vent, détail, bandeau.
+- Nuages : ressenti = ce qu'on voit du ciel (éclaircies, soleil voilé) plutôt que le % brut.
+- Température : température ressentie (vent, humidité, soleil) plutôt que la température de l'air ; eau et combinaison à voir.
+- Houle : ressenti = ce que la vague donne sur place (taille perçue selon période, direction, marée), plutôt que la hauteur brute ; à définir avec le propriétaire.
