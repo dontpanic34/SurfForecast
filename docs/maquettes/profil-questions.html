@@ -175,9 +175,6 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
     </div>
     <p class="grp">Tes réponses</p>
     <div class="card rec" id="rec"></div>
-    <p class="grp">Ta tolérance aux conditions</p>
-    <div class="card tol" id="tol"></div>
-    <p class="notes" style="margin:6px 2px 10px">Deux questions de plus, <b>indépendantes du niveau</b> : elles ne changent pas ta note, elles servent aux recommandations (couleurs des créneaux, choix des heures).</p>
     <p class="grp">Les cinq niveaux</p>
     <div class="card"><details class="lv5" id="lv5"><summary>Voir les définitions</summary></details></div>
     <div style="margin-top:10px;display:grid;gap:8px"><button class="btn pri" id="ok">C'est mon niveau</button><button class="btn" id="redo">Refaire le questionnaire</button></div>
@@ -194,20 +191,24 @@ var LEVELS=[
  {n:'Expert',goal:'Perfectionner des manœuvres que tu maîtrises déjà.',def:'Toutes les manœuvres sont acquises : tu les perfectionnes. Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c\'est pourri : tu trouves le bon créneau, les phases lisses, une réforme intéressante, et tu tiens le courant à la rame.'}];
 var TK=['En un seul temps, tout le temps','En un seul temps, souvent','Parfois en un seul temps, ou en plusieurs temps'];
 var STEPS=[
+ {id:'tol1',q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},
+ {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['J\'y vais, c\'est l\'occasion de progresser','Je regarde d\'abord, j\'y vais si ça me rassure','Je reste au sec']},
+ {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
  {id:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']},
  {id:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine','Plusieurs fois par jour']},
  {id:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Quand l\'eau est bonne']},
  {id:'what',q:'Tu surfes…',sub:'Celui qui surfe le lisse surfe aussi la mousse.',o:['La mousse seulement','Le lisse']},
- {id:'board',q:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard']},
+ {id:'board',q:'Tu surfes sur quoi ?',sub:'Plusieurs réponses possibles.',multi:true,o:['Une planche en mousse','Un longboard','Un mid-length','Un fish','Un shortboard']},
  {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===1}},
  {id:'feel',q:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],
    osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===1}},
- {id:'tk',q:'Ton take-off',sub:'Tu pars en un seul temps ?',o:TK,dyn:function(a){return a.what===0?'Dans la mousse, ton take-off':'Dans le lisse, ton take-off'}},
+ {id:'tk',q:'Définis ton take-off',o:TK},
  {id:'want',q:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
  {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser. Les reformes et l\'épaule, c\'est plutôt la première réponse.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===1}},
- {id:'goal',q:'Sur la vague, tu cherches surtout à…',o:['Réussir tes take-offs','Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques','Devenir de plus en plus radical, critique et engagé','Affiner ton surf : le style, la précision, chaque détail'],when:function(a){return a.what===1}},
- {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],when:function(a){return a.what===1&&a.goal>=2}}
+ {id:'goal',q:'Sur la vague, tu cherches surtout à…',sub:'Plusieurs réponses possibles : on retient la plus haute.',multi:true,o:['Réussir tes take-offs','Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques','Devenir de plus en plus radical, critique et engagé','Affiner ton surf : le style, la précision, chaque détail'],when:function(a){return a.what===1}},
+ {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['Je n\'en suis pas là : je cherche surtout à comprendre et suivre le rythme de la vague','Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],when:function(a){return a.what===1&&gmax(a)>=2}}
 ];
+function gmax(a){return Math.max.apply(null,(a.goal||[]).length?a.goal:[-1])}
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
 function title(st){return st.dyn?st.dyn(ans):st.q}
@@ -220,16 +221,16 @@ var BANDS=[{n:'Débutant',a:0,b:16,L:0},{n:'Débutant +',a:16,b:21,L:0},{n:'Inte
 function bandIndex(L,plus){return L===4?8:L*2+(plus?1:0)}
 function compute(){
   var L=[];
-   L.push({v:[0,4,4,4][ans.board],t:'ta planche en mousse'});
+   L.push({v:Math.max.apply(null,(ans.board||[]).map(function(i){return i===0?0:4})),t:'ta planche (que de la mousse)'});
   var forcePlus=false;
   if(ans.what===0){L.push({v:0,t:'tu ne surfes que la mousse'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
   else{
-    L.push({v:ans.goal+1,t:'ce que tu cherches'});
+    L.push({v:gmax(ans)+1,t:'ce que tu cherches'});
     var bar=[0,0,1,2,3,4][ans.barre];if(ans.feel!==0)bar=Math.max(0,bar-1);
     L.push({v:bar,t:ans.barre===0?'tu ne passes pas encore la barre':'la taille où tu passes la barre'+(ans.feel!==0?' et la façon dont tu la passes':'')});
     L.push({v:[4,1,0][ans.tk],t:'ton take-off dans le lisse'});
     L.push({v:[1,2,4][ans.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
-    if(ans.man!==undefined)L.push({v:[2,3,4][ans.man],t:'tes manœuvres (pas encore replaquées à chaque fois)'});
+    if(ans.man!==undefined)L.push({v:[2,2,3,4][ans.man],t:'tes manœuvres (pas encore replaquées à chaque fois)'});
   }
   var m=4;L.forEach(function(x){if(x.v!==undefined&&!isNaN(x.v))m=Math.min(m,x.v)});
   var bind=L.filter(function(x){return x.v===m});
@@ -275,11 +276,6 @@ function drawResult(){
   document.getElementById('rec').innerHTML=rows;
   document.getElementById('lv5').innerHTML='<summary>Voir les définitions</summary>'+LEVELS.map(function(l,i){return '<p><b>'+(i+1)+' · '+l.n+'</b> — '+l.def+'</p>'}).join('');
 }
-var TOL=[{q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},{q:'Quand c\'est plus gros que d\'habitude…',o:['J\'y vais, c\'est l\'occasion de progresser','Je regarde d\'abord, j\'y vais si ça me rassure','Je reste au sec']},{q:'Ça souffle onshore, ou c\'est dur physiquement…',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']}];
-var tol={};
-function drawTol(){document.getElementById('tol').innerHTML=TOL.map(function(t,k){return '<div class="q2"><p>'+t.q+'</p>'+t.o.map(function(o,i){return '<button class="ans" data-k="'+k+'" data-i="'+i+'" aria-pressed="'+(tol[k]===i)+'">'+o+'</button>'}).join('')+'</div>'}).join('')}
-document.getElementById('tol').onclick=function(e){var b=e.target.closest('button');if(!b)return;tol[+b.dataset.k]=+b.dataset.i;drawTol()};
-drawTol();
 document.getElementById('prev').onclick=function(){if(cur>0)cur--;draw()};
 document.getElementById('next').onclick=function(){advance()};
 document.getElementById('up').onclick=function(){if(compute().bi<8){adj++;drawResult()}};
