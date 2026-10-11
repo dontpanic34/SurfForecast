@@ -75,3 +75,13 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Température : température ressentie (vent, humidité, soleil) plutôt que la température de l'air ; eau et combinaison à voir.
 - Houle : **pas de ressenti**, on garde la donnée brute (décision du propriétaire).
 - Semaine : phrase du jour choisi à la place du titre + un seul chiffre par jour (ressenti moyen des heures de jour, ni mini ni maxi) : maquette `semaine_phrase.html` envoyée, en attente de validation.
+
+## Houle secondaire (demandé, à maquetter avant de coder)
+- Dans la carte Houle, sous l'existant, afficher la houle secondaire en plus petit (pour montrer qu'elle est secondaire) : hauteur, période, orientation et énergie.
+- Faisabilité : Open-Meteo marine fournit `secondary_swell_wave_height/period/direction` (à vérifier dans le code actuel). L'énergie se calcule comme pour la houle principale (hauteur² × période).
+- Maquette d'abord, validation du propriétaire, puis code.
+
+## Sideshore : seulement si vraiment de côté (demandé)
+- On n'écrit « sideshore » que si le vent est pile de côté (pour Montalivet : nord ou sud).
+- Un vent de nord-est est « side-off », un vent de sud-ouest est « side-on » (la plage regarde l'ouest). Même règle pour les autres plages, selon leur orientation.
+- À intégrer avec le codage des catégories side-off / side-on déjà listé plus haut (couleurs, notes, phrases).
