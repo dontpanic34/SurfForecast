@@ -72,7 +72,7 @@ object CloudPlan {
         }
     }
 
-    private class Candidate(
+    internal class Candidate(
         val sprite: CloudSprite, val u: Float, val cy: Float, val wp: Float, val hp: Float, val flip: Boolean,
         val depth: Float, var p: Float = 0f
     )
