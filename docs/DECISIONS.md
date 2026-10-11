@@ -6,6 +6,8 @@
 - Pas de compilation en local possible : on compile et teste par l'intégration continue (`workflow_dispatch` de `build-kmp.yml` sur une branche de travail ; le déploiement ne se fait que pour les branches `web` et `unified`).
 - Une publication = `unified` (fusion de la branche de travail) puis `web` (avance rapide). Les pushs sur ces branches compilent et testent avant de déployer.
 - Parler simplement, en français, sans jargon.
+- **En cas de doute, poser la question** au propriétaire avant de publier ou de trancher.
+- **Le ressenti avant le prévu** (règle générale, 11 octobre 2026) : l'appli montre et note ce qu'on sent sur place, pas la valeur brute de la prévision. Vaut pour le vent (déjà fait : vent ressenti), les nuages, la température, la houle, etc. À chaque chiffre affiché, se demander « qu'est-ce qu'on ressent vraiment ? » et, si c'est différent du prévu, afficher le ressenti (le prévu au plus en détail). Les cas restants sont dans `A_FAIRE.md`.
 
 ## Règles de produit déjà tranchées
 - **Pluie** : on garde le dessin actuel, seulement plus visible, avec des fondus d'apparition et de disparition. Pas de gouttes ni de traînées.
