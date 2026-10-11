@@ -166,9 +166,9 @@ fun SurferProfileSection(
                     onValueChange = { update(profile.copy(windTolerance = (it / 5f).roundToInt() * 5.0)) },
                     valueRange = 10f..50f, steps = 7
                 )
-                Text("Vent de mer (onshore) toléré jusqu'à", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                Text("Onshore toléré jusqu'à", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
                 ChoiceRow(ONSHORE_CHOICES, profile.onshoreMax) { update(profile.copy(onshoreMax = it)) }
-                Text("Vent de terre (offshore)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                Text("Offshore", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
                 Text(
                     "L'offshore creuse la vague et fait les tubes : un débutant n'y est pas sensible, un intermédiaire l'apprécie avec modération, un confirmé ou un expert le recherche.",
                     fontSize = 11.sp, color = colors.onSurfaceVariant
@@ -319,7 +319,7 @@ fun ProfilePage(
                     )
                     Text("Vagues : " + waveRangeText(profile), fontSize = 12.sp, color = colors.onSurfaceVariant)
                     Text(
-                        "Vent de mer gênant dès ${profile.onshoreMax.roundToInt()} km/h · période ${profile.minPeriod.roundToInt()} s minimum",
+                        "Onshore gênant dès ${profile.onshoreMax.roundToInt()} km/h · période ${profile.minPeriod.roundToInt()} s minimum",
                         fontSize = 12.sp, color = colors.onSurfaceVariant
                     )
                 }

@@ -219,7 +219,7 @@ private fun WeatherHeroSection(
         )
 
         Text(
-            text = "Ressenti · air ${currentHourModel.temperature}°",
+            text = "air ${currentHourModel.temperature}°",
             color = Color.White.copy(alpha = 0.85f),
             fontSize = 15.sp
         )

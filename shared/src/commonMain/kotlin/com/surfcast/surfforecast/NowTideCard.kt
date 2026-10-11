@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Les conditions actuelles du spot, écrites comme un titre en haut à gauche : « Maintenant · Montalivet · 14 h », puis
- * houle, période, vent, eau, marée haute, marée basse et coefficient à la suite. À droite, le libellé de la note de l'heure.
+ * houle, période, vent et l'état de la marée (montante, descendante, pleine haute, pleine basse). À droite, le libellé de la note de l'heure.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -42,9 +42,6 @@ fun NowTideCard(
     val speed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyModel), windUnit)
     val gust = SurfUnitsHelper.formatWindValue(hourlyModel.windGustKmh, windUnit)
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
-    val high = tideInfo?.highTideTime
-    val low = tideInfo?.lowTideTime
-    val coef = tideInfo?.coefficient
     val title = buildString {
         append("Maintenant")
         if (spotName.isNotBlank()) append(" · ").append(spotName)
@@ -79,16 +76,8 @@ fun NowTideCard(
             Text(
                 if (hourlyModel.windGustKmh > hourlyModel.windSpeedKmh) "Vent $dirFr $speed $unit · rafales $gust" else "Vent $dirFr $speed $unit",
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(
-                "${skyWord(hourlyModel.cloudCover)} · ${hourlyModel.cloudCover} %",
-                fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
-            Text("Ressenti ${hourlyModel.feelsLike}° · air ${hourlyModel.temperature}°", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
-            if (seaTemperature != null) {
-                Text("Eau $seaTemperature °C", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
-            }
-            if (high != null) Text("▲ Haute $high", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
-            if (low != null) Text("▼ Basse $low", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
-            if (coef != null) Text("Coef. $coef", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
+            val tideWord = tideStateWord(hourlyModel.rawTime.time, tideInfo)
+            if (tideWord != null) Text("Marée $tideWord", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
         }
     }
 }
