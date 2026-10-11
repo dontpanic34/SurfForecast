@@ -160,17 +160,6 @@ fun DailyTimelineCard(
                             }
                         }
                     }
-                    // Le vent ressenti est affiché dans la colonne des heures ; le détail (moyen et rafales) seulement pour l'heure choisie.
-                    curveHours[selectedIndex].let { sel ->
-                        if (sel.windGustKmh > sel.windSpeedKmh) {
-                            Text(
-                                "Vent moyen " + SurfUnitsHelper.formatWindValue(sel.windSpeedKmh, windUnit) + " · rafales " +
-                                    SurfUnitsHelper.formatWindValue(sel.windGustKmh, windUnit) + " " + SurfUnitsHelper.getWindUnitSymbol(windUnit),
-                                fontSize = 11.sp, color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1,
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
-                        }
-                    }
                     // Coefficient puis les deux marées de la journée, sur une ligne sous la jauge.
                     dailyTides[selectedDate]?.let { TideLine(dayTides, it.coefficient, onSurfaceColor) }
                 }

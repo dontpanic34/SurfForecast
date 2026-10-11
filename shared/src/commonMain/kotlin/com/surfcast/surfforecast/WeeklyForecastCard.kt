@@ -115,12 +115,22 @@ fun WeeklyForecastCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-            CardControlsRow(
-                title = "Prévisions de la semaine",
-                isCollapsed = isCollapsed,
-                onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier,
-            )
+            val phrase = remember(selectedDate, groupedByDate, dailySunInfo, dailyLabels, idealSwellDirection) {
+                val idx = availableDates.indexOf(selectedDate)
+                selectedDate?.let { d ->
+                    dayPhraseFor(daylightHoursFor(d, groupedByDate, dailySunInfo), dailyLabels.getOrNull(idx), idealSwellDirection)
+                }
+            }
+            if (phrase != null) {
+                DayPhraseHeader(phrase)
+            } else {
+                CardControlsRow(
+                    title = "Prévisions de la semaine",
+                    isCollapsed = isCollapsed,
+                    onToggleCollapse = onToggleCollapse,
+                    dragHandleModifier = dragHandleModifier,
+                )
+            }
 
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
@@ -251,6 +261,8 @@ fun WeeklyForecastCard(
                                 allHourlyData = allDaylight,
                                 dailyPeriods = dailyPeriods,
                                 dailyHeights = dailyHeights,
+                                dailyAirTemps = dailyFeelsLike,
+                                dailyWaterTemps = dailyWaterTemps,
                                 surferLevel = surferLevel,
                                 dailyEnergies = availableDates.map { date ->
                                     daylightHoursFor(date, groupedByDate, dailySunInfo).maxOfOrNull { it.energyKj } ?: 0
@@ -288,6 +300,17 @@ fun WeeklyForecastCard(
 
             }
         }
+    }
+}
+
+/** Le jour choisi en trois lignes, à la place du titre fixe de la semaine. */
+@Composable
+private fun DayPhraseHeader(phrase: DayPhrase) {
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(phrase.title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurface, maxLines = 2)
+        Text(phrase.swell, fontSize = 12.5.sp, color = onSurface, maxLines = 1)
+        Text(phrase.wind, fontSize = 12.5.sp, color = onSurface, maxLines = 2)
     }
 }
 
@@ -370,6 +393,9 @@ fun ContinuousWaveCanvas(
     allHourlyData: List<HourlyUiModel>,
     dailyPeriods: List<Int>,
     dailyHeights: List<Double>,
+    // Température du jour (celle qu'on sent) sur le bord haut du ciel, et celle de l'eau en bas de l'eau, au-dessus des kJ.
+    dailyAirTemps: List<Int> = emptyList(),
+    dailyWaterTemps: List<Int?> = emptyList(),
     surferLevel: String,
     // Énergie de la houle au pic de chaque jour (kJ) : sous la courbe, colorée d'après le profil.
     dailyEnergies: List<Int> = emptyList(),
@@ -485,22 +511,46 @@ fun ContinuousWaveCanvas(
 
             val pText = dailyPeriods.getOrNull(i)?.let { "${it}s" }
             if (i == selectedIndex) {
-                // Jour sélectionné : un seul repère, sur la courbe, avec « hauteur période » au-dessus (rien dessous,
-                // pour ne pas chevaucher la courbe).
+                // Jour choisi, comme dans le déroulé : la houle au-dessus du point, la période en dessous.
                 drawCircle(color = Color.White, radius = 4.4.dp.toPx(), center = closestPoint)
                 drawCircle(color = tideLineColor, radius = 2.8.dp.toPx(), center = closestPoint)
                 val hText = "${formatDecimal(dailyHeights.getOrNull(i) ?: 0.0, 1)}m".replace('.', ',')
                 val hW = textMeasurer.measure(hText, heightTextPaint).size.width.toFloat()
-                val pW = pText?.let { textMeasurer.measure(it, periodTextPaint).size.width.toFloat() } ?: 0f
-                val gap = 3.dp.toPx()
-                val totalW = hW + if (pText != null) gap + pW else 0f
-                val baseline = (closestPoint.y - 9.dp.toPx()).coerceAtLeast(10.dp.toPx())
-                drawHaloTextAtBaseline(textMeasurer, hText, heightTextPaint, textHalo, targetX - totalW / 2f, baseline)
-                if (pText != null) drawHaloTextAtBaseline(textMeasurer, pText, periodTextPaint, textHalo, targetX - totalW / 2f + hW + gap, baseline)
+                val above = (closestPoint.y - 9.dp.toPx()).coerceAtLeast(10.dp.toPx())
+                val below = closestPoint.y + 19.dp.toPx()
+                if (pText == null || below > baseY - 17.dp.toPx()) {
+                    // Pas de place sous le point (houle très basse) : « hauteur période » côte à côte au-dessus.
+                    val pW = pText?.let { textMeasurer.measure(it, periodTextPaint).size.width.toFloat() } ?: 0f
+                    val gap = 3.dp.toPx()
+                    val totalW = hW + if (pText != null) gap + pW else 0f
+                    drawHaloTextAtBaseline(textMeasurer, hText, heightTextPaint, textHalo, targetX - totalW / 2f, above)
+                    if (pText != null) drawHaloTextAtBaseline(textMeasurer, pText, periodTextPaint, textHalo, targetX - totalW / 2f + hW + gap, above)
+                } else {
+                    val pW = textMeasurer.measure(pText, heightTextPaint).size.width.toFloat()
+                    drawHaloTextAtBaseline(textMeasurer, hText, heightTextPaint, textHalo, targetX - hW / 2f, above)
+                    drawHaloTextAtBaseline(textMeasurer, pText, heightTextPaint, textHalo, targetX - pW / 2f, below)
+                }
             } else if (pText != null) {
                 // Autres jours : la période seule, juste au-dessus de la courbe.
                 val pW = textMeasurer.measure(pText, periodTextPaint).size.width.toFloat()
                 drawHaloTextAtBaseline(textMeasurer, pText, periodTextPaint, textHalo, targetX - pW / 2f, (closestPoint.y - 5.dp.toPx()).coerceAtLeast(10.dp.toPx()))
+            }
+        }
+
+        // Températures, discrètes et centrées sur chaque jour : l'air à cheval sur le bord haut du ciel, l'eau au bas de l'eau.
+        val tempStyle = TextStyle(color = Color.White.copy(alpha = 0.95f), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold)
+        val waterTempStyle = TextStyle(color = Color.White.copy(alpha = 0.5f), fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold)
+        for (i in 0 until daysCount) {
+            val targetX = plotLeft + (i + 0.5f) * dayWidth
+            dailyAirTemps.getOrNull(i)?.let { t ->
+                val txt = "$t°"
+                val tw = textMeasurer.measure(txt, tempStyle).size.width.toFloat()
+                drawHaloTextAtBaseline(textMeasurer, txt, tempStyle, Color(0x990A1423), targetX - tw / 2f, 8.dp.toPx() + 3.5.dp.toPx())
+            }
+            dailyWaterTemps.getOrNull(i)?.let { t ->
+                val txt = "$t°"
+                val tw = textMeasurer.measure(txt, waterTempStyle).size.width.toFloat()
+                drawTextAtBaseline(textMeasurer, txt, waterTempStyle, targetX - tw / 2f, baseY - 5.dp.toPx())
             }
         }
 

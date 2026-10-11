@@ -192,7 +192,7 @@ class ProfileWizardTest {
         // Un peu petite : la note part de 60 au minimum.
         assertEquals("Taille un peu juste", calculateSlotRating(hour(10, height = 0.8, period = 9.0), 270, "intermediate").why)
         // Vent de mer modéré sur une vague moyenne.
-        assertEquals("Un peu de vent de mer", calculateSlotRating(hour(10, height = 1.2, period = 10.0, windKmh = 16, windDir = "O"), 270, "confirmed").why)
+        assertEquals("Un peu d'onshore", calculateSlotRating(hour(10, height = 1.2, period = 10.0, windKmh = 16, windDir = "O"), 270, "confirmed").why)
         // Rafales fortes : c'est elles qui gâchent la surface.
         val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12).copy(windGustKmh = 40)
         assertEquals("Rafales fortes", calculateSlotRating(gusty, 275, "confirmed").why)
