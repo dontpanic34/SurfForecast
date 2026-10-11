@@ -203,7 +203,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="q"><p>Tu surfes depuis…</p><div class="chips" data-q="0"></div></div>
       <div class="q"><p>Tu surfes combien de fois par mois ?</p><div class="chips" data-q="1"></div></div>
       <div class="q"><p>Qu'est-ce que tu surfes ? <span style="font-weight:500;color:var(--muted)">(plusieurs choix)</span></p><div class="chips" id="p3multi"></div></div>
-      <div class="q"><p>Tu passes la barre ?</p><div class="chips" data-q="3"></div></div>
+      <div class="q"><p>Ta rame : comment tu te sens physiquement ?</p><div class="chips" data-q="6"></div></div>
+      <div class="q"><p>Quand tu passes la barre…</p><div class="chips" data-q="3"></div></div>
       <div class="q"><p>La taille où tu t'éclates</p><div class="chips" data-q="4"></div></div>
       <div class="q"><p>La plus grosse que tu surfes sans stress</p><div class="chips" data-q="5"></div></div>
     </div>
@@ -214,7 +215,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <p class="grp">Ce que ça donne</p>
     <div class="card"><div class="pv" id="p3pv"></div></div>
   </div>
-  <p class="notes"><b>Ce qui change :</b> « Au large, tu te sens… » est supprimée. « Qu'est-ce que tu surfes ? » remplace la confusion : mousse, réformes, épaule, peak, tube. « La taille où tu t'éclates » et « la plus grosse que tu surfes sans stress » sont deux questions séparées, avec les repères du surf (genoux, taille, poitrine, tête, surcote).</p>
+  <p class="notes"><b>Ce qui change :</b> « Au large, tu te sens… » est supprimée. « Qu'est-ce que tu surfes ? » remplace la confusion : mousse, réformes, épaule, peak, tube. Deux questions de physique : « Ta rame » (je rame longtemps, je fatigue au bout d'un moment, je fatigue vite) et « Quand tu passes la barre… » (prêt à surfer, impressionné : je m'éloigne du pic, je me repose, j'analyse, mitigé, je ne passe pas). « La taille où tu t'éclates » et « la plus grosse que tu surfes sans stress » sont deux questions séparées, avec les repères du surf (genoux, taille, poitrine, tête, surcote).</p>
 </section>
 
 <!-- 4. PHRASES -->
@@ -386,8 +387,8 @@ function Ruler(el,handles,opts){
 /* ---------- 3. Questions ---------- */
 (function(){
   var SZ=[['Genoux',.5],['Taille',.9],['Poitrine',1.3],['Tête',1.8],['Surcote',2.6]];
-  var Q={0:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans'],1:['1 à 2 fois','Chaque semaine','Plusieurs fois par semaine'],3:['Pas encore','Quand c\'est petit','Sans problème'],4:SZ.map(function(s){return s[0]}),5:SZ.map(function(s){return s[0]})};
-  var A={0:1,1:1,3:1,4:2,5:3},adj=0,MULTI=['La mousse','Les réformes','L\'épaule','Le peak','Le tube'],sel={1:true,2:true};
+  var Q={0:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans'],1:['1 à 2 fois','Chaque semaine','Plusieurs fois par semaine'],3:['Ça y est, je suis prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Mitigé','Je ne passe pas la barre'],6:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite'],4:SZ.map(function(s){return s[0]}),5:SZ.map(function(s){return s[0]})};
+  var A={0:1,1:1,3:1,4:2,5:3,6:0},adj=0,MULTI=['La mousse','Les réformes','L\'épaule','Le peak','Le tube'],sel={1:true,2:true};
   document.querySelectorAll('[data-q]').forEach(function(el){var q=+el.dataset.q;el.innerHTML=Q[q].map(function(t,i){return '<button class="chip" aria-pressed="'+(i===A[q])+'" data-i="'+i+'">'+t+'</button>'}).join('');
     el.onclick=function(e){var b=e.target.closest('button');if(!b)return;A[q]=+b.dataset.i;adj=0;el.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});draw()}});
   var mEl=document.getElementById('p3multi');
@@ -396,7 +397,7 @@ function Ruler(el,handles,opts){
   function level(){
     var top=-1;Object.keys(sel).forEach(function(k){if(sel[k])top=Math.max(top,+k)});if(top<0)top=0;
     var m=[0,0,1,2,3][top];
-    var s=(A[0]/3+A[1]/2+m/3+A[3]/2)/4*3;
+    var s=(A[0]/3+A[1]/2+m/3+(3-A[3])/3+(2-A[6])/2)/5*3;
     return Math.max(0,Math.min(3,Math.round(s)+adj));
   }
   function profile(){
