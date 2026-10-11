@@ -88,3 +88,5 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 
 ## Matériel : ancienneté, fréquence, saison (demandé)
 - Déplacer « Tu surfes depuis », la fréquence (avec « plusieurs fois par jour ») et la saison (« toute l'année » / « quand l'eau est bonne ») dans Matériel, avec la condition physique. À traiter quand on s'occupe de Matériel.
+- Matériel : ajouter la question « Tu surfes sur quoi ? » en choix multiple (mousse, longboard, mid-length, fish, shortboard).
+- À trancher (propriétaire) : « Jusqu'à quelle taille tu passes la barre » reste dans le niveau ; « Quand tu passes la barre, tu te sens… » est plus proche de la condition physique.
