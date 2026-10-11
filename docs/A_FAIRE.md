@@ -96,3 +96,4 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Les ratios L/kg du code (Intermédiaire 0,42, Confirmé 0,38) sont plus bas que les repères publiés (≈ 0,5 pour un intermédiaire) : à recaler.
 - Deux échelles coexistent : 6 profils de volume (VOLUME_LEVELS) et 4 niveaux (ratioRangeFor, levelForRatio) : à aligner sur les 5 niveaux.
 - Le niveau « pour le volume » est un réglage séparé dans Matériel : il doit venir du profil.
+- Volume mid-length et longboard dans le code : remplacer les multiplicateurs ×1,6 et ×2,1 par des fourchettes selon le poids seul (mid-length 0,65 à 0,85 L/kg, longboard 55 à 80 L et plus), sans niveau. À faire après validation de la maquette Matériel.
