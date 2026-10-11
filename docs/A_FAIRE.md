@@ -1,5 +1,12 @@
 # À faire
 
+## Bug à traiter en priorité (signalé le 11 octobre, 3 captures de Montalivet)
+La phrase grise en haut du déroulé ne correspond pas au vent affiché :
+- 17 h, vent O (ouest, donc de mer) à 3 km/h : « Vent de côté qui gêne ».
+- 13 h, SSE 8 km/h : « Vent de côté qui gêne ».
+- 12 h, SSE 8 km/h aussi : « Bonne taille, vent léger ».
+Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la note mais ne sont pas affichées, donc un vent moyen faible peut donner une phrase de vent ; (2) la phrase de vent n'apparaît que si le vent est le pire facteur sous 0,85, ce qui ne devrait pas arriver à 3 km/h : vérifier que la phrase correspond bien à l'heure sélectionnée (décalage possible entre la colonne de vent, l'heure sélectionnée et l'heure notée) ; (3) la catégorie de vent (de mer, de côté, de terre) doit venir de l'orientation réelle de la plage partout. À faire avec la maquette du banc d'essai du vent : afficher les rafales et la raison exacte, et ajouter un test sur ces trois cas.
+
 ## En attente de validation du propriétaire
 - **Choix du niveau par exemples** (maquette faite, 12 situations x 5 réponses). Après accord : coder l'assistant « Mon profil » (remplacer les questions taille / période / clapot / vent par ces exemples) et brancher les réponses sur le calcul du profil (`ProfileWizard.kt`, `applyExampleAnswers`).
 - **Badges « Trop petit » / « Trop gros »** : proposition « Taille limite » et « Gros jour » (orange). À décider.
