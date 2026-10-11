@@ -7,6 +7,10 @@
 - **Réglages en 5 pages** : maquette validée en principe (https://claude.ai/artifact/6X9Pg1aQLgtDyXbRMw8EtX), à coder une page à la fois ; retirer l'orientation de la plage des réglages.
 - Rappel : ne pousser sur `unified` et `web` qu'avec le « go » du propriétaire.
 
+## Semaine : codée sur la branche, à relancer en intégration continue puis à publier avec ton « go »
+- Reste à vérifier sur téléphone : lisibilité de la température sur les nuages sombres, phrase du jour sur plusieurs jours, « Marée » dans « Maintenant ». Le texte du « i » du vent n'a pas changé.
+- Les phrases du profil et du guide contenant « pour toi » ou « trop gros » restent à repasser.
+
 ## Bug à traiter en priorité (signalé le 11 octobre, 3 captures de Montalivet)
 La phrase grise en haut du déroulé ne correspond pas au vent affiché :
 - 17 h, vent O (ouest, donc de mer) à 3 km/h : « Vent de côté qui gêne ».

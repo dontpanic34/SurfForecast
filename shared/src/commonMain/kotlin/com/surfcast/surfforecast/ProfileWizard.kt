@@ -47,11 +47,11 @@ private fun formatPeriod(p: Double): String = if (p == p.roundToInt().toDouble()
 internal val PROFILE_DAYS: List<ProfileCondition> = listOf(
     condition("Très petit jour", 0.54, 6.05, 8, 14, "ESE", "8 km/h ESE, offshore", "0,5 m · 6 s"),
     condition("Petit jour propre", 1.0, 10.0, 6, 12, "SE", "6 km/h SE, offshore"),
-    condition("Jour moyen, vent de mer fort", 1.0, 8.3, 23, 30, "NO", "23 km/h NO, onshore", "1,0 m · 8 s"),
+    condition("Jour moyen, onshore fort", 1.0, 8.3, 23, 30, "NO", "23 km/h NO, onshore", "1,0 m · 8 s"),
     condition("Belle journée propre", 1.3, 11.7, 9, 16, "E", "9 km/h E, offshore", "1,3 m · 12 s"),
-    condition("Belle journée, vent de mer léger", 1.3, 10.8, 12, 20, "ONO", "12 km/h ONO, onshore", "1,3 m · 11 s"),
+    condition("Belle journée, onshore léger", 1.3, 10.8, 12, 20, "ONO", "12 km/h ONO, onshore", "1,3 m · 11 s"),
     condition("Jour moyen, vent moyen", 1.2, 7.5, 16, 22, "O", "16 km/h O, onshore"),
-    condition("Gros jour, vent de mer léger", 1.9, 11.7, 17, 22, "NO", "17 km/h NO, onshore", "1,9 m · 12 s"),
+    condition("Gros jour, onshore léger", 1.9, 11.7, 17, 22, "NO", "17 km/h NO, onshore", "1,9 m · 12 s"),
     condition("Gros jour propre", 2.0, 11.85, 10, 14, "ENE", "10 km/h ENE, offshore", "2,0 m · 12 s")
 )
 
@@ -420,7 +420,7 @@ fun ProfileWizard(
             }
             2 -> {
                 Text("Quel vent peux-tu supporter ?", fontSize = 13.sp, color = colors.onSurfaceVariant)
-                Text("Vent de mer (onshore) : gênant à partir de", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                Text("Onshore : gênant à partir de", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                 ChoiceChips(ONSHORE_STEP_CHOICES.map { it.second }, ONSHORE_STEP_CHOICES.indexOfFirst { it.first == base.onshoreMax }, onPick = { i ->
                     save(base.copy(onshoreMax = ONSHORE_STEP_CHOICES[i].first))
                 })
@@ -510,7 +510,7 @@ fun ProfileWizard(
                 val rows = listOf(
                     "Niveau de départ" to (if (level in WIZARD_LEVELS) levelLabel(level) else "Personnalisé") to 0,
                     "Vagues" to waveRangeText(base) to 1,
-                    "Vent" to ("Vent de mer gênant dès " + base.onshoreMax.roundToInt() + " km/h · rafales " + (if (base.countGusts) "comptées" else "ignorées")) to 2,
+                    "Vent" to ("Onshore gênant dès " + base.onshoreMax.roundToInt() + " km/h · rafales " + (if (base.countGusts) "comptées" else "ignorées")) to 2,
                     "Période minimum" to (base.minPeriod.roundToInt().toString() + " s") to 3,
                     "Tes réponses" to (answerMap.size.toString() + " changée" + (if (answerMap.size > 1) "s" else "")) to 4
                 )

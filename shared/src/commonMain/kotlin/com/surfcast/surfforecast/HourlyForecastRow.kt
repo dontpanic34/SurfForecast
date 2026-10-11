@@ -259,7 +259,7 @@ private fun parseTimeStringSafe(timeStr: String): LocalTime? {
 /**
  * Calcule si la marée monte ou descend à une heure cible.
  */
-private fun isTideRising(targetTime: LocalTime, tideInfo: DailyTideInfo?): Boolean? {
+internal fun isTideRising(targetTime: LocalTime, tideInfo: DailyTideInfo?): Boolean? {
     val pm = tideInfo?.highTideTime?.let { parseTimeStringSafe(it) }
     val bm = tideInfo?.lowTideTime?.let { parseTimeStringSafe(it) }
 
@@ -293,5 +293,27 @@ private fun isTideRising(targetTime: LocalTime, tideInfo: DailyTideInfo?): Boole
         lastBm != null -> true
         lastPm != null -> false
         else -> null
+    }
+}
+
+/**
+ * La marée à une heure, en un mot : « pleine haute » ou « pleine basse » à moins de 40 minutes d'une marée extrême,
+ * sinon « montante » ou « descendante » ; null sans horaires de marée.
+ */
+internal fun tideStateWord(targetTime: LocalTime, tideInfo: DailyTideInfo?): String? {
+    val rising = isTideRising(targetTime, tideInfo) ?: return null
+    val target = targetTime.toSecondOfDay()
+    val dayS = 24 * 3600
+    val full = (6.21 * 3600).toInt() * 2
+    fun near(timeStr: String?): Boolean {
+        val t = timeStr?.let { parseTimeStringSafe(it) }?.toSecondOfDay() ?: return false
+        return (-3..3).any { k -> kotlin.math.abs(target - (t + k * full)) <= 40 * 60 } ||
+            kotlin.math.abs(target - t) <= 40 * 60 || kotlin.math.abs(target - t + dayS) <= 40 * 60 || kotlin.math.abs(target - t - dayS) <= 40 * 60
+    }
+    return when {
+        near(tideInfo?.highTideTime) -> "pleine haute"
+        near(tideInfo?.lowTideTime) -> "pleine basse"
+        rising -> "montante"
+        else -> "descendante"
     }
 }

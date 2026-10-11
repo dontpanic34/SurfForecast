@@ -41,7 +41,7 @@ private val windCurves: Map<String, List<Pair<Double, Double>>> = mapOf(
     "offshore" to listOf(0.0 to 1.0, 15.0 to 1.0, 25.0 to 0.75, 35.0 to 0.45, 45.0 to 0.25, 55.0 to 0.15),
     // Vent de côté : propre jusqu'à environ 12 km/h ressentis, il gêne ensuite (18 km/h : 0,88 ; 24 km/h : 0,65).
     "cross" to listOf(0.0 to 1.0, 12.0 to 1.0, 18.0 to 0.88, 24.0 to 0.65, 32.0 to 0.4, 45.0 to 0.15),
-    // Vent de mer : propre sans vent, il abîme la vague dès 10 km/h (14 km/h : 0,62 ; 20 km/h : 0,4 ; 30 km/h : 0,15).
+    // Onshore : propre sans vent, il abîme la vague dès 10 km/h (14 km/h : 0,62 ; 20 km/h : 0,4 ; 30 km/h : 0,15).
     "onshore" to listOf(0.0 to 1.0, 6.0 to 0.95, 10.0 to 0.82, 14.0 to 0.62, 20.0 to 0.4, 30.0 to 0.15, 40.0 to 0.0)
 )
 
@@ -208,7 +208,7 @@ fun calculateSlotRating(
     val coeffDirection = if (directionDiff >= 90.0) 0.0 else cos(directionDiff * PI / 180.0)
 
     val energyKj = waveEnergyKj(h, t) * coeffDirection
-    // Un offshore creuse la vague (plus puissante, plus creuse), un vent de mer l'écrase : à taille égale, la vague
+    // Un offshore creuse la vague (plus puissante, plus creuse), un onshore l'écrase : à taille égale, la vague
     // « pèse » plus ou moins pour le surfeur.
     val powerFactor = when (windCategory) {
         "offshore" -> if (hourlyModel.windSpeedKmh >= 10) 1.25 else 1.1
@@ -358,7 +358,7 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, wi
                 "size" -> if (strong) "Taille limite" else "Taille un peu juste"
                 "wind" -> when {
                     windMemory -> WHY_WIND_MEMORY
-                    windCategory == "onshore" -> if (strong) "Onshore, gâche la vague" else "Un peu de vent de mer"
+                    windCategory == "onshore" -> if (strong) "Onshore, gâche la vague" else "Un peu d'onshore"
                     windCategory == "cross" -> if (strong) "Vent de côté fort" else "Vent de côté qui gêne"
                     else -> if (strong) "Offshore trop fort" else "Offshore un peu fort"
                 }
@@ -403,7 +403,7 @@ fun hasOffshoreNight(nightHours: List<HourlyUiModel>, beachFacing: Int?): Boolea
 /**
  * La mer garde en mémoire le vent qui vient de souffler : 30 km/h à 8 h, ce n'est pas « glacé » à 9 h. Pour la
  * NOTATION (pas pour l'affichage), le vent d'une heure est au moins [keep] x celui de l'heure précédente (et garde sa
- * direction) : 30 km/h de vent de mer donne environ 22, 17, 13 km/h les heures suivantes, même si le vent est tombé.
+ * direction) : 30 km/h d'onshore donne environ 22, 17, 13 km/h les heures suivantes, même si le vent est tombé.
  * [hours] doit couvrir assez de temps avant la période notée pour amorcer la mémoire.
  */
 fun windMemoryAdjusted(hours: List<HourlyUiModel>, keep: Double = 0.75): List<HourlyUiModel> {
