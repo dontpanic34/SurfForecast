@@ -452,6 +452,7 @@ private fun DailyCurveCanvas(
     val axisTextStyle = TextStyle(color = onSurfaceColor.copy(alpha = 0.55f), fontSize = 10.sp, fontWeight = FontWeight.Normal)
     val labelBg = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
     val halo = if (isDark) Color(0xFF0B121A) else Color.White
+    val weekTextHalo = Color(0xFF0B121A)
     val labelColor = if (isDark) Color.White else Color(0xFF14202B)
     Canvas(modifier = modifier) {
         val top = PLOT_TOP.dp.toPx()
@@ -516,10 +517,10 @@ private fun DailyCurveCanvas(
                     val nowIdx = hours.indices.minByOrNull { kotlin.math.abs(hours[it].rawTime.hour - nowHour) }
                     val selX = pts.getOrNull(selectedIndex)?.x
                     if (selectedIndex != nowIdx && (selX == null || kotlin.math.abs(selX - nx) > 26.dp.toPx())) {
-                        val style = TextStyle(color = nacre, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+                        val style = TextStyle(color = Color.White, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
                         val w = textMeasurer.measure("Now", style).size.width
                         val tx = (nx - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx())
-                        drawHaloTextAtBaseline(textMeasurer, "Now", style, halo, tx, c.y - 8.dp.toPx())
+                        drawHaloTextAtBaseline(textMeasurer, "Now", style, weekTextHalo, tx, c.y - 8.dp.toPx())
                     }
                 }
             }
@@ -548,9 +549,10 @@ private fun DailyCurveCanvas(
                 val x = (cx - layout.size.width / 2f).coerceIn(2.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
                 drawHaloTextAtBaseline(textMeasurer, text, style, outline, x, topY + layout.firstBaseline)
             }
-            // La taille est au-dessus de la courbe (sur le ciel), la période dessous (sur l'eau, toujours sombre : texte blanc).
-            haloText(formatDecimal(hourly.waveHeight, 1, ',') + " m", p.x, p.y - 26.dp.toPx(), 12f, FontWeight.ExtraBold, nacre, halo)
-            haloText("${hourly.wavePeriod.roundToInt()} s", p.x, p.y + 8.dp.toPx(), 10.5f, FontWeight.Bold, Color.White, Color(0xFF0B121A))
+            // Même style que la vue semaine (heightTextPaint / periodTextPaint) : blanc avec contour sombre, dans les deux thèmes.
+            // La taille est au-dessus de la courbe (sur le ciel), la période dessous (sur l'eau).
+            haloText(formatDecimal(hourly.waveHeight, 1, ',') + " m", p.x, p.y - 26.dp.toPx(), 12f, FontWeight.Bold, Color.White, weekTextHalo)
+            haloText("${hourly.wavePeriod.roundToInt()} s", p.x, p.y + 8.dp.toPx(), 11f, FontWeight.Bold, Color.White.copy(alpha = 0.92f), weekTextHalo)
             drawCircle(nacre.copy(alpha = 0.9f), radius = 3.6.dp.toPx(), center = p)
             drawCircle(nacre.copy(alpha = 0.35f), radius = 6.dp.toPx(), center = p, style = Stroke(1.2.dp.toPx()))
         }
