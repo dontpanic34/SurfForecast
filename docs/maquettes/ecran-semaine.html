@@ -48,9 +48,10 @@ canvas{display:block}
  <h1>Écran principal : phrase du jour et température</h1>
  <p>Rendu réel des nuages, du soleil, de l'eau et de la pluie de l'appli. Touche un jour dans la semaine, ou une heure dans le déroulé.</p>
  <div class="seg" id="pt" style="flex-wrap:wrap;margin-bottom:8px"><button data-v="J" aria-pressed="true">Bord haut, blanc petit (retenu)</button><button data-v="G" aria-pressed="false">7 · Bord haut, style de l'eau</button><button data-v="H" aria-pressed="false">8 · Bord haut, style du soleil</button><button data-v="A" aria-pressed="false">1 · Ciel, sous le soleil</button><button data-v="B" aria-pressed="false">2 · Sur le soleil</button><button data-v="C" aria-pressed="false">3 · Dans la barre colorée</button><button data-v="D" aria-pressed="false">4 · Avec les étoiles</button><button data-v="E" aria-pressed="false">5 · Ligne seule</button><button data-v="F" aria-pressed="false">6 · Avec les kJ</button><button data-v="N" aria-pressed="false">Sans</button></div><br>
- <div class="seg" id="rp" style="flex-wrap:wrap;margin-bottom:6px"><button data-v="cur" aria-pressed="false">Pluie actuelle (en ligne)</button><button data-v="new" aria-pressed="true">Nouvelle pluie : plus visible, vitesse 3</button></div><br>
- <div class="seg" id="rl" style="flex-wrap:wrap;margin-bottom:6px"><button data-v="1" aria-pressed="true">Longueur 1 : un chouia plus courte</button><button data-v="2" aria-pressed="false">Longueur 2 : courte</button><button data-v="3" aria-pressed="false">Longueur 3 : très courte</button></div><br>
- <div class="seg" id="rt" style="flex-wrap:wrap;margin-bottom:8px"><button data-v="1" aria-pressed="true">Épaisseur 1 : actuelle</button><button data-v="2" aria-pressed="false">Épaisseur 2 : épaisse</button><button data-v="3" aria-pressed="false">Épaisseur 3 : très épaisse</button></div><br>
+ <div class="seg" id="rp" style="flex-wrap:wrap;margin-bottom:6px"><button data-v="cur" aria-pressed="false">Pluie actuelle (en ligne)</button><button data-v="new" aria-pressed="true">Nouvelle pluie : plus visible</button></div><br>
+ <div class="seg" id="rl" style="flex-wrap:wrap;margin-bottom:6px"><button data-v="1" aria-pressed="false">Longueur 1 : un chouia plus courte</button><button data-v="2" aria-pressed="false">Longueur 2 : courte</button><button data-v="3" aria-pressed="true">Longueur 3 : très courte (retenue)</button></div><br>
+ <div class="seg" id="rs" style="flex-wrap:wrap;margin-bottom:6px"><button data-v="3" aria-pressed="false">Vitesse 3 : très lente</button><button data-v="4" aria-pressed="true">Vitesse 4 : encore plus lente (test)</button><button data-v="5" aria-pressed="false">Vitesse 5 : presque immobile</button></div><br>
+ <div class="seg" id="rt" style="flex-wrap:wrap;margin-bottom:8px"><button data-v="1" aria-pressed="true">Épaisseur 1 : actuelle (retenue)</button><button data-v="2" aria-pressed="false">Épaisseur 2 : épaisse</button><button data-v="3" aria-pressed="false">Épaisseur 3 : très épaisse</button></div><br>
  <div class="seg" id="th"><button data-v="d" aria-pressed="true">Sombre</button><button data-v="l" aria-pressed="false">Clair</button></div>
 </div>
 <div id="load">Chargement des images…</div>
@@ -238,10 +239,10 @@ function swell(ctx,x0,x1,top,bot,ys,week,dark,lab,rainFn,t){
  var line=new Path2D();line.moveTo(xs[0],py[0]);for(var j=1;j<n;j++){var m=(xs[j-1]+xs[j])/2;line.bezierCurveTo(m,py[j-1],m,py[j],xs[j],py[j])}
  ctx.lineWidth=(week?1.3:1.6)*DPR;ctx.strokeStyle=week?'rgba(255,255,255,.85)':'#2BD47A';ctx.stroke(line);return {xs:xs,py:py}}
 /* ---------- Pluie : réglages à comparer (actuelle = ce qui est en ligne) ---------- */
-var RPL={1:.85,2:.7,3:.55},RPT={1:1,2:1.6,3:2.4},RSEL={base:'new',l:'1',t:'1'};
+var RPL={1:.85,2:.7,3:.55},RPT={1:1,2:1.6,3:2.4},RSEL={base:'new',l:'3',t:'1',s:'4'},RPV={3:.3,4:.18,5:.1};
 var RPS={cur:{sc:1,ax:1,sp:1,passes:1,gain:1}};
 var RP=RPS.cur;
-function setRP(){if(RSEL.base==='cur'){RP=RPS.cur;return}var L=RPL[RSEL.l],T=RPT[RSEL.t];RP={sc:L,ax:T/L,sp:.3,passes:2,gain:1.5}}
+function setRP(){if(RSEL.base==='cur'){RP=RPS.cur;return}var L=RPL[RSEL.l],T=RPT[RSEL.t];RP={sc:L,ax:T/L,sp:RPV[RSEL.s],passes:2,gain:1.5}}
 setRP();
 function RAINL(){return [[IM.rain,.36*RP.sc,170*RP.sp,0,2.1*RP.ax],[IM.rain,.28*RP.sc,120*RP.sp,57,2.4*RP.ax]]}
 function hsh(a,b){var v=Math.sin(a*127.1+b*311.7)*43758.5453;return v-Math.floor(v)}
@@ -282,6 +283,6 @@ function frame(now){
 window.start=function(){document.getElementById('load').hidden=true;document.getElementById('phone').hidden=false;dayChanged();requestAnimationFrame(frame)}
 if(window.__pending)start();
 document.getElementById('pt').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});window.PT=b.dataset.v;buildDom()});
-['rp','rl','rt'].forEach(function(id){document.getElementById(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});if(id==='rp')RSEL.base=b.dataset.v;else if(id==='rl')RSEL.l=b.dataset.v;else RSEL.t=b.dataset.v;setRP()})});
+['rp','rl','rs','rt'].forEach(function(id){document.getElementById(id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});if(id==='rp')RSEL.base=b.dataset.v;else if(id==='rl')RSEL.l=b.dataset.v;else if(id==='rs')RSEL.s=b.dataset.v;else RSEL.t=b.dataset.v;setRP()})});
 document.getElementById('th').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});TH=b.dataset.v;document.documentElement.dataset.theme=TH==='d'?'dark':'light';if(IM.atlas){dayChanged()}});
 </script>
