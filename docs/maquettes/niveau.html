@@ -184,9 +184,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       </div>
       <div class="blk">
         <div class="lab">Vent maximum <span id="p2o3"></span></div>
-        <input type="range" id="p2wind" min="6" max="40" value="18" aria-label="Vent maximum">
-        <div class="ends"><span>6 km/h</span><span>40 km/h</span></div>
-        <div class="hint" style="margin-top:6px">Au-delà, c'est pourri pour moi.</div>
+        <input type="range" id="p2wind" min="0" max="4" step="1" value="1" aria-label="Vent maximum">
+        <div class="ends"><span>léger</span><span>modéré</span><span>soutenu</span><span>fort</span><span>très fort</span></div>
+        <div id="p2wd" style="margin-top:8px;font-size:13.5px;font-weight:650"></div>
+        <div class="hint" style="margin-top:4px">Au-delà, c'est pourri pour moi.</div>
       </div>
     </div>
     <p class="grp">Ce que ça donne</p>
@@ -218,7 +219,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <!-- 4. PHRASES -->
 <section data-s="p4" hidden>
   <div class="cmp" id="p4cmp"></div>
-  <p class="notes" style="max-width:760px;margin-top:14px"><b>Comment lire :</b> chaque cas est une vraie situation à Montalivet (plage tournée vers l'ouest). « En ligne aujourd'hui » est la phrase actuelle du site (le côté n'y est pas coupé en side-on et side-off). Touche la proposition que tu préfères, ou dis-moi la tienne. Dans chaque cas, la force est un classement en quatre niveaux : léger, gêne, fort, très fort.</p>
+  <p class="notes" style="max-width:760px;margin-top:14px"><b>Comment lire :</b> chaque cas est une vraie situation à Montalivet (plage tournée vers l'ouest). « En ligne aujourd'hui » est la phrase actuelle du site (le côté n'y est pas coupé en side-on et side-off). Touche la proposition que tu préfères, ou dis-moi la tienne. Les cas sont décrits par le type de vent (offshore, side-off, side-on, onshore) et sa direction ; les km/h ne sont plus qu'une indication discrète en gris. C'est la phrase qui dit l'effet sur la vague (léger, gêne, fort, très fort) : à force égale, un onshore gêne plus qu'un offshore. Dans l'appli, les phrases ne contiennent déjà aucun chiffre.</p>
 </section>
 
 <!-- 5. PAGE D'ACCUEIL DES RÉGLAGES -->
@@ -235,7 +236,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       </div>
       <span class="pro"><b>Le plus simple.</b> Chaque ligne résume son contenu. Rien de nouveau à apprendre : c'est la maquette validée en principe.</span></div>
     <div class="mini"><h3>B · Mon profil en haut</h3>
-      <div class="hero"><b>Intermédiaire</b><p>Vagues idéales 0,8 à 1,6 m · vent maximum 18 km/h</p>
+      <div class="hero"><b>Intermédiaire</b><p>Vagues idéales 0,8 à 1,6 m · vent maximum : modéré</p>
         <div class="lvl" style="padding:0 0 8px"><i class="on"></i><i class="on"></i><i></i><i></i></div><div class="btn" style="padding:8px">Régler mon profil</div></div>
       <div class="card">
         <div class="lrow"><div class="ico">🧍</div><div class="t"><b>Matériel</b><span>3 planches</span></div>›</div>
@@ -267,6 +268,9 @@ var DAYS=[
  {t:'Gros jour propre',h:1.9,w:'offshore',k:10},
  {t:'Gros jour, side-on',h:1.9,w:'side-on',k:16},
  {t:'Très gros jour',h:2.6,w:'offshore',k:12}];
+var FORCE=[['léger','la surface est presque lisse',10],['modéré','la surface ride',18],['soutenu','la surface se froisse',25],['fort','ça hache',32],['très fort','c\'est démonté',40]];
+function forceIdx(k){return k<12?0:k<20?1:k<28?2:k<36?3:4}
+function forceWord(k){return FORCE[forceIdx(k)][0]}
 function fr(x){return (Math.round(x*10)/10).toString().replace('.',',')}
 function rate(d,P){
   var s;
@@ -282,17 +286,17 @@ var LAB={'-1':['Gros jour, à jauger','var(--warn)'],0:['Taille limite','var(--g
 function levelOf(P){return P.hi<1.15?0:P.hi<1.85?1:P.hi<2.6?2:3}
 function renderPV(el,P){
   el.innerHTML=DAYS.map(function(d){var r=LAB[rate(d,P)];
-    return '<div class="d"><div><b>'+d.t+'</b><small>'+fr(d.h)+' m · '+d.k+' km/h '+d.w+'</small></div><span class="badge" style="background:'+r[1]+'">'+r[0]+'</span></div>'}).join('');
+    return '<div class="d"><div><b>'+d.t+'</b><small>'+fr(d.h)+' m · '+d.w+' '+forceWord(d.k)+'</small></div><span class="badge" style="background:'+r[1]+'">'+r[0]+'</span></div>'}).join('');
 }
 function renderLvl(idEl,nameEl,P,hint){
   var L=levelOf(P);
   idEl.innerHTML=[0,1,2,3].map(function(i){return '<i class="'+(i<=L?'on':'')+'"></i>'}).join('');
-  if(nameEl)nameEl.innerHTML=NAMES[L]+' <span>· vagues idéales '+fr(P.lo)+' à '+fr(P.hi)+' m · vent maximum '+Math.round(P.tol)+' km/h'+(hint?' · '+hint:'')+'</span>';
+  if(nameEl)nameEl.innerHTML=NAMES[L]+' <span>· vagues idéales '+fr(P.lo)+' à '+fr(P.hi)+' m · vent maximum : '+forceWord(P.tol)+(hint?' · '+hint:'')+'</span>';
 }
 
 /* ---------- 1. Par exemples ---------- */
 (function(){
-  var SIZES=[.7,1.2,1.7,2.3],WINDS=[['offshore',6,'Offshore · 6 km/h'],['side-on',12,'Side-on · 12 km/h'],['onshore',16,'Onshore · 16 km/h']];
+  var SIZES=[.7,1.2,1.7,2.3],WINDS=[['offshore',6,'Offshore léger · la surface est lisse'],['side-on',12,'Side-on modéré · la surface ride'],['onshore',16,'Onshore modéré · ça ride et ça hache']];
   var BODY=['genoux à taille','taille à poitrine','poitrine à tête','tête et plus'];
   var ANS=['Je reste à terre',"J'y vais quand même",'Parfait','Je me challenge','Trop gros pour moi'];
   var sits=[];SIZES.forEach(function(s,i){WINDS.forEach(function(w){sits.push({h:s,bi:i,w:w})})});
@@ -367,7 +371,7 @@ function Ruler(el,handles,opts){
     if(S.max<S.hi)S.max=S.hi;
     document.getElementById('p2o1').textContent=fr(S.lo)+' à '+fr(S.hi)+' m';
     document.getElementById('p2o2').textContent=fr(S.max)+' m';
-    document.getElementById('p2o3').textContent='jusqu\'à '+S.tol+' km/h';
+    var fi=forceIdx(S.tol);document.getElementById('p2o3').textContent=FORCE[fi][0];document.getElementById('p2wd').innerHTML='<b>'+FORCE[fi][0].charAt(0).toUpperCase()+FORCE[fi][0].slice(1)+'</b> : '+FORCE[fi][1]+' <span style="color:var(--muted);font-weight:500;font-size:11.5px">(environ '+FORCE[fi][2]+' km/h)</span>';
     renderLvl(document.getElementById('p2lvl'),document.getElementById('p2lvn'),S,'');
     renderPV(document.getElementById('p2pv'),S);
     pl1();pl2();
@@ -377,7 +381,7 @@ function Ruler(el,handles,opts){
     {label:'Plus grosse vague où je m\'éclate',get:function(){return S.hi},set:function(v){S.hi=Math.max(v,S.lo)}}],{zone:true,onChange:draw});
   var pl2=Ruler(document.getElementById('p2rm'),[
     {label:'La plus grosse que je surfe',cls:'mx',get:function(){return S.max},set:function(v){S.max=Math.max(v,S.hi)}}],{max:true,zoneFrom:function(){return S.hi},onChange:draw});
-  wi.oninput=function(){S.tol=+wi.value;draw()};
+  wi.oninput=function(){S.tol=FORCE[+wi.value][2];draw()};
   draw();
 })();
 
@@ -457,6 +461,7 @@ function Ruler(el,handles,opts){
   var A={offshore:['Offshore soutenu','Offshore un peu fort','Offshore fort','Offshore très fort'],'side-off':['Side-off soutenu','Side-off un peu fort','Side-off fort','Side-off très fort'],'side-on':['Un peu de side-on','Side-on dégrade la vague','Side-on fort, ça sectionne','Side-on très fort, c\'est démonté'],onshore:OLD.onshore};
   var B={offshore:['Offshore, la vague se tient','Offshore, ça retient la vague','Offshore fort, ça ferme','Offshore très fort, ça arrache'],'side-off':['Side-off, la vague se tient','Side-off, ça retient la vague','Side-off fort, ça ferme','Side-off très fort, ça arrache'],'side-on':['Side-on, ça gratte','Side-on, la vague se froisse','Side-on fort, ça ferme','Side-on très fort, c\'est pourri'],onshore:['Onshore, ça gratte','Onshore, la vague se froisse','Onshore fort, ça ferme','Onshore très fort, c\'est pourri']};
   var CASES=[['O',14],['NO',25],['SO',18],['SO',30],['NE',31],['NNE',22],['E',12],['ENE',28]];
+  var DIRFR={N:'nord',NNE:'nord-nord-est',NE:'nord-est',ENE:'est-nord-est',E:'est',ESE:'est-sud-est',SE:'sud-est',SSE:'sud-sud-est',S:'sud',SSO:'sud-sud-ouest',SO:'sud-ouest',OSO:'ouest-sud-ouest',O:'ouest',ONO:'ouest-nord-ouest',NO:'nord-ouest',NNO:'nord-nord-ouest'};
   var el=document.getElementById('p4cmp');
   el.innerHTML=CASES.map(function(c,i){var dir=c[0],k=c[1],ct=cat(dir),f=factor(ct,k),lv=level(f);
     var oldKey=ct==='offshore'||ct==='side-off'?(ct==='offshore'?'offshore':'cross'):ct==='side-on'?'cross':'onshore';
@@ -465,7 +470,7 @@ function Ruler(el,handles,opts){
     var tag=ct==='side-off'?'Side-off':ct==='side-on'?'Side-on':ct==='offshore'?'Offshore':'Onshore';
     function ph(S){return lv<0?'(pas de phrase : vent propre)':S[ct][lv]}
     var oldTxt=olvl<0?'(pas de phrase : vent propre)':OLD[oldKey][olvl];
-    return '<div class="ex"><div class="c">'+dir+' · '+k+' km/h ressentis<small>'+tag+' à Montalivet · niveau : '+(lv<0?'propre':['léger','gêne','fort','très fort'][lv])+'</small></div><div class="row3"><div class="opt now"><small>En ligne aujourd\'hui</small>'+oldTxt+'</div><button class="opt" data-g="'+i+'" aria-pressed="false"><small>Proposition A · sobre</small>'+ph(A)+'</button><button class="opt" data-g="'+i+'" aria-pressed="false"><small>Proposition B · imagée</small>'+ph(B)+'</button></div></div>'}).join('');
+    return '<div class="ex"><div class="c">'+tag+' · vent de '+DIRFR[dir]+'<small>À Montalivet · <span style="opacity:.65">'+k+' km/h</span></small></div><div class="row3"><div class="opt now"><small>En ligne aujourd\'hui</small>'+oldTxt+'</div><button class="opt" data-g="'+i+'" aria-pressed="false"><small>Proposition A · sobre</small>'+ph(A)+'</button><button class="opt" data-g="'+i+'" aria-pressed="false"><small>Proposition B · imagée</small>'+ph(B)+'</button></div></div>'}).join('');
   el.onclick=function(e){var b=e.target.closest('button.opt');if(!b)return;el.querySelectorAll('button.opt[data-g="'+b.dataset.g+'"]').forEach(function(x){x.setAttribute('aria-pressed',x===b)})};
 })();
 
