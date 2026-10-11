@@ -1,5 +1,8 @@
 # À faire
 
+## Plus tard : la condition physique dans « Mon matériel » (12 octobre)
+- « Ta rame pour passer la barre » (sans souci / je fatigue au bout d'un moment / je fatigue vite / je n'avance pas aussi vite que je devrais) sort du questionnaire du niveau : c'est de la condition physique. À reprendre avec le volume de planche dans « Mon matériel » (déjà « Forme physique : excellente, bonne, moyenne, faible » aujourd'hui) : probablement la fusionner avec cette « forme physique ».
+
 ## Plus tard : le volume de planche et la fréquence (12 octobre)
 - Conserver dans le profil la fréquence (quelques fois par an… plusieurs fois par semaine) et la saison (toute l'année / surtout l'été). Au moment de reprendre le volume recommandé (`BoardVolume.kt`, « Mon matériel »), en tenir compte : plus de volume pour quelqu'un qui surfe peu ou seulement l'été. Sujet compliqué, à traiter à part ; rien dans le niveau en attendant.
 

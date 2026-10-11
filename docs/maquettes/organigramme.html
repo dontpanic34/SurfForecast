@@ -107,6 +107,7 @@ details[open] summary{margin-bottom:6px}
 <div class="lvbtns" id="lvb"></div>
 <div class="panel" id="panel"></div>
 
+<details id="cmp" open><summary>Avancé ou Expert : ce qui change dans les réponses</summary><div id="cmpBody" style="padding-bottom:12px"></div></details>
 <details id="rule"><summary>La règle du niveau</summary><div id="ruleBody" style="padding-bottom:12px"></div></details>
 <details id="over"><summary>Toutes les questions, dans l'ordre</summary><div id="overBody" style="padding-bottom:12px"></div></details>
 <details id="test"><summary>Teste un chemin</summary><div class="sel" id="sel"></div><div class="res" id="tres" style="margin-bottom:12px"></div></details>
@@ -129,30 +130,29 @@ var Q={
  season:{n:'Sur l\'année, tu surfes…',o:['Toute l\'année','Surtout l\'été (ou en vacances)'],info:true},
  what:{n:'Tu surfes…',o:['La mousse seulement','Le lisse']},
  board:{n:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse (type Décathlon)','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard'],lim:[0,4,4,4]},
- barre:{n:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux','Taille','Poitrine','Tête','Au-dessus de la tête'],base:[0,0,1,2,3,4]},
+ barre:{n:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],base:[0,0,1,2,3,4]},
  feel:{n:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment']},
- rameBarre:{n:'Ta rame pour passer la barre',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite','Je n\'avance pas aussi vite que je devrais'],lim:[4,3,1,2]},
  rameVague:{n:'Ta rame pour prendre la vague',sub:'Tu as assez de vitesse au moment du take-off ?',o:['Oui, à chaque fois','Pas toujours : je rate des vagues faute de vitesse','Souvent non : je manque de vitesse'],lim:[4,2,1]},
- tk:{n:'Ton take-off',sub:'Tu pars en un seul temps ?',o:['En un seul temps, tout le temps','En un seul temps, parfois','En plusieurs temps'],lim:[4,2,1]},
+ tk:{n:'Ton take-off',sub:'Tu pars en un seul temps ?',o:['En un seul temps, tout le temps','En un seul temps, souvent','En un seul temps, parfois','En plusieurs temps'],lim:[4,1,1,1]},
  want:{n:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant']},
- waves:{n:'Quelles vagues tu surfes dans le lisse ?',sub:'C\'est la plus haute qui compte.',o:['Les réformes','L\'épaule','Le peak'],lim:[1,2,4]},
- peak:{n:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['Je me place là où il y a du monde','Je repère la vague tout seul, et j\'y vais si c\'est accessible','Je sais où est le pic, et j\'y vais tout le temps'],lim:[1,2,4]},
- goal:{n:'Sur la vague, tu cherches surtout à…',o:['Te lever, et garder la mousse le plus longtemps possible','Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Encore au-dessus (à définir avec toi)'],lim:[0,1,2,3,4]}
+ waves:{n:'Quelles vagues tu surfes dans le lisse ?',sub:'C\'est la plus haute qui compte.',o:['Les reformes','L\'épaule','Le peak'],lim:[1,2,4]},
+ peak:{n:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],lim:[1,2,4]},
+ goal:{n:'Sur la vague, tu cherches surtout à…',sub:'Seulement si tu surfes le lisse.',o:['Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Encore au-dessus (à définir avec toi)'],lim:[1,2,3,4]}
 };
-var FLOW=[['since','freq','season','board','rameVague','tk','want','goal'],
-          ['since','freq','season','board','barre','feel','rameBarre','rameVague','tk','waves','peak','goal']];
+var FLOW=[['since','freq','season','board','rameVague','tk','want'],
+          ['since','freq','season','board','barre','feel','rameVague','tk','waves','peak','goal']];
 
 /* ---------- La règle : la marche la plus basse ---------- */
 function limitsOf(a){
-  var L=[{k:'goal',v:a.goal,t:'ce que tu cherches'},{k:'rameVague',v:Q.rameVague.lim[a.rameVague],t:'ta rame pour prendre la vague'},{k:'board',v:Q.board.lim[a.board],t:'ta planche en mousse'}];
+  var L=[{k:'rameVague',v:Q.rameVague.lim[a.rameVague],t:'ta rame pour prendre la vague'},{k:'board',v:Q.board.lim[a.board],t:'ta planche en mousse'}];
   if(a.what===0){L.push({k:'what',v:(a.tk===0&&a.want===0)?1:0,t:'tu ne surfes que la mousse'})}
   else{
+    L.push({k:'goal',v:Q.goal.lim[a.goal],t:'ce que tu cherches'});
     var bar=Q.barre.base[a.barre];if(a.feel!==0)bar=Math.max(0,bar-1);
     L.push({k:'barre',v:bar,t:'la taille où tu passes la barre'+(a.feel!==0?' (et la façon dont tu la passes)':'')});
-    L.push({k:'rameBarre',v:Q.rameBarre.lim[a.rameBarre],t:'ta rame pour passer la barre'});
     L.push({k:'tk',v:Q.tk.lim[a.tk],t:'ton take-off dans le lisse'});
     var top=-1;(a.waves||[]).forEach(function(w){top=Math.max(top,w)});L.push({k:'waves',v:Q.waves.lim[top],t:'les vagues que tu surfes dans le lisse'});
-    L.push({k:'peak',v:Q.peak.lim[a.peak],t:'l\'endroit où tu te places dans l\'eau'});
+    L.push({k:'peak',v:Q.peak.lim[a.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
   }
   return L;
 }
@@ -198,6 +198,7 @@ function branchHtml(b,N){
   });
   h+=parts.join('<div class="ar">↓</div>');
   var rule='';
+
   if(b===0&&N===1)rule='Pour être '+LV[1]+' en mousse seulement : il faut <b>les deux</b> : un take-off « en un seul temps, tout le temps » ET l\'envie de passer au lisse.';
   else if(b===0&&N===0)rule='Tu es '+LV[0]+' en mousse seulement dès que le take-off n\'est pas « tout le temps en un seul temps » ou que tu ne veux pas passer au lisse (ou que tu vises « te lever »).';
   else if(N===4)rule='Il n\'y a pas de marche au-dessus : <b>toutes</b> ces réponses doivent être au maximum.';
@@ -217,13 +218,31 @@ lb.innerHTML=LV.map(function(l,i){return '<button data-n="'+i+'" style="backgrou
 lb.onclick=function(e){var b=e.target.closest('button');if(b)showLevel(+b.dataset.n)};
 
 /* ---------- Règle, vue d'ensemble, testeur ---------- */
+(function(){
+  function permitted(id,N){var q=Q[id];return q.o.map(function(o,i){var l=q.lim?q.lim[i]:null;return {o:o,ok:l>=N}})}
+  var rows=[];
+  ['goal','board','barre','feel','rameVague','tk','waves','peak'].forEach(function(id){
+    var q=Q[id],a3,a4;
+    if(id==='barre'){a3=q.o.filter(function(o,i){return Math.max(0,q.base[i]-1)>=3||q.base[i]>=3}).map(function(o,i){return o});
+      var ok3=q.o.map(function(o,i){return q.base[i]>=3?o+(Math.max(0,q.base[i]-1)>=3?'':' (si prêt à surfer)'):null}).filter(Boolean);
+      var ok4=q.o.map(function(o,i){return q.base[i]>=4?o+(Math.max(0,q.base[i]-1)>=4?'':' (si prêt à surfer)'):null}).filter(Boolean);
+      rows.push([q.n,ok3,ok4]);return}
+    if(id==='feel'){rows.push([q.n,['Prêt à surfer ; ou une autre réponse si tu passes la barre « au-dessus de la tête »'],['Prêt à surfer seulement']]);return}
+    var p3=permitted(id,3).filter(function(x){return x.ok}).map(function(x){return x.o}),p4=permitted(id,4).filter(function(x){return x.ok}).map(function(x){return x.o});
+    rows.push([q.n,p3,p4]);
+  });
+  var h='<p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Réponses qui permettent d\'être Avancé, et celles qui permettent d\'être Expert. Les lignes en jaune sont celles où les deux niveaux se séparent.</p><div style="display:grid;gap:8px">';
+  rows.forEach(function(r){var same=r[1].join('|')===r[2].join('|');h+='<div class="nd" style="'+(same?'':'box-shadow:inset 0 0 0 2px var(--l3)')+'"><div class="nq">'+r[0]+(same?' <small>identique</small>':'')+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px"><div><b>'+tag(3)+'</b><br>'+r[1].join('<br>')+'</div><div><b>'+tag(4)+'</b><br>'+r[2].join('<br>')+'</div></div></div>'});
+  h+='</div><p class="rule" style="margin-top:10px"><b>Constat :</b> avec les questions actuelles, Avancé et Expert ne se séparent que sur <b>ce que tu cherches</b> (la réponse « Encore au-dessus » n\'est pas encore définie) et sur <b>la taille de la barre</b> (au-dessus de la tête, en étant prêt à surfer). Rien dans le questionnaire ne dit encore ce que fait un Expert que ne fait pas un Avancé : surfer quand c\'est pourri, trouver le créneau, tenir le courant, le creux, le tube.</p>';
+  document.getElementById('cmpBody').innerHTML=h;
+})();
 document.getElementById('ruleBody').innerHTML='<p style="margin:0 0 8px;font-size:14px"><b>Le niveau est la marche la plus basse</b> parmi ce que tu vises et chacune des limites posées par tes réponses.</p><p style="margin:0;font-size:13px;color:var(--muted)">Exemple : tu vises Confirmé, tu surfes l\'épaule, tu repères la vague tout seul, tu passes la barre jusqu\'à poitrine, mais tu fatigues vite pour la passer. Les limites sont Confirmé, Confirmé, Confirmé, Confirmé et Intermédiaire (la rame) : le niveau est <b>Intermédiaire</b>. Depuis quand, fréquence et saison ne changent pas le niveau.</p>';
 document.getElementById('overBody').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Deux chemins seulement, qui se rejoignent à « ce que tu cherches ». La rame vient avant le take-off : on réussit un take-off si on a assez de vitesse.</p><div class="cols">'+[0,1].map(function(b){return '<div class="branch"><div class="bt">'+(b===0?'La mousse seulement':'Le lisse')+'</div>'+FLOW[b].map(function(id){return '<div class="nd'+(Q[id].info?' info':'')+'"><div class="nq">'+Q[id].n+'</div></div>'}).join('<div class="ar">↓</div>')+'</div>'}).join('')+'</div>';
 (function(){
-  var a={what:1,board:3,barre:4,feel:0,rameBarre:0,rameVague:0,tk:0,waves:[2],peak:2,goal:3};
+  var a={what:1,board:3,barre:4,feel:0,rameVague:0,tk:0,waves:[2],peak:2,goal:2};
   var el=document.getElementById('sel');
-  var ORDER=['what','board','barre','feel','rameBarre','rameVague','tk','want','waves','peak','goal'];
-  function act(id){if(['barre','feel','rameBarre','waves','peak'].indexOf(id)>=0)return a.what===1;if(id==='want')return a.what===0;return true}
+  var ORDER=['what','board','barre','feel','rameVague','tk','want','waves','peak','goal'];
+  function act(id){if(['barre','feel','waves','peak','goal'].indexOf(id)>=0)return a.what===1;if(id==='want')return a.what===0;return true}
   function draw(){
     el.innerHTML=ORDER.filter(act).map(function(id){var q=Q[id];return '<div class="qq"><p>'+q.n+'</p><div class="chips">'+q.o.map(function(o,i){var on=id==='waves'?a.waves.indexOf(i)>=0:a[id]===i;return '<button class="chip" data-q="'+id+'" data-i="'+i+'" aria-pressed="'+on+'">'+o+'</button>'}).join('')+'</div></div>'}).join('');
     el.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var id=b.dataset.q,i=+b.dataset.i;if(id==='waves'){var k=a.waves.indexOf(i);if(k>=0){if(a.waves.length>1)a.waves.splice(k,1)}else a.waves.push(i)}else{a[id]=i;if(id==='what'&&i===0&&a.want===undefined)a.want=0}draw()}});

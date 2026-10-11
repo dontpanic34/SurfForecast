@@ -180,23 +180,22 @@ var LEVELS=[
  {n:'Confirmé',goal:'Suivre la vague dans le lisse le plus longtemps possible.',def:'Tu es autonome : tu localises une vague même s\'il n\'y a personne. Ton take-off est solide, tu passes la barre sans souci et la rame suit.'},
  {n:'Avancé',goal:'Exprimer tes manœuvres, t\'améliorer, être plus critique.',def:'Tu cherches la taille où tu peux faire de vraies manœuvres et l\'endroit critique de la vague. Tu veux être plus radical, plus engagé.'},
  {n:'Expert',goal:'Encore au-dessus (à définir avec toi).',def:'Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c\'est pourri : tu trouves le bon créneau, les phases lisses, une réforme intéressante, et tu tiens le courant à la rame.'}];
-var TK=['En un seul temps, tout le temps','En un seul temps, parfois','En plusieurs temps'];
+var TK=['En un seul temps, tout le temps','En un seul temps, souvent','En un seul temps, parfois','En plusieurs temps'];
 var STEPS=[
  {id:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']},
  {id:'freq',q:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine']},
  {id:'season',q:'Sur l\'année, tu surfes…',o:['Toute l\'année','Surtout l\'été (ou en vacances)']},
  {id:'what',q:'Tu surfes…',sub:'Celui qui surfe le lisse surfe aussi la mousse.',o:['La mousse seulement','Le lisse']},
  {id:'board',q:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse (type Décathlon)','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard']},
- {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux','Taille','Poitrine','Tête','Au-dessus de la tête'],when:function(a){return a.what===1}},
+ {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===1}},
  {id:'feel',q:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],
    osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===1}},
- {id:'rameBarre',q:'Ta rame pour passer la barre',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite','Je n\'avance pas aussi vite que je devrais'],when:function(a){return a.what===1}},
  {id:'rameVague',q:'Ta rame pour prendre la vague',sub:'Tu as assez de vitesse au moment du take-off ?',o:['Oui, à chaque fois','Pas toujours : je rate des vagues faute de vitesse','Souvent non : je manque de vitesse']},
  {id:'tk',q:'Ton take-off',sub:'Tu pars en un seul temps ?',o:TK,dyn:function(a){return a.what===0?'Dans la mousse, ton take-off':'Dans le lisse, ton take-off'}},
  {id:'want',q:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
- {id:'waves',q:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles : c\'est la plus haute qui compte.',multi:true,o:['Les réformes','L\'épaule','Le peak'],when:function(a){return a.what===1}},
- {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['Je me place là où il y a du monde','Je repère la vague tout seul, et j\'y vais si c\'est accessible','Je sais où est le pic, et j\'y vais tout le temps'],when:function(a){return a.what===1}},
- {id:'goal',q:'Sur la vague, tu cherches surtout à…',o:LEVELS.map(function(l){return l.goal})}];
+ {id:'waves',q:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles : c\'est la plus haute qui compte.',multi:true,o:['Les reformes','L\'épaule','Le peak'],when:function(a){return a.what===1}},
+ {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===1}},
+ {id:'goal',q:'Sur la vague, tu cherches surtout à…',o:LEVELS.slice(1).map(function(l){return l.goal}),when:function(a){return a.what===1}}];
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
 function title(st){return st.dyn?st.dyn(ans):st.q}
@@ -206,15 +205,14 @@ function answered(st){var v=ans[st.id];return st.multi?(v&&v.length>0):v!==undef
    « Depuis », la fréquence et la saison ne changent pas le niveau. */
 function compute(){
   var L=[];
-  L.push({v:ans.goal,t:'ce que tu cherches'});
   L.push({v:[4,2,1][ans.rameVague],t:'ta rame pour prendre la vague'});
   L.push({v:[0,4,4,4][ans.board],t:'ta planche en mousse'});
   if(ans.what===0){L.push({v:(ans.tk===0&&ans.want===0)?1:0,t:'tu ne surfes que la mousse'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')})}
   else{
+    L.push({v:ans.goal+1,t:'ce que tu cherches'});
     var bar=[0,0,1,2,3,4][ans.barre];if(ans.feel!==0)bar=Math.max(0,bar-1);
     L.push({v:bar,t:ans.barre===0?'tu ne passes pas encore la barre':'la taille où tu passes la barre'+(ans.feel!==0?' et la façon dont tu la passes':'')});
-    L.push({v:[4,3,1,2][ans.rameBarre],t:'ta rame pour passer la barre'});
-    L.push({v:[4,2,1][ans.tk],t:'ton take-off dans le lisse'});
+    L.push({v:[4,1,1,1][ans.tk],t:'ton take-off dans le lisse'});
     var top=-1;(ans.waves||[]).forEach(function(w){top=Math.max(top,w)});L.push({v:[1,2,4][Math.max(0,top)],t:'les vagues que tu surfes dans le lisse'});
     L.push({v:[1,2,4][ans.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
   }
