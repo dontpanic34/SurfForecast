@@ -101,3 +101,4 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Questionnaire (maquette) : « Où tu surfes ? » en 4 réponses sans doublon (chez moi par flemme / autour de chez moi, meilleur spot, loin du monde / je me déplace pour suivre les conditions / je pars à l'étranger) ; « surf trips » intégré comme dernière réponse, question séparée supprimée.
 - Questionnaire (maquette) : « Où tu surfes ? » en choix multiple (celui qui part en trip se déplace aussi et évite le monde chez lui) : la réponse la plus haute compte, chaque réponse en plus ajoute un petit bonus.
 - Questionnaire (maquette) : « Tu surfes… » devient La mousse / La réforme / Le large (mousse et réforme suivent le parcours Débutant ; seul le large ouvre le parcours complet). « Tu veux passer au large ? » remplace « passer à la vague ». Organigramme pas encore aligné.
+- Questionnaire (maquette) : première réponse de « Où tu surfes ? » : « Chez moi, avec du monde : ça me rassure ».
