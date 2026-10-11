@@ -198,16 +198,18 @@ private fun buildCloudFilter(cover: Float, rain: Float, isDark: Boolean): ColorF
     val maxA = mix(0.9f, 1f, smoothstep(0.4f, 0.9f, cover))
     val g1 = smoothstep(0.45f, 0.95f, cover)
     val rd = (rain * 0.9f + smoothstep(0.88f, 1f, cover) * 0.3f).coerceIn(0f, 1f)
+    // Ciel très couvert : plus de relief dans le nuage (creux sombres, bords clairs), pour ne pas faire un tapis uniforme.
+    val relief = smoothstep(0.55f, 1f, cover)
     val base: FloatArray
     val kLo: Float
     val kHi: Float
     if (isDark) {
         // Thème sombre : nuages gris-bleu clairs, bien plus clairs que le fond, pour rester lisibles.
         base = floatArrayOf(mix(mix(222f, 168f, g1), 104f, rd), mix(mix(231f, 182f, g1), 118f, rd), mix(mix(244f, 202f, g1), 140f, rd))
-        kLo = 0.74f; kHi = 0.26f
+        kLo = mix(0.74f, 0.58f, relief); kHi = 1f - kLo
     } else {
         base = floatArrayOf(mix(mix(252f, 205f, g1), 92f, rd), mix(mix(253f, 212f, g1), 102f, rd), mix(mix(255f, 222f, g1), 116f, rd))
-        kLo = 0.56f; kHi = 0.44f
+        kLo = mix(0.56f, 0.38f, relief); kHi = 1f - kLo
     }
     val m = floatArrayOf(
         0f, base[0] * kHi / 255f, 0f, 0f, base[0] * kLo,

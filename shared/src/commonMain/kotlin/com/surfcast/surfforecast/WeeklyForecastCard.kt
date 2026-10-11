@@ -779,8 +779,8 @@ internal fun weekSkyScene(
     }
     // Lissage sur près d'un demi-créneau : un changement de ciel ou de pluie s'étale sur plusieurs heures, sans colonne.
     val slotW = dayW / 3f
-    val coverSmooth = 0.4f * slotW
-    val rainSmooth = 0.3f * slotW
+    val coverSmooth = 0.7f * slotW
+    val rainSmooth = 0.5f * slotW
     val top = 8f * density
     val bottom = size.height - 18f * density
     // Les nuages sont étalés sur le ciel, au-dessus de la houle la plus haute de la semaine.
