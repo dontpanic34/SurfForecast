@@ -368,7 +368,7 @@ private fun DrawScope.drawSky(scene: SkyScene, im: SkyImages, isDark: Boolean, t
         // sombre sur un ciel clair et redevient claire sur un ciel très sombre.
         val d = density
         class Layer(val img: ImageBitmap, val scale: Float, val ax: Float, val speed: Float, val xoff: Float, val mask: (Float) -> Float, val alpha: Float, val tint: Color?)
-        fun rainMask(x: Float) = min(1f, scene.rain.at(x) / 2.2f * 0.85f)
+        fun rainMask(x: Float) = min(1f, (scene.rain.at(x) / 1.5f).coerceAtLeast(0f).pow(0.6f))
         fun lightShare(x: Float) = ((scene.cover.at(x) - 0.7f) / 0.2f).coerceIn(0f, 1f)
         val rainDark = Color(0xFF3A4C66).copy(alpha = 0.97f)
         val snowTint = Color(0xFF70849E).copy(alpha = 0.95f)

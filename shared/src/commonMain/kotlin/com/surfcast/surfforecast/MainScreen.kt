@@ -697,6 +697,8 @@ fun MainScreen(
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
                                 onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
+                                isDark = isDarkSurfaceTheme(),
+                                onToggleTheme = { viewModel.changeThemeMode(if (isDarkSurfaceTheme()) "light" else "dark") },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
                                 coachTargets = coachTargets
@@ -1151,6 +1153,8 @@ private fun BottomNavBar(
     onJournal: () -> Unit,
     onWeather: () -> Unit,
     onSettings: () -> Unit,
+    isDark: Boolean,
+    onToggleTheme: () -> Unit,
     hasWebcam: Boolean,
     onWebcam: () -> Unit,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
@@ -1190,6 +1194,10 @@ private fun BottomNavBar(
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
                 }
                 Item("Météo", false, onWeather) { WeatherIcon("🌤️", 22.dp) }
+                // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
+                Item("Thème", false, onToggleTheme) {
+                    ThemeToggleIcon(isDarkActive = !isDark, backgroundColor = colors.surface, iconColor = colors.onSurface, modifier = Modifier.size(22.dp))
+                }
                 Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
                 }
