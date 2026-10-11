@@ -46,7 +46,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .pv .d:first-child{border-top:0}
 .pv .d b{font-size:13.5px;font-weight:650;display:block}.pv .d small{color:var(--muted);font-size:12px}
 .badge{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:99px;color:#fff;white-space:nowrap}
-.lvl{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:12px 14px}
+.lvl{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:12px 14px}
 .lvl i{display:block;height:6px;border-radius:3px;background:var(--surface2)}
 .lvl i.on{background:var(--accent)}
 .lvname{padding:0 14px 12px;font-size:14px;font-weight:700}
@@ -120,6 +120,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .cmp{display:grid;gap:10px;max-width:760px;margin:0 auto}
 .ex{background:var(--surface);border-radius:14px;padding:12px 14px}
 .ex .c{font-size:13.5px;font-weight:700}.ex .c small{color:var(--muted);font-weight:500;font-size:12.5px;display:block}
+.ex p.lv{margin:8px 0 0;font-size:13.5px;color:var(--ink)}
 .ex .row3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:8px}
 .opt{all:unset;cursor:pointer;display:block;border-radius:10px;padding:9px 11px;background:var(--surface2);font-size:13.5px;font-weight:650;box-shadow:inset 0 0 0 2px transparent}
 .opt small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
@@ -137,6 +138,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <button role="tab" data-p="p1" aria-selected="true">1 · Par exemples</button>
   <button role="tab" data-p="p2" aria-selected="false">2 · La règle de la vague</button>
   <button role="tab" data-p="p3" aria-selected="false">3 · Questions</button>
+  <button role="tab" data-p="p6" aria-selected="false">Les 5 niveaux</button>
   <button role="tab" data-p="p4" aria-selected="false">Phrases du vent : cas concrets</button>
   <button role="tab" data-p="p5" aria-selected="false">Page d'accueil des réglages</button>
 </div>
@@ -216,6 +218,23 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <p class="notes"><b>Le questionnaire d'un prof de surf :</b> une question à la fois, et la suite dépend des réponses. Mousse ou lisse d'abord ; dans la mousse (ou si on veut passer au lisse), on regarde le take-off : parfait, à travailler, en plusieurs temps ? ; dans le lisse, quelles vagues (réformes, épaule, peak, tube) et le take-off aussi ; puis jusqu'à quelle taille on passe la barre, et comment on la passe (prêt à surfer, impressionné, en galère, ou seulement au bon moment) ; enfin la rame, pour voir si le physique suit. Les deux dernières questions donnent la taille où on s'éclate et la plus grosse sans stress.</p>
 </section>
 
+<!-- 6. LES CINQ NIVEAUX -->
+<section data-s="p6" hidden>
+  <div class="cmp">
+    <div class="ex"><div class="c">1 · Débutant<small>Mousse (ou réformes) · take-off à travailler ou en plusieurs temps</small></div>
+      <p class="lv">Ne passe pas la barre, ou seulement quand c'est tout petit. Taille idéale : genoux à taille.<br><b>Vent :</b> il n'a pas besoin d'offshore. Un peu d'onshore ou pas de vent lui convient mieux. <b>L'offshore, c'est du creux</b> : s'il va un peu plus loin que sa zone de confort, il risque de planter, son take-off n'étant pas bon.</p></div>
+    <div class="ex"><div class="c">2 · Intermédiaire<small>Commence à surfer le lisse, sur petites vagues</small></div>
+      <p class="lv">Take-off acquis dans le lisse sur petite vague. Passe la barre quand c'est petit ou au bon moment. Taille idéale : taille à poitrine.<br><b>Il se place en fonction des autres</b> : s'il y a du monde, ça le rassure et il va là où il y a du monde.</p></div>
+    <div class="ex"><div class="c">3 · Confirmé<small>Autonome</small></div>
+      <p class="lv"><b>Il est capable de localiser une vague, même s'il n'y a personne.</b> Take-off solide, passe la barre sans souci, la rame suit. Taille idéale : poitrine à tête.</p></div>
+    <div class="ex"><div class="c">4 · Avancé<small>Cherche à exprimer ses manœuvres</small></div>
+      <p class="lv"><b>Sa taille idéale est celle où il peut faire de vraies manœuvres</b> et chercher l'endroit critique de la vague : environ 1,5 m jusqu'à 2 m, un peu plus. Au-dessus, c'est pour les sensations, pas pour les manœuvres. Il cherche à être plus critique, plus radical, plus engagé. Il n'a pas vraiment besoin de l'appli pour lire les conditions.</p></div>
+    <div class="ex"><div class="c">5 · Expert<small>Pas de limite</small></div>
+      <p class="lv">Surfe le gros, le creux, le tube. <b>Il sait surfer quand c'est pourri</b> : il trouve le créneau de la journée où le vent est moins fort, les phases de vagues lisses, et si c'est démonté au large, il repère une réforme intéressante. Il tient le courant à la rame. Il n'a pas besoin de l'appli pour lire les conditions.</p></div>
+  </div>
+  <p class="notes" style="max-width:760px;margin-top:14px"><b>À valider :</b> ces textes reprennent tes corrections. Pour l'appli, Avancé et Expert se ressemblent beaucoup : l'Expert n'a simplement pas de limite de taille. Les tailles idéales sont des repères pour la maquette.</p>
+</section>
+
 <!-- 4. PHRASES -->
 <section data-s="p4" hidden>
   <div class="cmp" id="p4cmp"></div>
@@ -259,8 +278,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 </section>
 
 <script>
-var NAMES=['Débutant','Intermédiaire','Confirmé','Expert'];
-var PRESETS=[{lo:.4,hi:.9,max:1.3,tol:12},{lo:.8,hi:1.6,max:1.9,tol:18},{lo:1.1,hi:2.1,max:2.6,tol:25},{lo:1.5,hi:3.2,max:4,tol:32}];
+var NAMES=['Débutant','Intermédiaire','Confirmé','Avancé','Expert'];
+var PRESETS=[{lo:.3,hi:.8,max:1.1,tol:12,beg:true},{lo:.6,hi:1.2,max:1.6,tol:18},{lo:1.0,hi:1.7,max:2.2,tol:25},{lo:1.5,hi:2.1,max:3,tol:32},{lo:1.8,hi:3.5,max:5,tol:40}];
 var DAYS=[
  {t:'Petit jour propre',h:.7,w:'offshore',k:6},
  {t:'Belle journée',h:1.2,w:'side-off',k:12},
@@ -275,6 +294,7 @@ function fr(x){return (Math.round(x*10)/10).toString().replace('.',',')}
 function rate(d,P){
   var s;
   if(d.h<P.lo*.6)s=0; else if(d.h<P.lo)s=2; else if(d.h<=P.hi)s=4; else if(d.h<=P.max)s=3; else s=-1;
+  if(s>=0&&P.beg&&(d.w==='offshore'||d.w==='side-off')&&d.h>P.lo*1.4)s=Math.min(s,3);   // creux : il risque de planter
   if(s>=0){
     var m={'offshore':1.6,'side-off':1.3,'side-on':.8,'onshore':.55}[d.w];
     var lim=P.tol*m;
@@ -283,14 +303,14 @@ function rate(d,P){
   return s;
 }
 var LAB={'-1':['Gros jour, à jauger','var(--warn)'],0:['Taille limite','var(--grey)'],1:['Bon','var(--ok)'],2:['Bon','var(--ok)'],3:['Challengeant','var(--warn)'],4:['Parfait','var(--good)']};
-function levelOf(P){return P.hi<1.15?0:P.hi<1.85?1:P.hi<2.6?2:3}
+function levelOf(P){return P.hi<.95?0:P.hi<1.45?1:P.hi<1.95?2:P.hi<2.8?3:4}
 function renderPV(el,P){
   el.innerHTML=DAYS.map(function(d){var r=LAB[rate(d,P)];
     return '<div class="d"><div><b>'+d.t+'</b><small>'+fr(d.h)+' m · '+d.w+' '+forceWord(d.k)+'</small></div><span class="badge" style="background:'+r[1]+'">'+r[0]+'</span></div>'}).join('');
 }
 function renderLvl(idEl,nameEl,P,hint){
   var L=levelOf(P);
-  idEl.innerHTML=[0,1,2,3].map(function(i){return '<i class="'+(i<=L?'on':'')+'"></i>'}).join('');
+  idEl.innerHTML=[0,1,2,3,4].map(function(i){return '<i class="'+(i<=L?'on':'')+'"></i>'}).join('');
   if(nameEl)nameEl.innerHTML=NAMES[L]+' <span>· vagues idéales '+fr(P.lo)+' à '+fr(P.hi)+' m · vent maximum : '+forceWord(P.tol)+(hint?' · '+hint:'')+'</span>';
 }
 
@@ -413,10 +433,10 @@ function Ruler(el,handles,opts){
     var take=ans.what===0?tk(ans.tkFoam)*.5:smooth?tk(ans.tkSmooth):tk(ans.tkFoam);
     var bar=ans.barre===0?0:Math.min(3,ans.barre-1)/3;
     var feel=[1,.6,.3,.5][ans.feel];
-    var s=(ans.since/3+ans.freq/2+wv/3+take+bar+feel+(2-ans.rame)/2)/7*3;
+    var s=(ans.since/3+ans.freq/2+wv/3+take+bar+feel+(2-ans.rame)/2)/7*4;
     var L=Math.round(s);
     if(ans.what===0)L=Math.min(L,take<.5?0:1);       // mousse seule : débutant, ou intermédiaire si le take-off est parfait
-    return Math.max(0,Math.min(3,L+adj));
+    return Math.max(0,Math.min(4,L+adj));
   }
   function profile(){
     var L=level(),P=Object.assign({},PRESETS[L]);
@@ -443,7 +463,7 @@ function Ruler(el,handles,opts){
   }
   document.getElementById('p3prev').onclick=function(){if(cur>0)cur--;draw()};
   document.getElementById('p3skip').onclick=function(){if(cur<active().length-1)cur++;draw()};
-  document.getElementById('p3up').onclick=function(){if(level()<3){adj++;draw()}};
+  document.getElementById('p3up').onclick=function(){if(level()<4){adj++;draw()}};
   document.getElementById('p3dn').onclick=function(){if(level()>0){adj--;draw()}};
   draw();
 })();
