@@ -10,6 +10,10 @@
 
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
+## 13 octobre 2026
+- **Le niveau change-t-il la note et la couleur ? Mesure sur le vrai calcul** (test temporaire, non gardé ; plage orientée à l'ouest, houle de 10 s) : offshore 8 km/h : 0,8 m = Parfait / Bon / Bon / Bon (Débutant / Intermédiaire / Confirmé / Expert) ; 1,2 m = Challengeant / Parfait / Parfait / Parfait ; 1,6 m = Trop gros / Challengeant / Parfait / Parfait ; 2,0 m = Trop gros / Trop gros / Challengeant / Parfait ; 2,6 m = Trop gros / Trop gros / Trop gros / Challengeant. Onshore 14 km/h, 1,2 m = Challengeant / Très bon / Très bon / Bon. Le niveau décale donc surtout les seuils « challengeant » et « trop gros », et la tolérance à l'onshore ; Intermédiaire, Confirmé et Expert donnent la même note sous 1,2 m en offshore.
+- **Questionnaire version 4** (`profil-questions.html`, `organigramme.html`, maquettes seulement) : fusion « quelles vagues » + « où tu te places », question propre à l'Expert (quand c'est pourri), niveaux « + » (un seul point te retient), mousse seulement = Débutant ou Débutant +.
+
 ## 12 octobre 2026
 - **Take-off à trois réponses** (décision du propriétaire, option 2) dans `profil-questions.html` et `organigramme.html` : tout le temps / souvent (Intermédiaire) / parfois ou en plusieurs temps (Débutant). Maquettes seulement.
 - **Idée « comparer les niveaux »** : la section de comparaison de l'organigramme permet maintenant de choisir deux niveaux (ou « mon niveau et le suivant »). Maquette seulement, à envisager comme option de l'appli.

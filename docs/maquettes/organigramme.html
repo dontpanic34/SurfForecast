@@ -135,24 +135,24 @@ var Q={
  rameVague:{n:'Ta rame pour prendre la vague',sub:'Tu as assez de vitesse au moment du take-off ?',o:['Oui, à chaque fois','Pas toujours : je rate des vagues faute de vitesse','Souvent non : je manque de vitesse'],lim:[4,2,1]},
  tk:{n:'Ton take-off',sub:'Tu pars en un seul temps ?',o:['En un seul temps, tout le temps','En un seul temps, souvent','Parfois en un seul temps, ou en plusieurs temps'],lim:[4,1,0]},
  want:{n:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant']},
- waves:{n:'Quelles vagues tu surfes dans le lisse ?',sub:'C\'est la plus haute qui compte.',o:['Les reformes','L\'épaule','Le peak'],lim:[1,2,4]},
  peak:{n:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],lim:[1,2,4]},
- goal:{n:'Sur la vague, tu cherches surtout à…',sub:'Seulement si tu surfes le lisse.',o:['Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Encore au-dessus (à définir avec toi)'],lim:[1,2,3,4]}
+ pourri:{n:'Quand c\'est pourri (vent fort, mer démontée, courant), tu…',sub:'Seulement si tu surfes le lisse et que tu cherches à exprimer tes manœuvres ou plus.',o:['Je reste à terre, ou j\'attends mieux','J\'y vais, mais je subis','Je trouve le créneau de la journée, les phases lisses, une reforme intéressante, et je tiens le courant à la rame'],lim:[3,3,4]},
+ goal:{n:'Sur la vague, tu cherches surtout à…',sub:'Seulement si tu surfes le lisse.',o:['Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Surfer partout, tout le temps, même quand c\'est pourri'],lim:[1,2,3,4]}
 };
 var FLOW=[['since','freq','season','board','rameVague','tk','want'],
-          ['since','freq','season','board','barre','feel','rameVague','tk','waves','peak','goal']];
+          ['since','freq','season','board','barre','feel','rameVague','tk','peak','goal','pourri']];
 
 /* ---------- La règle : la marche la plus basse ---------- */
 function limitsOf(a){
   var L=[{k:'rameVague',v:Q.rameVague.lim[a.rameVague],t:'ta rame pour prendre la vague'},{k:'board',v:Q.board.lim[a.board],t:'ta planche en mousse'}];
-  if(a.what===0){L.push({k:'what',v:(a.tk===0&&a.want===0)?1:0,t:'tu ne surfes que la mousse'})}
+  if(a.what===0){L.push({k:'what',v:0,t:'tu ne surfes que la mousse'})}
   else{
     L.push({k:'goal',v:Q.goal.lim[a.goal],t:'ce que tu cherches'});
     var bar=Q.barre.base[a.barre];if(a.feel!==0)bar=Math.max(0,bar-1);
     L.push({k:'barre',v:bar,t:'la taille où tu passes la barre'+(a.feel!==0?' (et la façon dont tu la passes)':'')});
     L.push({k:'tk',v:Q.tk.lim[a.tk],t:'ton take-off dans le lisse'});
-    var top=-1;(a.waves||[]).forEach(function(w){top=Math.max(top,w)});L.push({k:'waves',v:Q.waves.lim[top],t:'les vagues que tu surfes dans le lisse'});
     L.push({k:'peak',v:Q.peak.lim[a.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
+    if(a.goal>=2&&a.pourri!==undefined)L.push({k:'pourri',v:Q.pourri.lim[a.pourri],t:'ta façon de surfer quand c\'est pourri'});
   }
   return L;
 }
@@ -181,17 +181,17 @@ function nodeBarre(N){
 }
 function branchHtml(b,N){
   var title=b===0?'La mousse seulement':'Le lisse',h='<div class="branch"><div class="bt">'+title+'</div>';
-  if(b===0&&N>=2)return h+'<div class="imp">Impossible par ce chemin : la mousse seulement ne dépasse pas '+tag(1)+'.</div></div>';
+  if(b===0&&N>=1)return h+'<div class="imp">Impossible par ce chemin : la mousse seulement reste '+tag(0)+' (ou « Débutant + » si le take-off est sûr et que tu veux passer au lisse).</div></div>';
   var parts=[];
   FLOW[b].forEach(function(id){
     if(id==='barre')parts.push(nodeBarre(N));
     else if(id==='feel')return;
     else if(b===0&&id==='tk'){
-      var tkq=Q.tk;var chs=tkq.o.map(function(o,i){var c=N===0?'ok':(N===1?(i===0?'star':'no'):'no');return chip(o,c)});
+      var tkq=Q.tk;var chs=tkq.o.map(function(o,i){var c=N===0?(i===0?'star':'ok'):'no';return chip(o,c,i===0?'« Débutant + » avec l\'envie de lisse':'')});
       parts.push('<div class="nd"><div class="nq">Dans la mousse, ton take-off</div><div class="chs">'+chs.join('')+'</div></div>');
     }
     else if(b===0&&id==='want'){
-      var chs2=Q.want.o.map(function(o,i){var c=N===0?'ok':(N===1?(i===0?'star':'no'):'no');return chip(o,c)});
+      var chs2=Q.want.o.map(function(o,i){var c=N===0?(i===0?'star':'ok'):'no';return chip(o,c)});
       parts.push('<div class="nd"><div class="nq">'+Q.want.n+'</div><div class="chs">'+chs2.join('')+'</div></div>');
     }
     else parts.push(nodeStd(id,N));
@@ -199,8 +199,7 @@ function branchHtml(b,N){
   h+=parts.join('<div class="ar">↓</div>');
   var rule='';
 
-  if(b===0&&N===1)rule='Pour être '+LV[1]+' en mousse seulement : il faut <b>les deux</b> : un take-off « en un seul temps, tout le temps » ET l\'envie de passer au lisse.';
-  else if(b===0&&N===0)rule='Tu es '+LV[0]+' en mousse seulement dès que le take-off n\'est pas « tout le temps en un seul temps » ou que tu ne veux pas passer au lisse (ou que tu vises « te lever »).';
+  if(b===0&&N===0)rule='En mousse seulement tu es '+LV[0]+', ou « Débutant + » si le take-off est « tout le temps en un seul temps » ET que tu veux passer au lisse.';
   else if(N===4)rule='Il n\'y a pas de marche au-dessus : <b>toutes</b> ces réponses doivent être au maximum.';
   else rule='Il faut que <b>toutes</b> les réponses soient ✔ ou ★, et <b>au moins une ★</b> : c\'est elle qui te fixe à '+LV[N]+' et pas plus haut.';
   return h+'<div class="rule">'+rule+'</div></div>';
@@ -231,7 +230,7 @@ lb.onclick=function(e){var b=e.target.closest('button');if(b)showLevel(+b.datase
   function draw(){
     var h='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px"><label style="font-size:13px">Niveau <select id="cA">'+LV.map(function(l,i){return '<option value="'+i+'"'+(i===A?' selected':'')+'>'+l+'</option>'}).join('')+'</select></label><label style="font-size:13px">comparé à <select id="cB">'+LV.map(function(l,i){return '<option value="'+i+'"'+(i===B?' selected':'')+'>'+l+'</option>'}).join('')+'</select></label><button class="go" id="cN" style="margin:0">Mon niveau, et le suivant</button></div>';
     h+='<p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Les réponses qui permettent chacun de ces niveaux. Les lignes en jaune sont celles où ils se séparent.</p><div style="display:grid;gap:8px">';
-    ['goal','board','barre','feel','rameVague','tk','waves','peak'].forEach(function(id){
+    ['goal','board','barre','feel','rameVague','tk','peak','pourri'].forEach(function(id){
       var r1=rowFor(id,A),r2=rowFor(id,B),same=r1.join('|')===r2.join('|');
       h+='<div class="nd" style="'+(same?'':'box-shadow:inset 0 0 0 2px var(--l3)')+'"><div class="nq">'+Q[id].n+(same?' <small>identique</small>':'')+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px"><div><b>'+tag(A)+'</b><br>'+r1.join('<br>')+'</div><div><b>'+tag(B)+'</b><br>'+r2.join('<br>')+'</div></div></div>'});
     h+='</div>';
@@ -246,10 +245,10 @@ lb.onclick=function(e){var b=e.target.closest('button');if(b)showLevel(+b.datase
 document.getElementById('ruleBody').innerHTML='<p style="margin:0 0 8px;font-size:14px"><b>Le niveau est la marche la plus basse</b> parmi ce que tu vises et chacune des limites posées par tes réponses.</p><p style="margin:0;font-size:13px;color:var(--muted)">Exemple : tu vises Confirmé, tu surfes l\'épaule, tu repères la vague tout seul, tu passes la barre jusqu\'à poitrine, mais tu fatigues vite pour la passer. Les limites sont Confirmé, Confirmé, Confirmé, Confirmé et Intermédiaire (la rame) : le niveau est <b>Intermédiaire</b>. Depuis quand, fréquence et saison ne changent pas le niveau.</p>';
 document.getElementById('overBody').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Deux chemins seulement, qui se rejoignent à « ce que tu cherches ». La rame vient avant le take-off : on réussit un take-off si on a assez de vitesse.</p><div class="cols">'+[0,1].map(function(b){return '<div class="branch"><div class="bt">'+(b===0?'La mousse seulement':'Le lisse')+'</div>'+FLOW[b].map(function(id){return '<div class="nd'+(Q[id].info?' info':'')+'"><div class="nq">'+Q[id].n+'</div></div>'}).join('<div class="ar">↓</div>')+'</div>'}).join('')+'</div>';
 (function(){
-  var a={what:1,board:3,barre:4,feel:0,rameVague:0,tk:0,waves:[2],peak:2,goal:2};
+  var a={what:1,board:3,barre:4,feel:0,rameVague:0,tk:0,peak:2,goal:2,pourri:2};
   var el=document.getElementById('sel');
-  var ORDER=['what','board','barre','feel','rameVague','tk','want','waves','peak','goal'];
-  function act(id){if(['barre','feel','waves','peak','goal'].indexOf(id)>=0)return a.what===1;if(id==='want')return a.what===0;return true}
+  var ORDER=['what','board','barre','feel','rameVague','tk','want','peak','goal','pourri'];
+  function act(id){if(id==='pourri')return a.what===1&&a.goal>=2;if(['barre','feel','peak','goal'].indexOf(id)>=0)return a.what===1;if(id==='want')return a.what===0;return true}
   function draw(){
     el.innerHTML=ORDER.filter(act).map(function(id){var q=Q[id];return '<div class="qq"><p>'+q.n+'</p><div class="chips">'+q.o.map(function(o,i){var on=id==='waves'?a.waves.indexOf(i)>=0:a[id]===i;return '<button class="chip" data-q="'+id+'" data-i="'+i+'" aria-pressed="'+on+'">'+o+'</button>'}).join('')+'</div></div>'}).join('');
     el.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var id=b.dataset.q,i=+b.dataset.i;if(id==='waves'){var k=a.waves.indexOf(i);if(k>=0){if(a.waves.length>1)a.waves.splice(k,1)}else a.waves.push(i)}else{a[id]=i;if(id==='what'&&i===0&&a.want===undefined)a.want=0}draw()}});
