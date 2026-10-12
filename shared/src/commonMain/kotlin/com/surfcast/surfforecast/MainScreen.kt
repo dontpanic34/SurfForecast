@@ -455,7 +455,17 @@ fun MainScreen(
                                 offshoreNight = hasOffshoreNight(night, idealSwellDirection)
                             )
                         }
-                        val dailyStars = dailyScores.map { it?.let { sc -> starsForScore(sc) } }
+                        // Les étoiles sont les mêmes pour tout le monde : le jour noté avec un profil neutre. Seuls les trois segments
+                        // (matin, midi, après-midi) prennent la couleur du niveau de chacun.
+                        val dailyStars = availableDates.map { date ->
+                            val hours = daylightHoursFor(date, scoringByDate, state.dailySunInfo)
+                            val night = groupedByDate[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 21 } +
+                                groupedByDate[date].orEmpty().filter { it.rawTime.hour < 7 }
+                            dayQualityScore(
+                                hours, idealSwellDirection, "intermediate", state.dailyTides[date],
+                                offshoreNight = hasOffshoreNight(night, idealSwellDirection)
+                            )?.let { sc -> starsForScore(sc, 0) }
+                        }
 
                         // Libellé du jour : celui de la note du jour. Les cas à part (trop gros, trop petit, challengeant, trop de
                         // vent) gardent leur nom quand c'est le cas de la meilleure heure.
@@ -466,7 +476,7 @@ fun MainScreen(
                         }
 
                         val dailyBands: List<List<ScoreBand>> = availableDates.map { date ->
-                            dayBandsInTimeOrder(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel, viewModel.weeklyDensity)
+                            dayBandsInTimeOrder(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel, 3)
                         }
 
                         val dailyFeelsLike = availableDates.map { date ->
@@ -637,6 +647,11 @@ fun MainScreen(
                                         DynamicCardsSection(
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
+                                            boardOfDay = if (GearPrefs.boardDayMode == "header" || GearPrefs.boardDayMode == "both")
+                                                boardOfTheDay(
+                                                    daylightHoursFor(date, groupedByDate, state.dailySunInfo).let { h -> h.minByOrNull { abs(it.rawTime.hour - 13) } },
+                                                    viewModel.quiverBoards.collectAsState().value, idealSwellDirection
+                                                )?.model else null,
                                             dailyTideInfo = dailyTide,
                                             isToday = (date == today),
                                             currentHour = clock.hour,
@@ -682,6 +697,8 @@ fun MainScreen(
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
+                                        boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")
+                                            boardOfTheDay(closest, viewModel.quiverBoards.collectAsState().value, idealSwellDirection)?.model else null,
                                         rating = calculateSlotRating(
                                             hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
                                             idealSwellDirection, viewModel.surferLevel
@@ -885,6 +902,7 @@ fun DynamicCardsSection(
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
     dailyStars: List<Float?>,
+    boardOfDay: String? = null,
     dailyLabels: List<SlotRating?> = emptyList(),
     dailyBands: List<List<ScoreBand>> = emptyList(),
     dailyWaterTemps: List<Int?>,
@@ -1025,7 +1043,10 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth()
+                                modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth(),
+                                boardOfDay = boardOfDay,
+                                toleranceLabel = ToleranceSettings.label(viewModel.toleranceMode),
+                                onToleranceClick = { viewModel.cycleTolerance() }
                             )
                         }
                         "dailyTimeline" -> {

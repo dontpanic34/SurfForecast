@@ -172,7 +172,11 @@ class SurfRepository(
         // Mer de vent : 0 est une valeur légitime (pas de clapot), pas de repli sur le total.
         val windWaveHeights: List<Double>,
         val windWavePeriods: List<Double>,
-        val windWaveDirections: List<Float>
+        val windWaveDirections: List<Float>,
+        // Houle secondaire (Open-Meteo secondary_swell_wave_*) : 0 = pas de seconde houle.
+        val secHeights: List<Double> = emptyList(),
+        val secPeriods: List<Double> = emptyList(),
+        val secDirections: List<Float> = emptyList()
     )
 
     private class RawWeatherHourly(
@@ -191,7 +195,7 @@ class SurfRepository(
     private suspend fun fetchMarineBlock(lat: Double, lon: Double, waveModel: WaveModel, days: Int): RawMarineHourly {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
             "latitude=$lat&longitude=$lon" +
-            "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period" +
+            "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period,secondary_swell_wave_height,secondary_swell_wave_period,secondary_swell_wave_direction" +
             "&models=${waveModel.apiParam}" +
             "&forecast_days=$days" +
             "&timezone=auto"
@@ -219,8 +223,17 @@ class SurfRepository(
         val windWaveHeights = mutableListOf<Double>()
         val windWavePeriods = mutableListOf<Double>()
         val windWaveDirs = mutableListOf<Float>()
+        val secHArr = hourly.optArray("secondary_swell_wave_height")
+        val secPArr = hourly.optArray("secondary_swell_wave_period")
+        val secDArr = hourly.optArray("secondary_swell_wave_direction")
+        val secHeights = mutableListOf<Double>()
+        val secPeriods = mutableListOf<Double>()
+        val secDirs = mutableListOf<Float>()
 
         for (i in timeArr.indices) {
+            secHeights.add(secHArr.doubleAt(i) ?: 0.0)
+            secPeriods.add(secPArr.doubleAt(i) ?: 0.0)
+            secDirs.add(secDArr.doubleAt(i)?.toFloat() ?: 0f)
             times.add(LocalDateTime.parse(timeArr[i].jsonPrimitive.content))
 
             val swellH = swellHArr.doubleAt(i) ?: Double.NaN
@@ -266,7 +279,7 @@ class SurfRepository(
             windWaveDirs.add(windWaveDArr.doubleAt(i)?.toFloat() ?: 0f)
         }
 
-        return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs)
+        return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs, secHeights, secPeriods, secDirs)
     }
 
     /**
@@ -532,6 +545,9 @@ class SurfRepository(
                         windWaveHeight = mData.windWaveHeights.getOrElse(mIndex) { 0.0 },
                         windWavePeriod = mData.windWavePeriods.getOrElse(mIndex) { 0.0 },
                         windWaveDirection = mData.windWaveDirections.getOrElse(mIndex) { 0f },
+                        secondaryHeight = mData.secHeights.getOrElse(mIndex) { 0.0 },
+                        secondaryPeriod = mData.secPeriods.getOrElse(mIndex) { 0.0 },
+                        secondaryDirection = mData.secDirections.getOrElse(mIndex) { 0f },
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
                         windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),

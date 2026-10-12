@@ -334,6 +334,7 @@ fun ProfilePage(
                         fontSize = 12.sp, color = colors.onSurfaceVariant
                     )
                 }
+                levelQuiz?.result?.takeIf { it.levelKey == surferLevel }?.let { LevelLadder(it) }
                 if (levelQuiz != null) Button(onClick = { mode = "quiz" }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire", fontWeight = FontWeight.Bold)
                 }

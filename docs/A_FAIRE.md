@@ -1,5 +1,8 @@
 # À faire
 
+## Fait le 13 octobre (les neuf points) : à valider par le propriétaire sur le site
+Réglages denses, étoiles communes + segments, Maintenant version C, side-off / side-on, houle secondaire, grille de matériel, tolérance, échelle des niveaux, badges « Petit jour » / « Gros jour ». Restent ouverts : toutes les marées de la journée dans le déroulé (aucune proposition choisie), explication de « Prévisions », contenu détaillé de l'échelle des niveaux, `unified` pas mis à jour.
+
 ## Tâche ajoutée le 12 octobre : encart « Maintenant », la marée avec flèche et heure de la prochaine
 - **Aujourd'hui** (`NowTideCard.kt`, `tideStateWord` dans `HourlyForecastRow.kt`) : un mot, « Marée descendante », sans flèche ni heure.
 - **Demandé** : « Marée descendante » avec une **flèche vers le bas** ▼ et **l'heure de la prochaine marée basse** ; « Marée montante » avec une flèche vers le haut ▲ et l'heure de la prochaine marée haute. Les mots « pleine haute » / « pleine basse » gardent leur flèche (▲ / ▼) et leur heure.

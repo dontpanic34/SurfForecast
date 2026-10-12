@@ -47,9 +47,6 @@ fun SurfCardComponent(
     val textMeasurer = rememberTextMeasurer()
     val timeTextPaint = TextStyle(color = onSurfaceColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
-    val swellDeg = selectedHour.waveDirection.roundToInt()
-    val swellRotationAngle = (selectedHour.waveDirection + 180f) % 360f
-
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -81,75 +78,17 @@ fun SurfCardComponent(
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "${formatDecimal(selectedHour.waveHeight, 1)}m",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = onSurfaceColor
-                    )
-                    Text(
-                        text = "${selectedHour.wavePeriod.roundToInt()}s",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = primaryColor
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "${selectedHour.energyKj} kJ",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF8F6300)
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Canvas(modifier = Modifier.size(13.dp)) {
-                            val w = size.width
-                            val h = size.height
-                            rotate(swellRotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                                val path = Path().apply {
-                                    moveTo(w * 0.5f, 0.5.dp.toPx())
-                                    lineTo(w * 0.95f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.48f)
-                                    lineTo(w * 0.05f, h * 0.48f)
-                                    close()
-                                }
-                                drawPath(path = path, color = Color(0xFF29B6F6))
-                                drawPath(
-                                    path = path,
-                                    color = onSurfaceColor.copy(alpha = 0.5f),
-                                    style = Stroke(width = 0.8.dp.toPx())
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = "$swellDeg°",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = onSurfaceColor
-                        )
-                    }
-                }
+            SwellLine(
+                height = selectedHour.waveHeight, period = selectedHour.wavePeriod, energyKj = selectedHour.energyKj,
+                direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false
+            )
+            if (selectedHour.secondaryHeight >= 0.2 && selectedHour.secondaryPeriod > 0.0) {
+                Spacer(modifier = Modifier.height(2.dp))
+                SwellLine(
+                    height = selectedHour.secondaryHeight, period = selectedHour.secondaryPeriod,
+                    energyKj = calculateWaveEnergyReal(selectedHour.secondaryHeight, selectedHour.secondaryPeriod),
+                    direction = selectedHour.secondaryDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = true
+                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -240,6 +179,49 @@ fun SurfCardComponent(
                 }
             }
             }
+        }
+    }
+}
+
+/** Une houle : à gauche « 1,4m 10s », à droite « OSO 250° », la flèche puis l'énergie en kJ ; la houle secondaire est plus petite et grisée. */
+@Composable
+private fun SwellLine(
+    height: Double, period: Double, energyKj: Int, direction: Float,
+    onSurfaceColor: Color, primaryColor: Color, secondary: Boolean
+) {
+    val fade = if (secondary) 0.6f else 1f
+    val big = if (secondary) 14.sp else 18.sp
+    val mid = if (secondary) 12.sp else 14.sp
+    val small = if (secondary) 11.sp else 13.sp
+    val deg = direction.roundToInt()
+    val rotation = (direction + 180f) % 360f
+    val cardinal = SurfUnitsHelper.formatCardinalFr(getCardinalDirection(deg.toDouble()))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("${formatDecimal(height, 1)}m", fontSize = big, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
+            Text("${period.roundToInt()}s", fontSize = mid, fontWeight = FontWeight.SemiBold, color = primaryColor.copy(alpha = fade))
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text("$cardinal $deg°", fontSize = small, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
+            Canvas(modifier = Modifier.size(if (secondary) 11.dp else 13.dp)) {
+                val w = size.width
+                val h = size.height
+                rotate(rotation, pivot = Offset(w / 2f, h / 2f)) {
+                    val path = Path().apply {
+                        moveTo(w * 0.5f, 0.5.dp.toPx())
+                        lineTo(w * 0.95f, h * 0.48f)
+                        lineTo(w * 0.68f, h * 0.48f)
+                        lineTo(w * 0.68f, h * 0.98f)
+                        lineTo(w * 0.32f, h * 0.98f)
+                        lineTo(w * 0.32f, h * 0.48f)
+                        lineTo(w * 0.05f, h * 0.48f)
+                        close()
+                    }
+                    drawPath(path = path, color = Color(0xFF29B6F6).copy(alpha = fade))
+                    drawPath(path = path, color = onSurfaceColor.copy(alpha = 0.5f * fade), style = Stroke(width = 0.8.dp.toPx()))
+                }
+            }
+            Text("$energyKj kJ", fontSize = small, fontWeight = FontWeight.Bold, color = Color(0xFF8F6300).copy(alpha = fade))
         }
     }
 }

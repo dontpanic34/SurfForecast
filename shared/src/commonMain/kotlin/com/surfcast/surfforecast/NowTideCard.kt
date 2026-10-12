@@ -17,6 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,12 +38,12 @@ fun NowTideCard(
     // La note de l'heure, avec son libellé et sa tendance (null = pas de libellé).
     rating: SlotRating? = null,
     spotName: String = "",
+    boardOfDay: String? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
     val dirFr = SurfUnitsHelper.formatCardinalFr(hourlyModel.windDirectionStr)
     val speed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyModel), windUnit)
-    val gust = SurfUnitsHelper.formatWindValue(hourlyModel.windGustKmh, windUnit)
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val title = buildString {
         append("Maintenant")
@@ -68,16 +71,36 @@ fun NowTideCard(
                 }
             }
         }
+        val next = nextTide(hourlyModel.rawTime.time, tideInfo)
+        val coef = tideInfo?.coefficient
+        if (boardOfDay != null) Text("Planche du jour : $boardOfDay", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary, maxLines = 1)
         FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 "Houle ${formatDecimal(hourlyModel.waveHeight, 1)} m · ${hourlyModel.wavePeriod.toInt()} s",
                 fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface
             )
-            Text(
-                if (hourlyModel.windGustKmh > hourlyModel.windSpeedKmh) "Vent $dirFr $speed $unit · rafales $gust" else "Vent $dirFr $speed $unit",
-                fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-            val tideWord = tideStateWord(hourlyModel.rawTime.time, tideInfo)
-            if (tideWord != null) Text("Marée $tideWord", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1)
+            Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+            if (coef != null || next != null) {
+                Text(
+                    buildAnnotatedString {
+                        if (coef != null) { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold)) { append("COEF $coef") } }
+                        if (next != null) { if (coef != null) append(" "); append(if (next.first) "▲ " else "▼ "); append(next.second) }
+                    },
+                    fontSize = 13.sp, color = colors.onSurface, maxLines = 1
+                )
+            }
         }
     }
+}
+
+/** La prochaine marée après [now] : (true = pleine mer, « 14 h 05 »), ou null sans horaires. */
+internal fun nextTide(now: kotlinx.datetime.LocalTime, info: DailyTideInfo?): Pair<Boolean, String>? {
+    if (info == null) return null
+    val all = info.extrema.ifEmpty {
+        listOfNotNull(info.highTideTime?.let { MareeExtremum("PM", it) }, info.lowTideTime?.let { MareeExtremum("BM", it) })
+    }
+    val cands = all.mapNotNull { e -> parseTimeStringSafe(e.time)?.let { e to it } }
+    val n = cands.filter { it.second.toSecondOfDay() > now.toSecondOfDay() }.minByOrNull { it.second.toSecondOfDay() } ?: return null
+    val t = n.second
+    return (n.first.type == "PM") to "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
 }
