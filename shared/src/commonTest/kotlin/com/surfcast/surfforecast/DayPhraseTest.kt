@@ -98,4 +98,26 @@ class NeutralStarsTest {
         val onshore = dayQualityScore(day(1.2, 15, "NO"), 275, NEUTRAL_LEVEL, null)!!
         kotlin.test.assertTrue(offshore > onshore, "offshore $offshore, onshore $onshore")
     }
+
+    private fun night(vararg specs: Triple<Double, Int, String>) = specs.mapIndexed { i, (h, w, d) ->
+        hour(18 + i, h, w, d)
+    }
+
+    @Test
+    fun nightPhraseTurnsTowardTheMorningWithPrudence() {
+        val hours = night(Triple(1.4, 4, "E"), Triple(1.4, 4, "E"), Triple(1.4, 4, "E"), Triple(1.4, 14, "E"), Triple(1.4, 14, "E"), Triple(1.4, 14, "E"))
+        assertEquals("Cette nuit, houle stable autour de 1,4 m, offshore qui monte ; au lever, offshore modéré : plan d'eau plutôt lisse.", nightPhrase(hours, 275))
+    }
+
+    @Test
+    fun nightPhraseSaysTheWindFell() {
+        val hours = night(Triple(1.5, 22, "O"), Triple(1.5, 22, "O"), Triple(1.5, 12, "O"), Triple(1.5, 3, "E"), Triple(1.5, 3, "E"), Triple(1.5, 3, "E"))
+        val p = nightPhrase(hours, 275)!!
+        assertEquals(true, p.contains("au lever, pas de vent") || p.contains("le vent est tombé"))
+    }
+
+    @Test
+    fun nightPhraseNeedsEnoughHours() {
+        assertNull(nightPhrase(night(Triple(1.0, 5, "E")), 275))
+    }
 }

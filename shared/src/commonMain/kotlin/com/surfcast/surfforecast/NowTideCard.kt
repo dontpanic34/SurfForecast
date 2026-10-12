@@ -45,6 +45,8 @@ fun NowTideCard(
     updatedText: String = "",
     // Il fait nuit : pas de libellé de qualité (« Nuit »).
     isNight: Boolean = false,
+    // La nuit en une phrase (houle, vent, ce qu'on trouvera au lever) ; null = on garde les tuiles.
+    nightText: String? = null,
     onRefresh: (() -> Unit)? = null,
     boardOfDay: String? = null,
     // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
@@ -92,6 +94,10 @@ fun NowTideCard(
                 // Le libellé de la note, sans fond : juste le mot, dans la couleur de la note (comme dans le déroulé).
                 Text(bandLabelWithTrend(rating), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = band.textColor(), maxLines = 1)
             }
+        }
+        if (isNight && nightText != null) {
+            Text(nightText, fontSize = 13.sp, color = colors.onSurface, modifier = Modifier.padding(top = 2.dp, bottom = 2.dp))
+            return@Column
         }
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient

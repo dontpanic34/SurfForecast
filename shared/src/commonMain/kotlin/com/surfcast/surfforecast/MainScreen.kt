@@ -754,6 +754,10 @@ fun MainScreen(
                                         spotName = state.spotName,
                                         updatedText = state.lastUpdatedTime,
                                         isNight = daylightHoursFor(today, groupedByDate, state.dailySunInfo).let { d -> d.isNotEmpty() && d.none { it.rawTime == closest.rawTime } },
+                                        nightText = nightPhrase(
+                                            nightHours(state.hourlyForecast, state.dailySunInfo, clock),
+                                            idealSwellDirection
+                                        ),
                                         onRefresh = { viewModel.refreshActiveSpot() },
                                         onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")

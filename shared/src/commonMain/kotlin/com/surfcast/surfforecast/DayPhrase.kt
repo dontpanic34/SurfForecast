@@ -1,5 +1,10 @@
 package com.surfcast.surfforecast
 
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import kotlin.math.roundToInt
 
 /** Le résumé du jour choisi : un verdict (titre) et une ligne « houle matin → après-midi · vent matin → après-midi ». */
@@ -100,4 +105,91 @@ private fun strengthWord(kmh: Int): String = when {
     kmh < 18 -> "modéré"
     kmh < 26 -> "soutenu"
     else -> "fort"
+}
+
+/**
+ * Les heures de la nuit autour de [now] : de la tombée de la nuit jusqu'à 1 h avant le lever du soleil.
+ * Vide quand les horaires du soleil manquent.
+ */
+fun nightHours(all: List<HourlyUiModel>, sun: Map<LocalDate, DailySunInfo>, now: LocalDateTime): List<HourlyUiModel> {
+    val today = now.date
+    val todaySun = sun[today] ?: return emptyList()
+    val fromDate: LocalDate
+    val fromHour: Int
+    val toDate: LocalDate
+    val toHour: Int
+    if (now.time < todaySun.sunrise) {
+        val yesterday = today.minus(1, DateTimeUnit.DAY)
+        val ySun = sun[yesterday] ?: return emptyList()
+        fromDate = yesterday; fromHour = ySun.sunset.hour; toDate = today; toHour = todaySun.sunrise.hour
+    } else {
+        val tomorrow = today.plus(1, DateTimeUnit.DAY)
+        val tSun = sun[tomorrow] ?: return emptyList()
+        fromDate = today; fromHour = todaySun.sunset.hour; toDate = tomorrow; toHour = tSun.sunrise.hour
+    }
+    return all.filter { h ->
+        val afterStart = h.rawTime.date > fromDate || (h.rawTime.date == fromDate && h.rawTime.hour > fromHour)
+        val beforeEnd = h.rawTime.date < toDate || (h.rawTime.date == toDate && h.rawTime.hour < toHour)
+        afterStart && beforeEnd
+    }.sortedBy { it.rawTime }
+}
+
+/** Le plan d'eau attendu au lever, dit avec prudence, selon la catégorie et la force du vent. */
+private fun waterWord(category: String, strength: String): String {
+    val hard = strength == "soutenu" || strength == "fort"
+    return when (category) {
+        "offshore" -> when (strength) {
+            "léger" -> "plutôt propre"
+            "modéré" -> "plutôt lisse"
+            else -> "à surveiller"
+        }
+        "side-off" -> if (hard) "plutôt marqué" else if (strength == "léger") "plutôt propre" else "plutôt correct"
+        else -> when {
+            hard -> "probablement dégradé"
+            strength == "léger" -> "plutôt correct"
+            else -> "plutôt marqué"
+        }
+    }
+}
+
+/**
+ * La nuit en une phrase : houle et vent de la nuit, puis ce que le vent laisse au lever. Null s'il y a trop peu d'heures.
+ */
+fun nightPhrase(night: List<HourlyUiModel>, beachFacing: Int?): String? {
+    if (night.size < 3) return null
+    val third = maxOf(night.size / 3, 1)
+    val early = night.take(third)
+    val late = night.takeLast(third)
+    val avgH = night.map { it.waveHeight }.average()
+    val earlyH = early.map { it.waveHeight }.average()
+    val lateH = late.map { it.waveHeight }.average()
+    val swell = when {
+        lateH - earlyH >= 0.3 -> "houle qui monte de ${meters(earlyH).removeSuffix(" m")} à ${meters(lateH)}"
+        earlyH - lateH >= 0.3 -> "houle qui baisse de ${meters(earlyH).removeSuffix(" m")} à ${meters(lateH)}"
+        else -> "houle stable autour de ${meters(avgH)}"
+    }
+    val nightMax = night.maxOf { windFeelKmh(it) }
+    val earlyMax = early.maxOf { windFeelKmh(it) }
+    val lateMax = late.maxOf { windFeelKmh(it) }
+    val nightWind = when {
+        nightMax < 4 -> "pas de vent"
+        nightMax < 10 -> "vent faible"
+        else -> {
+            val cat = categoryWord(dominantCategory(night, beachFacing) ?: "side")
+            val trend = when {
+                lateMax >= earlyMax + 6 -> " qui monte"
+                earlyMax >= lateMax + 6 -> " qui tombe"
+                else -> ""
+            }
+            "$cat$trend"
+        }
+    }
+    val lateCat = dominantCategory(late, beachFacing)
+    val morning = when {
+        lateMax < 4 || lateCat == null -> "au lever, pas de vent : plan d'eau plutôt lisse"
+        earlyMax >= lateMax + 8 && lateMax < 10 ->
+            "au lever, le vent est tombé (${categoryWord(lateCat)} ${strengthWord(lateMax)})"
+        else -> "au lever, ${categoryWord(lateCat)} ${strengthWord(lateMax)} : plan d'eau ${waterWord(lateCat, strengthWord(lateMax))}"
+    }
+    return "Cette nuit, $swell, $nightWind ; $morning."
 }
