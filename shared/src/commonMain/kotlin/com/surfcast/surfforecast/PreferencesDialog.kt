@@ -436,7 +436,22 @@ fun SurfPreferencesDialog(
                     if (page == "forecast") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Sources des prévisions", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                         ChipChoices(listOf("auto" to "Auto (conseillé)", "manual" to "Choisir moi-même"), if (autoModels) "auto" else "manual", onSelect = { autoModels = it == "auto" })
-                        if (autoModels) Text("Les meilleurs modèles pour ton spot, choisis pour toi.", fontSize = 12.sp, color = colors.onSurfaceVariant)
+                        if (autoModels) {
+                            Text("Ce que fait Auto, sans que tu aies rien à régler :", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                            listOf(
+                                "Houle : MF-WAM (Météo-France) aujourd'hui et demain, puis ECMWF Wave jusqu'à J+7.",
+                                "Période de la houle : GFS Wave, comme Windguru et Surf-Forecast.",
+                                "Houle secondaire : affichée dès 0,2 m et 7 s.",
+                                "Vent : la moyenne de ECMWF et de GFS (direction en moyenne vectorielle, rafales moyennées), jusqu'à J+7.",
+                                "AROME HD : calculé en coulisses pour comparer, pas affiché.",
+                                "Ciel, température, pluie, UV : AROME aujourd'hui et demain, puis ECMWF."
+                            ).forEach { line ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("•", fontSize = 12.sp, color = colors.primary)
+                                    Text(line, fontSize = 12.sp, color = colors.onSurfaceVariant)
+                                }
+                            }
+                        }
                     }
                     if (page == "forecast" && !autoModels) Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
@@ -620,15 +635,6 @@ fun SurfPreferencesDialog(
                             }
                         }
                     }
-                    if (page == "forecast" && !autoModels && onBeachFacingChanged != null && spotName.isNotEmpty()) {
-                        BeachFacingCard(
-                            spotName = spotName,
-                            facing = beachFacing,
-                            defaultFacing = defaultBeachFacing,
-                            onChange = onBeachFacingChanged
-                        )
-                    }
-
                     if (page == "help") {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("Langue", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
