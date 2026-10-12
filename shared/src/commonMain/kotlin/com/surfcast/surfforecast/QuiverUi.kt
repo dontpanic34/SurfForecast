@@ -224,8 +224,7 @@ fun GearContent(
     val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
     val myLevelIdx = volumeLevelIndex(surferLevel)
     // Comparaison : un autre niveau que le sien, au même poids et au même âge (null = mon niveau calculé par l'appli).
-    var compareLevel by remember { mutableStateOf<Int?>(null) }
-    val levelIdx = compareLevel ?: myLevelIdx
+    val levelIdx = myLevelIdx
     var tab by remember { mutableStateOf("moi") }
     // Le volume en gros : celui de la famille de la première planche du quiver (shortboard à défaut).
     val firstFamily = quiverBoards.firstOrNull()?.family
@@ -359,29 +358,6 @@ fun GearContent(
         }
         Text(
             "Ces données restent sur ton appareil et servent à calculer ton volume conseillé.",
-            fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f)
-        )
-        Text("Niveau", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        @OptIn(ExperimentalLayoutApi::class)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            val mine = compareLevel == null
-            Text(
-                "Mon niveau : " + (levelLabel(surferLevel)), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
-                color = if (mine) colors.onPrimaryContainer else colors.onSurfaceVariant,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (mine) colors.primaryContainer else colors.surface)
-                    .clickable { compareLevel = null }.padding(horizontal = 12.dp, vertical = 6.dp)
-            )
-            LEVEL_NAMES.forEachIndexed { i, name ->
-                val on = compareLevel == i
-                Text(
-                    name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surface)
-                        .clickable { compareLevel = i }.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
-        }
-        Text(
-            if (compareLevel == null) "Le niveau calculé par l'appli." else "Comparaison : le volume d'un autre niveau, à ton poids et ton âge.",
             fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f)
         )
         }
