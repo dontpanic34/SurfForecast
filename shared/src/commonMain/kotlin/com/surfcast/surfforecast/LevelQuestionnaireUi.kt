@@ -28,39 +28,37 @@ private class Step(
 private const val SEC_PREFS = "Tes préférences"
 private const val SEC_LEVEL = "Ton niveau"
 private const val SEC_FORM = "Ta forme"
-private const val NOT_LEVEL = "Pour tes recommandations, pas pour ton niveau."
-private const val FORM_SUB = "Ça n'entre pas dans ton niveau : ça affine ta note."
+private const val MULTI_SUB = "Plusieurs réponses possibles."
 
 private val STEPS: List<Step> = listOf(
-    Step("tol1", SEC_PREFS, "Quand les conditions sont moyennes (vent, mer hachée, vague molle)…", NOT_LEVEL,
+    Step("tol1", SEC_PREFS, "Quand les conditions sont moyennes (vent, mer hachée, vague molle)…", "",
         listOf("J'y vais quand même, motivé : je reviendrai si ça s'améliore", "J'y vais si ça reste correct", "J'attends que ce soit bon")),
-    Step("tol2", SEC_PREFS, "Quand c'est plus gros que d'habitude…", NOT_LEVEL,
+    Step("tol2", SEC_PREFS, "Quand c'est plus gros que d'habitude…", "",
         listOf("J'y vais, c'est l'occasion de progresser", "Je regarde d'abord, j'y vais si ça me rassure", "Je reste au sec")),
-    Step("tol3", SEC_PREFS, "Ça souffle onshore, ou c'est dur physiquement…", NOT_LEVEL,
+    Step("tol3", SEC_PREFS, "Ça souffle onshore, ou c'est dur physiquement…", "",
         listOf("Je me débrouille, il y a toujours des bouts à prendre", "Je tente un peu, puis je vois", "Je préfère rester au sec")),
-    Step("what", SEC_LEVEL, "Tu surfes…", "Choisis le plus au large que tu surfes.", listOf("La mousse", "La réforme", "Le large")),
+    Step("what", SEC_LEVEL, "Tu surfes…", "", listOf("La mousse", "La réforme", "Le large")),
     Step("barre", SEC_LEVEL, "Jusqu'à quelle taille tu passes la barre ?", options = listOf(
         "Je ne passe pas encore", "Genoux (environ 0,5 m)", "Taille (environ 0,8 m)", "Poitrine (environ 1,2 m)", "Tête (environ 1,5 m)", "Au-dessus de la tête (environ 2 m)")),
     Step("tk", SEC_LEVEL, "Définis ton take-off", options = listOf(
         "En un seul temps, tout le temps", "En un seul temps, souvent", "Parfois en un seul temps, ou en plusieurs temps")),
     Step("want", SEC_LEVEL, "Tu veux passer au large ?", options = listOf("Oui, bientôt", "Pas pour l'instant")),
-    Step("peak", SEC_LEVEL, "Où tu te places dans l'eau ?",
-        "Le pic, c'est l'endroit où la vague commence à casser. Les réformes et l'épaule, c'est plutôt la première réponse.",
+    Step("peak", SEC_LEVEL, "Où tu te places dans l'eau ?", "",
         listOf("J'ai du mal à localiser le pic, je me fie aux gens", "Je repère le pic tout seul, j'y vais si c'est accessible", "Je sais où est le pic, j'essaie d'être le mieux placé")),
-    Step("goal", SEC_LEVEL, "Sur la vague, tu cherches surtout à…", "Plusieurs réponses possibles : on retient la plus haute.", listOf(
+    Step("goal", SEC_LEVEL, "Sur la vague, tu cherches surtout à…", MULTI_SUB, listOf(
         "Réussir tes take-offs", "Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques",
         "Devenir de plus en plus radical, critique et engagé", "Affiner ton surf : le style, la précision, chaque détail"), multi = true),
-    Step("man", SEC_LEVEL, "Tes manœuvres", "Celles qu'on voit chez les pros.", listOf(
+    Step("man", SEC_LEVEL, "Tes manœuvres", "", listOf(
         "Je n'en suis pas là : je cherche surtout à comprendre et suivre le rythme de la vague",
         "Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois",
         "Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois",
         "Je replaque à chaque fois : j'affine le style, la puissance, et je vise des endroits plus critiques")),
-    Step("feel", SEC_FORM, "Quand tu passes la barre, tu te sens…", FORM_SUB, listOf(
+    Step("feel", SEC_FORM, "Quand tu passes la barre, tu te sens…", "", listOf(
         "Prêt à surfer", "Impressionné : je m'éloigne du pic, je me repose, j'analyse", "Je passe, mais en galère", "Je passe si je suis au bon endroit, au bon moment"),
-        optionHints = listOf("", "", "Plus ou moins n'importe quand, n'importe où, mais c'est dur.", "Il faut que ce soit entre les séries.")),
-    Step("train", SEC_FORM, "Tu t'entraînes en dehors du surf ?", FORM_SUB, listOf(
+        ),
+    Step("train", SEC_FORM, "Tu t'entraînes en dehors du surf ?", "", listOf(
         "Non", "De temps en temps (course, natation, yoga…)", "Régulièrement, pour le surf (cardio, renfo, apnée…)")),
-    Step("where", SEC_FORM, "Où tu surfes ?", "Plusieurs réponses possibles. Ça affine ta note, pas ton niveau.", listOf(
+    Step("where", SEC_FORM, "Où tu surfes ?", MULTI_SUB, listOf(
         "Chez moi, avec du monde : ça me rassure", "Autour de chez moi : je choisis le meilleur spot, j'évite le monde",
         "Je me déplace pour suivre les conditions, si ça vaut le coup", "Je pars à l'étranger chercher les vagues (surf trips)"), multi = true)
 )

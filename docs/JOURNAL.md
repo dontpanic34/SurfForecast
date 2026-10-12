@@ -133,3 +133,4 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - `BoardVolume.kt` et `QuiverUi.kt` : volume refait comme la maquette (ratios par niveau, poids léger jusqu'à 85 kg, âge facultatif, fish +1 à 2 L, mid-length 0,55 à 0,80 L/kg, longboard 55 à 80 L, pros JS), taille du surfeur retirée, tableau retiré, i du calcul, « Aller plus loin ».
 - Pas encore branchés : « Quand tu les sors » et « Ma pratique » (Matériel), planche du jour, tolérance dans les couleurs, étoiles communes.
 - Vérifié : tests Android (host) verts, build web OK, captures de l'appli web (profil, questionnaire, Matériel).
+- Questionnaire (appli et maquette) : textes d'explication sous les questions et sous les réponses retirés (demande du propriétaire). Reste seulement « Plusieurs réponses possibles. » sur les deux questions à choix multiple.
