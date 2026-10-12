@@ -205,7 +205,7 @@ fun DailyTimelineCard(
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
                         sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
-                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve,
+                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve, coefValue = dailyTides[selectedDate]?.coefficient,
                         beachFacing = idealSwellDirection, surferLevel = surferLevel
                     )
                 }
@@ -244,6 +244,7 @@ private fun DailyTimelineBody(
     onSurfaceColor: Color,
     tideMarks: List<TideMark>,
     tideCurve: List<TideMark> = emptyList(),
+    coefValue: Int? = null,
     beachFacing: Int?,
     surferLevel: String
 ) {
@@ -375,6 +376,7 @@ private fun DailyTimelineBody(
                 // --- La marée : une petite courbe entre le graphique et la bande des heures (monte ou descend), triangles et heures dessus ---
                 if (tideCurve.size >= 2) {
                     val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
                     Canvas(modifier = Modifier.fillMaxWidth().height(SkyGraphSettings.tideDp.dp)) {
                         val yHigh = size.height * 0.47f
                         val yLow = size.height * 0.8f
@@ -395,16 +397,22 @@ private fun DailyTimelineBody(
                             h += 0.25f
                         }
                         drawPath(path, Color(0xFF3B8BE8), style = Stroke(1.6.dp.toPx()))
+                        if (selH != null && selH in ax0..ax1) {
+                            drawCircle(onSurfaceColor, radius = 2.8.dp.toPx(), center = Offset(xOf(selH), yAt(selH)))
+                        }
                         for (m in tideMarks) {
                             val c = Offset(xOf(m.hour), if (m.high) yHigh else yLow)
                             drawTideTriangle(c, m.high, 6.dp.toPx())
                             val txt = (m.hour.toInt()).toString() + ":" + (((m.hour - m.hour.toInt()) * 60).roundToInt().coerceAtMost(59)).toString().padStart(2, '0')
                             val w = textMeasurer.measure(txt, tideStyle).size.width.toFloat()
-                            if (m.high) drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, Color(0x66FFFFFF), (c.x - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx()), c.y - 7.dp.toPx())
-                            else drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, Color(0x66FFFFFF), c.x + 7.dp.toPx(), c.y + 3.dp.toPx())
+                            if (m.high) drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, (c.x - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx()), c.y - 7.dp.toPx())
+                            else drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, c.x + 7.dp.toPx(), c.y + 3.dp.toPx())
                         }
-                        if (selH != null && selH in ax0..ax1) {
-                            drawCircle(onSurfaceColor, radius = 2.8.dp.toPx(), center = Offset(xOf(selH), yAt(selH)))
+                        // Le coefficient, à gauche de la courbe : point de couleur puis « Coef 94 ».
+                        if (coefValue != null) {
+                            val dot = when { coefValue < 55 -> AppColors.WindLow; coefValue <= 80 -> AppColors.WindMid; else -> AppColors.WindHigh }
+                            drawCircle(dot, radius = 3.dp.toPx(), center = Offset(5.dp.toPx(), 7.dp.toPx()))
+                            drawHaloTextAtBaseline(textMeasurer, "Coef $coefValue", tideStyle, tideHalo, 11.dp.toPx(), 10.dp.toPx())
                         }
                     }
                 }
@@ -452,8 +460,6 @@ private fun DailyTimelineBody(
                     class Lbl(val h: Float, val text: String, val kind: Int, val prio: Int)
                     val items = ArrayList<Lbl>()
                     if (selH != null) items.add(Lbl(selH, "${selHour}:00", 0, 0))
-                    items.add(Lbl(sunrise, formatHm(sunrise), 1, 1))
-                    items.add(Lbl(sunset, formatHm(sunset), 1, 1))
                     for (h in hours.map { it.rawTime.hour }) {
                         if (h % 2 == 0 && abs(h - sunrise) >= 1.25f && abs(h - sunset) >= 1.25f) items.add(Lbl(h.toFloat(), "$h h", 2, 2))
                     }
@@ -758,24 +764,12 @@ private fun DrawScope.drawTideTriangle(center: Offset, high: Boolean, size: Floa
  */
 @Composable
 private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Color, others: List<MareeExtremum> = emptyList()) {
-    if (tides.isEmpty() && coef == null && others.isEmpty()) return
+    if (others.isEmpty()) return
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (coef != null) {
-            val dotColor = when {
-                coef < 55 -> AppColors.WindLow
-                coef <= 80 -> AppColors.WindMid
-                else -> AppColors.WindHigh
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Coef $coef", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1)
-                Spacer(modifier = Modifier.width(3.dp))
-                Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = dotColor, radius = size.minDimension / 2f) }
-            }
-        }
         if (others.isNotEmpty()) {
             Text("hors soleil", fontSize = 10.sp, color = onSurfaceColor.copy(alpha = 0.55f), maxLines = 1)
             for (t in others) {

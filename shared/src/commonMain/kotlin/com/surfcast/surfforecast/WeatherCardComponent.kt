@@ -217,12 +217,12 @@ private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color,
     }
     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         val facts = buildList {
-            add(fact("Ressenti", "${h.feelsLike}°"))
-            add(fact("UV", "${h.uvIndex.roundToInt()} ${uvWord(h.uvIndex)}"))
-            add(fact("Pluie", if (h.precipitationMm < 0.05) "aucune" else formatDecimal(h.precipitationMm, 1).replace('.', ',') + " mm"))
-            add(fact("Nuages", "${h.cloudCover} %"))
-            h.seaTemperature?.let { add(fact("Eau", "${it.roundToInt()}°")) }
-            if (sun != null) { add(fact("☀︎ Lever", hm(sun.sunrise))); add(fact("Coucher", hm(sun.sunset))) }
+            add(fact("🌡️", "${h.feelsLike}°"))
+            add(fact("☀️ UV", "${h.uvIndex.roundToInt()}"))
+            add(fact("🌧️", if (h.precipitationMm < 0.05) "0 mm" else formatDecimal(h.precipitationMm, 1).replace('.', ',') + " mm"))
+            add(fact("☁️", "${h.cloudCover} %"))
+            h.seaTemperature?.let { add(fact("🌊", "${it.roundToInt()}°")) }
+            if (sun != null) { add(fact("🌅", hm(sun.sunrise))); add(fact("🌇", hm(sun.sunset))) }
         }
         facts.forEach { Text(it, fontSize = 12.5.sp, color = onSurface) }
     }

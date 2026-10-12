@@ -515,7 +515,9 @@ fun MainScreen(
                         }
 
                         val dailyFeelsLike = availableDates.map { date ->
-                            state.dailySummaries[date]?.avgFeelsLike ?: 20
+                            // Le ressenti moyen des heures de jour (comme l'encart Météo), pas la moyenne de l'air sur 24 h.
+                            daylightHoursFor(date, groupedByDate, state.dailySunInfo).map { it.feelsLike }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()
+                                ?: state.dailySummaries[date]?.avgFeelsLike ?: 20
                         }
 
                         val dailyWaterTemps = availableDates.map { date ->
