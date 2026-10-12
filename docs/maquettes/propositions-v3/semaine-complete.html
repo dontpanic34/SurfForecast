@@ -1,0 +1,77 @@
+<title>Semaine complète</title>
+<style>
+/* Mise en page : l'encart Semaine tel qu'il sera (verdict en titre, jours avec étoiles, flèches de vent colorées par direction), calculé à la volée pour huit jours types ; on touche un jour pour lire son verdict. En dessous, le catalogue des verdicts. Fond sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;--sel:#2c5a70;--selt:#e6f3f9;--y:#ffd21f;--o:#ff9a1f;--r:#ff5a55;--g:#2bd47a;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+h1{font-size:1.25rem;margin:0}h2{font-size:1rem;margin:16px 0 0;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:14px;padding:12px}
+.title{font-size:17px;font-weight:800;min-height:44px}
+.days{display:flex;gap:2px;margin-top:8px;overflow-x:auto}
+.d{flex:1;min-width:52px;text-align:center;border-radius:8px;padding:5px 2px;cursor:pointer;border:0;background:none;color:var(--fg);font:inherit}
+.d.on{background:var(--sel);color:var(--selt)}.d:focus-visible{outline:2px solid var(--link)}
+.d b{display:block;font-size:12px}.st{color:var(--y);font-weight:800;font-size:13px}
+.arrows{display:flex;gap:2px;margin-top:6px;overflow-x:auto}.a{flex:1;min-width:52px;display:flex;justify-content:space-around;font-size:18px}.a i{font-style:normal}
+.y{color:var(--y)}.o{color:var(--o)}.r{color:var(--r)}
+.list{display:grid;gap:6px}.li{background:var(--card);border-radius:10px;padding:8px 10px;font-weight:700;font-size:14px}.li small{display:block;color:var(--mut);font-weight:400;font-size:11.5px}
+</style>
+<main>
+<h1>Semaine complète</h1>
+<p class="mut sm">Touche un jour : le verdict est calculé à partir de la houle (matin puis après-midi) et du vent (direction et force) de ce jour. Les huit jours sont des exemples tirés de tes captures, avec quelques cas en plus.</p>
+<div class="card"><div class="title" id="title"></div>
+<div class="days" id="days"></div><div class="arrows" id="arrows"></div></div>
+<h2>Les règles, en clair</h2>
+<div class="card sm"><p>• <b>Flat, va pêcher !</b> : houle sous 0,4 m toute la journée.<br>• <b>Massif, sors le jet !</b> : houle de 3 m ou plus.<br>• <b>Houle</b> : ça grossit / ça rentre (plus de 0,3 m d'écart), ça tombe / ça maigrit, sinon c'est stable.<br>• <b>Vent</b> : jaune (E, ENE, ESE, NE, SE) = offshore ; orange (N, NNE, S, SSE) = de travers ; rouge = onshore. « Venté » seulement pour un onshore soutenu ou fort (18 km/h et plus).<br>• <b>Glassy</b> : moins de 4 km/h, ou un offshore très léger.<br>• Le vent qui change : « ça tourne onshore » / « ça tourne offshore ».</p></div>
+<h2>Tous les verdicts</h2>
+<div class="list" id="list"></div>
+</main>
+<script>
+var DAYS=[
+ ['Auj. 12',[.7,1.2],[['OSO',15],['OSO',16]],2],
+ ['Dem. 13',[1.3,1.1],[['ONO',13],['NO',15]],2.5],
+ ['Mer. 14',[1.0,.9],[['E',9],['ENE',11]],3.5],
+ ['Jeu. 15',[1.4,1.3],[['ESE',16],['SE',17]],5],
+ ['Ven. 16',[1.2,1.2],[['SO',12],['O',14]],2],
+ ['Sam. 17',[1.0,.8],[['E',18],['E',20]],3],
+ ['Dim. 18',[.9,.9],[['ESE',16],['ESE',16]],3],
+ ['Lun. 19',[.3,.3],[['E',2],['E',3]],.5],
+ ['Gros',[3.1,3.2],[['ONO',22],['ONO',25]],1],
+ ['Glassy',[1.2,1.2],[['E',3],['E',3]],4.5]
+];
+var DEG={N:0,NNE:22.5,NE:45,ENE:67.5,E:90,ESE:112.5,SE:135,SSE:157.5,S:180,SSO:202.5,SO:225,OSO:247.5,O:270,ONO:292.5,NO:315,NNO:337.5};
+function ang(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d}
+function cls(dir){var d=ang(DEG[dir],90);return d<=45?'y':d<=100?'o':'r'}
+function verdict(day){
+ var h=day[1],w=day[2],a=h[0],p=h[1],mx=Math.max(a,p);
+ if(mx<.4)return 'Flat, va pêcher !';
+ if(mx>=3)return 'Massif, sors le jet !';
+ var d=p-a,sw=d>=.3?'ça grossit':d<=-.3?'ça tombe':'c’est stable';
+ var ca=cls(w[0][0]),cp=cls(w[1][0]),fa=w[0][1],fp=w[1][1],fm=Math.max(fa,fp);
+ var small=mx<.8;
+ var wind;
+ if(fm<4)wind='glassy';
+ else if(ca!=='r'&&cp==='r')wind='ça tourne onshore l’après-midi';
+ else if(ca==='r'&&cp!=='r')wind='ça tourne offshore l’après-midi';
+ else if(ca==='r'&&cp==='r')wind=fm>=18?'c’est venté':fm>=10?'onshore modéré':'léger onshore';
+ else if(fm<10)wind='glassy, offshore léger';
+ else wind=(ca==='o'&&cp==='o'?'sideshore':'offshore')+(fm>=18?' soutenu':'')+' toute la journée';
+ var bad=wind.indexOf('venté')>=0||wind.indexOf('onshore')>=0&&wind.indexOf('offshore')<0;
+ if(small)return bad?'Petit et venté':'Petit mais propre, '+(wind.indexOf('glassy')===0?wind:wind.replace(' toute la journée',''));
+ return sw+(bad?' mais ':', ')+wind;
+}
+var sel=0;
+function render(){
+ document.getElementById('title').textContent=verdict(DAYS[sel]).replace(/^./,function(c){return c.toUpperCase()});
+ document.getElementById('days').innerHTML=DAYS.map(function(d,i){return '<button class="d'+(i===sel?' on':'')+'" data-i="'+i+'"><b>'+d[0]+'</b><span class="st">★ '+String(d[3]).replace('.',',')+'</span></button>'}).join('');
+ document.getElementById('arrows').innerHTML=DAYS.map(function(d){return '<div class="a">'+d[2].map(function(x){return '<i class="'+cls(x[0])+'" title="'+x[0]+' '+x[1]+'" style="transform:rotate('+(DEG[x[0]]+180)+'deg)">➤</i>'}).join('')+'</div>'}).join('');
+}
+document.getElementById('days').addEventListener('click',function(e){var b=e.target.closest('button');if(b){sel=+b.dataset.i;render()}});
+render();
+var L=[['Flat, va pêcher !','houle sous 0,4 m'],['Massif, sors le jet !','houle de 3 m ou plus'],
+['Ça grossit, offshore toute la journée','houle qui prend, vent propre'],['Ça grossit mais c’est venté','houle qui prend, onshore soutenu'],['Ça rentre, mais ça tourne onshore l’après-midi','houle qui prend, le vent change de camp'],
+['C’est stable, offshore toute la journée','houle stable, vent propre'],['C’est stable, mais ça tourne onshore l’après-midi','houle stable, le vent change'],['C’est stable, glassy','houle stable, pas de vent'],['C’est stable, ça tourne offshore l’après-midi','le vent s’améliore'],['C’est stable mais c’est venté','onshore soutenu'],['C’est stable, onshore modéré','onshore modéré, ni fort ni léger'],['C’est stable, léger onshore','onshore léger'],
+['Ça tombe, offshore toute la journée','houle qui baisse, vent propre'],['Ça tombe et ça tourne onshore l’après-midi','houle qui baisse, vent qui change'],['Ça tombe mais c’est venté','onshore soutenu'],
+['Petit mais propre, offshore','petite houle, vent propre'],['Petit mais propre, glassy, offshore léger','petite houle, très peu de vent'],['Petit et venté','petite houle, onshore soutenu'],
+['Sideshore toute la journée','vent de travers stable']];
+document.getElementById('list').innerHTML=L.map(function(x){return '<div class="li">'+x[0]+'<small>'+x[1]+'</small></div>'}).join('');
+</script>

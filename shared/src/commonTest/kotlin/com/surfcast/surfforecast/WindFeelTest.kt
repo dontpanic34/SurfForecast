@@ -20,11 +20,15 @@ class WindFeelTest {
     }
 
     @Test
-    fun colorFollowsTheSameRuleAsThePhrase() {
-        // Vent de côté léger : propre. Vent de mer 10 km/h : gêne. Vent de mer 20 km/h : fort.
-        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 8, "SO"), 275, "intermediate"))
-        assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 10, "O"), 275, "intermediate"))
+    fun colorFollowsTheDirection() {
+        // Montalivet (plage vers l'ouest) : l'est est offshore (jaune), le nord est de travers (orange), l'ouest est onshore (rouge).
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 8, "E"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 10, "N"), 275, "intermediate"))
         assertEquals(SurfUnitsHelper.WIND_RED, windFeelColor(hour(14, 20, "O"), 275, "intermediate"))
+        // L'onshore dépend de la force : léger jaune, modéré orange, fort rouge ; l'offshore reste jaune même fort.
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 5, "O"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 12, "O"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 30, "E"), 275, "intermediate"))
     }
 
     @Test

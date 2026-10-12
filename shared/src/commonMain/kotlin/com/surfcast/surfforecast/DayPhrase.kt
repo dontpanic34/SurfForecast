@@ -8,7 +8,7 @@ import kotlinx.datetime.plus
 import kotlin.math.roundToInt
 
 /** Le résumé du jour choisi : un verdict (titre) et une ligne « houle matin → après-midi · vent matin → après-midi ». */
-data class DayPhrase(val title: String, val line: String)
+data class DayPhrase(val title: String, val line: String = "")
 
 private fun categoryWord(category: String): String = when (category) {
     "side" -> "sideshore"
@@ -41,8 +41,8 @@ private fun windHalfText(hours: List<HourlyUiModel>, beachFacing: Int?): String 
 private fun meters(h: Double) = formatDecimal(h, 1).replace('.', ',') + " m"
 
 /**
- * Le résumé du jour à partir des heures de jour [hours] : matin et après-midi, houle et vent. Le verdict suit
- * une priorité : trop gros, la taille, le vent qui change de camp, une limite (rafales, clapot, période, travers), puis propre.
+ * Le verdict du jour, en parlé : ce que fait la houle (ça grossit, ça tombe, ça tient) et ce que fait le vent (ça tourne
+ * onshore, offshore toute la journée, glassy, venté). Le titre suffit : la taille est sur le graphique.
  */
 fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int?, surferLevel: String = "intermediate"): DayPhrase? {
     if (hours.isEmpty()) return null
@@ -50,53 +50,65 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
     val half = maxOf(sorted.size / 2, 1)
     val am = sorted.take(half)
     val pm = sorted.drop(half).ifEmpty { am }
-    fun bestOf(hs: List<HourlyUiModel>) = hs.map { calculateSlotRating(it, beachFacing, surferLevel) }.maxByOrNull { it.score }!!
-    val amBest = bestOf(am)
-    val pmBest = bestOf(pm)
     val amH = am.map { it.waveHeight }.average()
     val pmH = pm.map { it.waveHeight }.average()
-    val avgH = (amH + pmH) / 2
-    val amBad = windBad(am, beachFacing)
-    val pmBad = windBad(pm, beachFacing)
-    val amSmall = amBest.kind == ConditionKind.TOO_SMALL
-    val pmSmall = pmBest.kind == ConditionKind.TOO_SMALL
-    val limitWhy = (best ?: maxOf(amBest, pmBest, compareBy { it.score })).why
-    val limit = when {
-        limitWhy.startsWith("Rafales") || limitWhy.startsWith("Des rafales") -> "Rafales gênantes"
-        limitWhy.contains("clapot") -> "Clapot"
-        limitWhy.startsWith("Houle trop courte") || limitWhy.startsWith("Houle un peu courte") -> "Houle trop courte"
-        limitWhy == "Houle de travers" -> "Houle de travers"
-        limitWhy == "Creux et puissant" -> "Creux et puissant"
-        else -> null
-    }
-    val title = when {
-        amBest.kind == ConditionKind.TOO_BIG && pmBest.kind == ConditionKind.TOO_BIG -> "Massif, sors le jet !"
-        amSmall && pmSmall -> when {
-            maxOf(amH, pmH) < 0.5 -> "Tout petit, mer lisse"
-            amBad || pmBad -> "Petit et venté"
-            else -> "Petit mais propre"
-        }
-        amSmall -> "Ça se lève l'après-midi"
-        pmSmall -> "Ça s'éteint l'après-midi"
-        !amBad && pmBad -> "Le vent gâte l'après-midi"
-        amBad && !pmBad -> "Mieux l'après-midi"
-        amBad && pmBad -> if (avgH >= 2.0) "Gros et venté" else "Venté toute la journée"
-        limit != null -> limit
-        amBest.score >= pmBest.score + 10 -> "Mieux le matin"
-        pmBest.score >= amBest.score + 10 -> "Mieux l'après-midi"
-        avgH >= 2.0 -> "Gros et propre"
-        avgH < 1.1 -> "Petit mais propre"
-        pmH - amH >= 0.4 -> "La houle monte"
-        amH - pmH >= 0.4 -> "La houle baisse"
-        dominantCategory(am, beachFacing) == "side" && dominantCategory(pm, beachFacing) == "side" -> "Vent de travers"
-        else -> "Journée propre"
-    }
+    val maxH = sorted.maxOf { it.waveHeight }
+    if (maxH < FLAT_BELOW) return DayPhrase("Flat, va pêcher !")
+    if (maxH >= MASSIVE_FROM) return DayPhrase("Massif, sors le jet !")
 
-    val swell = if (kotlin.math.abs(amH - pmH) >= 0.2) "${meters(amH)} → ${meters(pmH)}" else meters(avgH)
-    val amWind = windHalfText(am, beachFacing)
-    val pmWind = windHalfText(pm, beachFacing)
-    val wind = if (amWind == pmWind) amWind else "$amWind → $pmWind"
-    return DayPhrase(title, "$swell · $wind")
+    val swell = when {
+        pmH - amH >= 0.3 -> "ça grossit"
+        amH - pmH >= 0.3 -> "ça tombe"
+        else -> "ça tient"
+    }
+    fun colorOf(hs: List<HourlyUiModel>): Int {
+        val dir = hs.filter { windFeelKmh(it) >= 4 }.groupingBy { windDirectionClass(it.windDirectionStr, beachFacing) }
+            .eachCount().maxByOrNull { it.value }?.key
+        return dir ?: -1
+    }
+    val ca = colorOf(am)
+    val cp = colorOf(pm)
+    val strongest = sorted.maxOf { windFeelKmh(it) }
+    val onshoreAm = ca == 2
+    val onshorePm = cp == 2
+    val calm = strongest < 4
+    val wind = when {
+        calm -> "glassy"
+        !onshoreAm && onshorePm -> "ça tourne onshore l'après-midi"
+        onshoreAm && !onshorePm -> "ça tourne offshore l'après-midi"
+        onshoreAm && onshorePm -> when {
+            strongest >= 18 -> "c'est venté"
+            strongest >= 10 -> "onshore modéré"
+            else -> "léger onshore"
+        }
+        strongest < 10 -> "glassy, offshore léger"
+        ca == 1 && cp == 1 -> "sideshore toute la journée" + if (strongest >= 18) " soutenu" else ""
+        else -> "offshore" + (if (strongest >= 18) " soutenu" else "") + " toute la journée"
+    }
+    val bad = wind == "c'est venté" || wind == "onshore modéré" || wind == "léger onshore" || wind == "ça tourne onshore l'après-midi"
+    val title = if (maxH < SMALL_BELOW) {
+        if (bad) "Petit et venté" else "Petit mais propre, " + wind.removeSuffix(" toute la journée")
+    } else {
+        swell + (if (bad && swell != "ça tombe") " mais " else if (bad) " et " else ", ") + wind
+    }
+    return DayPhrase(title.replaceFirstChar { it.uppercase() })
+}
+
+private const val FLAT_BELOW = 0.4
+private const val SMALL_BELOW = 0.8
+private const val MASSIVE_FROM = 3.0
+
+/** La classe d'une direction de vent : 0 = offshore (jaune), 1 = de travers (orange), 2 = onshore (rouge). */
+internal fun windDirectionClass(directionStr: String, beachFacing: Int?): Int {
+    val dirFr = SurfUnitsHelper.formatCardinalFr(directionStr)
+    val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr).toDouble()
+    val offshoreAxis = (((beachFacing ?: 270) + 180) % 360).toDouble()
+    val d = angularDifference(degrees, offshoreAxis)
+    return when {
+        d <= 45.0 -> 0
+        d <= 100.0 -> 1
+        else -> 2
+    }
 }
 
 /** La force du vent ressenti en un mot : léger, modéré, soutenu, fort. */
