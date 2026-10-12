@@ -122,7 +122,7 @@ fun WeeklyForecastCard(
             val phrase = remember(selectedDate, groupedByDate, dailySunInfo, dailyLabels, idealSwellDirection) {
                 val idx = availableDates.indexOf(selectedDate)
                 selectedDate?.let { d ->
-                    dayPhraseFor(daylightHoursFor(d, groupedByDate, dailySunInfo), dailyLabels.getOrNull(idx), idealSwellDirection)
+                    dayPhraseFor(daylightHoursFor(d, groupedByDate, dailySunInfo), dailyLabels.getOrNull(idx), idealSwellDirection, surferLevel)
                 }
             }
             if (phrase != null) {
@@ -326,8 +326,7 @@ private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, o
             CardInfoButton("week")
             CollapseChevron(isCollapsed, onToggleCollapse)
         }
-        Text(phrase.swell, fontSize = 12.5.sp, color = onSurface, maxLines = 1)
-        Text(phrase.wind, fontSize = 12.5.sp, color = onSurface, maxLines = 2)
+        Text(phrase.line, fontSize = 13.sp, color = onSurface, maxLines = 2)
         if (boardOfDay != null) Text("Planche du jour : $boardOfDay", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
     }
 }
