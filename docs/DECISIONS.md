@@ -127,3 +127,5 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **Visite guidée** : à refaire, maquette dédiée ; les bulles doivent dire qu'elles suivent ton profil alors que les étoiles ne le font pas.
 - **Météo** : validée, l'icône quitte la barre du bas pour l'encart Météo (ressenti, UV, pluie, nuages, eau, lever/coucher).
 - **Barre du bas** : le Thème sort de la barre ; une icône « Thème » en haut à droite, à côté du choix des spots.
+
+- **Mon matériel** (13 octobre) : trois onglets validés : « Moi » (poids, âge, niveau), « Mes planches » (conditions sur chaque planche, plus de grille ; le réglage de la planche du jour est ici), « Mon expérience » (depuis quand, fréquence, saison). Le volume reste fixé en haut et se met à jour en direct ; la fréquence agit sur le volume (coefficients proposés : +5 % une fois par semaine, +10 % une fois par mois, +15 % quelques fois par an, à valider).
