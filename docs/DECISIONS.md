@@ -115,3 +115,15 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **Maintenant, version C (17 octobre)** : une seule ligne « 1,2 m · 9 s · ESE 13 · **COEF 94** ▼ 13:16 », avec COEF et son chiffre en gras entre le vent et la marée, puis la flèche (▲ monte, ▼ descend) et l'heure de la prochaine marée.
 - **Maintenant (17 octobre)** : version C validée (une ligne avec COEF en gras entre le vent et la marée, puis flèche et heure).
 - **Résultat du questionnaire** : l'encart « Pour passer à… » dit une chose différente pour chacune des huit tranches (de Débutant à Avancé +) ; au sommet (Expert) il n'y en a pas. Pour un « + », on ajoute le seul point qui retient.
+
+
+## Réponses du 13 octobre au soir (maquettes v3)
+- **Marées** : solution A (toutes les marées entre lever et coucher). Pas d'horaires lever/coucher en plus (déjà dans le déroulé). COEF et heures de marée sur la même ligne.
+- **Icônes par jour** : solution B à l'essai (le chiffre 1/2/3 règle aussi les segments) ; à juger à l'usage, à retirer si l'écran est trop chargé.
+- **Prévisions** : mode Auto par défaut et « Choisir moi-même ». L'orientation de la plage ne change pas à Montalivet : à ranger dans le choix manuel plutôt qu'en premier.
+- **Échelle des niveaux** : d'accord sur trois blocs par marche ; les textes sont à rédiger puis à relire.
+- **Anciens bugs** : jugés corrigés par la refonte des phrases ; pas de bug de nuages vu ; la hauteur du soleil selon la saison est abandonnée (l'arc n'est que décoratif).
+- **Journal** : mélange A + C : question « Tu as surfé ? » le lendemain + bouton « + Session » sur la ligne Maintenant. « Demain ressemble à ta session du 3 mars » : à placer quelque part (à maquetter).
+- **Visite guidée** : à refaire, maquette dédiée ; les bulles doivent dire qu'elles suivent ton profil alors que les étoiles ne le font pas.
+- **Météo** : validée, l'icône quitte la barre du bas pour l'encart Météo (ressenti, UV, pluie, nuages, eau, lever/coucher).
+- **Barre du bas** : le Thème sort de la barre ; une icône « Thème » en haut à droite, à côté du choix des spots.
