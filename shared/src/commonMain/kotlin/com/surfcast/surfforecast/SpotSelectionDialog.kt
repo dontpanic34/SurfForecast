@@ -2,9 +2,12 @@
 package com.surfcast.surfforecast
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,10 +18,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.ui.window.DialogProperties
 import com.surfcast.surfforecast.ui.theme.AppColors
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Les trois places de favoris : au-delà, il faut en remplacer un. */
+private const val FAVORITE_SLOTS = 3
+
+/**
+ * Le choix du spot : la recherche en premier, les régions de tous les pays sur une seule ligne qui défile, un compteur de favoris
+ * et une étoile par spot. Un tap sur la ligne ouvre le spot ; l'étoile l'ajoute aux favoris (ou le retire). À la première
+ * ouverture ([mandatory]), c'est le même écran, sans bouton de fermeture : il faut choisir un spot.
+ */
 @Composable
 fun SpotSelectionDialog(
     currentFavorites: List<String?>,
@@ -26,67 +36,43 @@ fun SpotSelectionDialog(
     onSpotSelected: (String) -> Unit,
     onAssignToSlot: (String, Int) -> Unit,
     onRemoveFromSlot: (Int) -> Unit,
-    onOpenLiveCam: (String) -> Unit
+    onOpenLiveCam: (String) -> Unit,
+    mandatory: Boolean = false,
+    onChosen: ((String) -> Unit)? = null
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCountry by remember { mutableStateOf(SurfDatabase.countries.first().name) }
-    var selectedRegion by remember { mutableStateOf<String?>(null) }
-    var targetSlotForAssignment by remember { mutableStateOf<Int?>(null) }
+    val allRegions = SurfDatabase.countries.flatMap { it.regions.flatMap { r -> r.subRegions } }
+    var selectedRegion by remember { mutableStateOf(allRegions.firstOrNull()?.name) }
+    // Un spot qu'on veut ajouter alors que les trois places sont prises : on demande lequel remplacer.
+    var pendingReplace by remember { mutableStateOf<String?>(null) }
     val colors = MaterialTheme.colorScheme
-
-    val currentCountry = SurfDatabase.countries.firstOrNull { it.name == selectedCountry }
-    val subRegionsForCountry = currentCountry?.regions?.flatMap { it.subRegions } ?: emptyList()
-
-    // Si la région sélectionnée n'appartient pas (ou plus) au pays courant, on repart sur la première dispo
-    LaunchedEffect(selectedCountry) {
-        if (subRegionsForCountry.none { it.name == selectedRegion }) {
-            selectedRegion = subRegionsForCountry.firstOrNull()?.name
-        }
-    }
+    val favoriteCount = currentFavorites.take(FAVORITE_SLOTS).count { it != null }
 
     val filteredSpots = if (searchQuery.isNotBlank()) {
         SurfDatabase.getAllSpots().filter { it.name.contains(searchQuery, ignoreCase = true) }
     } else {
-        subRegionsForCountry.firstOrNull { it.name == selectedRegion }?.spots ?: emptyList()
+        allRegions.firstOrNull { it.name == selectedRegion }?.spots ?: emptyList()
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.85f)
-                .clip(RoundedCornerShape(14.dp)),
-            color = colors.background
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+    Dialog(
+        onDismissRequest = { if (!mandatory) onDismiss() },
+        properties = DialogProperties(dismissOnBackPress = !mandatory, dismissOnClickOutside = !mandatory)
+    ) {
+        Surface(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f).clip(RoundedCornerShape(14.dp)), color = colors.background) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Sélection du Spot",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.onBackground
+                        text = if (mandatory) "Où tu surfes ?" else "Choisir un spot",
+                        fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, color = colors.onBackground
                     )
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
-                        Icon(
-                            imageVector = SurfIcons.Close,
-                            contentDescription = "Fermer",
-                            tint = colors.onSurfaceVariant
-                        )
+                    if (!mandatory) {
+                        IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
+                            Icon(imageVector = SurfIcons.Close, contentDescription = "Fermer", tint = colors.onSurfaceVariant)
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Search Bar
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -105,132 +91,85 @@ fun SpotSelectionDialog(
                 )
 
                 if (searchQuery.isBlank()) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // Les régions de tous les pays sur une seule ligne qui défile.
+                    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        allRegions.forEach { region ->
+                            val on = selectedRegion == region.name
+                            Text(
+                                text = region.name, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                                color = if (on) colors.onPrimary else colors.onSurfaceVariant,
+                                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                                    .clickable { selectedRegion = region.name }.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
 
-                    // Pays (dynamique depuis SurfDatabase)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+                if (!mandatory) {
+                    Text(
+                        "Favoris $favoriteCount sur $FAVORITE_SLOTS · touche ★ pour ajouter ou retirer",
+                        fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                pendingReplace?.let { spot ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.primary.copy(alpha = 0.12f)).padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        SurfDatabase.countries.forEach { country ->
-                            val isSelected = selectedCountry == country.name
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { selectedCountry = country.name },
-                                color = if (isSelected) colors.primary else colors.surfaceVariant
-                            ) {
-                                Box(
-                                    modifier = Modifier.padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
+                        Text("Remplacer quel favori par $spot ?", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            currentFavorites.take(FAVORITE_SLOTS).forEachIndexed { i, name ->
+                                if (name != null) {
                                     Text(
-                                        text = country.name,
-                                        fontSize = 12.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                        name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary, maxLines = 1,
+                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primary)
+                                            .clickable { onAssignToSlot(spot, i); pendingReplace = null }.padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
                                 }
                             }
+                            Text(
+                                "Annuler", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary,
+                                modifier = Modifier.clip(RoundedCornerShape(50)).clickable { pendingReplace = null }.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Régions (retour à la ligne automatique, tout visible sans scroll)
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        subRegionsForCountry.forEach { subRegion ->
-                            val isSelected = selectedRegion == subRegion.name
-                            Surface(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { selectedRegion = subRegion.name },
-                                color = if (isSelected) colors.primary.copy(alpha = 0.2f) else colors.surfaceVariant
-                            ) {
-                                Text(
-                                    text = subRegion.name,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isSelected) colors.primary else colors.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    maxLines = 1
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
 
                 HorizontalDivider(color = colors.onSurfaceVariant.copy(alpha = 0.15f))
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Liste spots
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(filteredSpots) { spot ->
-                        val isFavorite = currentFavorites.contains(spot.name)
-
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp)),
-                            color = colors.surfaceVariant
-                        ) {
+                        val slot = currentFavorites.take(FAVORITE_SLOTS).indexOf(spot.name)
+                        val isFavorite = slot >= 0
+                        Surface(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)), color = colors.surfaceVariant) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth()
                                     .clickable {
-                                        if (targetSlotForAssignment != null) {
-                                            onAssignToSlot(spot.name, targetSlotForAssignment!!)
-                                            targetSlotForAssignment = null
-                                        } else {
-                                            onSpotSelected(spot.name)
-                                        }
+                                        if (mandatory) onChosen?.invoke(spot.name) else onSpotSelected(spot.name)
                                         onDismiss()
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 11.dp),
+                                    .padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = spot.name,
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = colors.onBackground
-                                )
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    val camAvailable = SurfWebcamHelper.hasCamera(spot.name)
-                                    IconButton(
-                                        onClick = {
-                                            if (camAvailable) {
-                                                onOpenLiveCam(spot.name)
-                                                onDismiss()
+                                Text(text = spot.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                                if (!mandatory) {
+                                    Text(
+                                        text = if (isFavorite) "★" else "☆", fontSize = 24.sp,
+                                        color = if (isFavorite) AppColors.WindMid else colors.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable {
+                                            if (isFavorite) onRemoveFromSlot(slot)
+                                            else {
+                                                val free = currentFavorites.take(FAVORITE_SLOTS).indexOfFirst { it == null }
+                                                if (free >= 0) onAssignToSlot(spot.name, free) else pendingReplace = spot.name
                                             }
-                                        },
-                                        enabled = camAvailable,
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        WebcamIcon(
-                                            tint = if (camAvailable) AppColors.WindMid else colors.onSurfaceVariant.copy(alpha = 0.3f),
-                                            size = 16.dp
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(6.dp))
-
-                                    Icon(
-                                        imageVector = SurfIcons.Star,
-                                        contentDescription = "Favori",
-                                        tint = if (isFavorite) AppColors.WindMid else colors.onSurfaceVariant.copy(alpha = 0.3f),
-                                        modifier = Modifier.size(18.dp)
+                                        }.padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
                                 }
                             }
@@ -239,12 +178,7 @@ fun SpotSelectionDialog(
 
                     if (filteredSpots.isEmpty()) {
                         item {
-                            Text(
-                                text = "Aucun spot trouvé.",
-                                fontSize = 12.sp,
-                                color = colors.onSurfaceVariant,
-                                modifier = Modifier.padding(16.dp)
-                            )
+                            Text("Aucun spot trouvé.", fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(16.dp))
                         }
                     }
                 }

@@ -136,6 +136,12 @@ class SurfController(
 
     // Écran de bienvenue (unité du vent, niveau, origine des prévisions) : affiché tant qu'il n'a
     // pas été fermé une fois, et rouvrable depuis les Paramètres.
+    /** Les utilisateurs existants (onboarding déjà fait) ont déjà un spot. */
+    var spotChosen by mutableStateOf(
+        prefs.getBoolean("spot_chosen", false) || prefs.getBoolean("onboarding_v1_done", false)
+    )
+        private set
+
     var showOnboarding by mutableStateOf(!prefs.getBoolean("onboarding_v1_done", false))
         private set
 
@@ -318,6 +324,18 @@ class SurfController(
         prefs.putString("fav_1", favoriteSpots.getOrNull(1))
         prefs.putString("fav_2", favoriteSpots.getOrNull(2))
         prefs.putInt("active_fav_index", activeFavoriteIndex)
+    }
+
+    /** Première ouverture : le spot choisi devient le premier favori et s'affiche. */
+    fun chooseFirstSpot(name: String) {
+        favoriteSpots[0] = name
+        favoriteSpots[1] = null
+        favoriteSpots[2] = null
+        activeFavoriteIndex = 0
+        saveFavorites()
+        spotChosen = true
+        prefs.putBoolean("spot_chosen", true)
+        loadActiveSpot(initialLoad = false)
     }
 
     fun selectFavoriteIndex(index: Int) {
