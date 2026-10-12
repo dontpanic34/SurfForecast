@@ -758,6 +758,7 @@ fun MainScreen(
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
                                         updatedText = state.lastUpdatedTime,
+                                        isNight = daylightHoursFor(today, groupedByDate, state.dailySunInfo).let { d -> d.isNotEmpty() && d.none { it.rawTime == closest.rawTime } },
                                         onRefresh = { viewModel.refreshActiveSpot() },
                                         onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")

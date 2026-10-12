@@ -36,6 +36,8 @@ data class HourlyUiModel(
     val windSource: String = "",
     // Rafales (km/h) : par défaut égales au vent moyen quand la source n'en donne pas.
     val windGustKmh: Int = windSpeedKmh,
+    // Le vent réel des trois heures d'avant (pour la note : « Parfait » demande une mer que le vent n'a pas touchée).
+    val pastWind: List<WindSample> = emptyList(),
     // Température de surface de la mer (°C, Open-Meteo Marine) : null = non fournie pour ce point.
     val seaTemperature: Double? = null
 )
@@ -110,3 +112,6 @@ data class ForecastEngineConfig(
     val longTermWeather: WeatherModel = WeatherModel.ECMWF_IFS,
     val longTermWave: WaveModel = WaveModel.ECMWF_WAM
 )
+
+/** Un vent passé : vitesse et rafales (km/h) et direction. */
+data class WindSample(val speedKmh: Int, val gustKmh: Int, val direction: String)
