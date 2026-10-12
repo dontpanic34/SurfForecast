@@ -34,7 +34,7 @@ private val STEPS: List<Step> = listOf(
     Step("tol1", SEC_PREFS, "Quand les conditions sont moyennes (vent, mer hachée, vague molle)…", "",
         listOf("J'y vais quand même, motivé : je reviendrai si ça s'améliore", "J'y vais si ça reste correct", "J'attends que ce soit bon")),
     Step("tol2", SEC_PREFS, "Quand c'est plus gros que d'habitude…", "",
-        listOf("J'y vais, c'est l'occasion de progresser", "Je regarde d'abord, j'y vais si ça me rassure", "Je reste au sec")),
+        listOf("J'y vais, c'est l'occasion de progresser", "J'hésite : j'y vais si c'est accessible et que je suis en forme", "Je reste au sec")),
     Step("tol3", SEC_PREFS, "Ça souffle onshore, ou c'est dur physiquement…", "",
         listOf("Je me débrouille, il y a toujours des bouts à prendre", "Je tente un peu, puis je vois", "Je préfère rester au sec")),
     Step("what", SEC_LEVEL, "Tu surfes…", "", listOf("La mousse", "La réforme", "Le large")),
