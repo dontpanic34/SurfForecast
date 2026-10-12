@@ -13,24 +13,22 @@ private fun tideHour(e: MareeExtremum): Float? {
 }
 
 /**
- * Les deux marées qui correspondent le mieux aux heures d'ensoleillement : celles qui tombent dans la fenêtre du déroulé
- * (une demi-heure avant le lever à une demi-heure après le coucher), sinon les plus proches de cette fenêtre. S'il y en a
- * plus de deux dedans, les deux les plus proches du milieu de la journée. Rangées par heure.
+ * Toutes les marées qui tombent dans la fenêtre du déroulé (une demi-heure avant le lever à une demi-heure après le
+ * coucher), rangées par heure. S'il y en a moins de deux dedans, on complète avec les plus proches de la fenêtre.
  */
 internal fun daylightTides(extrema: List<MareeExtremum>, sunrise: Float, sunset: Float): List<MareeExtremum> {
     val lo = sunrise - 0.5f
     val hi = sunset + 0.5f
     val mid = (sunrise + sunset) / 2f
-    return extrema.mapNotNull { e -> tideHour(e)?.let { e to it } }
+    val ranked = extrema.mapNotNull { e -> tideHour(e)?.let { e to it } }
         .sortedWith(
             compareBy<Pair<MareeExtremum, Float>>(
                 { (_, t) -> if (t < lo) lo - t else if (t > hi) t - hi else 0f },
                 { (_, t) -> abs(t - mid) }
             )
         )
-        .take(2)
-        .sortedBy { it.second }
-        .map { it.first }
+    val inside = ranked.filter { (_, t) -> t in lo..hi }
+    return (if (inside.size >= 2) inside else ranked.take(2)).sortedBy { it.second }.map { it.first }
 }
 
 /** Les marées à afficher pour un jour : les deux de la journée, ou à défaut la haute et la basse déjà connues. */

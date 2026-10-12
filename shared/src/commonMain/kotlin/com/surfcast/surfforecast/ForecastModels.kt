@@ -27,6 +27,9 @@ data class HourlyUiModel(
     val weatherCode: Int,
     val temperature: Int,
     val cloudCover: Int = 0,
+    // Indice UV et pluie de l'heure (mm) : 0 quand le modèle ne les donne pas.
+    val uvIndex: Double = 0.0,
+    val precipitationMm: Double = 0.0,
     val feelsLike: Int = temperature,
     // Modèle d'où vient le vent de cette heure ("AROME HD", "AROME", "ECMWF_IFS"...,
     // ou WIND_SOURCE_MISSING) : sert au journal des prévisions. Vide = inconnu.

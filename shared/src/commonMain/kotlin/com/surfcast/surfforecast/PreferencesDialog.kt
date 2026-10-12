@@ -109,6 +109,8 @@ fun SurfPreferencesDialog(
     var longTermWind by remember { mutableStateOf(weatherModelLabel(engineConfig.longTermWeather)) }
     var longTermWave by remember { mutableStateOf(waveModelLabel(engineConfig.longTermWave)) }
 
+    // Sources des prévisions : Auto (les modèles conseillés) ou choix à la main (modèles et orientation de la plage).
+    var autoModels by remember { mutableStateOf(engineConfig == ForecastEngineConfig()) }
     var showModelsInfo by remember { mutableStateOf(false) }
     var infoTab by remember { mutableStateOf("France") }
     var showScoreInfo by remember { mutableStateOf(false) }
@@ -454,7 +456,12 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    if (page == "forecast") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (page == "forecast") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Sources des prévisions", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+                        ChipChoices(listOf("auto" to "Auto (conseillé)", "manual" to "Choisir moi-même"), if (autoModels) "auto" else "manual", onSelect = { autoModels = it == "auto" })
+                        if (autoModels) Text("Les meilleurs modèles pour ton spot, choisis pour toi.", fontSize = 12.sp, color = colors.onSurfaceVariant)
+                    }
+                    if (page == "forecast" && !autoModels) Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -636,7 +643,7 @@ fun SurfPreferencesDialog(
                             }
                         }
                     }
-                    if (page == "forecast" && onBeachFacingChanged != null && spotName.isNotEmpty()) {
+                    if (page == "forecast" && !autoModels && onBeachFacingChanged != null && spotName.isNotEmpty()) {
                         BeachFacingCard(
                             spotName = spotName,
                             facing = beachFacing,
@@ -789,7 +796,7 @@ fun SurfPreferencesDialog(
 
                     Button(
                         onClick = {
-                            val newConfig = ForecastEngineConfig(
+                            val newConfig = if (autoModels) ForecastEngineConfig() else ForecastEngineConfig(
                             shortTermWeather = weatherModelFromLabel(shortTermWind),
                             shortTermWave = waveModelFromLabel(shortTermWave),
                             longTermWeather = weatherModelFromLabel(longTermWind),

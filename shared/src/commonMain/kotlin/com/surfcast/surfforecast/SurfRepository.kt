@@ -189,7 +189,9 @@ class SurfRepository(
         val cloudCovers: List<Int>,
         val apparentTemperatures: List<Double>,
         val sunriseByDate: Map<LocalDate, LocalTime>,
-        val sunsetByDate: Map<LocalDate, LocalTime>
+        val sunsetByDate: Map<LocalDate, LocalTime>,
+        val uvIndexes: List<Double> = emptyList(),
+        val precipitations: List<Double> = emptyList()
     )
 
     private suspend fun fetchMarineBlock(lat: Double, lon: Double, waveModel: WaveModel, days: Int): RawMarineHourly {
@@ -334,7 +336,7 @@ class SurfRepository(
 
         val url = "https://api.open-meteo.com/v1/forecast?" +
             "latitude=$lat&longitude=$lon" +
-            "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover,apparent_temperature" +
+            "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover,apparent_temperature,uv_index,precipitation" +
             modelParam +
             dailyParam +
             "&forecast_days=$safeDays" +
@@ -359,6 +361,10 @@ class SurfRepository(
         val windGustArr = getArray("wind_gusts_10m")
         val cloudArr = getArray("cloudcover")
         val apparentArr = getArray("apparent_temperature")
+        val uvArr = getArray("uv_index")
+        val precipArr = getArray("precipitation")
+        val uvs = mutableListOf<Double>()
+        val precips = mutableListOf<Double>()
 
         val times = mutableListOf<LocalDateTime>()
         val temps = mutableListOf<Double>()
@@ -382,6 +388,8 @@ class SurfRepository(
             clouds.add(cloudArr.doubleAt(i)?.toInt() ?: 0)
             // Repli sur la température de l'air si le ressenti manque pour cette heure.
             apparentTemps.add(apparentArr.doubleAt(i) ?: temp)
+            uvs.add(uvArr.doubleAt(i) ?: 0.0)
+            precips.add(precipArr.doubleAt(i) ?: 0.0)
         }
 
         val sunriseByDate = mutableMapOf<LocalDate, LocalTime>()
@@ -406,7 +414,7 @@ class SurfRepository(
             }
         }
 
-        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, windGusts, clouds, apparentTemps, sunriseByDate, sunsetByDate)
+        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, windGusts, clouds, apparentTemps, sunriseByDate, sunsetByDate, uvs, precips)
     }
 
     /**
@@ -556,6 +564,8 @@ class SurfRepository(
                         weatherCode = wData.weatherCodes.getOrElse(wIndex) { 0 },
                         temperature = wData.temperatures.getOrElse(wIndex) { 20.0 }.roundToInt(),
                         cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 },
+                        uvIndex = wData.uvIndexes.getOrElse(wIndex) { 0.0 },
+                        precipitationMm = wData.precipitations.getOrElse(wIndex) { 0.0 },
                         feelsLike = wData.apparentTemperatures.getOrElse(wIndex) {
                             wData.temperatures.getOrElse(wIndex) { 20.0 }
                         }.roundToInt(),

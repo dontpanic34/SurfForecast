@@ -79,7 +79,7 @@ fun WeekCardPreview(surferLevel: String, windUnit: String, windMode: String, den
     val stars = dates.mapIndexed { i, d ->
         dayQualityScore(daylight[i], facing, "intermediate", data.tides[d])?.let { starsForScore(it, 0) }
     }
-    val bands = dates.mapIndexed { i, _ -> dayBandsInTimeOrder(daylight[i], facing, surferLevel, 3) }
+    val bands = dates.mapIndexed { i, _ -> dayBandsInTimeOrder(daylight[i], facing, surferLevel, density) }
     Shrunk(scale) {
         WeeklyForecastCard(
             availableDates = dates, groupedByDate = data.grouped, selectedDate = selected, onSelectDate = { selected = it },
