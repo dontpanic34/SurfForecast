@@ -134,6 +134,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .xp b{position:absolute;top:0;bottom:0;width:2px;background:var(--surface);opacity:.9}
 .xpl{display:flex;justify-content:space-between;margin:0 14px;font-size:10.5px;color:var(--muted)}
 .res .nm{font-size:24px;font-weight:800}
+.lxp{display:flex;align-items:center;gap:10px;margin:10px 14px 0}.lxp .xp{flex:1;margin:0;height:8px}.lxp span{font-size:12px;font-weight:800;white-space:nowrap}.lxp span small{font-weight:500;color:var(--muted);margin-left:4px}
 .ibtn{float:right;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font:700 12px/20px system-ui;padding:0;cursor:pointer}
 .res .sc{font-size:12px;color:var(--muted);margin-top:2px}
 .next{margin:0 14px 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px}
@@ -154,7 +155,7 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
 <body>
 <div class="theme" id="theme"><button data-v="auto" aria-pressed="true">Auto</button><button data-v="light" aria-pressed="false">Clair</button><button data-v="dark" aria-pressed="false">Sombre</button></div>
 <h1>Mon profil : les questions</h1>
-<p class="lead">Une question à la fois, comme un prof de surf. Les réponses donnent un des cinq niveaux, avec sa définition. Rien d'autre sur cet écran.</p>
+<p class="lead">Une question à la fois, comme un prof de surf. Ta barre de niveau se remplit au fil des réponses.</p>
 
 <div class="phone">
   <div class="top"><span class="back" id="back">‹ Réglages</span><h2>Mon profil</h2></div>
@@ -162,6 +163,7 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
     <p class="grp" id="count">Question 1</p>
     <div class="card">
       <div class="prog"><i id="prog" style="width:8%"></i></div>
+      <div class="lxp" id="lxp" hidden><div class="xp"><i id="lxpf" style="width:0"></i></div><span id="lxpn"></span></div>
       <div class="q" style="border-top:0"><p id="q" style="font-size:17px;font-weight:800;margin-bottom:4px"></p><p id="sub" style="font-weight:500;color:var(--muted);font-size:13px;margin:0 0 10px"></p><div id="opts" style="display:grid;gap:6px"></div></div>
       <div style="padding:0 14px 12px;display:flex;justify-content:space-between;font-size:13px;color:var(--accent);font-weight:650"><span id="prev">‹ Précédent</span><span id="next" style="visibility:hidden">Suivant ›</span></div>
     </div>
@@ -192,9 +194,9 @@ var LEVELS=[
  {n:'Expert',goal:'Perfectionner des manœuvres que tu maîtrises déjà.',def:'Toutes les manœuvres sont acquises : tu les perfectionnes. Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c\'est pourri : tu trouves le bon créneau, les phases plus calmes, une réforme intéressante, et tu tiens le courant à la rame.'}];
 var TK=['En un seul temps, tout le temps','En un seul temps, souvent','Parfois en un seul temps, ou en plusieurs temps'];
 var STEPS=[
- {id:'tol1',q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},
- {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['J\'y vais, c\'est l\'occasion de progresser','Je regarde d\'abord, j\'y vais si ça me rassure','Je reste au sec']},
- {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',sub:'Pour tes recommandations : ça ne change pas ton niveau.',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
+ {id:'tol1',q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',sub:'Pour tes recommandations, pas pour ton niveau.',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},
+ {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',sub:'Pour tes recommandations, pas pour ton niveau.',o:['J\'y vais, c\'est l\'occasion de progresser','Je regarde d\'abord, j\'y vais si ça me rassure','Je reste au sec']},
+ {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',sub:'Pour tes recommandations, pas pour ton niveau.',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
  {id:'what',q:'Tu surfes…',sub:'Choisis le plus au large que tu surfes.',o:['La mousse','La réforme','Le large']},
  {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===2}},
  {id:'tk',q:'Définis ton take-off',o:TK},
@@ -202,14 +204,20 @@ var STEPS=[
  {id:'peak',q:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser. Les reformes et l\'épaule, c\'est plutôt la première réponse.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===2}},
  {id:'goal',q:'Sur la vague, tu cherches surtout à…',sub:'Plusieurs réponses possibles : on retient la plus haute.',multi:true,o:['Réussir tes take-offs','Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques','Devenir de plus en plus radical, critique et engagé','Affiner ton surf : le style, la précision, chaque détail'],when:function(a){return a.what===2}},
  {id:'man',q:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros.',o:['Je n\'en suis pas là : je cherche surtout à comprendre et suivre le rythme de la vague','Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],when:function(a){return a.what===2&&gmax(a)>=2}},
- {id:'feel',q:'Quand tu passes la barre, tu te sens…',sub:'Condition physique : elle ne change pas ton niveau, elle fait monter ou descendre ta note à l\'intérieur.',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===2}},
- {id:'train',q:'Tu t\'entraînes en dehors du surf ?',sub:'Condition physique : elle ne change pas ton niveau.',o:['Non','De temps en temps (course, natation, yoga…)','Régulièrement, pour le surf (cardio, renfo, apnée…)']},
- {id:'where',q:'Où tu surfes ?',sub:'Plusieurs réponses possibles. Engagement : ça ne change pas ton niveau.',multi:true,o:['Chez moi, avec du monde : ça me rassure','Autour de chez moi : je choisis le meilleur spot, j\'évite le monde','Je me déplace pour suivre les conditions, si ça vaut le coup','Je pars à l\'étranger chercher les vagues (surf trips)']}
+ {id:'feel',q:'Quand tu passes la barre, tu te sens…',sub:'Ça n\'entre pas dans ton niveau : ça affine ta note.',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],osub:['','','Plus ou moins n\'importe quand, n\'importe où, mais c\'est dur.','Il faut que ce soit entre les séries.'],when:function(a){return a.what===2}},
+ {id:'train',q:'Tu t\'entraînes en dehors du surf ?',sub:'Ça n\'entre pas dans ton niveau : ça affine ta note.',o:['Non','De temps en temps (course, natation, yoga…)','Régulièrement, pour le surf (cardio, renfo, apnée…)']},
+ {id:'where',q:'Où tu surfes ?',sub:'Plusieurs réponses possibles. Ça affine ta note, pas ton niveau.',multi:true,o:['Chez moi, avec du monde : ça me rassure','Autour de chez moi : je choisis le meilleur spot, j\'évite le monde','Je me déplace pour suivre les conditions, si ça vaut le coup','Je pars à l\'étranger chercher les vagues (surf trips)']}
 ];
 var PP={feel:[1,0.6,0.3,0.5],train:[0,0.5,1],where:[0,0.35,0.7,1]};
 function gmax(a){return Math.max.apply(null,(a.goal||[]).length?a.goal:[-1])}
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
+function liveXp(){var box=document.getElementById('lxp');
+  var known=ans.what===2?['barre','tk','peak','goal'].filter(function(k){return ans[k]!==undefined}).length:(ans.what<2&&ans.tk!==undefined?2:0);
+  if(known<2){box.hidden=true;return}
+  var r=compute();box.hidden=false;document.getElementById('lxpf').style.width=r.score+'%';
+  document.getElementById('lxpn').innerHTML=r.band+'<small>provisoire</small>'}
+function sec(st){return st.id.indexOf('tol')===0?'Tes préférences':(st.id==='feel'||st.id==='train'||st.id==='where')?'Ta forme':'Ton niveau'}
 function title(st){return st.dyn?st.dyn(ans):st.q}
 function answered(st){var v=ans[st.id];return st.multi?(v&&v.length>0):v!==undefined}
 
@@ -223,7 +231,7 @@ function compute(){
   var forcePlus=false;
   if(ans.what<2){L.push({v:0,t:'tu ne surfes que la mousse ou la réforme'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
   else{
-    L.push({v:gmax(ans)+1,p:Math.min(4,gmax(ans)+1+0.25*(ans.goal.length-1)),t:'ce que tu cherches'});
+    if(ans.goal&&ans.goal.length)L.push({v:gmax(ans)+1,p:Math.min(4,gmax(ans)+1+0.25*(ans.goal.length-1)),t:'ce que tu cherches'});
     var bar=[0,0,1,2,3,4][ans.barre];
     L.push({v:bar,t:ans.barre===0?'tu ne passes pas encore la barre':'la taille où tu passes la barre'});
     L.push({v:[4,1,0][ans.tk],t:'ton take-off'});
@@ -252,7 +260,7 @@ function draw(){
   var list=active(),st=list[Math.min(cur,list.length-1)];
   document.getElementById('ask').hidden=done;document.getElementById('result').hidden=!done;
   if(done){drawResult();return}
-  document.getElementById('count').textContent='Question '+(cur+1)+' sur '+list.length;
+  document.getElementById('count').textContent=sec(st)+' · '+(cur+1)+' sur '+list.length;liveXp();
   document.getElementById('prog').style.width=((cur+1)/list.length*100)+'%';
   document.getElementById('q').textContent=title(st);document.getElementById('sub').textContent=st.sub||'';
   var box=document.getElementById('opts');
