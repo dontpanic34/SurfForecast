@@ -82,7 +82,7 @@ fun SurfCardComponent(
                 height = selectedHour.waveHeight, period = selectedHour.wavePeriod, energyKj = selectedHour.energyKj,
                 direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false
             )
-            if (selectedHour.secondaryHeight >= 0.1 && selectedHour.secondaryPeriod > 0.0) {
+            if (selectedHour.secondaryHeight >= 0.2 && selectedHour.secondaryPeriod >= 7.0) {
                 Spacer(modifier = Modifier.height(2.dp))
                 SwellLine(
                     height = selectedHour.secondaryHeight, period = selectedHour.secondaryPeriod,

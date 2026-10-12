@@ -86,7 +86,10 @@ fun DailyTimelineCard(
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Motivation du jour (« Prudent » / « Normal » / « Motivé »), un tap la change ; null = pas de réglage affiché.
+    motivationLabel: String? = null,
+    onMotivationClick: () -> Unit = {}
 ) {
     if (groupedByDate.isEmpty()) return
 
@@ -164,6 +167,19 @@ fun DailyTimelineCard(
                     }
                     // Coefficient puis les deux marées de la journée, sur une ligne sous la jauge.
                     dailyTides[selectedDate]?.let { TideLine(dayTides, it.coefficient, onSurfaceColor) }
+                    if (motivationLabel != null) {
+                        Row(modifier = Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Motivation", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.55f))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                motivationLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .clickable(onClick = onMotivationClick).padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("règle la couleur des heures", fontSize = 10.5.sp, color = onSurfaceColor.copy(alpha = 0.5f), maxLines = 1)
+                        }
+                    }
                 }
             } else {
                 Text(
@@ -346,9 +362,19 @@ private fun DailyTimelineBody(
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
                         gridValues = gridValues, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
-                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour,
-                        tideMarks = tideMarks
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
                     )
+                }
+
+                // --- Les marées, juste au-dessus de la bande des heures : bleu en haut = pleine mer, vert en bas = basse mer ---
+                if (tideMarks.isNotEmpty()) {
+                    Canvas(modifier = Modifier.fillMaxWidth().height(14.dp)) {
+                        for (m in tideMarks) {
+                            val c = Offset(xOf(m.hour), size.height / 2f)
+                            drawCircle(Color(0xFF0B121A).copy(alpha = if (isDark) 0.55f else 0.35f), radius = 7.dp.toPx(), center = c)
+                            drawTideTriangle(c, m.high, 7.dp.toPx())
+                        }
+                    }
                 }
 
                 // --- Bande jour et nuit, heure par heure ---

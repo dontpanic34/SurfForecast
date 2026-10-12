@@ -1077,8 +1077,7 @@ fun DynamicCardsSection(
                                 dragHandleModifier = dragMod,
                                 modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth(),
                                 boardOfDay = boardOfDay,
-                                toleranceLabel = ToleranceSettings.label(viewModel.toleranceMode),
-                                onToleranceClick = { viewModel.cycleTolerance() }
+                                toleranceLabel = null
                             )
                         }
                         "dailyTimeline" -> {
@@ -1096,7 +1095,9 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                motivationLabel = ToleranceSettings.label(viewModel.toleranceMode),
+                                onMotivationClick = { viewModel.cycleTolerance() }
                             )
                         }
                         "surf" -> {
