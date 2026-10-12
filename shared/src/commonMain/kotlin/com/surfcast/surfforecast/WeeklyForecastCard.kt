@@ -836,6 +836,11 @@ internal fun weekSkyScene(
     val cover = ArrayList<Float>()
     val rain = ArrayList<Float>()
     val snow = ArrayList<Float>()
+    // La pluie et la neige se lisent heure par heure, comme dans le déroulé de la journée : sinon une averse de deux heures
+    // donnait l'impression qu'il pleut toute la journée.
+    val hx = ArrayList<Float>()
+    val hRain = ArrayList<Float>()
+    val hSnow = ArrayList<Float>()
     val suns = ArrayList<SunSpot>()
     dates.forEachIndexed { i, date ->
         val hours = daylightHoursFor(date, groupedByDate, sunInfo).ifEmpty { groupedByDate[date].orEmpty() }
@@ -844,9 +849,13 @@ internal fun weekSkyScene(
             val part = if (n == 0) emptyList() else hours.subList(j * n / 3, ((j + 1) * n / 3).coerceAtLeast(j * n / 3 + 1).coerceAtMost(n))
             xs.add((i + (j + 0.5f) / 3f) * dayW)
             cover.add(if (part.isEmpty()) 0f else part.map { it.cloudCover }.average().toFloat() / 100f)
-            // La moyenne du créneau, pas le maximum : une seule heure de pluie dans un créneau sec donnait une colonne grise isolée.
             rain.add(if (part.isEmpty()) 0f else part.map { rainAmountForCode(it.weatherCode) }.average().toFloat())
             snow.add(if (part.isEmpty()) 0f else part.map { snowAmountForCode(it.weatherCode) }.average().toFloat())
+        }
+        hours.forEachIndexed { k, h ->
+            hx.add((i + (k + 0.5f) / n) * dayW)
+            hRain.add(rainAmountForCode(h.weatherCode))
+            hSnow.add(snowAmountForCode(h.weatherCode))
         }
         val sizePx = 32f * density
         suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 2f * density))
@@ -854,7 +863,9 @@ internal fun weekSkyScene(
     // Lissage sur près d'un demi-créneau : un changement de ciel ou de pluie s'étale sur plusieurs heures, sans colonne.
     val slotW = dayW / 3f
     val coverSmooth = 0.7f * slotW
-    val rainSmooth = 0.9f * slotW
+    // Lissage de la pluie : un peu plus d'une heure, pour garder les averses courtes courtes.
+    val hourW = if (hx.size > 1) (hx.last() - hx.first()) / (hx.size - 1) else slotW
+    val rainSmooth = 1.2f * hourW
     val top = 8f * density
     val bottom = size.height - 18f * density
     // Les nuages sont étalés sur le ciel, au-dessus de la houle la plus haute de la semaine.
@@ -865,10 +876,10 @@ internal fun weekSkyScene(
     return SkyScene(
         left = 0f, right = size.width, top = top, bottom = bottom,
         cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), coverSmooth),
-        rain = SkyCurve(xs.toFloatArray(), rain.toFloatArray(), rainSmooth),
-        snow = SkyCurve(xs.toFloatArray(), snow.toFloatArray(), rainSmooth),
+        rain = if (hx.size >= 2) SkyCurve(hx.toFloatArray(), hRain.toFloatArray(), rainSmooth) else SkyCurve(xs.toFloatArray(), rain.toFloatArray(), rainSmooth),
+        snow = if (hx.size >= 2) SkyCurve(hx.toFloatArray(), hSnow.toFloatArray(), rainSmooth) else SkyCurve(xs.toFloatArray(), snow.toFloatArray(), rainSmooth),
         suns = suns,
-        animate = rain.any { it > 0f } || snow.any { it > 0f },
+        animate = hRain.any { it > 0f } || hSnow.any { it > 0f } || rain.any { it > 0f } || snow.any { it > 0f },
         skyHeight = waterline - top + 8f * density
     )
 }
