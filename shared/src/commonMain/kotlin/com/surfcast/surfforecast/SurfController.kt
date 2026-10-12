@@ -286,6 +286,12 @@ class SurfController(
                 .filter { it.isNotEmpty() }
             val merged = sanitized + DEFAULT_CARDS_ORDER.filter { it !in sanitized }
             cardsOrder.addAll(merged.ifEmpty { DEFAULT_CARDS_ORDER })
+            // Une fois : « Heure par heure » passe en dernier (il n'y a plus de poignée pour le déplacer à la main).
+            if (!prefs.getBoolean("hourly_last_v1", false)) {
+                if (cardsOrder.remove("hourly")) cardsOrder.add("hourly")
+                prefs.putString("cards_order", cardsOrder.joinToString(","))
+                prefs.putBoolean("hourly_last_v1", true)
+            }
         }
 
         // Première utilisation : seuls la semaine et le déroulé de la journée sont ouverts ;

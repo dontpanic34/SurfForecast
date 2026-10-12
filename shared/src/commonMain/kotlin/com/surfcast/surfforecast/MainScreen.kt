@@ -364,7 +364,7 @@ fun MainScreen(
                                     // Profil pas encore renseigné : un message cliquable l'invite à le remplir.
                                     if (viewModel.showProfileNudge) {
                                         ProfileNudgeCard(
-                                            onOpen = { preferencesStartPage = "profile"; showPreferencesDialog = true },
+                                            onOpen = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             onLater = { viewModel.hideProfileNudge() },
                                             modifier = Modifier.coachTarget("bestSlot", coachTargets).padding(horizontal = 10.dp, vertical = 2.dp).padding(bottom = 6.dp)
                                         )
@@ -794,9 +794,9 @@ fun MainScreen(
                     ),
                     CoachStep(
                         "settings", "⚙️ Ton profil",
-                        "Il règle les couleurs et le « gros jour ». Une minute suffit.",
+                        "Pour l'instant, les notes sont celles d'un surfeur moyen. Réponds à quelques questions : elles deviennent les tiennes (taille, vent, « gros jour »). Une minute.",
                         actionLabel = "Renseigner mon profil",
-                        onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
+                        onAction = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true }
                     ),
                     CoachStep("journal", "📓 Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
                 ),
@@ -1192,23 +1192,35 @@ fun DynamicCardsSection(
                                         onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                         dragHandleModifier = dragMod,
                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                                        summary = selectedHourlyItem?.let { h -> "${h.rawTime.hour} h · ${formatDecimal(h.waveHeight, 1).replace('.', ',')} m · ${h.wavePeriod.roundToInt()} s" }
                                     )
 
-                                    if (!isCollapsed) {
-                                        hoursForSelectedDay.forEach { hourlyData ->
-                                            val isCurrentOrSelected = hourlyData.rawTime == selectedHourlyItem?.rawTime
-
-                                            HourlyForecastRow(
-                                                hourlyData = hourlyData,
-                                                windUnit = viewModel.windUnit,
-                                                modifier = Modifier.clickable {
-                                                    selectedHourlyItem = hourlyData
-                                                },
-                                                dailyTideInfo = dailyTideInfo,
-                                                isSelected = isCurrentOrSelected
-                                            )
+                                    var showAllHours by remember { mutableStateOf(false) }
+                                    val selIdx = hoursForSelectedDay.indexOfFirst { it.rawTime == selectedHourlyItem?.rawTime }.coerceAtLeast(0)
+                                    // Replié : l'heure choisie (par défaut l'heure actuelle) et la suivante. Déplié : 2 heures avant, l'heure, 2 après.
+                                    val shown = when {
+                                        isCollapsed -> hoursForSelectedDay.drop(selIdx).take(2)
+                                        showAllHours -> hoursForSelectedDay
+                                        else -> {
+                                            val start = (selIdx - 2).coerceIn(0, maxOf(hoursForSelectedDay.size - 5, 0))
+                                            hoursForSelectedDay.drop(start).take(5)
                                         }
+                                    }
+                                    shown.forEach { hourlyData ->
+                                        HourlyForecastRow(
+                                            hourlyData = hourlyData,
+                                            windUnit = viewModel.windUnit,
+                                            modifier = Modifier.clickable { selectedHourlyItem = hourlyData },
+                                            dailyTideInfo = dailyTideInfo,
+                                            isSelected = hourlyData.rawTime == selectedHourlyItem?.rawTime
+                                        )
+                                    }
+                                    if (!isCollapsed && hoursForSelectedDay.size > 5) {
+                                        Text(
+                                            if (showAllHours) "Réduire" else "Voir toute la journée", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { showAllHours = !showAllHours }.padding(8.dp),
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
                                     }
                                 }
                             }
