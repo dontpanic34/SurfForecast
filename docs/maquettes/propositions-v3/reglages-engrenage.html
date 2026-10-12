@@ -29,6 +29,8 @@ input[type=range]{width:100%;accent-color:#5aa6cc}
 svg{display:block;width:100%}
 .big{font-size:26px;font-weight:800}
 .guide{color:var(--mut);font-size:12px}
+.sec{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--link)}
+details{background:var(--tile);border-radius:10px;padding:8px 10px}summary{cursor:pointer;font-weight:700;font-size:13px;list-style:none;display:flex;justify-content:space-between}summary::after{content:'+';color:var(--link)}details[open] summary::after{content:'–'}details p{margin-top:6px;color:#b8c7ce;font-size:12.5px}
 </style>
 <main>
 <h1>Réglages par encart</h1>
@@ -41,6 +43,13 @@ var DEF=JSON.parse(JSON.stringify(S));
 var open=null;
 var TITLES={week:'Prévisions de la semaine',day:'Le déroulé de la journée',swell:'La houle',wind:'Le vent',weather:'La météo'};
 var GUIDE={week:'Note du jour, trois créneaux, flèche du vent, graphique de houle. Touche un jour pour le détailler.',day:'Glisse sur le graphique pour changer d’heure. Flèches : le vent. Courbe bleue : la marée.',swell:'Taille et période de la houle, la secondaire dessous.',wind:'Le chiffre est le vent ressenti, rafales comprises.',weather:'Ciel, température ressentie, pluie, eau, UV.'};
+var HELP={
+week:[['Comment la note est calculée','La note (1 à 5 étoiles) compare houle, période, direction et vent à ce que le spot aime. Elle est la même pour tout le monde : ni ton niveau ni ta motivation ne la changent.'],['Les trois traits','Matin, midi, après-midi. Ils prennent la couleur de la condition à cette heure : vert propre, jaune moyen, rouge mauvais.'],['Le vent de la semaine','La flèche donne d’où il vient et sa taille la force. C’est la moyenne de deux modèles, voir « Modèles ».']],
+day:[['Motivation : Flemme, Normal, Motivé','Elle change seulement les couleurs et le libellé de l’heure (un peu plus exigeant ou plus indulgent). Elle ne change jamais les étoiles.'],['Comment le vent est calculé','Moyenne des modèles ECMWF et GFS. Le chiffre affiché est le vent ressenti : le vent moyen plus 35 % de l’écart avec les rafales. La couleur dit s’il gêne.'],['Modèles de prévision','Houle : modèle de vagues Open-Meteo. Vent : ECMWF + GFS. AROME HD (Météo-France) tourne en coulisses pour comparer.'],['La courbe bleue et le coef','La marée monte ou descend. Les triangles sont les pleines et basses mers, le coefficient dit la taille de la marée.']],
+swell:[['Taille et période','Hauteur de la houle principale en mètres et période en secondes. Plus la période est longue, plus la houle a de la puissance.'],['L’énergie en kJ','Elle combine hauteur et période : deux houles de même hauteur n’ont pas la même force.'],['Houle secondaire','Affichée dès 0,2 m et 7 s. Elle vient d’une autre direction et peut brouiller la houle principale.']],
+wind:[['Comment le vent est calculé','Moyenne ECMWF + GFS, direction en moyenne vectorielle. Le chiffre est le vent ressenti (rafales comprises).'],['Les couleurs','Jaune : propre. Orange : gênant. Rouge : fort ou onshore. Elles dépendent de la direction par rapport à la plage.']],
+weather:[['D’où vient la météo','Open-Meteo : ciel, température ressentie, pluie en mm, UV, nuages. Température de l’eau : modèle marin.'],['Température ressentie','Elle tient compte du vent : plus frais qu’au thermomètre quand il souffle.']]};
+function help(key){return '<div class="sec">Comprendre</div>'+HELP[key].map(function(h){return '<details><summary>'+h[0]+'</summary><p>'+h[1]+'</p></details>'}).join('')}
 function chips(key,field,list){return '<div class="chips">'+list.map(function(o){return '<button class="chip" aria-pressed="'+(S[key][field]==o[0])+'" data-k="'+key+'" data-f="'+field+'" data-v="'+o[0]+'">'+o[1]+'</button>'}).join('')+'</div>'}
 function range(key,field,min,max){return '<input type="range" min="'+min+'" max="'+max+'" value="'+S[key][field]+'" data-k="'+key+'" data-f="'+field+'" aria-label="'+field+'">'}
 function ctrl(label,html){return '<div><div class="lab">'+label+'</div>'+html+'</div>'}
@@ -65,7 +74,7 @@ function panel(key){var h='';
  if(key=='swell')h=ctrl('Hauteur de l’échelle',range(key,'scale',20,80))+ctrl('Houle secondaire',chips(key,'second',[[true,'Afficher'],[false,'Masquer']]));
  if(key=='wind')h=ctrl('Unité',chips(key,'unit',[['kmh','km/h'],['knots','nœuds'],['bft','Beaufort']]));
  if(key=='weather')h=ctrl('Température de l’eau',chips(key,'water',[[true,'Afficher'],[false,'Masquer']]))+ctrl('Lever et coucher',chips(key,'sun',[[true,'Afficher'],[false,'Masquer']]));
- return '<div class="panel" id="p-'+key+'">'+h+'<div class="live"><div class="t">Aperçu en direct</div>'+preview(key)+'</div><div class="row"><button class="more" data-more="'+key+'">En savoir plus</button><button class="more" data-reset="'+key+'">Remettre par défaut</button></div><div class="guide" id="g-'+key+'" hidden>'+GUIDE[key]+'</div></div>'}
+ return '<div class="panel" id="p-'+key+'"><div class="sec">Régler</div>'+h+'<div class="live"><div class="t">Aperçu en direct</div>'+preview(key)+'</div><div class="row"><button class="more" data-reset="'+key+'">Remettre par défaut</button></div>'+help(key)+'</div>'}
 function render(){var el=document.getElementById('cards');el.innerHTML=Object.keys(TITLES).map(function(k){var o=open==k;return '<div class="card" style="margin-bottom:12px"><div class="head"><b>'+TITLES[k]+'</b><button class="gear" aria-expanded="'+o+'" aria-label="Réglages : '+TITLES[k]+'" data-gear="'+k+'">⚙</button></div>'+(o?panel(k):'')+'</div>'}).join('')}
 document.addEventListener('click',function(e){var t=e.target;if(t.dataset.gear){open=open==t.dataset.gear?null:t.dataset.gear;render();return}
  if(t.dataset.f){var v=t.dataset.v;if(v==='true')v=true;else if(v==='false')v=false;else if(!isNaN(v))v=+v;S[t.dataset.k][t.dataset.f]=v;render();return}
