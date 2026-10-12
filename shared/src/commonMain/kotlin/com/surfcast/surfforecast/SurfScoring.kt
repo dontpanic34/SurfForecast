@@ -120,6 +120,10 @@ data class SurfProfile(
             // Confirmé : autonome, surfe seul, préfère un peu de puissance et de la vague propre (max 2,0 m à 11 s).
             "confirmed" -> SurfProfile(100.0, 570.0, 950.0, minPeriod = 7.0,
                 windTolerance = 25.0, onshoreMax = 12.0, gustThreshold = 25.0, chopThreshold = 0.2)
+            // Avancé : entre Confirmé et Expert. Cherche la taille où il peut faire de vraies manœuvres et l'endroit critique
+            // de la vague ; encore un plafond (environ 2,4 m à 12 s), à valider avec le propriétaire.
+            "advanced" -> SurfProfile(100.0, 900.0, 1700.0, minPeriod = 7.5,
+                windTolerance = 22.0, onshoreMax = 11.0, gustThreshold = 22.0, chopThreshold = 0.17)
             // Expert : plein potentiel de la vague, pas de limite de taille, mais le plus exigeant sur la qualité.
             "expert" -> SurfProfile(100.0, 1300.0, NO_CAP, minPeriod = 8.0,
                 windTolerance = 20.0, onshoreMax = 10.0, gustThreshold = 20.0, chopThreshold = 0.15)
@@ -145,7 +149,29 @@ data class SurfProfile(
                 }
                 return preset("intermediate")
             }
+            // « confirmed+ » : un peu de la marche d'au-dessus (un seul point retient le surfeur).
+            if (level.endsWith(PLUS_SUFFIX)) {
+                val index = LEVEL_KEYS.indexOf(level.removeSuffix(PLUS_SUFFIX))
+                if (index in 0 until LEVEL_KEYS.lastIndex) return blend(preset(LEVEL_KEYS[index]), preset(LEVEL_KEYS[index + 1]), PLUS_BLEND)
+            }
             return preset(level)
+        }
+
+        /** Part de la marche d'au-dessus que donne un « + ». */
+        const val PLUS_BLEND = 0.35
+        const val PLUS_SUFFIX = "+"
+
+        /** Mélange deux profils : [t] = 0 donne [a], 1 donne [b]. Un plafond absent chez [b] devient 1,8 fois celui de [a]. */
+        internal fun blend(a: SurfProfile, b: SurfProfile, t: Double): SurfProfile {
+            fun mix(x: Double, y: Double) = x + (y - x) * t
+            val cap = if (a.cap >= NO_CAP) NO_CAP else if (b.cap >= NO_CAP) mix(a.cap, a.cap * 1.8) else mix(a.cap, b.cap)
+            return a.copy(
+                idealMin = mix(a.idealMin, b.idealMin), idealMax = mix(a.idealMax, b.idealMax), cap = cap,
+                rampStartFit = mix(a.rampStartFit, b.rampStartFit), rampEnd = mix(a.rampEnd, b.rampEnd),
+                minPeriod = mix(a.minPeriod, b.minPeriod), windTolerance = mix(a.windTolerance, b.windTolerance),
+                onshoreMax = mix(a.onshoreMax, b.onshoreMax), gustThreshold = mix(a.gustThreshold, b.gustThreshold),
+                chopThreshold = mix(a.chopThreshold, b.chopThreshold), directionMatters = mix(a.directionMatters, b.directionMatters)
+            )
         }
     }
 }
