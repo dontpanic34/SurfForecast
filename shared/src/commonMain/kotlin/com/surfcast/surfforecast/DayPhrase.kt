@@ -92,10 +92,10 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
         else -> "Journée propre"
     }
 
-    val swell = if (kotlin.math.abs(amH - pmH) >= 0.2) "${meters(amH)} → ${meters(pmH)}" else meters(avgH)
+    val swell = if (kotlin.math.abs(amH - pmH) >= 0.2) "${meters(amH)} à ${meters(pmH)}" else meters(avgH)
     val amWind = windHalfText(am, beachFacing)
     val pmWind = windHalfText(pm, beachFacing)
-    val wind = if (amWind == pmWind) amWind else "$amWind → $pmWind"
+    val wind = if (amWind == pmWind) amWind else "$amWind à $pmWind"
     return DayPhrase(title, "$swell · $wind")
 }
 

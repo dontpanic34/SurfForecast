@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Résumé de la semaine : « à » à la place des flèches** (état : branche, pas en ligne, attend le go) : « 0,7 m à 1,2 m · side-on modéré à onshore soutenu » (houle puis vent, matin à après-midi).
 - **Maquette** `reglages-meteo-heures.html` : réglages des encarts Météo (eau, lever/coucher, UV et nuages, pluie en mm, température ressentie ou réelle) et Heure par heure (3 / 5 / 7 / toute la journée, colonnes, suit l'heure choisie, repli). En attente de choix, pas de code. Étoiles : nouveau calcul publié (1.0.315).
 - **Étoiles : le vent pèse plus** (état : en ligne dès publication sur `web`) : (A) le jour = 60 % meilleur créneau + 40 % moyenne de toutes les heures de jour ; (B) courbe onshore plus sévère (10 km/h : 0,65 ; 14 km/h : 0,45 ; 20 km/h : 0,25) ; (nouveau) un offshore fort freine une petite houle (à partir de 8 km/h, sous 1,2 m ; 20 km/h sur 0,4 m : presque plat). Tests ajustés (réponses automatiques du profil, phrase « Onshore fort, ça sectionne », note d'un vent de mer 30 km/h passée de 18 à 12).
 - **Maquette** `etoiles-vent.html` : étoiles et vent (mélange A + B : le jour = 60 % meilleur créneau + 40 % moyenne de la journée ; onshore plus pénalisant ; un offshore fort aplatit une petite houle). Simulateur et semaine type avant / après. En attente de choix, pas de code ni de publication.

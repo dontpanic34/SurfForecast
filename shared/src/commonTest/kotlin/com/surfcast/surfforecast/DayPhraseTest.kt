@@ -25,7 +25,7 @@ class DayPhraseTest {
     @Test
     fun lineSaysSwellThenWindMorningThenAfternoon() {
         val p = day(hour(9, 0.7, 10, "SO"), hour(11, 0.7, 10, "SO"), hour(14, 1.3, 20, "O"), hour(17, 1.3, 20, "O"))
-        assertEquals("0,7 m → 1,3 m · side-on modéré → onshore soutenu", p.line)
+        assertEquals("0,7 m à 1,3 m · side-on modéré à onshore soutenu", p.line)
     }
 
     @Test
