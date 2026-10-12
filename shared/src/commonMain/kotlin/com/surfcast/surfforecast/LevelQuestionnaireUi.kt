@@ -38,8 +38,8 @@ private val STEPS: List<Step> = listOf(
     Step("tol3", SEC_PREFS, "Ça souffle onshore, ou c'est dur physiquement…", "",
         listOf("Je me débrouille, il y a toujours des bouts à prendre", "Je tente un peu, puis je vois", "Je préfère rester au sec")),
     Step("what", SEC_LEVEL, "Tu surfes…", "", listOf("La mousse", "La réforme", "Le large")),
-    Step("barre", SEC_LEVEL, "Jusqu'à quelle taille tu passes la barre ?", options = listOf(
-        "Je ne passe pas encore", "Genoux (environ 0,5 m)", "Taille (environ 0,8 m)", "Poitrine (environ 1,2 m)", "Tête (environ 1,5 m)", "Au-dessus de la tête (environ 2 m)")),
+    Step("barre", SEC_LEVEL, "Jusqu'à quelle hauteur de vague tu passes la barre ?", options = listOf(
+        "Je ne passe pas encore la barre", "Vagues jusqu'aux genoux (environ 0,5 m)", "Vagues jusqu'à la taille (environ 0,8 m)", "Vagues jusqu'à la poitrine (environ 1,2 m)", "Vagues jusqu'à la tête (environ 1,5 m)", "Vagues plus hautes que la tête (environ 2 m)")),
     Step("tk", SEC_LEVEL, "Définis ton take-off", options = listOf(
         "En un seul temps, tout le temps", "En un seul temps, souvent", "Parfois en un seul temps, ou en plusieurs temps")),
     Step("want", SEC_LEVEL, "Tu veux passer au large ?", options = listOf("Oui, bientôt", "Pas pour l'instant")),

@@ -198,7 +198,7 @@ var STEPS=[
  {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',o:['J\'y vais, c\'est l\'occasion de progresser','J\'hésite : j\'y vais si c\'est accessible et que je suis en forme','Je reste au sec']},
  {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
  {id:'what',q:'Tu surfes…',o:['La mousse','La réforme','Le large']},
- {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===2}},
+ {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore la barre','Vagues jusqu\'aux genoux (environ 0,5 m)','Vagues jusqu\'à la taille (environ 0,8 m)','Vagues jusqu\'à la poitrine (environ 1,2 m)','Vagues jusqu\'à la tête (environ 1,5 m)','Vagues plus hautes que la tête (environ 2 m)'],when:function(a){return a.what===2}},
  {id:'tk',q:'Définis ton take-off',o:TK},
  {id:'want',q:'Tu veux passer au large ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what<2}},
  {id:'peak',q:'Où tu te places dans l\'eau ?',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===2}},
