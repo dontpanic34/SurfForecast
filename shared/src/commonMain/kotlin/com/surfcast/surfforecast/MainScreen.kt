@@ -558,7 +558,6 @@ fun MainScreen(
                                         spotName = state.spotName,
                                         favorites = viewModel.favoriteSpots.take(3),
                                         activeIndex = viewModel.activeFavoriteIndex,
-                                        updatedText = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime}" else "",
                                         showHint = !viewModel.spotHintDone,
                                         onHintShown = { viewModel.markSpotHintDone() },
                                         onSelectIndex = { viewModel.selectFavoriteIndex(it) },
@@ -758,6 +757,8 @@ fun MainScreen(
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
+                                        updatedText = state.lastUpdatedTime,
+                                        onRefresh = { viewModel.refreshActiveSpot() },
                                         onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")
                                             boardOfTheDay(closest, viewModel.quiverBoards.collectAsState().value, idealSwellDirection)?.model else null,

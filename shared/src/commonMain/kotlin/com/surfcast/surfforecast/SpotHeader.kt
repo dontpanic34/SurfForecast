@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -45,7 +46,7 @@ fun SpotHeader(
     spotName: String,
     favorites: List<String?>,
     activeIndex: Int,
-    updatedText: String,
+    updatedText: String = "",
     showHint: Boolean,
     onHintShown: () -> Unit,
     onSelectIndex: (Int) -> Unit,
@@ -85,20 +86,18 @@ fun SpotHeader(
             modifier = Modifier.fillMaxWidth().offset { IntOffset(with(density) { nudge.value.dp.roundToPx() }, 0) },
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("‹", fontSize = 26.sp, color = colors.primary, modifier = Modifier.clip(CircleShape).clickable { step(-1) }.padding(horizontal = 10.dp))
+            val multi = filled.size > 1
+            val soft = colors.onSurface.copy(alpha = if (multi) 0.4f else 0f)
+            Spacer(Modifier.width(48.dp))
+            Text("‹", fontSize = 26.sp, color = soft, modifier = Modifier.clip(CircleShape).clickable(enabled = multi) { step(-1) }.padding(horizontal = 10.dp))
             Row(
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).clickable(onClick = onOpenSpots).padding(horizontal = 4.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
             ) {
                 Text(spotName, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = colors.onBackground, maxLines = 1)
-                Text(" ▾", fontSize = 16.sp, color = colors.onSurface.copy(alpha = 0.6f))
             }
-            Text(
-                if (isFavorite) "★" else "☆", fontSize = 24.sp, color = if (isFavorite) Color(0xFFFFC107) else colors.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.clip(CircleShape).clickable(onClick = onToggleFavorite).padding(horizontal = 6.dp)
-            )
-            Text("›", fontSize = 26.sp, color = colors.primary, modifier = Modifier.clip(CircleShape).clickable { step(+1) }.padding(horizontal = 10.dp))
-            Box(modifier = Modifier.padding(start = 4.dp)) { themeToggle() }
+            Text("›", fontSize = 26.sp, color = soft, modifier = Modifier.clip(CircleShape).clickable(enabled = multi) { step(+1) }.padding(horizontal = 10.dp))
+            Box(modifier = Modifier.width(48.dp), contentAlignment = Alignment.Center) { themeToggle() }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             filled.forEach { i ->
@@ -107,7 +106,6 @@ fun SpotHeader(
                         .background(if (i == activeIndex) colors.primary else colors.onSurface.copy(alpha = 0.25f))
                 )
             }
-            if (updatedText.isNotEmpty()) Text("   $updatedText", fontSize = 10.sp, color = colors.onSurface.copy(alpha = 0.5f), maxLines = 1)
         }
     }
 }

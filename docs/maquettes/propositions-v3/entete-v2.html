@@ -1,0 +1,50 @@
+<title>En-tête du spot</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;600&display=swap">
+<style>
+/* Mise en page : l'en-tête actuel, puis trois propositions sur fond d'écran sombre, puis où mettre « Mis à jour ». */
+:root{--bg:#eef3f6;--fg:#10222e;--mut:#5a6d7a;--card:#fff;--ph:#0c1a24;--phfg:#e6eef3;--phmut:#8fa4b2;--tile:#16303f;--acc:#5fb4e6;--star:#ffc107;--line:#d3dde4;--d:'Bricolage Grotesque',system-ui,sans-serif;--b:'Instrument Sans',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--line:#243846;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--line:#243846;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--b);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:24px}
+main{max-width:900px;margin:0 auto}h1,h2,h3{font-family:var(--d);margin:0}h1{font-size:1.8rem;font-weight:800}h2{font-size:1.2rem;margin-top:2rem}h3{font-size:1rem;margin:0 0 .4rem}
+p{margin:.4rem 0;max-width:66ch}.mut{color:var(--mut)}.sm{font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:.8rem}
+.ph{background:var(--ph);color:var(--phfg);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.name{font-family:var(--d);font-weight:800;font-size:22px}.name small{font-size:11px;color:var(--phmut);font-weight:400}
+.nav{color:var(--phmut);font-size:20px}.navb{color:var(--acc);font-size:30px;line-height:1}
+.starb{color:var(--star);font-size:30px;line-height:1}.stars{color:var(--phmut);font-size:17px;line-height:1}
+.dots{display:flex;gap:5px;justify-content:center}.dots i{width:6px;height:6px;border-radius:50%;background:#33495a}.dots i.on{background:var(--acc)}
+.up{font-size:11px;color:var(--phmut)}.ic{color:var(--phmut);font-size:18px}
+.card{background:var(--tile);border-radius:12px;padding:10px;font-size:12px;color:var(--phmut)}
+.sp{display:flex;justify-content:space-between}
+</style>
+<main>
+<h1>En-tête du spot : plus léger</h1>
+<p class="mut">Même contenu, moins de couleur. « Mis à jour » sort de l'en-tête (voir plus bas), le thème devient une simple icône. Les chevrons ‹ › n'apparaissent que s'il y a un autre favori de ce côté.</p>
+<div class="grid">
+ <div><h3>Aujourd'hui</h3><div class="ph">
+  <div class="row"><span class="navb">‹</span><span class="name">Montalivet ▾</span><span class="starb">★</span><span class="navb">›</span><span class="ic">☀<br><small class="up">Thème</small></span></div>
+  <div class="dots"><i class="on"></i><i></i><i></i></div><div class="up" style="text-align:center">Mis à jour à 17:20</div></div>
+  <p class="sm mut">Trois éléments colorés serrés en haut à droite, deux lignes.</p></div>
+ <div><h3>A · Une seule ligne</h3><div class="ph">
+  <div class="row"><span class="nav">‹</span><span class="name">Montalivet <span style="color:var(--phmut);font-size:14px">▾</span></span><span class="stars">☆</span><span class="nav">›</span><span class="ic">☀</span></div>
+  <div class="dots"><i class="on"></i><i></i><i></i></div></div>
+  <p class="sm mut">Chevrons gris, étoile en contour (pleine et jaune seulement quand le spot est favori), thème en icône. Le point actif dit où on est.</p></div>
+ <div><h3>B · Le nom au centre, sobre</h3><div class="ph">
+  <div class="row"><span class="ic" style="opacity:.0">☀</span><span class="name">Montalivet ▾ <span class="stars" style="color:var(--star)">★</span></span><span class="ic">☀</span></div>
+  <div class="dots"><i class="on"></i><i></i><i></i></div></div>
+  <p class="sm mut">Plus de chevrons du tout : on balaie l'en-tête (le petit rappel avec les points reste). L'étoile suit le nom. La plus légère, mais le balayage est invisible.</p></div>
+ <div><h3>C · Nom à gauche</h3><div class="ph">
+  <div class="row"><span class="name">Montalivet <span style="color:var(--phmut);font-size:14px">▾</span> <span class="stars" style="color:var(--star)">★</span></span><span class="row" style="gap:10px"><span class="dots"><i class="on"></i><i></i><i></i></span><span class="ic">☀</span></span></div></div>
+  <p class="sm mut">Style barre d'application : nom à gauche, points et thème à droite. Moins haute (une ligne mince), pas de chevrons, on balaie.</p></div>
+</div>
+<h2>Où mettre « Mis à jour à 17:20 »</h2>
+<div class="grid">
+ <div><h3>1 · Dans « Actuellement »</h3><div class="ph"><div class="card"><div class="sp"><span>Actuellement · 17 h</span><span>mis à jour 17:20 ↻</span></div></div></div><p class="sm mut">Là où l'heure « maintenant » est déjà affichée. Un ↻ à toucher pour rafraîchir.</p></div>
+ <div><h3>2 · Dans Réglages</h3><div class="ph"><div class="card">Réglages · Appli et journal<br>Dernière mise à jour : 17:20 · Rafraîchir</div></div><p class="sm mut">Disparaît de l'écran principal. On tire l'écran vers le bas pour rafraîchir.</p></div>
+ <div><h3>3 · Seulement si c'est vieux</h3><div class="ph"><div class="card" style="color:#ffb74d">Données de 14:05 · touche pour rafraîchir</div></div><p class="sm mut">Rien à l'écran quand c'est frais. Une petite bannière apparaît au-delà de 30 min. Mon avis : la meilleure.</p></div>
+</div>
+<h2>Ma recommandation</h2>
+<p><b>A</b> pour l'en-tête (le plus lisible au premier coup d'œil, chevrons discrets) et <b>3</b> pour « Mis à jour ».</p>
+</main>
