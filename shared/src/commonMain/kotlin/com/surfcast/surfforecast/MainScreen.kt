@@ -52,6 +52,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
     viewModel: SurfController,
@@ -539,36 +540,40 @@ fun MainScreen(
                                     .padding(horizontal = 6.dp),
                                 contentPadding = PaddingValues(bottom = 16.dp)
                             ) {
+                                stickyHeader {
+                                    // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
+                                    val darkTop = isDarkSurfaceTheme()
+                                    SpotHeader(
+                                        spotName = state.spotName,
+                                        favorites = viewModel.favoriteSpots.take(3),
+                                        activeIndex = viewModel.activeFavoriteIndex,
+                                        updatedText = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime}" else "",
+                                        showHint = !viewModel.spotHintDone,
+                                        onHintShown = { viewModel.markSpotHintDone() },
+                                        onSelectIndex = { viewModel.selectFavoriteIndex(it) },
+                                        onOpenSpots = { showSpotDialog = true },
+                                        onToggleFavorite = {
+                                            val slot = viewModel.favoriteSpots.indexOf(state.spotName)
+                                            if (slot >= 0) viewModel.removeFavoriteSlot(slot)
+                                            else {
+                                                val free = viewModel.favoriteSpots.take(3).indexOfFirst { it == null }
+                                                if (free >= 0) viewModel.assignSpotToFavoriteSlot(state.spotName, free) else showSpotDialog = true
+                                            }
+                                        },
+                                        themeToggle = {
+                                            Column(
+                                                modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                                                    .clickable { viewModel.changeThemeMode(if (darkTop) "light" else "dark") }.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                ThemeToggleIcon(isDarkActive = !darkTop, backgroundColor = MaterialTheme.colorScheme.background, iconColor = onSurfaceColor, modifier = Modifier.size(22.dp))
+                                                Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.75f), maxLines = 1)
+                                            }
+                                        }
+                                    )
+                                }
                                 item {
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        FavoritesHeaderRow(
-                                            favoriteSpots = viewModel.favoriteSpots.take(3),
-                                            activeFavoriteIndex = viewModel.activeFavoriteIndex,
-                                            onSelectFavorite = { index -> viewModel.selectFavoriteIndex(index) },
-                                            onOpenSpotDialog = { showSpotDialog = true },
-                                            surfaceColor = surfaceColor,
-                                            onSurfaceColor = onSurfaceColor,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
-                                        val darkTop = isDarkSurfaceTheme()
-                                        Column(
-                                            modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(10.dp))
-                                                .clickable { viewModel.changeThemeMode(if (darkTop) "light" else "dark") }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            ThemeToggleIcon(isDarkActive = !darkTop, backgroundColor = MaterialTheme.colorScheme.background, iconColor = onSurfaceColor, modifier = Modifier.size(22.dp))
-                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.75f), maxLines = 1)
-                                        }
-                                    }
 
                                     if (showSessionLogDialog) {
                                         val allSessions by viewModel.allSessions.collectAsState()
@@ -669,16 +674,6 @@ fun MainScreen(
                                             fontSize = 12.sp,
                                             color = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-
-                                    run {
-                                        val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime}" else ""
-                                        Text(
-                                            text = updated,
-                                            fontSize = 10.5.sp,
-                                            color = onSurfaceColor.copy(alpha = 0.5f),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                         )
                                     }
 

@@ -208,11 +208,11 @@ private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color,
                     Text("${it.roundToInt()}°", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
                 }
             }
-            if (sun != null) Text("🌅 ${hm(sun.sunrise)}   🌇 ${hm(sun.sunset)}", fontSize = 12.5.sp, color = onSurface, maxLines = 1)
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text("☀️ UV ${h.uvIndex.roundToInt()}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
             Text("☁️ ${h.cloudCover} %", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+            if (sun != null) Text("🌅 ${hm(sun.sunrise)} · 🌇 ${hm(sun.sunset)}", fontSize = 12.sp, color = onSurface.copy(alpha = 0.85f), maxLines = 1)
         }
     }
     if (onOpenDetail != null) {
