@@ -141,3 +141,6 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 
 ## État de publication (16 octobre 2026)
 - Profil (questionnaire, XP, Avancé, niveaux +) et Matériel simplifié : **en ligne** sur `web` (site 1.0.280) et sur `unified` (construction verte, APK reconstruit avec la version suivante du site).
+
+## 17 octobre 2026 : maquettes v2 (docs/maquettes/propositions-v2/)
+- Choix du propriétaire appliqués (voir DECISIONS.md) : accueil avec encarts réductibles ; réglages en une seule page sans défilement (3 versions) ; semaine avec trois segments matin / midi / après-midi (3 versions) ; « Maintenant » en tuiles réduites sans titres ; houle principale et secondaire (OSO, degrés, kJ) ; échelle des niveaux ; emplacements possibles pour la planche du jour et l'interrupteur de tolérance (à discuter). Rien n'est codé.
