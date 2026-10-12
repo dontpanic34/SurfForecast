@@ -54,10 +54,25 @@ data class LevelResult(
     /** Ce qui retient au niveau actuel, en français, pour l'encart « Pour passer à … ». */
     val holdBack: List<String>
 ) {
+    /** Ce qu'il faut travailler pour passer à la tranche d'après (une phrase différente pour chaque tranche), ou null au sommet. */
+    val advice: String? get() = NEXT_STEP_ADVICE.getOrNull(bandIndex)
+
     /** Clé du niveau pour le moteur de notation : « beginner » … « expert », suivie de « + » si besoin. */
     val levelKey: String get() = LEVEL_KEYS[level] + if (plus && level < 4) "+" else ""
     val nextName: String? get() = LEVEL_BANDS.getOrNull(bandIndex + 1)?.name
 }
+
+/** Pour chaque tranche (0 = Débutant … 7 = Avancé +) : ce qui fait passer à la suivante. */
+internal val NEXT_STEP_ADVICE = listOf(
+    "Rends ton take-off sûr, en un seul temps, dans la mousse.",
+    "Passe de la mousse à la vague : va au large les petits jours, avec du monde autour pour te rassurer.",
+    "Rends ton take-off plus régulier sur les petites vagues.",
+    "Apprends à te placer : repère le pic tout seul et passe la barre sur des vagues jusqu'à la poitrine.",
+    "Enchaîne : take-off en un seul temps presque à chaque vague, et suis la vague le plus longtemps possible.",
+    "Cherche l'endroit critique de la vague, des manœuvres plus engagées, et passe la barre jusqu'à la tête.",
+    "Travaille tes manœuvres : le mouvement est là, vise une réception propre.",
+    "Replaque tes manœuvres à chaque fois, avec puissance et style, et passe la barre jusqu'à 2 m."
+)
 
 internal val LEVEL_KEYS = listOf("beginner", "intermediate", "confirmed", "advanced", "expert")
 internal val LEVEL_NAMES = listOf("Débutant", "Intermédiaire", "Confirmé", "Avancé", "Expert")
