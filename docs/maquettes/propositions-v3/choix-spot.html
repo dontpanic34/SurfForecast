@@ -1,0 +1,52 @@
+<title>Choix du spot</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;600&display=swap">
+<style>
+/* Mise en page : l'écran actuel, ses défauts, puis trois propositions côte à côte. */
+:root{--bg:#eef3f6;--fg:#10222e;--mut:#5a6d7a;--card:#fff;--tile:#e3ebf1;--line:#d3dde4;--acc:#0f5f8c;--star:#ffc107;--d:'Bricolage Grotesque',system-ui,sans-serif;--b:'Instrument Sans',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--tile:#1f3441;--line:#243846;--acc:#5fb4e6}}
+:root[data-theme="dark"]{--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--tile:#1f3441;--line:#243846;--acc:#5fb4e6;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--b);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:24px}
+main{max-width:900px;margin:0 auto}h1,h2,h3{font-family:var(--d);margin:0}h1{font-size:1.8rem;font-weight:800}h2{font-size:1.2rem;margin-top:2rem}h3{font-size:1rem;margin:.2rem 0 .4rem}
+p{margin:.4rem 0;max-width:66ch}.mut{color:var(--mut)}.sm{font-size:12.5px}
+.note{border-left:3px solid var(--acc);padding:.3rem .9rem;margin:.8rem 0;background:var(--card)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:.8rem}
+.ph{background:var(--card);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.chip{display:inline-block;border-radius:99px;padding:3px 11px;font-weight:700;font-size:12.5px;background:var(--tile)}.chip.on{background:var(--acc);color:#fff}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sp{justify-content:space-between}
+.fav{background:var(--tile);border-radius:10px;padding:6px 10px;flex:1;min-width:70px;font-weight:700;font-size:13px}
+.item{display:flex;justify-content:space-between;align-items:center;background:var(--tile);border-radius:10px;padding:9px 11px;font-weight:600}
+.star{color:var(--star)}.dim{color:var(--mut)}.search{border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--mut)}
+.hd{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-top:4px}
+</style>
+<main>
+<h1>Choix du spot : à remettre au propre</h1>
+<div class="note"><b>Ce qui est brouillon aujourd'hui.</b> (1) Cinq rangées de filtres avant de voir un seul spot : pays, puis région, puis la liste. (2) Les étoiles sont sur chaque ligne sans dire qu'on n'a que <b>trois</b> favoris : on touche une étoile, il se passe quelque chose d'incompréhensible quand les trois places sont prises. (3) Tes favoris actuels ne se distinguent que par une étoile orange dans la liste. (4) Le pictogramme caméra est répété sur toutes les lignes, même sans caméra.</div>
+<div class="grid">
+ <div><h3>A · Les favoris d'abord</h3><div class="ph">
+  <div class="hd">Mes favoris · 3 sur 3</div>
+  <div class="row"><span class="fav"><span class="star">★</span> Montalivet</span><span class="fav"><span class="star">★</span> Lacanau</span><span class="fav"><span class="star">★</span> Capbreton</span></div>
+  <div class="search">🔍 Rechercher un spot…</div>
+  <div class="hd">Gironde</div>
+  <div class="item"><span>Le Verdon</span><span class="dim">☆</span></div>
+  <div class="item"><span>Soulac</span><span class="dim">☆</span></div>
+  <div class="item"><span>Montalivet 📹</span><span class="star">★</span></div>
+  <p class="sm mut" style="margin:0">Tes trois favoris en haut, tout de suite. La liste est groupée par région, avec le pays en un seul sélecteur. Quand les trois places sont prises, toucher ☆ propose « remplacer Lacanau ? ».</p></div></div>
+ <div><h3>B · La recherche d'abord</h3><div class="ph">
+  <div class="search">🔍 Rechercher un spot…</div>
+  <div class="row"><span class="chip on">France</span><span class="chip">Espagne</span><span class="chip">Portugal</span></div>
+  <div class="item"><span>Montalivet 📹</span><span class="star">★</span></div>
+  <div class="item"><span>Lacanau 📹</span><span class="star">★</span></div>
+  <div class="item"><span>Capbreton 📹</span><span class="star">★</span></div>
+  <div class="item"><span>Le Verdon</span><span class="dim">☆</span></div>
+  <p class="sm mut" style="margin:0">Une barre de recherche en haut (c'est ce que 9 personnes sur 10 utilisent), le pays en trois pastilles, une liste unique : les favoris d'abord, puis le reste dans l'ordre. Plus de filtre de région : la recherche suffit.</p></div></div>
+ <div><h3>C · Par région, en défilant</h3><div class="ph">
+  <div class="search">🔍 Rechercher un spot…</div>
+  <div class="row" style="flex-wrap:nowrap;overflow:auto"><span class="chip on">Gironde</span><span class="chip">Landes</span><span class="chip">Pays Basque</span><span class="chip">Vendée</span><span class="chip">Bretagne</span></div>
+  <div class="item"><span>Montalivet 📹</span><span class="star">★</span></div>
+  <div class="item"><span>Le Verdon</span><span class="dim">☆</span></div>
+  <div class="item"><span>Soulac</span><span class="dim">☆</span></div>
+  <p class="sm mut" style="margin:0">On garde les régions mais sur une seule ligne qui défile, et le pays disparaît (on voit toutes les régions de tous les pays dans la même ligne). Le moins de changement, mais la ligne est longue.</p></div></div>
+</div>
+<h2>Ma recommandation</h2>
+<p><b>A.</b> Les favoris sont ce qu'on utilise tous les jours : ils méritent d'être en haut, avec leur compteur « 3 sur 3 », ce qui règle d'un coup l'incompréhension de l'étoile. La caméra n'apparaît que sur les spots qui en ont une. Si tu veux plus simple, B.</p>
+</main>

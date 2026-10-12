@@ -196,6 +196,15 @@ class SurfController(
         SkyGraphSettings.loadTide(prefs.getInt("graph_tide_dp", SkyGraphSettings.DEFAULT_TIDE))
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
     }
+    // Mouvement d'accroche de l'en-tête des spots : joué une seule fois.
+    var spotHintDone by mutableStateOf(prefs.getBoolean("spot_hint_done", false))
+        private set
+
+    fun markSpotHintDone() {
+        spotHintDone = true
+        prefs.putBoolean("spot_hint_done", true)
+    }
+
     // Anciens réglages qui ne servent plus à rien : on les efface des préférences de l'appareil.
     @Suppress("unused")
     private val oldPrefsCleanup = run {
