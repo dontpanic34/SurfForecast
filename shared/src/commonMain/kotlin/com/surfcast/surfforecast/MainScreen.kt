@@ -394,6 +394,39 @@ fun MainScreen(
                                         }
                                     }
 
+                                    // Journal : le lendemain d'une bonne journée prévue, on demande « Tu as surfé ? ».
+                                    run {
+                                        val yesterday = today.minus(1, DateTimeUnit.DAY)
+                                        val sessions by viewModel.allSessions.collectAsState()
+                                        val alreadyLogged = sessions.any { epochMillisToLocalDateTime(it.session.startTime).date == yesterday }
+                                        val past = remember(state.spotName, yesterday) { viewModel.pastConditions(state.spotName, yesterday) }
+                                        val bestYesterday = past?.first?.takeIf { it.isNotEmpty() }?.let { hrs ->
+                                            hrs.maxOf { calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel).let { r -> if (r.tooBig) -1 else r.score } }
+                                        }
+                                        if (!alreadyLogged && viewModel.surfedAskDismissed != yesterday.toString() && bestYesterday != null && bestYesterday >= 40) {
+                                            val top = past!!.first.maxByOrNull { it.waveHeight }!!
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp)
+                                                    .clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text("Hier, ${state.spotName} · ${formatDecimal(top.waveHeight, 1).replace('.', ',')} m", fontSize = 12.sp, color = onSurfaceColor.copy(alpha = 0.65f))
+                                                Text("Tu as surfé ?", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurfaceColor)
+                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Text(
+                                                        "Noter ma session", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary,
+                                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary)
+                                                            .clickable { viewModel.dismissSurfedAsk(yesterday); showSessionLogEntry = true }.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                    )
+                                                    Text(
+                                                        "Non", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable { viewModel.dismissSurfedAsk(yesterday) }.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     // Journal de session : bandeau "Pattern repere" si un creneau a venir
                                     // matche une session passee bien notee.
                                     if (bestPatternMatch != null) {
@@ -413,9 +446,9 @@ fun MainScreen(
                                             }
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = "Pattern repéré $matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour}h : " +
-                                                    "match ${bestPatternMatch.score}% avec ta session du $refDateFormatted à " +
-                                                    "${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model})",
+                                                text = "$matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour} h ressemble à ta session du $refDateFormatted " +
+                                                    "à ${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model}), " +
+                                                    "ressemblance ${bestPatternMatch.score} %",
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = onSurfaceColor.copy(alpha = 0.75f),
@@ -708,6 +741,7 @@ fun MainScreen(
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
+                                        onAddSession = { showSessionLogEntry = true },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")
                                             boardOfTheDay(closest, viewModel.quiverBoards.collectAsState().value, idealSwellDirection)?.model else null,
                                         rating = calculateSlotRating(
@@ -741,26 +775,16 @@ fun MainScreen(
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(
-                        "settings", "⭐ Des prévisions 100 % sur-mesure",
-                        "Renseigner ton profil est LE réglage à faire en premier.\n" +
-                            "• Sans profil : les notes sont celles d'un surfeur moyen, et un message t'invite à remplir ton profil.\n" +
-                            "• Avec ton profil : les scores, les couleurs et la limite orange « trop gros » sont calculés pour toi.\n" +
-                            "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Avancé, Expert) ou ton réglage personnalisé (taille de vague, tolérance au vent, aux rafales, au clapot).\n" +
-                            "• Tes planches : ajoute-les avec leur volume, tu les retrouveras dans le journal.\n" +
-                            "Une minute suffit, et les scores, les étoiles et le « trop gros » deviennent les tiens.",
-                        actionLabel = "Renseigner mon profil maintenant",
+                        "weekCard", "★ Étoiles et couleurs",
+                        "Les étoiles sont les mêmes pour tous. Les segments de couleur suivent ton profil."
+                    ),
+                    CoachStep(
+                        "settings", "⚙️ Ton profil",
+                        "Il règle les couleurs et le « gros jour ». Une minute suffit.",
+                        actionLabel = "Renseigner mon profil",
                         onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
                     ),
-                    CoachStep("journal", "📓 Le journal de bord", "Note tes sessions en quelques secondes : l'appli enregistre toute seule la houle, le vent et la marée, et compare ce qu'elle avait prévu avec ton ressenti (tes étoiles). Au fil du temps, tu vois dans quelles conditions tu surfes le mieux."),
-                    CoachStep(
-                        "weekCard", "📅 Un écran à ta façon",
-                        "Touche un jour de la semaine pour le détailler. Chaque encart (semaine, déroulé, vagues, vent, météo…) s'adapte à toi :\n" +
-                            "• Masquer ou afficher : dans Paramètres › Affichage.\n" +
-                            "• Replier : touche la flèche de l'encart pour ne garder que son titre.\n" +
-                            "• Déplacer : fais glisser la poignée de l'encart pour changer l'ordre.\n" +
-                            "Garde seulement ce qui t'intéresse."
-                    ),
-                    CoachStep("settings", "⚙️ Les paramètres", "Mon profil et mon matériel, modèles de prévision, orientation de la plage, unités, affichage, sauvegarde de tes données. Tu peux aussi y rejouer cette visite (Aide).")
+                    CoachStep("journal", "📓 Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
                 ),
                 targets = coachTargets,
                 onFinish = { viewModel.dismissHomeTour() }

@@ -293,14 +293,49 @@ fun LevelLadder(result: LevelResult, modifier: Modifier = Modifier) {
                 }
             }
         }
-        val def = LEVEL_DEFINITIONS[(selected * 2).coerceAtMost(LEVEL_DEFINITIONS.lastIndex)]
+        val step = LADDER[selected]
         val acquired = selected <= mine
-        Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(LEVEL_NAMES[selected] + if (selected == mine) " · ton niveau" else if (acquired) " · acquis" else " · à venir",
                 fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-            Text(def.first, fontSize = if (acquired) 13.sp else 11.5.sp, fontWeight = if (acquired) FontWeight.Bold else FontWeight.Normal,
-                color = if (acquired) colors.onBackground else colors.onSurfaceVariant)
-            Text("Sur la vague, tu cherches : " + def.second, fontSize = if (acquired) 12.5.sp else 11.sp, color = colors.onSurfaceVariant)
+            // Ce qui définit la marche : en gras et plus grand quand c'est acquis, petit quand ça reste à venir.
+            step.have.forEach {
+                Text(it, fontSize = if (acquired) 13.5.sp else 11.5.sp, fontWeight = if (acquired) FontWeight.Bold else FontWeight.Normal,
+                    color = if (acquired) colors.onBackground else colors.onSurfaceVariant)
+            }
+            Text("À travailler : " + step.work.joinToString(" · "), fontSize = 11.5.sp, color = colors.onSurfaceVariant)
+            step.next?.let { Text("Pour la marche d'après : $it", fontSize = 11.5.sp, color = colors.onSurfaceVariant) }
         }
     }
 }
+
+/** Une marche de l'échelle : ce qui la définit, ce qu'on y travaille, ce qu'il faut pour la suivante (tiré des réponses du questionnaire). */
+private class LadderStep(val have: List<String>, val work: List<String>, val next: String?)
+
+private val LADDER = listOf(
+    LadderStep(
+        listOf("Tu surfes la mousse, ou tu restes sur les reformes.", "Tu te lèves, ou tu apprends à le faire."),
+        listOf("take-off en un seul temps", "passer la barre quand c'est petit"),
+        "Surfer l'épaule d'une vague sans mousse."
+    ),
+    LadderStep(
+        listOf("Tu passes la barre quand c'est accessible.", "Tu te lèves souvent sur la vague et tu surfes l'épaule."),
+        listOf("te placer seul vers le pic", "réussir chaque take-off"),
+        "Être autonome : localiser une vague même sans personne autour."
+    ),
+    LadderStep(
+        listOf("Tu es autonome et tu localises la vague seul.", "Ton take-off est solide, tu passes la barre sans souci."),
+        listOf("replacements pour rester en rythme", "surfer plus près de la partie qui pousse"),
+        "Faire des manœuvres de pro, même sans régularité."
+    ),
+    LadderStep(
+        listOf("Tu lis la vague : tes replacements sont naturels.", "Tes manœuvres simples sont maîtrisées."),
+        listOf("manœuvres de pro régulières", "chercher l'endroit critique de la vague"),
+        "Toutes les manœuvres acquises, avec puissance et style."
+    ),
+    LadderStep(
+        listOf("Toutes les manœuvres sont acquises.", "Le gros, le creux, le tube : pas de limite.", "Tu surfes aussi quand c'est pourri."),
+        listOf("perfectionner ce que tu maîtrises"),
+        null
+    )
+)
