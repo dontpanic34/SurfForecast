@@ -107,7 +107,11 @@ fun WeeklyForecastCard(
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Tolérance du jour (« Normal » / « Prudent » / « Motivé »), un tap la change.
+    toleranceLabel: String? = null,
+    onToleranceClick: () -> Unit = {},
+    boardOfDay: String? = null
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -122,7 +126,7 @@ fun WeeklyForecastCard(
                 }
             }
             if (phrase != null) {
-                DayPhraseHeader(phrase)
+                DayPhraseHeader(phrase, toleranceLabel, onToleranceClick, boardOfDay)
             } else {
                 CardControlsRow(
                     title = "Prévisions de la semaine",
@@ -194,7 +198,7 @@ fun WeeklyForecastCard(
                                     ) {
                                         val stars = dailyStars[index]
                                         if (stars == null) {
-                                            Text("Trop gros", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
+                                            Text("Gros jour", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
                                         } else {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                                 // Une seule étoile avec la note (3,5), puis le libellé en une ligne, puis une barre par créneau.
@@ -305,12 +309,23 @@ fun WeeklyForecastCard(
 
 /** Le jour choisi en trois lignes, à la place du titre fixe de la semaine. */
 @Composable
-private fun DayPhraseHeader(phrase: DayPhrase) {
+private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, onToleranceClick: () -> Unit = {}, boardOfDay: String? = null) {
     val onSurface = MaterialTheme.colorScheme.onSurface
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(phrase.title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurface, maxLines = 2)
+        Row(verticalAlignment = Alignment.Top) {
+            Text(phrase.title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurface, maxLines = 2, modifier = Modifier.weight(1f))
+            if (toleranceLabel != null) {
+                Text(
+                    toleranceLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp).clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                        .clickable(onClick = onToleranceClick).padding(horizontal = 10.dp, vertical = 3.dp)
+                )
+            }
+        }
         Text(phrase.swell, fontSize = 12.5.sp, color = onSurface, maxLines = 1)
         Text(phrase.wind, fontSize = 12.5.sp, color = onSurface, maxLines = 2)
+        if (boardOfDay != null) Text("Planche du jour : $boardOfDay", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
     }
 }
 

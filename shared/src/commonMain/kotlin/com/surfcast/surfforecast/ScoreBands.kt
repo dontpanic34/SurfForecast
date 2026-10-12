@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
  * orange (pas pour toi : challengeant, trop petit, trop gros), rouge (médiocre, trop de vent) et bordeaux (mauvais).
  */
 enum class ScoreBand(val label: String) {
-    TOO_BIG("Trop gros"),
+    TOO_BIG("Gros jour"),
     AVOID("Mauvais"),
     POOR("Médiocre"),
     FAIR("Correct"),
@@ -15,12 +15,16 @@ enum class ScoreBand(val label: String) {
     VERY_GOOD("Très bon"),
     EXCELLENT("Parfait"),
     CHALLENGING("Challengeant"),
-    TOO_SMALL("Trop petit"),
+    TOO_SMALL("Petit jour"),
     TOO_WINDY("Trop de vent")
 }
 
 /** [score] négatif ou [tooBig] = trop gros pour ce niveau. */
-fun scoreBand(score: Int, tooBig: Boolean = false): ScoreBand = when {
+fun scoreBand(rawScore: Int, tooBig: Boolean = false): ScoreBand = scoreBandShifted(rawScore, tooBig, ToleranceSettings.mode * 8)
+
+private fun scoreBandShifted(rawScore: Int, tooBig: Boolean, shift: Int): ScoreBand {
+    val score = if (rawScore < 0) rawScore else rawScore + shift
+    return when {
     tooBig || score < 0 -> ScoreBand.TOO_BIG
     score < 20 -> ScoreBand.AVOID
     score < 40 -> ScoreBand.POOR
@@ -28,6 +32,7 @@ fun scoreBand(score: Int, tooBig: Boolean = false): ScoreBand = when {
     score < 70 -> ScoreBand.GOOD
     score < 85 -> ScoreBand.VERY_GOOD
     else -> ScoreBand.EXCELLENT
+    }
 }
 
 /** Nuance d'une heure : le niveau de qualité, sauf quand la raison est la taille ou le vent. */

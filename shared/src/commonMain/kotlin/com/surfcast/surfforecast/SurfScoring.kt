@@ -1,6 +1,9 @@
 @file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
@@ -192,7 +195,27 @@ fun energyZone(energyKj: Double, profile: SurfProfile): Int = when {
 
 fun isCustomLevel(level: String) = level.startsWith(SurfProfile.CUSTOM_PREFIX)
 
-private fun profileFor(level: String) = SurfProfile.fromLevel(level)
+/**
+ * Tolérance du jour (Prudent -1, Normal 0, Motivé +1) : elle ne change que les couleurs. Vent et clapot tolérés ±15 %,
+ * seuil « challengeant » ±8 %, et ([scoreBand]) limites des nuances ±8 points.
+ */
+object ToleranceSettings {
+    var mode by mutableIntStateOf(0)
+    fun label(m: Int = mode) = when (m) { -1 -> "Prudent"; 1 -> "Motivé"; else -> "Normal" }
+    fun next(m: Int = mode) = when (m) { 0 -> 1; 1 -> -1; else -> 0 }
+}
+
+private fun profileFor(level: String): SurfProfile {
+    val base = SurfProfile.fromLevel(level)
+    val m = ToleranceSettings.mode
+    if (m == 0) return base
+    val wind = 1.0 + 0.15 * m
+    return base.copy(
+        windTolerance = base.windTolerance * wind, onshoreMax = base.onshoreMax * wind,
+        gustThreshold = base.gustThreshold * wind, chopThreshold = base.chopThreshold * wind,
+        idealMax = base.idealMax * (1.0 + 0.08 * m)
+    )
+}
 
 fun calculateSlotScore(
     hourlyModel: HourlyUiModel,
@@ -315,8 +338,10 @@ const val WIND_STRONG = 0.6
 internal fun windFactorOf(hour: HourlyUiModel, waveHeight: Double, profile: SurfProfile, windCategory: String): Double {
     val windKmh = effectiveWindKmh(hour, if (profile.countGusts) GUST_WEIGHT else 0.0) / windSizeDivisor(waveHeight)
     // La tolérance au vent décale les courbes : un profil tolérant « voit » moins de vent.
-    val scaledWind = if (windCategory == "onshore") windKmh * 12.0 / profile.onshoreMax else windKmh * 25.0 / profile.windTolerance
-    val categoryFactor = interpolate(scaledWind, windCurves.getValue(windCategory))
+    // Entre l'offshore et l'onshore, un vent de côté arrière (side-off) pèse un peu moins, un vent de côté avant (side-on) un peu plus.
+    val sideWeight = when (windCategory) { "side-off" -> 0.9; "side-on" -> 1.1; else -> 1.0 }
+    val scaledWind = if (windCategory == "onshore") windKmh * 12.0 / profile.onshoreMax else windKmh * 25.0 * sideWeight / profile.windTolerance
+    val categoryFactor = interpolate(scaledWind, windCurves.getValue(windCurveKey(windCategory)))
     // Direction : un débutant (mousse) s'en moque, un confirmé / expert cherche l'offshore qui creuse la vague.
     val neutralFactor = interpolate(windKmh * 25.0 / profile.windTolerance, windCurves.getValue("offshore"))
     // L'onshore, lui, abîme la vague pour tout le monde (tolérance [SurfProfile.onshoreMax]) : seule la différence
@@ -363,7 +388,9 @@ internal fun windPhrase(windCategory: String, windFactor: Double): String {
     }
     return when (windCategory) {
         "onshore" -> listOf("Un peu d'onshore", "Onshore dégrade la vague", "Onshore fort, ça sectionne", "Onshore très fort, c'est démonté")[level]
-        "cross" -> listOf("Un peu de sideshore", "Sideshore dégrade la vague", "Sideshore fort, ça sectionne", "Sideshore très fort, c'est démonté")[level]
+        "side-off" -> listOf("Un peu de side-off", "Side-off dégrade la vague", "Side-off fort, ça sectionne", "Side-off très fort, c'est démonté")[level]
+        "side-on" -> listOf("Un peu de side-on", "Side-on dégrade la vague", "Side-on fort, ça sectionne", "Side-on très fort, c'est démonté")[level]
+        "side" -> listOf("Un peu de side", "Side dégrade la vague", "Side fort, ça sectionne", "Side très fort, c'est démonté")[level]
         else -> listOf("Offshore soutenu", "Offshore un peu fort", "Offshore fort", "Offshore très fort")[level]
     }
 }
@@ -607,8 +634,16 @@ fun windCategoryFromDegrees(degrees: Float, beachFacing: Int? = null): String {
     return when {
         diff >= 135.0 -> "offshore"
         diff <= 45.0 -> "onshore"
-        else -> "cross"
+        diff > 102.0 -> "side-off"
+        diff < 78.0 -> "side-on"
+        else -> "side"
     }
+}
+
+/** Les trois courbes de note : offshore, travers (side-off, side, side-on) et onshore. */
+internal fun windCurveKey(windCategory: String): String = when (windCategory) {
+    "offshore", "onshore" -> windCategory
+    else -> "cross"
 }
 
 // Récap court des conditions attendues sur un créneau, ex : "1,0m / 10s · vent léger offshore".
@@ -627,7 +662,7 @@ private fun buildSlotRecap(windowHours: List<HourlyUiModel>, beachFacing: Int?):
     val windCategoryLabel = when (windCategory) {
         "offshore" -> "offshore"
         "onshore" -> "onshore"
-        else -> "side-shore"
+        else -> windCategory
     }
 
     // Virgule décimale : l'original utilisait Locale.FRANCE.

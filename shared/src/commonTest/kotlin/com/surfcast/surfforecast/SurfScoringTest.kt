@@ -225,7 +225,9 @@ class SurfScoringTest {
         // Plage plein ouest (275) : vent d'est = offshore, vent d'ouest = onshore, nord = travers.
         assertEquals("offshore", windCategoryFromDegrees(90f, 275))
         assertEquals("onshore", windCategoryFromDegrees(270f, 275))
-        assertEquals("cross", windCategoryFromDegrees(0f, 275))
+        assertEquals("side", windCategoryFromDegrees(0f, 275))
+        assertEquals("side-off", windCategoryFromDegrees(45f, 275))
+        assertEquals("side-on", windCategoryFromDegrees(225f, 275))
         // Côte nord de l'Espagne (350) : le vent de sud est offshore, celui du nord onshore.
         assertEquals("offshore", windCategoryFromDegrees(170f, 350))
         assertEquals("onshore", windCategoryFromDegrees(350f, 350))

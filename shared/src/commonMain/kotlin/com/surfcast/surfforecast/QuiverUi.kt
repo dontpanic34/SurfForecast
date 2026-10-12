@@ -371,6 +371,9 @@ fun GearContent(
             }
         }
 
+        Spacer(modifier = Modifier.height(4.dp))
+        GearUsageSection(quiverBoards)
+
         // --- Mon volume : un seul chiffre en gros ---
         Spacer(modifier = Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {

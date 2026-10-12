@@ -247,7 +247,7 @@ fun HourlyForecastRow(
 /**
  * Parsing tolérant ("07h30", "7h30", "07:30", "7:30")
  */
-private fun parseTimeStringSafe(timeStr: String): LocalTime? {
+internal fun parseTimeStringSafe(timeStr: String): LocalTime? {
     val clean = timeStr.trim().lowercase().replace("h", ":")
     val parts = clean.split(":")
     if (parts.size < 2) return null

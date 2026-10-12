@@ -23,7 +23,7 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
 private fun categoryWord(category: String): String = when (category) {
     "offshore" -> "offshore"
     "onshore" -> "onshore"
-    else -> "sideshore"
+    else -> category
 }
 
 /** Catégorie dominante du vent sur une plage d'heures (la plus fréquente, les vents calmes comptent pour rien). */
@@ -47,7 +47,7 @@ private fun windLine(hours: List<HourlyUiModel>, beachFacing: Int?): String {
     if (catMorning != null && catAfternoon != null && catMorning != catAfternoon) {
         return "Vent ${categoryWord(catMorning)} le matin, ${categoryWord(catAfternoon)} l'après-midi."
     }
-    val cat = categoryWord(catAfternoon ?: catMorning ?: "cross")
+    val cat = categoryWord(catAfternoon ?: catMorning ?: "side")
     val light = if (strongest < 10) " léger" else ""
     val trend = when {
         afternoonMax >= morningMax + 6 -> ", plus fort l'après-midi"

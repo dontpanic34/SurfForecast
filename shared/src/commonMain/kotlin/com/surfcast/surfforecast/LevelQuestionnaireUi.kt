@@ -266,3 +266,41 @@ fun LevelQuestionnaire(
         }
     }
 }
+
+/**
+ * Comparer les niveaux : une échelle de cinq marches (Débutant à Expert) et, dessous, le détail de la marche touchée.
+ * Ce qui est acquis (ta marche et celles d'en dessous) est écrit en gras et plus grand ; ce qui reste à venir en petit.
+ */
+@Composable
+fun LevelLadder(result: LevelResult, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    val mine = result.bandIndex / 2
+    var selected by remember(mine) { mutableStateOf(mine) }
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Comparer les niveaux", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            LEVEL_NAMES.forEachIndexed { i, name ->
+                val acquired = i <= mine
+                Column(
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
+                        .background(if (i == selected) colors.primary.copy(alpha = 0.22f) else colors.surfaceVariant)
+                        .clickable { selected = i }.padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(modifier = Modifier.size(if (i == mine) 14.dp else 10.dp).clip(RoundedCornerShape(50))
+                        .background(if (acquired) colors.primary else colors.onSurface.copy(alpha = 0.2f)))
+                    Text(name, fontSize = 9.5.sp, fontWeight = if (i == mine) FontWeight.Bold else FontWeight.Normal, color = colors.onBackground, maxLines = 1)
+                }
+            }
+        }
+        val def = LEVEL_DEFINITIONS[(selected * 2).coerceAtMost(LEVEL_DEFINITIONS.lastIndex)]
+        val acquired = selected <= mine
+        Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(LEVEL_NAMES[selected] + if (selected == mine) " · ton niveau" else if (acquired) " · acquis" else " · à venir",
+                fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+            Text(def.first, fontSize = if (acquired) 13.sp else 11.5.sp, fontWeight = if (acquired) FontWeight.Bold else FontWeight.Normal,
+                color = if (acquired) colors.onBackground else colors.onSurfaceVariant)
+            Text("Sur la vague, tu cherches : " + def.second, fontSize = if (acquired) 12.5.sp else 11.sp, color = colors.onSurfaceVariant)
+        }
+    }
+}

@@ -23,10 +23,10 @@ class WindPhraseTest {
 
     @Test
     fun sideshoreUsesTheSameWords() {
-        assertEquals("Un peu de sideshore", windPhrase("cross", 0.8))
-        assertEquals("Sideshore dégrade la vague", windPhrase("cross", 0.65))
-        assertEquals("Sideshore fort, ça sectionne", windPhrase("cross", 0.45))
-        assertEquals("Sideshore très fort, c'est démonté", windPhrase("cross", 0.2))
+        assertEquals("Un peu de side", windPhrase("side", 0.8))
+        assertEquals("Side dégrade la vague", windPhrase("side", 0.65))
+        assertEquals("Side fort, ça sectionne", windPhrase("side", 0.45))
+        assertEquals("Side très fort, c'est démonté", windPhrase("side", 0.2))
     }
 
     @Test
@@ -39,7 +39,7 @@ class WindPhraseTest {
     fun thirtyOneKmhNorthEastIsNotJustAnnoying() {
         // Le cas vu sur le site : NE 31 km/h à Montalivet (plage vers l'ouest) disait seulement « abîme la vague ».
         val why = calculateSlotRating(hour(16, 31, "NE"), 275, "intermediate").why
-        assertTrue(why.startsWith("Sideshore fort") || why.startsWith("Sideshore très fort"), "phrase : $why")
+        assertTrue(why.startsWith("Side-off fort") || why.startsWith("Side-off très fort"), "phrase : $why")
     }
 
     @Test

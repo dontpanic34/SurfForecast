@@ -17,6 +17,10 @@ data class HourlyUiModel(
     val windWaveHeight: Double = 0.0,
     val windWavePeriod: Double = 0.0,
     val windWaveDirection: Float = 0f,
+    // Houle secondaire (hauteur m, période s, direction °) : hauteur 0 = pas de seconde houle.
+    val secondaryHeight: Double = 0.0,
+    val secondaryPeriod: Double = 0.0,
+    val secondaryDirection: Float = 0f,
     val energyKj: Int,
     val windSpeedKmh: Int,
     val windDirectionStr: String,

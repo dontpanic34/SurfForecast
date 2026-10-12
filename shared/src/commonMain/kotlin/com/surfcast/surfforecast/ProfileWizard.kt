@@ -78,7 +78,7 @@ internal val EXAMPLE_ANSWERS: List<Pair<String, Color>> = listOf(
     "Pas mal" to ScoreBand.GOOD.color(),
     "Parfait" to ScoreBand.EXCELLENT.color(),
     "Challengeant" to ScoreBand.CHALLENGING.color(),
-    "Trop gros" to ScoreBand.TOO_BIG.color()
+    "Gros jour" to ScoreBand.TOO_BIG.color()
 )
 
 private val EXAMPLE_ANSWER_BANDS = listOf(ScoreBand.AVOID, ScoreBand.GOOD, ScoreBand.EXCELLENT, ScoreBand.CHALLENGING, ScoreBand.TOO_BIG)

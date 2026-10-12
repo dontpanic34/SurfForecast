@@ -194,7 +194,16 @@ class SurfController(
         SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER))
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
     }
-    var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
+    // Grille « quand tu sors quelle planche », pratique et planche du jour (voir GearPrefs).
+    @Suppress("unused")
+    private val gearInit = run {
+        GearPrefs.load(
+            prefs.getString("gear_grid", "") ?: "", prefs.getString("gear_since", "") ?: "", prefs.getString("gear_frequency", "") ?: "",
+            prefs.getString("gear_season", "") ?: "", prefs.getString("gear_board_day", "both") ?: "both"
+        )
+        GearPrefs.persist = { k, v -> prefs.putString(k, v) }
+    }
+    var starsOffset by mutableIntStateOf(0)
         private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
         private set
@@ -568,6 +577,24 @@ class SurfController(
     var tolerance by mutableStateOf((prefs.getString("tolerance_v1", "") ?: "").split(",").mapNotNull { it.toIntOrNull() })
         private set
 
+    /** Tolérance du jour : -1 Prudent, 0 Normal, 1 Motivé (départ : les trois réponses de tolérance du questionnaire). */
+    var toleranceMode by mutableIntStateOf(
+        prefs.getInt("tolerance_mode_v1", 99).let { if (it in -1..1) it else toleranceFromAnswers(tolerance) }.also { ToleranceSettings.mode = it }
+    )
+        private set
+
+    fun cycleTolerance() {
+        toleranceMode = ToleranceSettings.next(toleranceMode)
+        ToleranceSettings.mode = toleranceMode
+        prefs.putInt("tolerance_mode_v1", toleranceMode)
+    }
+
+    private fun toleranceFromAnswers(t: List<Int>): Int {
+        if (t.isEmpty()) return 0
+        val mean = t.average()
+        return when { mean < 0.67 -> 1; mean > 1.33 -> -1; else -> 0 }
+    }
+
     /** Le résultat du questionnaire (null tant qu'il n'a pas été fait). */
     val levelResult: LevelResult? get() = levelAnswers?.let { computeLevel(it, levelShift) }
 
@@ -579,6 +606,9 @@ class SurfController(
         prefs.putString("level_answers_v1", answers.serialize())
         prefs.putInt("level_shift_v1", shift)
         prefs.putString("tolerance_v1", tol.joinToString(","))
+        toleranceMode = toleranceFromAnswers(tol)
+        ToleranceSettings.mode = toleranceMode
+        prefs.putInt("tolerance_mode_v1", toleranceMode)
         body = body.copy(fitness = fitnessFromTraining(answers.training))
         changeSurferLevel(computeLevel(answers, shift).levelKey)
         markProfileReviewed()
