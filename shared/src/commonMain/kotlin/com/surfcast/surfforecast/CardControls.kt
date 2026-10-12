@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -51,14 +52,31 @@ fun CardControlsRow(
 ) {
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
-    // Titre seul : réduire, masquer et réordonner les encarts se fait dans Paramètres › Affichage.
+    // Le titre et une flèche : toucher l'encart réduit ou déplie son contenu.
+    Row(
+        modifier = modifier.fillMaxWidth().clickable(onClick = onToggleCollapse).padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = onSurfaceColor.copy(alpha = 0.55f),
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+        CollapseChevron(isCollapsed, onToggleCollapse)
+    }
+}
+
+/** La petite flèche d'un encart : ▾ ouvert, ▸ réduit. Toucher réduit ou déplie. */
+@Composable
+fun CollapseChevron(isCollapsed: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Text(
-        text = title,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        color = onSurfaceColor.copy(alpha = 0.55f),
-        maxLines = 1,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)
+        text = if (isCollapsed) "▸" else "▾",
+        fontSize = 16.sp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+        modifier = modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onToggle).padding(horizontal = 8.dp, vertical = 2.dp)
     )
 }
 

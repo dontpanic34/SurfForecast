@@ -126,7 +126,7 @@ fun WeeklyForecastCard(
                 }
             }
             if (phrase != null) {
-                DayPhraseHeader(phrase, toleranceLabel, onToleranceClick, boardOfDay)
+                DayPhraseHeader(phrase, toleranceLabel, onToleranceClick, boardOfDay, isCollapsed, onToggleCollapse)
             } else {
                 CardControlsRow(
                     title = "Prévisions de la semaine",
@@ -309,7 +309,7 @@ fun WeeklyForecastCard(
 
 /** Le jour choisi en trois lignes, à la place du titre fixe de la semaine. */
 @Composable
-private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, onToleranceClick: () -> Unit = {}, boardOfDay: String? = null) {
+private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, onToleranceClick: () -> Unit = {}, boardOfDay: String? = null, isCollapsed: Boolean = false, onToggleCollapse: () -> Unit = {}) {
     val onSurface = MaterialTheme.colorScheme.onSurface
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.Top) {
@@ -322,6 +322,7 @@ private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, o
                         .clickable(onClick = onToleranceClick).padding(horizontal = 10.dp, vertical = 3.dp)
                 )
             }
+            CollapseChevron(isCollapsed, onToggleCollapse)
         }
         Text(phrase.swell, fontSize = 12.5.sp, color = onSurface, maxLines = 1)
         Text(phrase.wind, fontSize = 12.5.sp, color = onSurface, maxLines = 2)

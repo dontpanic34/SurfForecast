@@ -50,7 +50,6 @@ fun NowTideCard(
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val title = buildString {
         append("Maintenant")
-        if (spotName.isNotBlank()) append(" · ").append(spotName)
         append(" · ").append(hourlyModel.rawTime.hour).append(" h")
     }
 
