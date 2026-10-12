@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refonte du niveau et des réglages</title>
+<style>
+:root{--bg:#EDF1F6;--surface:#FFFFFF;--surface2:#E4EAF2;--ink:#14202B;--muted:#5D6E80;--line:#D5DDE7;--accent:#2F6FE4;--accent-ink:#FFFFFF;
+--good:#1FA463;--ok:#8DB92E;--warn:#E08A00;--bad:#D6403A;--grey:#7C8A99;--frame:#C9D3DF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#243345;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--ok:#B5D84A;--warn:#FFA826;--bad:#F2554F;--grey:#8896A6;--frame:#2A3A4D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#243345;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--ok:#B5D84A;--warn:#FFA826;--bad:#F2554F;--grey:#8896A6;--frame:#2A3A4D;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px 16px 40px;line-height:1.4}
+h1{font-size:21px;margin:0 0 4px;text-wrap:balance}
+.lead{color:var(--muted);font-size:14px;margin:0 0 14px;max-width:62ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.tabs button{all:unset;cursor:pointer;padding:8px 12px;border-radius:10px;font-size:13.5px;font-weight:650;color:var(--muted);background:var(--surface2)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.theme{float:right}
+.theme button{all:unset;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12.5px;color:var(--muted);background:var(--surface2)}
+.theme button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+section[hidden]{display:none}
+.phone{width:min(100%,392px);margin:0 auto;background:var(--bg);border:1px solid var(--frame);border-radius:30px;padding:14px 12px 20px}
+.top{display:flex;align-items:center;gap:8px;padding:2px 6px 10px}
+.top .back{color:var(--accent);font-size:13px;font-weight:600}
+.top h2{font-size:17px;margin:0;font-weight:800}
+.grp{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 6px 6px}
+.card{background:var(--surface);border-radius:14px;overflow:hidden}
+.blk{padding:12px 14px;border-top:1px solid var(--line)}.blk:first-child{border-top:0}
+.lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:14px;font-weight:650}
+.lab span{font-weight:500;font-size:12.5px;color:var(--muted)}
+.notes{max-width:392px;margin:12px auto 0;color:var(--muted);font-size:13px}
+.notes b{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;padding:8px 12px;border-radius:99px;background:var(--surface2);font-size:13px;font-weight:650}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible,.ans:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{all:unset;cursor:pointer;display:block;text-align:center;padding:11px;border-radius:12px;background:var(--surface2);font-weight:700;font-size:14px}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:2px}
+/* prévisualisation commune */
+.pv{display:grid;gap:0}
+.pv .d{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.pv .d:first-child{border-top:0}
+.pv .d b{font-size:13.5px;font-weight:650;display:block}.pv .d small{color:var(--muted);font-size:12px}
+.badge{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:99px;color:#fff;white-space:nowrap}
+.lvl{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:12px 14px}
+.lvl i{display:block;height:6px;border-radius:3px;background:var(--surface2)}
+.lvl i.on{background:var(--accent)}
+.lvname{padding:0 14px 12px;font-size:14px;font-weight:700}
+.lvname span{color:var(--muted);font-weight:500;font-size:12.5px}
+/* proposition 1 */
+.sit{padding:14px}
+.sit .big{font-size:22px;font-weight:800}
+.sit .meta{color:var(--muted);font-size:13px;margin:2px 0 10px}
+.body{display:flex;align-items:flex-end;gap:2px;height:44px;margin:6px 0 12px}
+.body i{display:block;width:14px;border-radius:3px 3px 0 0;background:var(--surface2)}
+.body i.on{background:var(--accent)}
+.wind{display:inline-flex;gap:6px;align-items:center;background:var(--surface2);border-radius:99px;padding:5px 11px;font-size:13px;font-weight:650}
+.ans{all:unset;cursor:pointer;display:block;text-align:center;padding:10px 6px;border-radius:12px;font-size:13.5px;font-weight:700;background:var(--surface2);margin-top:6px}
+.ans[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.prog{height:4px;border-radius:2px;background:var(--surface2);margin:0 14px 2px}
+.prog i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* proposition 2 */
+.ruler{position:relative;height:70px;margin:6px 4px 0}
+.ruler .bar{position:absolute;left:0;right:0;top:22px;height:10px;border-radius:5px;background:var(--surface2)}
+.ruler .sel{position:absolute;top:22px;height:10px;border-radius:5px;background:var(--good)}
+.ruler .max{position:absolute;top:22px;height:10px;border-radius:0 5px 5px 0;background:var(--warn)}
+.ruler .tick{position:absolute;top:36px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);text-align:center;white-space:nowrap}
+.ruler .tick::before{content:"";display:block;width:1px;height:6px;background:var(--line);margin:-6px auto 2px}
+.dual{position:relative;height:30px;margin:2px 0}
+.dual input{position:absolute;left:0;width:100%;top:4px;pointer-events:none;-webkit-appearance:none;appearance:none;background:none;height:22px}
+.dual input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:grab}
+.dual input::-moz-range-thumb{pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);cursor:grab}
+.dual input::-webkit-slider-runnable-track{background:none}
+.dual input::-moz-range-track{background:none}
+/* proposition 3 */
+.q{padding:12px 14px;border-top:1px solid var(--line)}.q:first-child{border-top:0}
+.q p{margin:0 0 8px;font-size:14px;font-weight:650}
+/* proposition 4 */
+.ses{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.ses:first-child{border-top:0}
+.ses b{display:block;font-size:13.5px}.ses small{color:var(--muted);font-size:12px}
+.ses .st{color:#F5B50A;font-size:12px;letter-spacing:1px}
+.sw{all:unset;cursor:pointer;width:42px;height:25px;border-radius:99px;background:var(--surface2);position:relative;box-shadow:inset 0 0 0 1px var(--line)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--muted);transition:transform .15s}
+.sw[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.sw[aria-checked="true"]::after{transform:translateX(17px);background:var(--accent-ink)}
+/* structures de la page d'accueil */
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1000px;margin:0 auto}
+.mini{background:var(--bg);border:1px solid var(--frame);border-radius:26px;padding:12px 10px 16px}
+.mini h3{font-size:12px;margin:0 6px 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lrow{display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:1px solid var(--line)}
+.lrow:first-child{border-top:0}
+.lrow .t{flex:1;min-width:0}.lrow b{display:block;font-size:14px}.lrow span{display:block;font-size:11.5px;color:var(--muted)}
+.ico{width:28px;height:28px;border-radius:8px;background:var(--surface2);display:grid;place-items:center;font-size:14px;flex:none}
+.hero{background:var(--surface);border-radius:16px;padding:14px;margin-bottom:10px}
+.hero b{font-size:16px}.hero p{margin:2px 0 8px;color:var(--muted);font-size:12.5px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--surface);border-radius:14px;padding:12px}
+.tile .ico{margin-bottom:8px;width:34px;height:34px;font-size:17px}
+.tile b{display:block;font-size:14px}.tile span{font-size:11.5px;color:var(--muted)}
+.pro{display:block;margin-top:8px;font-size:12.5px;color:var(--muted)}.pro b{color:var(--ink)}
+
+/* poignées sur la barre (proposition 2) */
+.rl{position:relative;height:96px;margin:4px 12px 0;touch-action:none}
+.rl .bar{position:absolute;left:0;right:0;top:40px;height:14px;border-radius:7px;background:var(--surface2)}
+.rl .zg{position:absolute;top:40px;height:14px;background:var(--good)}
+.rl .zo{position:absolute;top:40px;height:14px;background:var(--warn);border-radius:0 7px 7px 0}
+.rl .tk{position:absolute;top:60px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);text-align:center;white-space:nowrap;line-height:1.2}
+.rl .hd{position:absolute;top:30px;width:34px;height:34px;margin-left:-17px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:grab;touch-action:none;border:3px solid var(--surface)}
+.rl .hd:active{cursor:grabbing}
+.rl .hd:focus-visible{outline:3px solid var(--ink)}
+.rl .hd.mx{background:var(--warn);color:#1a1000}
+.rl .lb{position:absolute;top:2px;transform:translateX(-50%);font-size:11.5px;font-weight:700;white-space:nowrap}
+.hint{font-size:12.5px;color:var(--muted);margin:2px 0 0;display:flex;gap:6px;align-items:center}
+.cmp{display:grid;gap:10px;max-width:760px;margin:0 auto}
+.ex{background:var(--surface);border-radius:14px;padding:12px 14px}
+.ex .c{font-size:13.5px;font-weight:700}.ex .c small{color:var(--muted);font-weight:500;font-size:12.5px;display:block}
+.ex p.lv{margin:8px 0 0;font-size:13.5px;color:var(--ink)}
+.ex .row3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:8px}
+.opt{all:unset;cursor:pointer;display:block;border-radius:10px;padding:9px 11px;background:var(--surface2);font-size:13.5px;font-weight:650;box-shadow:inset 0 0 0 2px transparent}
+.opt small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.opt[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent);background:var(--surface)}
+.opt:focus-visible{outline:2px solid var(--accent)}
+.opt.now{opacity:.8;cursor:default}
+
+.res{padding:14px}
+.xp{position:relative;height:14px;border-radius:7px;background:var(--surface2);margin:14px 14px 4px;overflow:hidden}
+.xp i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--accent),#6fd3a5);transition:width .5s}
+.xp b{position:absolute;top:0;bottom:0;width:2px;background:var(--surface);opacity:.9}
+.xpl{display:flex;justify-content:space-between;margin:0 14px;font-size:10.5px;color:var(--muted)}
+.res .nm{font-size:24px;font-weight:800}
+.lxp{display:flex;align-items:center;gap:10px;margin:10px 14px 0}.lxp .xp{flex:1;margin:0;height:8px}.lxp span{font-size:12px;font-weight:800;white-space:nowrap}.lxp span small{font-weight:500;color:var(--muted);margin-left:4px}
+.ibtn{float:right;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font:700 12px/20px system-ui;padding:0;cursor:pointer}
+.res .sc{font-size:12px;color:var(--muted);margin-top:2px}
+.next{margin:0 14px 12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);font-size:13px}
+.tol .q2{padding:12px 14px;border-top:1px solid var(--line)}
+.tol .q2 p{margin:0 0 8px;font-weight:700;font-size:14px}
+.tol .q2 button{display:block;width:100%;text-align:left;margin-top:6px}
+.res .df{margin:8px 0 0;font-size:14px}
+.res .goal{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--surface2);font-size:13.5px}
+.why{padding:10px 14px 14px;color:var(--muted);font-size:12.5px}
+.rec{display:grid;gap:0}
+.rec .r{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:8px;padding:8px 14px;border-top:1px solid var(--line);font-size:12.5px}
+.rec .r span{color:var(--muted)}.rec .r b{font-weight:650}
+details.lv5{padding:0 14px 12px}details.lv5 summary{cursor:pointer;font-weight:650;font-size:13.5px;padding:10px 0;color:var(--accent)}
+details.lv5 p{margin:0 0 8px;font-size:12.5px}
+.ans small{display:block;font-weight:500;opacity:.8;font-size:12px;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="theme" id="theme"><button data-v="auto" aria-pressed="true">Auto</button><button data-v="light" aria-pressed="false">Clair</button><button data-v="dark" aria-pressed="false">Sombre</button></div>
+<h1>Mon profil : les questions</h1>
+<p class="lead">Une question à la fois, comme un prof de surf. Ta barre de niveau se remplit au fil des réponses.</p>
+
+<div class="phone">
+  <div class="top"><span class="back" id="back">‹ Réglages</span><h2>Mon profil</h2></div>
+  <div id="ask">
+    <p class="grp" id="count">Question 1</p>
+    <div class="card">
+      <div class="prog"><i id="prog" style="width:8%"></i></div>
+      <div class="lxp" id="lxp" hidden><div class="xp"><i id="lxpf" style="width:0"></i></div><span id="lxpn"></span></div>
+      <div class="q" style="border-top:0"><p id="q" style="font-size:17px;font-weight:800;margin-bottom:4px"></p><p id="sub" style="font-weight:500;color:var(--muted);font-size:13px;margin:0 0 10px"></p><div id="opts" style="display:grid;gap:6px"></div></div>
+      <div style="padding:0 14px 12px;display:flex;justify-content:space-between;font-size:13px;color:var(--accent);font-weight:650"><span id="prev">‹ Précédent</span><span id="next" style="visibility:hidden">Suivant ›</span></div>
+    </div>
+  </div>
+  <div id="result" hidden>
+    <p class="grp">Ton profil</p>
+    <div class="card">
+      <div class="xp" id="rxp" role="img" aria-label="Barre de niveau"><i id="rxpf" style="width:0"></i></div><div class="xpl" id="rxpl"></div>
+      <div class="res"><div class="nm" id="rname"></div><button class="ibtn" id="rinfo" aria-expanded="false" aria-label="Plus d'information sur ta barre">i</button><div class="sc" id="rsc" hidden></div><p class="df" id="rdef"></p><div class="goal" id="rgoal"></div></div>
+      <div class="why" id="rwhy"></div><div class="next" id="rnext"></div>
+      <div class="blk" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn" id="dn">− Une marche en dessous</button><button class="btn" id="up">+ Une marche au-dessus</button></div>
+    </div>
+    <p class="grp">Tes réponses</p>
+    <div class="card rec" id="rec"></div>
+    <p class="grp">Les cinq niveaux</p>
+    <div class="card"><details class="lv5" id="lv5"><summary>Voir les définitions</summary></details></div>
+    <div style="margin-top:10px;display:grid;gap:8px"><button class="btn pri" id="ok">C'est mon niveau</button><button class="btn" id="redo">Refaire le questionnaire</button></div>
+  </div>
+</div>
+<p class="notes"><b>Ce qui est dans cette maquette :</b> uniquement les questions demandées, et les cinq niveaux définis ensemble. <b>Ce qui n'y est plus :</b> les exemples de vagues, la règle avec les ronds, la taille idéale, la plus grosse sans stress, les phrases du vent.</p>
+
+<script>
+var LEVELS=[
+ {n:'Débutant',goal:'Te lever, et garder la mousse le plus longtemps possible.',def:'Tu surfes la mousse (ou les réformes). Ton take-off est à travailler ou se fait en plusieurs temps. Tu ne passes pas la barre, ou seulement quand c\'est tout petit. L\'offshore, c\'est du creux : si tu dépasses ta zone de confort, tu risques de planter.'},
+ {n:'Intermédiaire',goal:'Réussir tes take-offs sur la vague.',def:'Tu commences à surfer la vague, sur petites vagues. Tu as le take-off sur petite vague. Tu passes la barre quand c\'est petit ou au bon moment. Tu te places en fonction des autres : le monde te rassure.'},
+ {n:'Confirmé',goal:'Suivre la vague le plus longtemps possible.',def:'Tu es autonome : tu localises une vague même s\'il n\'y a personne. Ton take-off est solide, tu passes la barre sans souci et la rame suit.'},
+ {n:'Avancé',goal:'Exprimer tes manœuvres, t\'améliorer, être plus critique.',def:'Tu cherches la taille où tu peux faire de vraies manœuvres et l\'endroit critique de la vague. Tu sais faire des manœuvres d\'expert, mais pas de façon régulière : il te reste une marge de progression avant de les considérer acquises. Tu veux être plus radical, plus engagé.'},
+ {n:'Expert',goal:'Perfectionner des manœuvres que tu maîtrises déjà.',def:'Toutes les manœuvres sont acquises : tu les perfectionnes. Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c\'est pourri : tu trouves le bon créneau, les phases plus calmes, une réforme intéressante, et tu tiens le courant à la rame.'}];
+var TK=['En un seul temps, tout le temps','En un seul temps, souvent','Parfois en un seul temps, ou en plusieurs temps'];
+var STEPS=[
+ {id:'tol1',q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},
+ {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',o:['J\'y vais, c\'est l\'occasion de progresser','Je regarde d\'abord, j\'y vais si ça me rassure','Je reste au sec']},
+ {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
+ {id:'what',q:'Tu surfes…',o:['La mousse','La réforme','Le large']},
+ {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===2}},
+ {id:'tk',q:'Définis ton take-off',o:TK},
+ {id:'want',q:'Tu veux passer au large ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what<2}},
+ {id:'peak',q:'Où tu te places dans l\'eau ?',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===2}},
+ {id:'goal',q:'Sur la vague, tu cherches surtout à…',sub:'Plusieurs réponses possibles.',multi:true,o:['Réussir tes take-offs','Enchaîner quelques manœuvres pour suivre la vague, sans prendre trop de risques','Devenir de plus en plus radical, critique et engagé','Affiner ton surf : le style, la précision, chaque détail'],when:function(a){return a.what===2}},
+ {id:'man',q:'Tes manœuvres',o:['Je n\'en suis pas là : je cherche surtout à comprendre et suivre le rythme de la vague','Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],when:function(a){return a.what===2&&gmax(a)>=2}},
+ {id:'feel',q:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment'],when:function(a){return a.what===2}},
+ {id:'train',q:'Tu t\'entraînes en dehors du surf ?',o:['Non','De temps en temps (course, natation, yoga…)','Régulièrement, pour le surf (cardio, renfo, apnée…)']},
+ {id:'where',q:'Où tu surfes ?',sub:'Plusieurs réponses possibles.',multi:true,o:['Chez moi, avec du monde : ça me rassure','Autour de chez moi : je choisis le meilleur spot, j\'évite le monde','Je me déplace pour suivre les conditions, si ça vaut le coup','Je pars à l\'étranger chercher les vagues (surf trips)']}
+];
+var PP={feel:[1,0.6,0.3,0.5],train:[0,0.5,1],where:[0,0.35,0.7,1]};
+function gmax(a){return Math.max.apply(null,(a.goal||[]).length?a.goal:[-1])}
+var ans={},cur=0,adj=0,done=false;
+function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
+function liveXp(){var box=document.getElementById('lxp');
+  var known=ans.what===2?['barre','tk','peak','goal'].filter(function(k){return ans[k]!==undefined}).length:(ans.what<2&&ans.tk!==undefined?2:0);
+  if(known<2){box.hidden=true;return}
+  var r=compute();box.hidden=false;document.getElementById('lxpf').style.width=r.score+'%';
+  document.getElementById('lxpn').innerHTML=r.band+'<small>provisoire</small>'}
+function sec(st){return st.id.indexOf('tol')===0?'Tes préférences':(st.id==='feel'||st.id==='train'||st.id==='where')?'Ta forme':'Ton niveau'}
+function title(st){return st.dyn?st.dyn(ans):st.q}
+function answered(st){var v=ans[st.id];return st.multi?(v&&v.length>0):v!==undefined}
+
+/* Le niveau est la marche la plus basse parmi ce qu'on vise et les limites posées par les réponses (voir organigramme.html).
+   « Depuis », la fréquence et la saison ne changent pas le niveau. */
+/* Neuf tranches sur 100 : cinq niveaux de 16 points et quatre « + » de 5 points. */
+var BANDS=[{n:'Débutant',a:0,b:16,L:0},{n:'Débutant +',a:16,b:21,L:0},{n:'Intermédiaire',a:21,b:37,L:1},{n:'Intermédiaire +',a:37,b:42,L:1},{n:'Confirmé',a:42,b:58,L:2},{n:'Confirmé +',a:58,b:63,L:2},{n:'Avancé',a:63,b:79,L:3},{n:'Avancé +',a:79,b:84,L:3},{n:'Expert',a:84,b:100,L:4}];
+function bandIndex(L,plus){return L===4?8:L*2+(plus?1:0)}
+function compute(){
+  var L=[];
+  var forcePlus=false;
+  if(ans.what<2){L.push({v:0,t:'tu ne surfes que la mousse ou la réforme'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
+  else{
+    if(ans.goal&&ans.goal.length)L.push({v:gmax(ans)+1,p:Math.min(4,gmax(ans)+1+0.25*(ans.goal.length-1)),t:'ce que tu cherches'});
+    var bar=[0,0,1,2,3,4][ans.barre];
+    L.push({v:bar,t:ans.barre===0?'tu ne passes pas encore la barre':'la taille où tu passes la barre'});
+    L.push({v:[4,1,0][ans.tk],t:'ton take-off'});
+    L.push({v:[1,2,4][ans.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
+    if(ans.man!==undefined)L.push({v:[2,2,3,4][ans.man],t:'tes manœuvres (pas encore replaquées à chaque fois)'});
+  }
+  var m=4;L.forEach(function(x){if(x.v!==undefined&&!isNaN(x.v))m=Math.min(m,x.v)});
+  var bind=L.filter(function(x){return x.v===m});
+  var baseL=Math.max(0,Math.min(4,m));
+  var plus0=((ans.what===2&&bind.length===1&&m<=3)||forcePlus)&&baseL<4;
+  // Position : la part des limites qui sont déjà au-dessus de la plus basse remplit la tranche.
+  var pp=['feel','train','where'].filter(function(k){return ans[k]!==undefined}).map(function(k){var v=ans[k];if(Array.isArray(v)){var mx=Math.max.apply(null,v.map(function(i){return PP[k][i]}));return Math.min(1,mx+0.05*(v.length-1))}return PP[k][v]});pp=pp.length?pp.reduce(function(x,y){return x+y},0)/pp.length:0.5;
+  var above=m>=4?1:Math.max(0,(L.reduce(function(t,x){return t+(x.p!==undefined?x.p:x.v)},0)/L.length-m)/(4-m));
+  above=(m>=4?1:above*0.7+pp*0.3);
+  var bi0=bandIndex(baseL,plus0),bi=Math.max(0,Math.min(8,bi0+adj)),B=BANDS[bi],lvl=B.L,plus=bi%2===1&&bi<8,score;
+  if(bi===8)score=84+16*pp;
+  else if(adj!==0)score=(B.a+B.b)/2;
+  else if(ans.what<2)score=forcePlus?B.a+3:B.a+[5,11,16][ans.tk]*(B.b-B.a)/16;
+  else score=B.a+Math.min(0.98,above)*(B.b-B.a);
+  var why='Le niveau est la marche la plus basse : '+bind.map(function(x){return x.t}).join(', ')+'.';
+  if(plus)why+=(forcePlus?' Ton take-off est sûr et tu veux passer au large : tu es « Débutant + ».':' Un seul point te retient : tu es « '+LEVELS[lvl].n+' + ».');
+  var nxt=bi<8?BANDS[bi+1].n:null;
+  return {L:lvl,plus:plus,band:B.n,score:Math.round(score),why:[why],nxt:nxt,hold:bind.map(function(x){return x.t}),bi:bi};
+}
+function draw(){
+  var list=active(),st=list[Math.min(cur,list.length-1)];
+  document.getElementById('ask').hidden=done;document.getElementById('result').hidden=!done;
+  if(done){drawResult();return}
+  document.getElementById('count').textContent=sec(st)+' · '+(cur+1)+' sur '+list.length;liveXp();
+  document.getElementById('prog').style.width=((cur+1)/list.length*100)+'%';
+  document.getElementById('q').textContent=title(st);document.getElementById('sub').textContent=st.sub||'';
+  var box=document.getElementById('opts');
+  box.innerHTML=st.o.map(function(t,i){var on=st.multi?(ans[st.id]||[]).indexOf(i)>=0:ans[st.id]===i;var sb=st.osub&&st.osub[i]?'<small>'+st.osub[i]+'</small>':'';return '<button class="ans" data-i="'+i+'" aria-pressed="'+on+'" style="margin-top:0;text-align:left;padding:11px 12px">'+t+sb+'</button>'}).join('');
+  var nx=document.getElementById('next');nx.style.visibility=(st.multi&&answered(st))?'visible':'hidden';nx.textContent=cur<list.length-1?'Suivant ›':'Voir mon profil ›';
+  box.querySelectorAll('.ans').forEach(function(b){b.onclick=function(){var i=+b.dataset.i;adj=0;
+    if(st.multi){var v=ans[st.id]||[],k=v.indexOf(i);if(k>=0)v.splice(k,1);else v.push(i);ans[st.id]=v;draw()}
+    else{ans[st.id]=i;advance()}}});
+}
+function advance(){var list=active();if(cur>=list.length-1){done=true}else{cur++}draw()}
+function drawResult(){
+  var r=compute(),L=LEVELS[r.L];
+  document.getElementById('rxpf').style.width=r.score+'%';document.getElementById('rxp').setAttribute('aria-label','Barre de niveau : '+r.score+' sur 100');
+  document.getElementById('rxp').querySelectorAll('b').forEach(function(x){x.remove()});[16,37,58,79].forEach(function(t){var b=document.createElement('b');b.style.left=t+'%';document.getElementById('rxp').appendChild(b)});
+  document.getElementById('rxpl').innerHTML='<span>Débutant</span><span>Intermédiaire</span><span>Confirmé</span><span>Avancé</span><span>Expert</span>';
+  document.getElementById('rname').textContent=r.band+(adj?' (corrigé)':'');
+  document.getElementById('rdef').textContent=L.def;document.getElementById('rsc').textContent='Ta barre est remplie à '+r.score+' % : elle monte avec tes réponses, à l\'intérieur de ton niveau.';document.getElementById('rnext').innerHTML=r.nxt?'<b>Pour passer à « '+r.nxt+' »</b>, ce qui te retient : '+r.hold.join(' ; ')+'.':'<b>Tu es au sommet de l\'échelle.</b> Tu perfectionnes.';
+  document.getElementById('rgoal').innerHTML='<b>Sur la vague, tu cherches :</b> '+L.goal;
+  document.getElementById('rwhy').textContent=r.why.join(' ');
+  var rows=active().map(function(st){var v=ans[st.id];var t=st.multi?(v||[]).map(function(i){return st.o[i]}).join(', ')||'—':(v===undefined?'—':st.o[v]);return '<div class="r"><span>'+title(st).replace(/ \?$/,'')+'</span><b>'+t+'</b></div>'}).join('');
+  document.getElementById('rec').innerHTML=rows;
+  document.getElementById('lv5').innerHTML='<summary>Voir les définitions</summary>'+LEVELS.map(function(l,i){return '<p><b>'+(i+1)+' · '+l.n+'</b> — '+l.def+'</p>'}).join('');
+}
+document.getElementById('rinfo').onclick=function(){var t=document.getElementById('rsc');t.hidden=!t.hidden;this.setAttribute('aria-expanded',!t.hidden)};
+document.getElementById('prev').onclick=function(){if(cur>0)cur--;draw()};
+document.getElementById('next').onclick=function(){advance()};
+document.getElementById('up').onclick=function(){if(compute().bi<8){adj++;drawResult()}};
+document.getElementById('dn').onclick=function(){if(compute().bi>0){adj--;drawResult()}};
+document.getElementById('redo').onclick=function(){ans={};cur=0;adj=0;done=false;draw()};
+document.getElementById('ok').onclick=function(){this.textContent='Enregistré (maquette)'};
+document.getElementById('back').onclick=function(){if(done){done=false;cur=active().length-1;draw()}};
+document.getElementById('theme').onclick=function(e){var b=e.target.closest('button');if(!b)return;
+  this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});
+  var v=b.dataset.v;if(v==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',v)};
+draw();
+</script>
+</body>
+</html>

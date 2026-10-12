@@ -18,7 +18,7 @@ import kotlin.math.roundToInt
 
 // Mon style de surf : 4 profils de départ + un profil personnalisé (énergie, période, vent, rafales, clapot).
 
-private val LEVELS = listOf("beginner", "intermediate", "confirmed", "expert")
+private val LEVELS = listOf("beginner", "intermediate", "confirmed", "advanced", "expert")
 private val ONSHORE_CHOICES = listOf(10.0 to "Strict\n10\u00A0km/h", 12.0 to "Sensible\n12\u00A0km/h", 14.0 to "Normal\n14\u00A0km/h", 20.0 to "Tolérant\n20\u00A0km/h")
 // (importance de la direction, facteur offshore soutenu) : Indifférent / Apprécié / Recherché.
 private val OFFSHORE_CHOICES = listOf(
@@ -68,7 +68,7 @@ private fun SettingBlock(title: String, valueText: String? = null, hint: String?
 }
 
 /**
- * Mon profil : 4 profils de départ (Débutant, Intermédiaire, Confirmé, Expert) + « Personnalisé ».
+ * Mon profil : 5 profils de départ (Débutant, Intermédiaire, Confirmé, Avancé, Expert) + « Personnalisé ».
  * Un profil règle plus que l'énergie : vent, onshore, rafales, clapot et période suivent. Le niveau
  * choisi est stocké sous forme de texte (« beginner »… ou « custom:… »), voir [SurfProfile.fromLevel].
  */
@@ -128,6 +128,7 @@ fun SurferProfileSection(
                     "beginner" -> "Tu surfes plutôt les mousses."
                     "intermediate" -> "Tu commences à aller au large et à suivre les vagues."
                     "confirmed" -> "Tu es autonome dans l'eau et tu surfes seul."
+                    "advanced" -> "Tu cherches l'endroit critique de la vague et tu travailles tes manœuvres."
                     "expert" -> "Tu utilises le plein potentiel de la vague et tu cherches la puissance."
                     else -> "Pars du profil choisi, puis ajuste à ta sauce."
                 },
@@ -277,14 +278,23 @@ fun ProfilePage(
     onCustomSaved: (String) -> Unit,
     exampleAnswers: String,
     onExampleAnswersChanged: (String) -> Unit,
-    onInfo: () -> Unit
+    onInfo: () -> Unit,
+    levelQuiz: LevelQuizHost? = null,
+    // Vrai quand le questionnaire ou l'assistant occupe la page : l'écran parent masque alors le reste (Mon matériel).
+    onFocusMode: (Boolean) -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     // « overview », « wizard » ou « advanced ».
     var mode by remember { mutableStateOf("overview") }
     val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
+    LaunchedEffect(mode) { onFocusMode(mode == "quiz" || mode == "wizard") }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         when (mode) {
+            "quiz" -> if (levelQuiz != null) LevelQuestionnaire(
+                initial = levelQuiz.answers, initialShift = levelQuiz.shift, initialTolerance = levelQuiz.tolerance,
+                onDone = { a, shift, tol -> levelQuiz.onSave(a, shift, tol); mode = "overview" },
+                onClose = { mode = "overview" }
+            )
             "wizard" -> ProfileWizard(
                 level = surferLevel,
                 answers = exampleAnswers,
@@ -313,7 +323,8 @@ fun ProfilePage(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text("Mon profil", fontSize = 13.sp, color = colors.onSurfaceVariant)
-                    Text(
+                    val quizResult = levelQuiz?.result?.takeIf { it.levelKey == surferLevel }
+                    if (quizResult != null) LevelCard(quizResult) else Text(
                         if (isCustomLevel(surferLevel)) "Personnalisé" else levelLabel(surferLevel),
                         fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.onBackground
                     )
@@ -323,8 +334,11 @@ fun ProfilePage(
                         fontSize = 12.sp, color = colors.onSurfaceVariant
                     )
                 }
+                if (levelQuiz != null) Button(onClick = { mode = "quiz" }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire", fontWeight = FontWeight.Bold)
+                }
                 ProfileDaysPreview(profile)
-                Button(onClick = { mode = "wizard" }, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { mode = "wizard" }, modifier = Modifier.fillMaxWidth()) {
                     Text("Personnaliser mon profil", fontWeight = FontWeight.Bold)
                 }
                 Text(

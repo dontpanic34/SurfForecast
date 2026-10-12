@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon matériel</title>
+<style>
+:root{--bg:#EDF1F6;--surface:#fff;--surface2:#E4EAF2;--ink:#14202B;--muted:#5D6E80;--line:#D5DDE7;--accent:#2F6FE4;--accent-ink:#fff;--pro:#E08A00;--frame:#C9D3DF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#243345;--accent:#4C8DFF;--accent-ink:#06101F;--pro:#FFA826;--frame:#2A3A4D}}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px 16px 40px;line-height:1.4}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--muted);font-size:14px;margin:0 0 12px;max-width:62ch}
+.demo{max-width:392px;margin:0 auto 10px;display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+.demo select{padding:4px 6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:12px}
+.phone{width:min(100%,392px);margin:0 auto;background:var(--bg);border:1px solid var(--frame);border-radius:30px;padding:14px 12px 22px}
+.top{display:flex;align-items:center;gap:8px;padding:2px 6px 10px}.top .back{color:var(--accent);font-size:13px;font-weight:600}.top h2{font-size:17px;margin:0;font-weight:800}
+.grp{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:18px 6px 6px}
+.card{background:var(--surface);border-radius:16px;overflow:hidden}
+.pad{padding:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;padding:8px 12px;border-radius:99px;background:var(--surface2);font-size:13px;font-weight:650}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.big{font-size:17px;font-weight:800}.sub{color:var(--muted);font-size:13px;margin-top:3px}
+.hero .n{font-size:46px;font-weight:800;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.hero .n small{font-size:20px;color:var(--muted);font-weight:700;margin-left:4px}
+.hero .k{font-size:12.5px;color:var(--muted);font-weight:650}
+.bar{position:relative;height:10px;border-radius:5px;background:var(--surface2);margin-top:12px}
+.bar i{position:absolute;top:0;height:100%;border-radius:5px;background:var(--accent)}
+.bar em{position:absolute;top:-4px;width:4px;height:18px;margin-left:-2px;border-radius:2px;background:var(--ink)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-top:1px solid var(--line);font-size:14px;font-weight:650;cursor:pointer;list-style:none}
+.row::-webkit-details-marker{display:none}
+.row span{color:var(--muted);font-weight:500;font-size:13px}
+.row::after{content:"›";color:var(--muted);font-size:18px;margin-left:8px;transition:transform .15s}
+details[open]>.row::after{transform:rotate(90deg)}
+.in{padding:4px 14px 14px;font-size:13.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{font-size:12px;color:var(--muted);font-weight:650;display:block}
+input[type=number]{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);font-size:16px;margin-top:3px}
+.ln{display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}.ln:first-child{border-top:0}
+.ln b{font-variant-numeric:tabular-nums}.ln span{color:var(--muted)}
+.lock{padding:28px 16px;text-align:center;color:var(--muted);font-size:14px}.lock b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+.btn{display:inline-block;margin-top:12px;padding:10px 16px;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px}
+.ibtn{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font:700 12px/20px system-ui;padding:0;cursor:pointer;margin-left:6px;vertical-align:middle}
+.link{color:var(--accent);font-size:12.5px;font-weight:650;margin-top:8px;display:inline-block}
+.notes{max-width:392px;margin:12px auto 0;color:var(--muted);font-size:13px}.notes b{color:var(--ink)}
+</style></head><body>
+<h1>Mon matériel : maquette</h1>
+<p class="lead">Une page courte. Le détail est derrière « Aller plus loin ».</p>
+<div class="demo">Démo : <select id="dprof"><option value="1">Profil rempli</option><option value="0">Profil vide</option></select>
+<select id="dlvl"><option value="0">Débutant</option><option value="1">Intermédiaire</option><option value="2">Confirmé</option><option value="3" selected>Avancé</option><option value="4">Expert</option></select>
+<select id="dage"><option value="1">Âge renseigné</option><option value="0">Âge non renseigné</option></select>
+<select id="dw"><option value="1">Poids renseigné</option><option value="0">Poids non renseigné</option></select></div>
+<div class="phone">
+ <div class="top"><span class="back">‹ Réglages</span><h2>Mon matériel</h2></div>
+ <div id="locked" class="card" hidden><div class="lock"><b>Remplis d'abord ton profil</b>Le matériel s'appuie sur ton niveau.<br><span class="btn">Aller au profil</span></div></div>
+ <div id="main">
+  <p class="grp">Mes planches</p>
+  <div class="card"><div class="pad"><div class="chips" id="boards"></div></div>
+   <details id="usec" hidden><summary class="row">Quand tu les sors <span id="usesum"></span></summary><div class="in" id="use"></div></details></div>
+  <div class="card pad" id="today" style="margin-top:10px"></div>
+  <p class="grp">Mon volume <button class="ibtn" id="vinfo" aria-expanded="false" aria-label="Comment ce volume est calculé">i</button></p>
+  <div class="card" id="vexp" hidden><div class="in" style="padding-top:14px"><p style="margin:0 0 8px;font-weight:800">Comment on l'a calculé</p><p style="margin:0 0 8px">Volume = poids × ratio de ton niveau × petites corrections.</p><ul style="margin:0 0 8px;padding-left:18px"><li><b>Ratio de ton niveau</b> (litres par kilo, shortboard) : débutant 0,66 · intermédiaire 0,48 · confirmé 0,41 · avancé 0,37 · expert 0,35.</li><li><b>Poids :</b> les surfeurs légers ont besoin de plus de litres par kilo, jusqu'à +20 % à 55 kg, rien à partir de 85 kg.</li><li><b>Âge :</b> aucune majoration jusqu'à 35 ans, puis un peu plus avec les années. Facultatif.</li><li><b>Fish, twin, groveler :</b> le shortboard + 1 à 2 L (mesuré sur les pilotes JS : environ +3 %). <b>Mid-length :</b> 0,55 à 0,80 L par kilo. <b>Longboard :</b> 55 à 80 L et plus.</li></ul><p style="margin:0;color:var(--muted)">Vérifié sur les planches de pilotes pros de JS Industries (0,34 à 0,42 L/kg selon le poids). Une recommandation, pas une vérité : seul ton shaper connaît le bon volume pour toi. Le volume ne définit jamais ton niveau.</p></div></div>
+  <div class="card"><div class="pad hero" id="hero"></div>
+   <details><summary class="row">Aller plus loin</summary><div class="in" id="more"></div></details></div>
+  <p class="grp">Moi</p>
+  <div class="card pad"><div class="two"><div><label for="w">Poids (kg)</label><input id="w" type="number" inputmode="numeric" value="81"></div><div><label for="a">Âge <span style="font-weight:500">(facultatif)</span></label><input id="a" type="number" inputmode="numeric" value="34"></div></div></div>
+  <div class="card" style="margin-top:10px"><details><summary class="row" style="border-top:0">Ma pratique <span id="prasum"></span></summary><div class="in" id="pra"></div></details></div>
+ </div>
+</div>
+<p class="notes"><b>Ce qui a changé :</b> plus de taille, plus de tableau, un seul chiffre en gros. Les pros, le calcul et les autres planches sont derrière « Aller plus loin ». L'âge n'apparaît que s'il est renseigné.</p>
+<script>
+var RATIO=[0.66,0.48,0.41,0.37,0.35],LVL=['débutant','intermédiaire','confirmé','avancé','expert'];
+var BO=[['mousse','Mousse'],['long','Longboard'],['mid','Mid-length'],['fish','Fish, twin, groveler'],['short','Shortboard']];
+var USE=['Tout le temps','Petit','Gros','Mou','Creux','Puissant','Longues vagues qui déroulent'];
+var PR=[['Depuis',['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']],['Fréquence',['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine','Plusieurs fois par jour']],['Saison',['Toute l\'année','Quand l\'eau est bonne']]];
+var st={boards:['mid','fish','short'],use:{mid:[3,6],fish:[1,3],short:[4,5]},pra:[3,3,0]};
+var PROS={short:[['Julian Wilson',80,28.6],['Jeremy Flores',70,25.6],['Conner Coffin',75,27],['Mikey Wright',75,27.3],['Joel Parkinson',83,28.3],['Adrian Buchan',76,26.3],['Mark Occhilupo',95,35.6]],
+ fish:[['Luke',90,33.5],['Parko',87,32],['Julian',84,29],['Ace',73,27.5],['Conner',75,27.5],['Pete Devries',67,26],['Aelan Vaast',59,24.5]],
+ mid:[['Luke Egan, 7\'0',90,48.7],['Harrison Roach, 7\'6',72,50],['Joel Parkinson, 6\'8',87,38.4]]};
+function wF(w){return 1+0.2*Math.max(0,Math.min(1,(85-w)/30))}
+function aF(a){return !a?1:a<=35?1:a<=50?1.03:a<=60?1.07:1.10}
+function $(i){return document.getElementById(i)}
+function lvl(){return +$('dlvl').value}
+function fr(v){return String(v).replace('.',',')}
+function name(k){return BO.filter(function(x){return x[0]===k})[0][1]}
+function range(k,w,a){var b=w*RATIO[lvl()]*wF(w)*aF(a)*1.05,lo=b*0.95,hi=b*1.05;
+ if(k==='short')return[lo,hi];if(k==='fish')return[lo+1,hi+2];if(k==='mid')return[w*0.55,w*0.8];if(k==='long')return[55,80];return null}
+function fmt(k,r){return k==='long'?'55 à 80 L et plus':Math.round(r[0])+' à '+Math.round(r[1])+' L'}
+function X(v){return Math.max(0,Math.min(100,(v-15)/75*100))}
+function draw(){
+ var on=$('dprof').value==='1';$('locked').hidden=on;$('main').hidden=!on;if(!on)return;
+ var hasW=$('dw').value==='1',hasA=$('dage').value==='1';
+ var w=hasW?(+$('w').value||0):0,a=hasA?(+$('a').value||0):0;
+ $('boards').innerHTML=BO.map(function(b){return '<button class="chip" data-k="'+b[0]+'" aria-pressed="'+(st.boards.indexOf(b[0])>=0)+'">'+b[1]+'</button>'}).join('');
+ document.querySelectorAll('#boards .chip').forEach(function(b){b.onclick=function(){var k=b.dataset.k,i=st.boards.indexOf(k);if(i>=0)st.boards.splice(i,1);else st.boards.push(k);draw()}});
+ // usage
+ var multi=st.boards.length>1;$('usec').hidden=!multi;
+ if(multi){$('usesum').textContent='';$('use').innerHTML=st.boards.map(function(k){st.use[k]=st.use[k]||[0];return '<p style="margin:10px 0 6px;font-weight:700">'+name(k)+'</p><div class="chips">'+USE.map(function(t,i){return '<button class="chip" data-k="'+k+'" data-i="'+i+'" aria-pressed="'+(st.use[k].indexOf(i)>=0)+'">'+t+'</button>'}).join('')+'</div>'}).join('');
+  document.querySelectorAll('#use .chip').forEach(function(b){b.onclick=function(){var u=st.use[b.dataset.k],i=+b.dataset.i,j=u.indexOf(i);if(j>=0)u.splice(j,1);else u.push(i);draw()}})}
+ // planche du jour
+ $('today').innerHTML=st.boards.length===0?'<div class="big">Choisis une planche</div>':multi?'<div class="big">Samedi : sors ta mid-length</div><div class="sub">0,8 m, 9 s, mou. Si ça se creuse, ce sera le shortboard.</div>':'<div class="big">'+name(st.boards[0])+'</div><div class="sub">L\'appli te dit si la journée lui convient.</div>';
+ // héros volume
+ var main=['short','fish','mid','long','mousse'].filter(function(k){return st.boards.indexOf(k)>=0})[0];
+ var h='';
+ if(!main)h='<div class="sub">Choisis une planche pour voir son volume.</div>';
+ else if(main==='mousse')h='<div class="big">Pas de volume conseillé</div><div class="sub">Pour une mousse, ça dépend de sa longueur.</div>';
+ else if(!w)h='<div class="big">Ajoute ton poids</div><div class="sub">Il suffit du poids pour voir ton volume conseillé.</div>';
+ else{var r=range(main,w,a);
+  h='<div class="k">'+name(main)+' · '+w+' kg'+(a?' · '+a+' ans':'')+'</div><div class="n">'+(main==='long'?'55 à 80':Math.round(r[0])+' à '+Math.round(r[1]))+'<small>L</small></div><div class="bar"><i style="left:'+X(r[0])+'%;width:'+(X(r[1])-X(r[0]))+'%"></i></div>'+(a?'':'<span class="link">Ajoute ton âge pour affiner</span>')}
+ $('hero').innerHTML=h;
+ // aller plus loin
+ var m='';
+ if(w){var others=st.boards.filter(function(k){return k!==main&&k!=='mousse'});
+  if(others.length)m+=others.map(function(k){return '<div class="ln"><span>'+name(k)+'</span><b>'+fmt(k,range(k,w,a))+'</b></div>'}).join('')}
+ m+='<p class="hint" style="margin-top:12px"><b style="color:var(--ink)">Comment c\'est calculé.</b> Ton poids, ton niveau '+LVL[lvl()]+(a?', ton âge':'')+' et ta forme. Une recommandation, pas une vérité : seul ton shaper connaît le bon volume.</p>';
+ var pk=main==='mid'?'mid':main==='fish'?'fish':'short';
+ if(w&&main&&main!=='mousse'&&main!=='long'){var pp=PROS[pk].slice().sort(function(x,y){return Math.abs(x[1]-w)-Math.abs(y[1]-w)}).slice(0,3);
+  m+='<p class="hint" style="margin-top:12px"><b style="color:var(--ink)">Des pros de ton gabarit</b> (fiches JS Industries)</p>'+pp.map(function(p){return '<div class="ln"><span>'+p[0]+' · '+p[1]+' kg</span><b>'+fr(p[2])+' L</b></div>'}).join('')}
+ $('more').innerHTML=m;
+ // pratique
+ $('prasum').textContent=PR[1][1][st.pra[1]];
+ $('pra').innerHTML=PR.map(function(p,qi){return '<p style="margin:10px 0 6px;font-weight:700">'+p[0]+'</p><div class="chips">'+p[1].map(function(t,i){return '<button class="chip" data-q="'+qi+'" data-i="'+i+'" aria-pressed="'+(st.pra[qi]===i)+'">'+t+'</button>'}).join('')+'</div>'}).join('');
+ document.querySelectorAll('#pra .chip').forEach(function(b){b.onclick=function(){st.pra[+b.dataset.q]=+b.dataset.i;draw()}});
+ $('w').onchange=draw;$('a').onchange=draw;
+}
+$('vinfo').onclick=function(){var t=$('vexp');t.hidden=!t.hidden;this.setAttribute('aria-expanded',!t.hidden)};
+['dprof','dlvl','dage','dw'].forEach(function(i){$(i).onchange=draw});
+draw();
+</script></body></html>

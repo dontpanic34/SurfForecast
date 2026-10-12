@@ -70,6 +70,7 @@ fun SurfPreferencesDialog(
     onCustomProfileSaved: (String) -> Unit = {},
     exampleAnswers: String = "",
     onExampleAnswersChanged: (String) -> Unit = {},
+    levelQuiz: LevelQuizHost? = null,
     engineConfig: ForecastEngineConfig,
     onEngineConfigChanged: (ForecastEngineConfig) -> Unit,
     onViewLogs: () -> Unit,
@@ -379,6 +380,7 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "profile") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        var profileFocus by remember { mutableStateOf(false) }
                         ProfilePage(
                             surferLevel = surferLevel,
                             onLevelChanged = onSurferLevelChanged,
@@ -386,8 +388,11 @@ fun SurfPreferencesDialog(
                             onCustomSaved = onCustomProfileSaved,
                             exampleAnswers = exampleAnswers,
                             onExampleAnswersChanged = onExampleAnswersChanged,
+                            levelQuiz = levelQuiz,
+                            onFocusMode = { profileFocus = it },
                             onInfo = { showScoreInfo = true }
                         )
+                        if (!profileFocus) {
                         HorizontalDivider(color = colors.onBackground.copy(alpha = 0.1f))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             QuiverIcon(color = colors.onBackground, modifier = Modifier.size(20.dp))
@@ -402,6 +407,7 @@ fun SurfPreferencesDialog(
                             onAddBoard = onAddBoard,
                             onDeleteBoard = onDeleteBoard
                         )
+                        }
                     }
 
                     if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

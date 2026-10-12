@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Organigramme du profil</title>
+<style>
+:root{--bg:#EDF1F6;--surface:#FFFFFF;--surface2:#E4EAF2;--ink:#14202B;--muted:#5D6E80;--line:#B9C6D6;--accent:#2F6FE4;--accent-ink:#FFFFFF;--good:#1FA463;--warn:#E08A00;--bad:#D6403A;
+--l0:#6C8EBF;--l1:#3FA7A0;--l2:#4FAE5B;--l3:#E0A100;--l4:#D6603A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#2E4258;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--warn:#FFA826;--bad:#F2554F;--l0:#7FA3D8;--l1:#52C0B8;--l2:#62C66E;--l3:#F2B91A;--l4:#F27A55;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#2E4258;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--warn:#FFA826;--bad:#F2554F;--l0:#7FA3D8;--l1:#52C0B8;--l2:#62C66E;--l3:#F2B91A;--l4:#F27A55;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:14px 14px 30px;line-height:1.4}
+header{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;max-width:900px;margin:0 auto 10px}
+h1{font-size:19px;margin:0}
+.theme button{all:unset;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12.5px;color:var(--muted);background:var(--surface2)}
+.theme button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.nav{display:flex;align-items:center;gap:8px;max-width:900px;margin:0 auto 10px}
+.nav button{all:unset;cursor:pointer;padding:9px 14px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px}
+.nav button:disabled{opacity:.35;cursor:default}
+.nav button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.nav .ct{flex:1;text-align:center;font-size:13px;color:var(--muted)}
+.slide{max-width:900px;margin:0 auto;background:var(--surface);border-radius:18px;padding:18px 16px 22px;min-height:420px}
+.slide h2{font-size:15px;margin:0 0 12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.box{background:var(--surface2);border-radius:12px;padding:11px 13px;font-size:14px;border:2px solid transparent}
+.box.q{background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:17px;text-align:center}
+.box.q small{display:block;font-weight:500;font-size:12.5px;opacity:.9;margin-top:2px}
+.spine{margin-left:18px;border-left:3px solid var(--line);padding:10px 0 10px 18px;display:grid;gap:8px}
+.ans{position:relative}
+.ans::before{content:"";position:absolute;left:-18px;top:22px;width:18px;height:3px;background:var(--line)}
+.ans .a{font-weight:700;font-size:14.5px}
+.ans .lim{margin-top:5px;font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:800;color:#0b1520;margin-right:4px}
+.t0{background:var(--l0)}.t1{background:var(--l1)}.t2{background:var(--l2)}.t3{background:var(--l3)}.t4{background:var(--l4)}.tn{background:var(--surface);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.next{margin:6px 0 0 18px;padding-left:18px;border-left:3px solid var(--line);position:relative}
+.next .arrow{color:var(--muted);font-size:12.5px;margin:6px 0}
+.go{all:unset;cursor:pointer;display:inline-block;background:var(--surface2);padding:8px 12px;border-radius:10px;font-weight:700;font-size:13.5px;margin:3px 6px 3px 0;box-shadow:inset 0 0 0 2px var(--accent)}
+.go:focus-visible{outline:3px solid var(--ink)}
+.note{margin-top:12px;font-size:12.5px;color:var(--muted)}
+/* vue d'ensemble */
+.flow{display:grid;justify-items:center;gap:0}
+.fn{background:var(--surface2);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:650;text-align:center;min-width:170px;max-width:100%;border:2px solid transparent}
+.fn.info{opacity:.7;border-style:dashed;border-color:var(--line)}
+.fn.end{background:var(--accent);color:var(--accent-ink);font-weight:800}
+.fa{color:var(--line);font-size:18px;line-height:1.1;height:20px}
+.fork{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin-top:2px}
+.fork .col{display:grid;justify-items:center;align-content:start;border-top:3px solid var(--line);padding-top:6px;position:relative}
+.fork .col .lab{font-size:11.5px;font-weight:800;color:var(--accent);margin-bottom:4px}
+.fork .fn{min-width:0;width:100%;font-size:12px;padding:7px 8px}
+@media (max-width:560px){.fork{grid-template-columns:1fr}.fork .col{border-top:3px solid var(--line)}}
+/* marches */
+.stairs{display:grid;gap:6px;margin:10px 0}
+.step{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;font-weight:800;color:#0b1520}
+.step small{font-weight:600;opacity:.85}
+/* chemins */
+.bars{display:grid;gap:8px;margin:8px 0}
+.bar{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;font-size:13px}
+.bar i{display:block;height:16px;border-radius:8px}
+.why{margin-top:12px;display:grid;gap:6px;font-size:13px}
+.why div{display:flex;gap:8px;align-items:baseline}
+.sel{display:grid;gap:10px}
+.sel .qq{background:var(--surface2);border-radius:10px;padding:9px 11px}
+.sel .qq p{margin:0 0 6px;font-size:13.5px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;padding:7px 11px;border-radius:99px;background:var(--surface);font-size:12.5px;font-weight:650;box-shadow:inset 0 0 0 1px var(--line)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+.chip:focus-visible{outline:2px solid var(--accent)}
+.res{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--surface2);font-size:14px}
+.res b.big{font-size:20px}
+
+.lvbtns{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:900px;margin:0 auto 12px}
+.lvbtns button{all:unset;cursor:pointer;text-align:center;padding:12px 4px;border-radius:12px;font-weight:800;font-size:13.5px;color:#0b1520;opacity:.55;box-shadow:inset 0 0 0 2px transparent}
+.lvbtns button[aria-pressed="true"]{opacity:1;box-shadow:0 0 0 3px var(--ink)}
+.lvbtns button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.lvbtns small{display:block;font-weight:600;font-size:11px;opacity:.8}
+@media (max-width:520px){.lvbtns{grid-template-columns:repeat(2,1fr)}}
+.panel{max-width:900px;margin:0 auto;background:var(--surface);border-radius:18px;padding:16px 14px 20px}
+.panel h2{font-size:19px;margin:0 0 4px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.panel .def{margin:0 0 12px;font-size:13.5px;color:var(--muted)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:0 0 12px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.cols{grid-template-columns:1fr}}
+.branch{background:var(--bg);border-radius:14px;padding:12px 12px 14px}
+.branch>.bt{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.nd{background:var(--surface2);border-radius:10px;padding:9px 10px}
+.nd.info{opacity:.7;border:2px dashed var(--line)}
+.nd .nq{font-size:13px;font-weight:700;margin-bottom:6px}
+.nd .nq small{display:block;font-weight:500;color:var(--muted);font-size:11.5px}
+.chs{display:flex;flex-wrap:wrap;gap:5px}
+.ch{font-size:12px;padding:4px 9px;border-radius:99px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.ch.ok{box-shadow:inset 0 0 0 2px var(--good)}
+.ch.star{box-shadow:inset 0 0 0 2px var(--l3);background:rgba(224,161,0,.18);font-weight:700}
+.ch.no{opacity:.4;text-decoration:line-through}
+.ch i{font-style:normal;font-size:10.5px;opacity:.75;margin-left:4px}
+.ar{text-align:center;color:var(--line);line-height:1;height:18px;font-size:16px}
+.rule{margin-top:10px;padding:9px 11px;border-radius:10px;background:var(--surface2);font-size:12.5px}
+.imp{padding:12px;border-radius:10px;background:var(--surface2);font-size:13px;color:var(--muted)}
+details{max-width:900px;margin:12px auto 0;background:var(--surface);border-radius:14px;padding:4px 14px}
+details summary{cursor:pointer;font-weight:700;font-size:14px;padding:10px 0;color:var(--accent)}
+details[open] summary{margin-bottom:6px}
+.sel{display:grid;gap:10px;padding-bottom:12px}
+</style>
+</head>
+<body>
+<header><h1>Comment on arrive à un niveau</h1><div class="theme" id="theme"><button data-v="auto" aria-pressed="true">Auto</button><button data-v="light" aria-pressed="false">Clair</button><button data-v="dark" aria-pressed="false">Sombre</button></div></header>
+<p style="max-width:900px;margin:0 auto 10px;font-size:14px;color:var(--muted)">Touche un niveau : tu vois tout ce qui permet de l'atteindre, question par question.</p>
+<div class="lvbtns" id="lvb"></div>
+<div class="panel" id="panel"></div>
+
+<details id="cmp" open><summary>Comparer deux niveaux</summary><div id="cmpBody" style="padding-bottom:12px"></div></details>
+<details id="rule"><summary>La règle du niveau</summary><div id="ruleBody" style="padding-bottom:12px"></div></details>
+<details id="over"><summary>Toutes les questions, dans l'ordre</summary><div id="overBody" style="padding-bottom:12px"></div></details>
+<details id="test"><summary>Teste un chemin</summary><div class="sel" id="sel"></div><div class="res" id="tres" style="margin-bottom:12px"></div></details>
+
+<script>
+var LV=['Débutant','Intermédiaire','Confirmé','Avancé','Expert'];
+var DEF=[
+ 'Mousse (ou réformes), take-off à travailler, ne passe pas la barre ou seulement tout petit.',
+ 'Commence à surfer le lisse sur petites vagues ; se place en fonction des autres ; passe la barre quand c\'est petit ou au bon moment.',
+ 'Autonome : repère une vague même s\'il n\'y a personne ; take-off solide ; passe la barre sans souci.',
+ 'Sait faire des manœuvres d\'expert mais pas de façon régulière : encore une marge de progression ; cherche la taille et l\'endroit où les exprimer ; sait où est le pic.',
+ 'Toutes les manœuvres sont acquises, il les perfectionne. Pas de limite : le gros, le creux ; surfe aussi quand c\'est pourri ; tient le courant à la rame.'];
+var TAGC=['#6C8EBF','#3FA7A0','#4FAE5B','#E0A100','#D6603A'];
+function tag(n){return '<span class="tag t'+n+'">'+LV[n]+'</span>'}
+
+/* ---------- Les questions, leurs réponses, et la limite posée par chaque réponse ---------- */
+var Q={
+ since:{n:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans'],info:true},
+ freq:{n:'À quelle fréquence tu surfes ?',o:['Quelques fois par an','1 à 2 fois par mois','Chaque semaine','Plusieurs fois par semaine'],info:true},
+ season:{n:'Sur l\'année, tu surfes…',o:['Toute l\'année','Surtout l\'été (ou en vacances)'],info:true},
+ what:{n:'Tu surfes…',o:['La mousse seulement','Le lisse']},
+ board:{n:'Tu surfes sur quoi ?',sub:'Ta planche principale.',o:['Une planche en mousse (type Décathlon)','Un longboard ou un mid-length','Un fish ou un twin','Un shortboard'],lim:[0,4,4,4]},
+ barre:{n:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],base:[0,0,1,2,3,4]},
+ feel:{n:'Quand tu passes la barre, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si je suis au bon endroit, au bon moment']},
+ tk:{n:'Ton take-off',sub:'Tu pars en un seul temps ?',o:['En un seul temps, tout le temps','En un seul temps, souvent','Parfois en un seul temps, ou en plusieurs temps'],lim:[4,1,0]},
+ want:{n:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant']},
+ peak:{n:'Où tu te places dans l\'eau ?',sub:'Le pic, c\'est l\'endroit où la vague commence à casser.',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],lim:[1,2,4]},
+ man:{n:'Tes manœuvres',sub:'Celles qu\'on voit chez les pros. (Seulement si tu cherches à exprimer tes manœuvres ou plus.)',o:['Le mouvement est là, mais la réalisation est brouillonne : pas très propre, ça passe parfois','Le mouvement est bon, il reste des détails à régler pour replaquer à chaque fois','Je replaque à chaque fois : j\'affine le style, la puissance, et je vise des endroits plus critiques'],lim:[2,3,4]},
+ goal:{n:'Sur la vague, tu cherches surtout à…',sub:'Seulement si tu surfes le lisse.',o:['Avoir des take-off dans le lisse','Suivre la vague dans le lisse le plus longtemps possible','Exprimer tes manœuvres, t\'améliorer, être plus critique','Perfectionner des manœuvres que tu maîtrises déjà'],lim:[1,2,3,4]}
+};
+var FLOW=[['since','freq','season','board','tk','want'],
+          ['since','freq','season','board','barre','feel','tk','peak','goal','man']];
+
+/* ---------- La règle : la marche la plus basse ---------- */
+function limitsOf(a){
+  var L=[{k:'board',v:Q.board.lim[a.board],t:'ta planche en mousse'}];
+  if(a.what===0){L.push({k:'what',v:0,t:'tu ne surfes que la mousse'})}
+  else{
+    L.push({k:'goal',v:Q.goal.lim[a.goal],t:'ce que tu cherches'});
+    var bar=Q.barre.base[a.barre];if(a.feel!==0)bar=Math.max(0,bar-1);
+    L.push({k:'barre',v:bar,t:'la taille où tu passes la barre'+(a.feel!==0?' (et la façon dont tu la passes)':'')});
+    L.push({k:'tk',v:Q.tk.lim[a.tk],t:'ton take-off dans le lisse'});
+    L.push({k:'peak',v:Q.peak.lim[a.peak],t:'l\'endroit où tu te places dans l\'eau (le pic)'});
+    if(a.goal>=2&&a.man!==undefined)L.push({k:'man',v:Q.man.lim[a.man],t:'tes manœuvres (pas encore acquises)'});
+  }
+  return L;
+}
+function levelFor(a){var L=limitsOf(a),m=4;L.forEach(function(x){m=Math.min(m,x.v)});return {level:m,binding:L.filter(function(x){return x.v===m}),all:L}}
+
+/* ---------- Le panneau d'un niveau ---------- */
+function st(limit,N){return limit<N?'no':(limit===N?'star':'ok')}
+function chip(text,cls,sub){return '<span class="ch '+cls+'">'+(cls==='star'?'★ ':cls==='ok'?'✔ ':cls==='no'?'':'')+text+(sub?'<i>'+sub+'</i>':'')+'</span>'}
+function nodeStd(id,N,extra){
+  var q=Q[id],chs;
+  if(q.info)chs=[chip('Toutes les réponses','')];
+  else chs=q.o.map(function(o,i){return chip(o,st(q.lim[i],N))});
+  return '<div class="nd'+(q.info?' info':'')+'"><div class="nq">'+q.n+(q.sub?'<small>'+q.sub+'</small>':'')+'</div><div class="chs">'+chs.join('')+'</div></div>';
+}
+function nodeBarre(N){
+  var q=Q.barre,chs=q.o.map(function(o,i){
+    var ready=q.base[i],other=Math.max(0,ready-1);
+    var okOther=other>=N,okReady=ready>=N;
+    if(okOther)return chip(o,(other===N||ready===N)?'star':'ok');
+    if(okReady)return chip(o,ready===N?'star':'ok','seulement si prêt à surfer');
+    return chip(o,'no');});
+  var anyOther=q.base.some(function(b){return Math.max(0,b-1)>=N});
+  var f=Q.feel.o.map(function(o,i){return i===0?chip(o,'ok'):chip(o,anyOther?'ok':'no',anyOther?'la limite baisse d\'une marche':'')});
+  return '<div class="nd"><div class="nq">'+Q.barre.n+'</div><div class="chs">'+chs.join('')+'</div></div><div class="ar">↓</div>'+
+         '<div class="nd"><div class="nq">'+Q.feel.n+'<small>Si tu n\'es pas « prêt à surfer », la limite de la barre baisse d\'une marche.</small></div><div class="chs">'+f.join('')+'</div></div>';
+}
+function branchHtml(b,N){
+  var title=b===0?'La mousse seulement':'Le lisse',h='<div class="branch"><div class="bt">'+title+'</div>';
+  if(b===0&&N>=1)return h+'<div class="imp">Impossible par ce chemin : la mousse seulement reste '+tag(0)+' (ou « Débutant + » si le take-off est sûr et que tu veux passer au lisse).</div></div>';
+  var parts=[];
+  FLOW[b].forEach(function(id){
+    if(id==='barre')parts.push(nodeBarre(N));
+    else if(id==='feel')return;
+    else if(b===0&&id==='tk'){
+      var tkq=Q.tk;var chs=tkq.o.map(function(o,i){var c=N===0?(i===0?'star':'ok'):'no';return chip(o,c,i===0?'« Débutant + » avec l\'envie de lisse':'')});
+      parts.push('<div class="nd"><div class="nq">Dans la mousse, ton take-off</div><div class="chs">'+chs.join('')+'</div></div>');
+    }
+    else if(b===0&&id==='want'){
+      var chs2=Q.want.o.map(function(o,i){var c=N===0?(i===0?'star':'ok'):'no';return chip(o,c)});
+      parts.push('<div class="nd"><div class="nq">'+Q.want.n+'</div><div class="chs">'+chs2.join('')+'</div></div>');
+    }
+    else parts.push(nodeStd(id,N));
+  });
+  h+=parts.join('<div class="ar">↓</div>');
+  var rule='';
+
+  if(b===0&&N===0)rule='En mousse seulement tu es '+LV[0]+', ou « Débutant + » si le take-off est « tout le temps en un seul temps » ET que tu veux passer au lisse.';
+  else if(N===4)rule='Il n\'y a pas de marche au-dessus : <b>toutes</b> ces réponses doivent être au maximum.';
+  else rule='Il faut que <b>toutes</b> les réponses soient ✔ ou ★, et <b>au moins une ★</b> : c\'est elle qui te fixe à '+LV[N]+' et pas plus haut.';
+  return h+'<div class="rule">'+rule+'</div></div>';
+}
+var cur=null;
+function showLevel(N){
+  cur=N;
+  document.querySelectorAll('#lvb button').forEach(function(b){b.setAttribute('aria-pressed',+b.dataset.n===N)});
+  var h='<h2>Pour être '+LV[N]+'</h2><p class="def">'+DEF[N]+'</p><div class="legend"><span>✔ réponse permise</span><span>★ permise, et c\'est elle qui fixe le niveau</span><span style="text-decoration:line-through;opacity:.6">réponse impossible</span></div>';
+  h+='<div class="cols">'+(N<=1?branchHtml(0,N):branchHtml(0,N))+branchHtml(1,N)+'</div>';
+  document.getElementById('panel').innerHTML=h;
+}
+var lb=document.getElementById('lvb');
+lb.innerHTML=LV.map(function(l,i){return '<button data-n="'+i+'" style="background:'+TAGC[i]+'">'+(i+1)+' · '+l+'</button>'}).join('');
+lb.onclick=function(e){var b=e.target.closest('button');if(b)showLevel(+b.dataset.n)};
+
+/* ---------- Règle, vue d'ensemble, testeur ---------- */
+(function(){
+  var A=3,B=4;
+  function permitted(id,N){var q=Q[id];return q.o.map(function(o,i){return {o:o,ok:q.lim[i]>=N}}).filter(function(x){return x.ok}).map(function(x){return x.o})}
+  function rowFor(id,N){
+    var q=Q[id];
+    if(id==='barre')return q.o.map(function(o,i){var r=q.base[i],ot=Math.max(0,r-1);return r>=N?o+(ot>=N?'':' (si prêt à surfer)'):null}).filter(Boolean);
+    if(id==='feel')return N>=4?['Prêt à surfer seulement']:N>=1?['Prêt à surfer ; ou une autre réponse si la taille est assez grande']:['Toutes les réponses'];
+    if(id==='goal')return N===0?['Aucune de ces réponses (ce niveau se choisit autrement)']:permitted(id,N);
+    return permitted(id,N);
+  }
+  function draw(){
+    var h='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px"><label style="font-size:13px">Niveau <select id="cA">'+LV.map(function(l,i){return '<option value="'+i+'"'+(i===A?' selected':'')+'>'+l+'</option>'}).join('')+'</select></label><label style="font-size:13px">comparé à <select id="cB">'+LV.map(function(l,i){return '<option value="'+i+'"'+(i===B?' selected':'')+'>'+l+'</option>'}).join('')+'</select></label><button class="go" id="cN" style="margin:0">Mon niveau, et le suivant</button></div>';
+    h+='<p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Les réponses qui permettent chacun de ces niveaux. Les lignes en jaune sont celles où ils se séparent.</p><div style="display:grid;gap:8px">';
+    ['goal','board','barre','feel','tk','peak','man'].forEach(function(id){
+      var r1=rowFor(id,A),r2=rowFor(id,B),same=r1.join('|')===r2.join('|');
+      h+='<div class="nd" style="'+(same?'':'box-shadow:inset 0 0 0 2px var(--l3)')+'"><div class="nq">'+Q[id].n+(same?' <small>identique</small>':'')+'</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px"><div><b>'+tag(A)+'</b><br>'+r1.join('<br>')+'</div><div><b>'+tag(B)+'</b><br>'+r2.join('<br>')+'</div></div></div>'});
+    h+='</div>';
+    if(A===3&&B===4)h+='<p class="rule" style="margin-top:10px"><b>Constat :</b> Avancé et Expert ne se séparent que sur <b>ce que tu cherches</b> (« Encore au-dessus » n\'est pas encore défini) et sur <b>la taille de la barre</b>. La différence : un Avancé a encore des manœuvres à apprendre et n\'est pas régulier ; un Expert les a toutes acquises et les perfectionne.</p>';
+    document.getElementById('cmpBody').innerHTML=h;
+    document.getElementById('cA').onchange=function(){A=+this.value;draw()};
+    document.getElementById('cB').onchange=function(){B=+this.value;draw()};
+    document.getElementById('cN').onclick=function(){B=Math.min(4,A+1);if(B===A){A=3;B=4}draw()};
+  }
+  draw();
+})();
+document.getElementById('ruleBody').innerHTML='<p style="margin:0 0 8px;font-size:14px"><b>Le niveau est la marche la plus basse</b> parmi ce que tu vises et chacune des limites posées par tes réponses.</p><p style="margin:0;font-size:13px;color:var(--muted)">Exemple : tu vises Confirmé, tu surfes l\'épaule, tu repères la vague tout seul, tu passes la barre jusqu\'à poitrine, mais tu fatigues vite pour la passer. Les limites sont Confirmé, Confirmé, Confirmé, Confirmé et Intermédiaire (la rame) : le niveau est <b>Intermédiaire</b>. Depuis quand, fréquence et saison ne changent pas le niveau.</p>';
+document.getElementById('overBody').innerHTML='<p style="margin:0 0 8px;font-size:13px;color:var(--muted)">Deux chemins seulement, qui se rejoignent à « ce que tu cherches ». La rame vient avant le take-off : on réussit un take-off si on a assez de vitesse.</p><div class="cols">'+[0,1].map(function(b){return '<div class="branch"><div class="bt">'+(b===0?'La mousse seulement':'Le lisse')+'</div>'+FLOW[b].map(function(id){return '<div class="nd'+(Q[id].info?' info':'')+'"><div class="nq">'+Q[id].n+'</div></div>'}).join('<div class="ar">↓</div>')+'</div>'}).join('')+'</div>';
+(function(){
+  var a={what:1,board:3,barre:4,feel:0,tk:0,peak:2,goal:2,man:2};
+  var el=document.getElementById('sel');
+  var ORDER=['what','board','barre','feel','tk','want','peak','goal','man'];
+  function act(id){if(id==='man')return a.what===1&&a.goal>=2;if(['barre','feel','peak','goal'].indexOf(id)>=0)return a.what===1;if(id==='want')return a.what===0;return true}
+  function draw(){
+    el.innerHTML=ORDER.filter(act).map(function(id){var q=Q[id];return '<div class="qq"><p>'+q.n+'</p><div class="chips">'+q.o.map(function(o,i){var on=id==='waves'?a.waves.indexOf(i)>=0:a[id]===i;return '<button class="chip" data-q="'+id+'" data-i="'+i+'" aria-pressed="'+on+'">'+o+'</button>'}).join('')+'</div></div>'}).join('');
+    el.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){var id=b.dataset.q,i=+b.dataset.i;if(id==='waves'){var k=a.waves.indexOf(i);if(k>=0){if(a.waves.length>1)a.waves.splice(k,1)}else a.waves.push(i)}else{a[id]=i;if(id==='what'&&i===0&&a.want===undefined)a.want=0}draw()}});
+    var r=levelFor(a);
+    document.getElementById('tres').innerHTML='<b class="big">'+tag(r.level)+'</b><div style="margin-top:8px">Limites : '+r.all.map(function(x){return '<div>'+(x.v===r.level?'➜ ':'• ')+x.t+' : '+tag(x.v)+'</div>'}).join('')+'</div><div style="margin-top:8px;font-size:13px;color:var(--muted)">Le niveau est la marche la plus basse : '+r.binding.map(function(b){return b.t}).join(', ')+'.</div>';
+  }
+  document.getElementById('test').addEventListener('toggle',function(){if(this.open)draw()});
+})();
+document.getElementById('theme').onclick=function(e){var b=e.target.closest('button');if(!b)return;this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});var v=b.dataset.v;if(v==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',v)};
+showLevel(3);
+</script>
+</body>
+</html>

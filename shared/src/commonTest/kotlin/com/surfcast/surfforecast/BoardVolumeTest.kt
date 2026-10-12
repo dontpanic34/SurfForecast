@@ -40,22 +40,6 @@ class BoardVolumeTest {
     }
 
     @Test
-    fun ratioAndLevelFollowTheReferenceTable() {
-        assertEquals(0.4, volumeRatio(30.0, 75))
-        assertNull(volumeRatio(30.0, 0))
-        assertNull(volumeRatio(null, 75))
-        assertEquals("beginner", levelForRatio(0.75))
-        assertEquals("intermediate", levelForRatio(0.5))
-        assertEquals("confirmed", levelForRatio(0.39))
-        assertEquals("expert", levelForRatio(0.33))
-        // Xero Gravity 31,5 L pour 81 kg (≈ 0,39 L/kg) : un ratio de confirmé.
-        assertEquals("confirmed", levelForRatio(31.5 / 81))
-        val range = volumeRangeFor("confirmed", 80)
-        assertEquals(29.6, range.start, 0.01)
-        assertEquals(36.0, range.endInclusive, 0.01)
-    }
-
-    @Test
     fun summaryShowsApproximationOnlyForEstimatedVolumes() {
         val estimated = QuiverBoard(model = "A", family = "shortboard", lengthLitrage = "", finSetup = "", volumeL = 31.1, volumeEstimated = true)
         val written = estimated.copy(volumeEstimated = false)
@@ -77,36 +61,6 @@ class BoardVolumeTest {
         assertEquals(101.7, waveEnergyKj(0.8, 9.0), 0.1)
         // L'inverse retrouve la hauteur.
         assertEquals(1.5, heightForEnergy(waveEnergyKj(1.5, 10.0), 10.0), 1e-9)
-    }
-
-    @Test
-    fun recommendedVolumeMatchesTheShopReferenceExample() {
-        // 81 kg, 40 ans, forme excellente, Confirmé (index 4), planche courte : 33,2 L.
-        val body = BodyState(ageYears = 40, weightKg = 81, fitness = 0)
-        val rec = recommendedVolumeL(body, 4)
-        assertNotNull(rec)
-        assertEquals(33.24, rec, 0.01)
-        val range = recommendedRange(rec)
-        assertEquals(32.40, range.start, 0.05)
-        assertEquals(34.06, range.endInclusive, 0.05)
-        assertNull(recommendedVolumeL(BodyState(ageYears = 40), 4))
-        // Plus âgé, moins en forme, planche longue : plus de volume.
-        val older = recommendedVolumeL(BodyState(ageYears = 55, weightKg = 81, fitness = 2), 4, family = "longboard")
-        assertNotNull(older)
-        assertTrue(older > rec * 1.5)
-    }
-
-    @Test
-    fun tableAndDefaultsFollowTheLevels() {
-        assertEquals(54.4, volumeTableValue(0, 80), 0.1)
-        assertEquals(43.2, volumeTableValue(1, 80), 0.1)
-        assertEquals(33.6, volumeTableValue(2, 80), 0.1)
-        assertEquals(30.4, volumeTableValue(4, 80), 0.1)
-        assertEquals(2, BodyState().levelIndex("intermediate"))
-        assertEquals(4, BodyState().levelIndex("confirmed"))
-        assertEquals(1, BodyState(volumeLevel = 1).levelIndex("expert"))
-        // Surfeur léger : plus de litres par kilo.
-        assertTrue(volumeTableValue(4, 40) / 40 > volumeTableValue(4, 80) / 80)
     }
 
     @Test
@@ -136,23 +90,83 @@ class BoardVolumeTest {
     }
 
     @Test
-    fun expertShortboardVolumeMatchesProReferences() {
-        // Slater 72 kg ≈ 24-25 L, Medina 80 kg = 29 L, Wright 86 kg = 31,5 L (à ±5 %).
-        for ((kg, ref) in listOf(72 to 24.5, 80 to 29.0, 86 to 31.5)) {
-            val v = recommendedVolumeL(BodyState(ageYears = 25, weightKg = kg, fitness = 0), 5)!!
-            assertTrue(v in ref * 0.95..ref * 1.06, "$kg kg : $v L pour $ref L")
+    fun ratioIsLitresPerKilo() {
+        assertEquals(0.4, volumeRatio(30.0, 75))
+        assertNull(volumeRatio(30.0, 0))
+        assertNull(volumeRatio(null, 75))
+    }
+
+    @Test
+    fun shortboardVolumeMatchesProPilotsOfJsIndustries() {
+        // Fiches « team rider reference » (expert, 25 ans, excellente forme) : tolérance de 8 %.
+        val pros = listOf(59 to 24.5, 64 to 24.6, 70 to 25.6, 75 to 27.0, 80 to 28.6, 83 to 28.3)
+        for ((kg, ref) in pros) {
+            val r = recommendedVolumeRange(BodyState(ageYears = 25, weightKg = kg, fitness = 0), 4)!!
+            val mid = (r.start + r.endInclusive) / 2
+            assertTrue(mid in ref * 0.92..ref * 1.08, "$kg kg : $mid L pour $ref L")
         }
     }
 
     @Test
-    fun recommendedVolumeDependsOnTheBoardType() {
-        // 61 kg, 34 ans, forme moyenne, intermédiaire : environ 30 L en shortboard, bien plus en mid-length.
-        val body = BodyState(ageYears = 34, weightKg = 61, fitness = 2)
-        val short = recommendedVolumeL(body, 2, "shortboard")!!
-        val mid = recommendedVolumeL(body, 2, "mid-length")!!
-        val long = recommendedVolumeL(body, 2, "longboard")!!
-        assertTrue(short in 28.0..33.0, "shortboard : $short")
-        assertTrue(mid in 44.0..54.0, "mid-length : $mid")
-        assertTrue(long > mid)
+    fun ownerCaseFallsInsideTheRange() {
+        // Avancé +, 34 ans, 81 kg, forme bonne : sa Xero Gravity de 31,5 L est dans la fourchette.
+        val r = recommendedVolumeRange(BodyState(ageYears = 34, weightKg = 81, fitness = 1), volumeLevelIndex("advanced+"))!!
+        assertTrue(31.5 in r, "fourchette $r")
+        // Sa planche groveler à 32,5 L est dans la fourchette fish, twin, groveler.
+        val fish = recommendedVolumeRange(BodyState(ageYears = 34, weightKg = 81, fitness = 1), 3, "groveler")!!
+        assertTrue(32.5 in fish, "fourchette $fish")
+    }
+
+    @Test
+    fun fishAndTwinAreSlightlyBiggerThanShortboards() {
+        val body = BodyState(ageYears = 30, weightKg = 80, fitness = 1)
+        val short = recommendedVolumeL(body, 3)!!
+        val fish = recommendedVolumeL(body, 3, "fish")!!
+        assertTrue(fish - short in 1.0..2.0, "écart ${fish - short}")
+    }
+
+    @Test
+    fun longBoardsDoNotDependOnTheLevel() {
+        val body = BodyState(ageYears = 30, weightKg = 78, fitness = 1)
+        assertEquals(recommendedVolumeRange(body, 0, "mid-length"), recommendedVolumeRange(body, 4, "mid-length"))
+        assertEquals(55.0..80.0, recommendedVolumeRange(body, 2, "longboard"))
+        assertNull(recommendedVolumeRange(body, 2, "mousse"))
+        assertEquals("55 à 80 L et plus", volumeRangeLabel(55.0..80.0, "longboard"))
+        val mid = recommendedVolumeRange(body, 3, "mid-length")!!
+        assertEquals(43.0, mid.start, 0.1)
+        assertEquals(62.4, mid.endInclusive, 0.1)
+    }
+
+    @Test
+    fun noWeightMeansNoRecommendation() {
+        assertNull(recommendedVolumeRange(BodyState(ageYears = 40), 3))
+        assertNull(recommendedVolumeL(BodyState(), 3))
+    }
+
+    @Test
+    fun ageIsOptionalAndGentle() {
+        val noAge = recommendedVolumeL(BodyState(weightKg = 80, fitness = 1), 3)!!
+        val young = recommendedVolumeL(BodyState(ageYears = 30, weightKg = 80, fitness = 1), 3)!!
+        val old = recommendedVolumeL(BodyState(ageYears = 55, weightKg = 80, fitness = 1), 3)!!
+        assertEquals(noAge, young, 1e-9)
+        assertTrue(old > young && old < young * 1.1)
+    }
+
+    @Test
+    fun lightSurfersGetMoreLitresPerKilo() {
+        assertTrue(weightFactor(59.0) > weightFactor(70.0))
+        assertEquals(1.0, weightFactor(85.0), 1e-9)
+        assertEquals(1.0, weightFactor(95.0), 1e-9)
+        assertEquals(1.2, weightFactor(55.0), 1e-9)
+    }
+
+    @Test
+    fun levelAndFitnessMapToTheTables() {
+        assertEquals(3, volumeLevelIndex("advanced"))
+        assertEquals(3, volumeLevelIndex("advanced+"))
+        assertEquals(1, volumeLevelIndex("custom:1;2;3"))
+        assertEquals(2, fitnessFromTraining(0))
+        assertEquals(1, fitnessFromTraining(null))
+        assertEquals(0, fitnessFromTraining(2))
     }
 }
