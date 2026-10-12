@@ -168,7 +168,10 @@ fun DailyTimelineCard(
                         }
                     }
                     // Coefficient puis les deux marées de la journée, sur une ligne sous la jauge.
-                    dailyTides[selectedDate]?.let { TideLine(dayTides, it.coefficient, onSurfaceColor) }
+                    dailyTides[selectedDate]?.let { info ->
+                        val others = if (SkyGraphSettings.tideAll) info.extrema.filter { e -> dayTides.none { it.time == e.time } } else emptyList()
+                        TideLine(dayTides, info.coefficient, onSurfaceColor, others)
+                    }
                     if (motivationLabel != null) {
                         Row(modifier = Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("Motivation", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.55f))
@@ -754,8 +757,8 @@ private fun DrawScope.drawTideTriangle(center: Offset, high: Boolean, size: Floa
  * puis les deux marées de la journée, chacune avec son triangle et son heure.
  */
 @Composable
-private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Color) {
-    if (tides.isEmpty() && coef == null) return
+private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Color, others: List<MareeExtremum> = emptyList()) {
+    if (tides.isEmpty() && coef == null && others.isEmpty()) return
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -771,6 +774,16 @@ private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Col
                 Text("Coef $coef", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1)
                 Spacer(modifier = Modifier.width(3.dp))
                 Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = dotColor, radius = size.minDimension / 2f) }
+            }
+        }
+        if (others.isNotEmpty()) {
+            Text("hors soleil", fontSize = 10.sp, color = onSurfaceColor.copy(alpha = 0.55f), maxLines = 1)
+            for (t in others) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Canvas(modifier = Modifier.size(9.dp)) { drawTideTriangle(Offset(size.width / 2f, size.height / 2f), t.type == "PM", size.minDimension * 0.85f) }
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(t.time, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1)
+                }
             }
         }
     }
