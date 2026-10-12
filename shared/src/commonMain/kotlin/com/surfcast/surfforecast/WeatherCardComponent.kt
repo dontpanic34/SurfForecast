@@ -20,6 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -31,7 +36,9 @@ fun WeatherCardComponent(
     isCollapsed: Boolean = false,
     onToggleCollapse: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sun: DailySunInfo? = null,
+    onOpenDetail: (() -> Unit)? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -67,33 +74,17 @@ fun WeatherCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             CardControlsRow(
-                title = "Météo",
+                title = "Météo", guide = "weather",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier
+                dragHandleModifier = dragHandleModifier,
+                summary = "${selectedHour.feelsLike}° ressentis · nuages ${selectedHour.cloudCover} %" +
+                    (if (selectedHour.precipitationMm >= 0.05) " · pluie ${formatDecimal(selectedHour.precipitationMm, 1).replace('.', ',')} mm" else "")
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(selectedHour), 22.dp)
-                    Text(
-                        text = "${selectedHour.feelsLike}°C",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = onSurfaceColor
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
+            WeatherFacts(selectedHour, sun, onSurfaceColor, onOpenDetail)
+            Spacer(modifier = Modifier.height(6.dp))
 
             Box(
                 modifier = Modifier
@@ -182,6 +173,78 @@ fun WeatherCardComponent(
                 }
             }
             }
+        }
+    }
+}
+
+private fun uvWord(uv: Double): String = when {
+    uv < 3 -> "faible"
+    uv < 6 -> "modéré"
+    uv < 8 -> "fort"
+    uv < 11 -> "très fort"
+    else -> "extrême"
+}
+
+private fun hm(t: kotlinx.datetime.LocalTime): String = "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
+
+/**
+ * L'en-tête de la météo de l'heure. À gauche : l'icône du ciel et le ressenti en gros, la température de l'eau à côté, la pluie,
+ * puis lever et coucher du soleil sur une même ligne. À droite, l'un au-dessus de l'autre : l'indice UV et les nuages.
+ */
+@Composable
+private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color, onOpenDetail: (() -> Unit)?) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(h), 22.dp)
+                Text("${h.feelsLike}°C", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = onSurface)
+                // Quand il pleut : l'icône de pluie et les millimètres de l'heure, juste à côté de la température.
+                if (h.precipitationMm >= 0.05) {
+                    Text("🌧️ ${formatDecimal(h.precipitationMm, 1).replace('.', ',')} mm", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+                }
+                h.seaTemperature?.let {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    WaterTempIcon(18.dp, onSurface)
+                    Text("${it.roundToInt()}°", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+                }
+            }
+        }
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text("☀️ UV ${h.uvIndex.roundToInt()}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+            Text("☁️ ${h.cloudCover} %", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+            if (sun != null) Text("🌅 ${hm(sun.sunrise)} · 🌇 ${hm(sun.sunset)}", fontSize = 12.sp, color = onSurface.copy(alpha = 0.85f), maxLines = 1)
+        }
+    }
+    if (onOpenDetail != null) {
+        Text(
+            "Détail sur la semaine ›", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp).clickable(onClick = onOpenDetail)
+        )
+    }
+}
+
+/** Température de l'eau : un thermomètre plein, rempli de bleu, posé sur deux petites vagues (même style que la flèche). */
+@Composable
+private fun WaterTempIcon(size: androidx.compose.ui.unit.Dp, tint: Color) {
+    Canvas(modifier = Modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val blue = Color(0xFF29B6F6)
+        // Tige et bulbe
+        drawRoundRect(tint.copy(alpha = 0.85f), Offset(w * 0.36f, h * 0.02f), Size(w * 0.2f, h * 0.55f), CornerRadius(w * 0.1f, w * 0.1f))
+        drawCircle(tint.copy(alpha = 0.85f), radius = w * 0.2f, center = Offset(w * 0.46f, h * 0.6f))
+        drawRoundRect(blue, Offset(w * 0.41f, h * 0.22f), Size(w * 0.1f, h * 0.4f), CornerRadius(w * 0.05f, w * 0.05f))
+        drawCircle(blue, radius = w * 0.13f, center = Offset(w * 0.46f, h * 0.6f))
+        // Deux vagues
+        for (i in 0..1) {
+            val y = h * (0.84f + 0.13f * i)
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(w * 0.05f, y)
+                quadraticTo(w * 0.2f, y - h * 0.07f, w * 0.35f, y)
+                quadraticTo(w * 0.5f, y + h * 0.07f, w * 0.65f, y)
+                quadraticTo(w * 0.8f, y - h * 0.07f, w * 0.95f, y)
+            }
+            drawPath(path, blue, style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.07f, cap = androidx.compose.ui.graphics.StrokeCap.Round))
         }
     }
 }

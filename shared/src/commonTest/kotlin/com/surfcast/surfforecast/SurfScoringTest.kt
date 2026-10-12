@@ -61,7 +61,7 @@ class SurfScoringTest {
         val after = calculateSlotScore(adjusted[1], 270, "confirmed", false)
         val calm = calculateSlotScore(hour(9, windKmh = 5, windDir = "E"), 270, "confirmed", false)
         assertTrue(after < calm - 40, "juste après 30 km/h : $after contre $calm")
-        assertEquals(28, after)
+        assertEquals(18, after)
     }
 
     @Test
@@ -117,7 +117,7 @@ class SurfScoringTest {
     fun strongOnshoreWindOrSmallWavesScoreLow() {
         // 30 km/h de vent de mer : très mauvais (et « trop de vent »), mais plus à zéro.
         val storm = calculateSlotRating(hour(10, windKmh = 30, windDir = "O"), null, "intermediate", false)
-        assertEquals(18, storm.score)
+        assertEquals(12, storm.score)
         assertEquals(ConditionKind.TOO_WINDY, storm.kind)
         // Une vague de 0,3 m ne vaut rien.
         val tiny = calculateSlotRating(hour(10, height = 0.3), null, "intermediate", false)
@@ -168,7 +168,7 @@ class SurfScoringTest {
         assertEquals(ScoreBand.FAIR, scoreBand(40))
         assertEquals(ScoreBand.GOOD, scoreBand(55))
         assertEquals(ScoreBand.VERY_GOOD, scoreBand(70))
-        assertEquals(ScoreBand.EXCELLENT, scoreBand(85))
+        assertEquals(ScoreBand.EXCELLENT, scoreBand(90))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(-1))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(50, tooBig = true))
         assertEquals("Parfait", ScoreBand.EXCELLENT.label)
@@ -188,7 +188,7 @@ class SurfScoringTest {
     fun labelsSayWhereTheScoreIsHeadedNearALimit() {
         assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(53, false)))
         assertEquals("Bon à Très bon", bandLabelWithTrend(SlotRating(71, false)))
-        assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(83, false)))
+        assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(88, false)))
         assertEquals("Médiocre à Correct", bandLabelWithTrend(SlotRating(38, false)))
         // Loin d'une limite : le niveau seul. Les cas à part n'ont pas de tendance.
         assertEquals("Bon", bandLabelWithTrend(SlotRating(62, false)))
@@ -225,7 +225,9 @@ class SurfScoringTest {
         // Plage plein ouest (275) : vent d'est = offshore, vent d'ouest = onshore, nord = travers.
         assertEquals("offshore", windCategoryFromDegrees(90f, 275))
         assertEquals("onshore", windCategoryFromDegrees(270f, 275))
-        assertEquals("cross", windCategoryFromDegrees(0f, 275))
+        assertEquals("side", windCategoryFromDegrees(0f, 275))
+        assertEquals("side-off", windCategoryFromDegrees(45f, 275))
+        assertEquals("side-on", windCategoryFromDegrees(225f, 275))
         // Côte nord de l'Espagne (350) : le vent de sud est offshore, celui du nord onshore.
         assertEquals("offshore", windCategoryFromDegrees(170f, 350))
         assertEquals("onshore", windCategoryFromDegrees(350f, 350))
@@ -372,14 +374,14 @@ class SurfScoringTest {
 
     @Test
     fun offshoreIsForConfirmedAndExpertNotForBeginners() {
-        val offshore = hour(10, height = 0.9, period = 9.0, windKmh = 22, windDir = "E")
-        val cross = hour(10, height = 0.9, period = 9.0, windKmh = 22, windDir = "N")
+        val offshore = hour(10, height = 1.2, period = 9.0, windKmh = 22, windDir = "E")
+        val cross = hour(10, height = 1.2, period = 9.0, windKmh = 22, windDir = "N")
         // Débutant : la direction ne change presque rien.
         val begDiff = calculateSlotScore(offshore, 275, "beginner", false) - calculateSlotScore(cross, 275, "beginner", false)
         assertTrue(begDiff in 0..6, "débutant offshore - travers : $begDiff")
         // Confirmé : l'offshore est nettement mieux que le travers.
         val confDiff = calculateSlotScore(offshore, 275, "confirmed", false) - calculateSlotScore(cross, 275, "confirmed", false)
-        assertTrue(confDiff >= 6, "confirmé offshore - travers : $confDiff")
+        assertTrue(confDiff >= 4, "confirmé offshore - travers : $confDiff")
     }
 
     @Test

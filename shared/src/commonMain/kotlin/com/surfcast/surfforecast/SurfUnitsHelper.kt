@@ -97,9 +97,9 @@ object SurfUnitsHelper {
     fun windTextColor(windColor: Color, isDarkTheme: Boolean): Color {
         if (isDarkTheme) return windColor
         return when (windColor) {
-            WIND_YELLOW -> Color(0xFFA77B00)
-            WIND_ORANGE -> Color(0xFFC46200)
-            else -> Color(0xFFC62828)
+            WIND_YELLOW -> Color(0xFFBF8F00)
+            WIND_ORANGE -> Color(0xFFE65100)
+            else -> Color(0xFFD32F2F)
         }
     }
 
@@ -122,9 +122,11 @@ object SurfUnitsHelper {
             1, 2 -> if (isDay) "🌤️" else "☁️"
             3 -> "☁️"
             45, 48 -> "🌫️"
-            51, 53, 55, 61, 63, 65 -> "🌧️"
+            // Forte pluie : codes de pluie forte, ou au moins 4 mm dans l'heure ; sinon pluie, ou averse avec du soleil.
+            65, 67, 82 -> "☔"
+            51, 53, 55, 61, 63 -> if (hourly.precipitationMm >= 4.0) "☔" else "🌧️"
             71, 73, 75, 77, 85, 86 -> "❄️"
-            80, 81, 82 -> "🌦️"
+            80, 81 -> if (hourly.precipitationMm >= 4.0) "☔" else "🌦️"
             95, 96, 99 -> "⛈️"
             else -> if (hourly.cloudCover > 60) "☁️" else if (isDay) "☀️" else "🌙"
         }

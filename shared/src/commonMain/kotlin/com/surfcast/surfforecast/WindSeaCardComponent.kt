@@ -34,7 +34,9 @@ fun WindSeaCardComponent(
     isCollapsed: Boolean = false,
     onToggleCollapse: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Orientation de la plage : la flèche du clapot est grande s'il arrive bien face à la plage, petite s'il arrive de biais.
+    beachFacing: Int? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -74,10 +76,12 @@ fun WindSeaCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
             CardControlsRow(
-                title = "Mer de vent",
+                title = "Mer de vent", guide = "windsea",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier
+                dragHandleModifier = dragHandleModifier,
+                summary = "${formatDecimal(selectedHour.windWaveHeight, 1).replace('.', ',')} m" +
+                    (if (selectedHour.windWavePeriod > 0) " · ${selectedHour.windWavePeriod.roundToInt()} s" else "")
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
@@ -109,28 +113,7 @@ fun WindSeaCardComponent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Canvas(modifier = Modifier.size(13.dp)) {
-                        val w = size.width
-                        val h = size.height
-                        rotate(windWaveRotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                            val path = Path().apply {
-                                moveTo(w * 0.5f, 0.5.dp.toPx())
-                                lineTo(w * 0.95f, h * 0.48f)
-                                lineTo(w * 0.68f, h * 0.48f)
-                                lineTo(w * 0.68f, h * 0.98f)
-                                lineTo(w * 0.32f, h * 0.98f)
-                                lineTo(w * 0.32f, h * 0.48f)
-                                lineTo(w * 0.05f, h * 0.48f)
-                                close()
-                            }
-                            drawPath(path = path, color = primaryColor)
-                            drawPath(
-                                path = path,
-                                color = onSurfaceColor.copy(alpha = 0.5f),
-                                style = Stroke(width = 0.8.dp.toPx())
-                            )
-                        }
-                    }
+                    NavArrow(primaryColor, windWaveRotationAngle, (13 * swellArrowScale(selectedHour.windWaveDirection, beachFacing)).dp)
 
                     Text(
                         text = "$windWaveDeg°",

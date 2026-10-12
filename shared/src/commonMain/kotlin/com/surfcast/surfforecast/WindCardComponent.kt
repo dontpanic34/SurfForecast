@@ -80,10 +80,11 @@ fun WindCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             CardControlsRow(
-                title = "Vent",
+                title = "Vent", guide = "wind",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier
+                dragHandleModifier = dragHandleModifier,
+                summary = "$dirFr $formattedSpeed $unitSymbol" + (if (selectedHour.windGustKmh > selectedHour.windSpeedKmh) " · rafales $formattedGust" else "")
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
@@ -110,40 +111,11 @@ fun WindCardComponent(
                             color = onSurfaceColor.copy(alpha = 0.7f)
                         )
                     }
-                    var showInfo by remember { mutableStateOf(false) }
-                    IconButton(onClick = { showInfo = true }, modifier = Modifier.size(22.dp)) {
-                        Icon(SurfIcons.Info, contentDescription = "Comment le vent ressenti est calculé", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                    }
-                    if (showInfo) {
-                        AlertDialog(
-                            onDismissRequest = { showInfo = false },
-                            title = { Text(WIND_FEEL_INFO_TITLE) },
-                            text = { Text(WIND_FEEL_INFO_TEXT) },
-                            confirmButton = { TextButton(onClick = { showInfo = false }) { Text("OK") } }
-                        )
-                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Canvas(modifier = Modifier.size(13.dp)) {
-                            val w = size.width
-                            val h = size.height
-                            rotate(rotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                                val path = Path().apply {
-                                    moveTo(w * 0.5f, 0.5.dp.toPx())
-                                    lineTo(w * 0.95f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.48f)
-                                    lineTo(w * 0.05f, h * 0.48f)
-                                    close()
-                                }
-                                drawPath(path = path, color = currentArrowColor)
-                                drawPath(path = path, color = onSurfaceColor.copy(alpha = 0.5f), style = Stroke(width = 0.8.dp.toPx()))
-                            }
-                        }
+                        NavArrow(currentArrowColor, rotationAngle, (13 * windArrowScale(windFeelKmh(selectedHour))).dp)
                         Text(
                             text = dirFr,
                             fontSize = 14.sp,

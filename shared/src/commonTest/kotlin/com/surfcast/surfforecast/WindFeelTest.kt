@@ -20,11 +20,15 @@ class WindFeelTest {
     }
 
     @Test
-    fun colorFollowsTheSameRuleAsThePhrase() {
-        // Vent de côté léger : propre. Vent de mer 10 km/h : gêne. Vent de mer 20 km/h : fort.
-        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 8, "SO"), 275, "intermediate"))
-        assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 10, "O"), 275, "intermediate"))
+    fun colorFollowsTheDirection() {
+        // Montalivet (plage vers l'ouest) : l'est est offshore (jaune), le nord est de travers (orange), l'ouest est onshore (rouge).
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 8, "E"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 10, "N"), 275, "intermediate"))
         assertEquals(SurfUnitsHelper.WIND_RED, windFeelColor(hour(14, 20, "O"), 275, "intermediate"))
+        // L'onshore dépend de la force : léger jaune, modéré orange, fort rouge ; l'offshore reste jaune même fort.
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 5, "O"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 12, "O"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 30, "E"), 275, "intermediate"))
     }
 
     @Test
@@ -43,5 +47,17 @@ class WindFeelTest {
         assertEquals(WHY_WIND_MEMORY, calculateSlotRating(kept, 275, "intermediate", displayedWind = h16).why)
         // Sans l'heure affichée, la phrase décrit le vent retenu.
         assertNotEquals(WHY_WIND_MEMORY, calculateSlotRating(kept, 275, "intermediate").why)
+    }
+
+    @Test
+    fun perfectNeedsThreeCleanHoursBefore() {
+        // Vent de mer 18 km/h à 17 h, 18 h et 19 h, puis 10 km/h de terre à 20 h : la note de 20 h ne peut pas être « Parfait ».
+        val hours = listOf(hour(16, 4, "E"), hour(17, 18, "O", 24), hour(18, 18, "O", 24), hour(19, 18, "O", 24), hour(20, 4, "E"))
+        val kept = windMemoryAdjusted(hours)[4]
+        assertEquals(3, kept.pastWind.size)
+        assertEquals(true, calculateSlotRating(kept, 275, "intermediate").score < PERFECT_MIN)
+        // Sans vent avant, la même heure peut monter plus haut.
+        val clean = windMemoryAdjusted(listOf(hour(17, 4, "E"), hour(18, 4, "E"), hour(19, 4, "E"), hour(20, 4, "E")))[3]
+        assertEquals(true, calculateSlotRating(clean, 275, "intermediate").score >= calculateSlotRating(kept, 275, "intermediate").score)
     }
 }

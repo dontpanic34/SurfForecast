@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
  * orange (pas pour toi : challengeant, trop petit, trop gros), rouge (médiocre, trop de vent) et bordeaux (mauvais).
  */
 enum class ScoreBand(val label: String) {
-    TOO_BIG("Trop gros"),
+    TOO_BIG("Gros jour"),
     AVOID("Mauvais"),
     POOR("Médiocre"),
     FAIR("Correct"),
@@ -15,19 +15,27 @@ enum class ScoreBand(val label: String) {
     VERY_GOOD("Très bon"),
     EXCELLENT("Parfait"),
     CHALLENGING("Challengeant"),
-    TOO_SMALL("Trop petit"),
+    TOO_SMALL("Petit jour"),
     TOO_WINDY("Trop de vent")
 }
 
+/** Note à partir de laquelle une heure est « Parfait ». */
+const val PERFECT_MIN = 90
+
 /** [score] négatif ou [tooBig] = trop gros pour ce niveau. */
-fun scoreBand(score: Int, tooBig: Boolean = false): ScoreBand = when {
+fun scoreBand(rawScore: Int, tooBig: Boolean = false): ScoreBand = scoreBandShifted(rawScore, tooBig, ToleranceSettings.mode * 8)
+
+private fun scoreBandShifted(rawScore: Int, tooBig: Boolean, shift: Int): ScoreBand {
+    val score = if (rawScore < 0) rawScore else rawScore + shift
+    return when {
     tooBig || score < 0 -> ScoreBand.TOO_BIG
     score < 20 -> ScoreBand.AVOID
     score < 40 -> ScoreBand.POOR
     score < 55 -> ScoreBand.FAIR
     score < 70 -> ScoreBand.GOOD
-    score < 85 -> ScoreBand.VERY_GOOD
+    score < PERFECT_MIN -> ScoreBand.VERY_GOOD
     else -> ScoreBand.EXCELLENT
+    }
 }
 
 /** Nuance d'une heure : le niveau de qualité, sauf quand la raison est la taille ou le vent. */
@@ -40,15 +48,17 @@ fun conditionBand(rating: SlotRating): ScoreBand = when (rating.kind) {
 }
 
 private val GREEN = Color(0xFF2BD47A)
-private val GREEN_DEEP = Color(0xFF12A06F)
+private val GREEN_DEEP = Color(0xFF0F8A52)
+private val TEAL = Color(0xFF1A9C82)
 private val YELLOW = Color(0xFFFFD21F)
 private val ORANGE = Color(0xFFFF9A1F)
 private val RED = Color(0xFFE53935)
 private val BORDEAUX = Color(0xFF9B1C31)
 
 fun ScoreBand.color(): Color = when (this) {
-    ScoreBand.EXCELLENT, ScoreBand.VERY_GOOD -> GREEN
-    ScoreBand.GOOD -> GREEN_DEEP
+    ScoreBand.VERY_GOOD -> GREEN
+    ScoreBand.EXCELLENT -> GREEN_DEEP
+    ScoreBand.GOOD -> TEAL
     ScoreBand.FAIR -> YELLOW
     ScoreBand.CHALLENGING, ScoreBand.TOO_SMALL, ScoreBand.TOO_BIG -> ORANGE
     ScoreBand.POOR, ScoreBand.TOO_WINDY -> RED
@@ -57,7 +67,8 @@ fun ScoreBand.color(): Color = when (this) {
 
 /** Couleur du libellé sur le fond sombre des cartes : le vert sombre, le rouge et le bordeaux y sont éclaircis. */
 fun ScoreBand.textColor(): Color = when (this) {
-    ScoreBand.GOOD -> Color(0xFF3CCF9D)
+    ScoreBand.GOOD -> Color(0xFF3FD0B0)
+    ScoreBand.EXCELLENT -> Color(0xFF1FAA68)
     ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color(0xFFFF5A55)
     ScoreBand.AVOID -> Color(0xFFFF6F86)
     else -> color()
@@ -74,14 +85,14 @@ fun gaugeLevel(rating: SlotRating): Int = when (conditionBand(rating)) {
 
 /** Couleur de texte lisible sur [color] de cette nuance. */
 fun ScoreBand.onColor(): Color = when (this) {
-    ScoreBand.GOOD, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color.White
+    ScoreBand.GOOD, ScoreBand.EXCELLENT, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color.White
     else -> Color(0xFF061018)
 }
 
 private val BAND_ORDER = listOf(
     ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.FAIR, ScoreBand.GOOD, ScoreBand.VERY_GOOD, ScoreBand.EXCELLENT
 )
-private val BOUNDS = listOf(20, 40, 55, 70, 85)
+private val BOUNDS = listOf(20, 40, 55, 70, PERFECT_MIN)
 
 /**
  * Libellé avec tendance, comme « Fair to Good » chez Surfline : quand la note est tout près d'une limite (à 4 points
@@ -117,7 +128,7 @@ fun trendOnColor(bands: List<ScoreBand>): Color {
 }
 
 private val STOPS = listOf(
-    10 to 0xFF9B1C31, 30 to 0xFFE53935, 47 to 0xFFFFD21F, 62 to 0xFF12A06F, 77 to 0xFF2BD47A, 92 to 0xFF2BD47A
+    10 to 0xFF9B1C31, 30 to 0xFFE53935, 47 to 0xFFFFD21F, 62 to 0xFF1A9C82, 77 to 0xFF2BD47A, 88 to 0xFF2BD47A, 92 to 0xFF0F8A52
 )
 
 /** Couleur d'une note sur le dégradé continu (bordeaux -> rouge -> jaune -> vert sombre -> vert vif). */

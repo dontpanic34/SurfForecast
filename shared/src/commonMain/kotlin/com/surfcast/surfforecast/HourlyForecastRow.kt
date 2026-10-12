@@ -211,24 +211,7 @@ fun HourlyForecastRow(
             modifier = Modifier.weight(0.7f),
             contentAlignment = Alignment.Center
         ) {
-            Canvas(modifier = Modifier.size(12.dp)) {
-                val w = size.width
-                val h = size.height
-                rotate(rotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                    val path = Path().apply {
-                        moveTo(w * 0.5f, 0.5.dp.toPx())
-                        lineTo(w * 0.95f, h * 0.48f)
-                        lineTo(w * 0.68f, h * 0.48f)
-                        lineTo(w * 0.68f, h * 0.98f)
-                        lineTo(w * 0.32f, h * 0.98f)
-                        lineTo(w * 0.32f, h * 0.48f)
-                        lineTo(w * 0.05f, h * 0.48f)
-                        close()
-                    }
-                    drawPath(path = path, color = windColor)
-                    drawPath(path = path, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 0.8.dp.toPx()))
-                }
-            }
+            NavArrow(windColor, rotationAngle, (12 * windArrowScale(windFeelKmh(hourlyData))).dp)
         }
 
         // Col 8 : Vitesse du vent
@@ -247,7 +230,7 @@ fun HourlyForecastRow(
 /**
  * Parsing tolérant ("07h30", "7h30", "07:30", "7:30")
  */
-private fun parseTimeStringSafe(timeStr: String): LocalTime? {
+internal fun parseTimeStringSafe(timeStr: String): LocalTime? {
     val clean = timeStr.trim().lowercase().replace("h", ":")
     val parts = clean.split(":")
     if (parts.size < 2) return null

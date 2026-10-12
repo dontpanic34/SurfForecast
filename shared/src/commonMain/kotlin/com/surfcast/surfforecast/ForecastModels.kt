@@ -17,18 +17,27 @@ data class HourlyUiModel(
     val windWaveHeight: Double = 0.0,
     val windWavePeriod: Double = 0.0,
     val windWaveDirection: Float = 0f,
+    // Houle secondaire (hauteur m, période s, direction °) : hauteur 0 = pas de seconde houle.
+    val secondaryHeight: Double = 0.0,
+    val secondaryPeriod: Double = 0.0,
+    val secondaryDirection: Float = 0f,
     val energyKj: Int,
     val windSpeedKmh: Int,
     val windDirectionStr: String,
     val weatherCode: Int,
     val temperature: Int,
     val cloudCover: Int = 0,
+    // Indice UV et pluie de l'heure (mm) : 0 quand le modèle ne les donne pas.
+    val uvIndex: Double = 0.0,
+    val precipitationMm: Double = 0.0,
     val feelsLike: Int = temperature,
     // Modèle d'où vient le vent de cette heure ("AROME HD", "AROME", "ECMWF_IFS"...,
     // ou WIND_SOURCE_MISSING) : sert au journal des prévisions. Vide = inconnu.
     val windSource: String = "",
     // Rafales (km/h) : par défaut égales au vent moyen quand la source n'en donne pas.
     val windGustKmh: Int = windSpeedKmh,
+    // Le vent réel des trois heures d'avant (pour la note : « Parfait » demande une mer que le vent n'a pas touchée).
+    val pastWind: List<WindSample> = emptyList(),
     // Température de surface de la mer (°C, Open-Meteo Marine) : null = non fournie pour ce point.
     val seaTemperature: Double? = null
 )
@@ -69,6 +78,12 @@ enum class WeatherModel(
         resolution = "9 km",
         description = "Vue d'ensemble globale européenne, très stable à moyen terme (J2-J6)."
     ),
+    GFS(
+        apiParam = "gfs_seamless",
+        displayName = "NOAA GFS",
+        resolution = "13 km",
+        description = "Modèle américain, utilisé avec ECMWF pour la moyenne du vent."
+    ),
     ARPEGE(
         apiParam = "meteofrance_arpege_europe",
         displayName = "Météo-France ARPEGE",
@@ -103,3 +118,6 @@ data class ForecastEngineConfig(
     val longTermWeather: WeatherModel = WeatherModel.ECMWF_IFS,
     val longTermWave: WaveModel = WaveModel.ECMWF_WAM
 )
+
+/** Un vent passé : vitesse et rafales (km/h) et direction. */
+data class WindSample(val speedKmh: Int, val gustKmh: Int, val direction: String)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -47,18 +48,45 @@ fun CardControlsRow(
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Une ligne qui résume l'encart quand il est réduit (ex. « 1,3 m · 12 s · ONO 287° »).
+    summary: String? = null,
+    // Clé de la visite guidée de l'encart (le petit « i ») et un bloc facultatif à droite du titre.
+    guide: String? = null,
+    trailing: (@Composable () -> Unit)? = null
 ) {
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxWidth().clickable(onClick = onToggleCollapse).padding(horizontal = 4.dp, vertical = 4.dp)) {
 
-    // Titre seul : réduire, masquer et réordonner les encarts se fait dans Paramètres › Affichage.
+    // Le titre et une flèche : toucher l'encart réduit ou déplie son contenu.
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = title,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = onSurfaceColor.copy(alpha = 0.55f),
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+        if (trailing != null) trailing()
+        if (guide != null) CardInfoButton(guide)
+        CollapseChevron(isCollapsed, onToggleCollapse)
+    }
+    if (!isCollapsed && guide != null) CardSettingsPanel(guide)
+    if (isCollapsed && summary != null) {
+        Text(summary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurfaceColor, maxLines = 2)
+    }
+    }
+}
+
+/** La petite flèche d'un encart : ▾ ouvert, ▸ réduit. Toucher réduit ou déplie. */
+@Composable
+fun CollapseChevron(isCollapsed: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Text(
-        text = title,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        color = onSurfaceColor.copy(alpha = 0.55f),
-        maxLines = 1,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)
+        text = if (isCollapsed) "▸" else "▾",
+        fontSize = 16.sp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+        modifier = modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onToggle).padding(horizontal = 8.dp, vertical = 2.dp)
     )
 }
 

@@ -212,11 +212,12 @@ fun SessionLogEntryDialog(
     onDismiss: () -> Unit,
     // Jours proposes : 0 = aujourd'hui, 1 = hier, 2 = avant-hier (seulement si l'app a
     // garde les conditions de ce jour dans son journal des previsions).
-    availableDayOffsets: List<Int> = listOf(0)
+    availableDayOffsets: List<Int> = listOf(0),
+    initialDayOffset: Int = 0
 ) {
     val colors = MaterialTheme.colorScheme
 
-    var dayOffset by remember { mutableStateOf(0) }
+    var dayOffset by remember { mutableStateOf(initialDayOffset) }
     var startHour by remember { mutableStateOf<Int?>(null) }
     var endHour by remember { mutableStateOf<Int?>(null) }
     var selectedMicroSpotId by remember { mutableStateOf<Long?>(null) }

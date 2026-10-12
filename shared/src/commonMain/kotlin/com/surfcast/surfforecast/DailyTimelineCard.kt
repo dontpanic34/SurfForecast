@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.surfcast.surfforecast.ui.theme.AppColors
 import kotlinx.datetime.LocalDate
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -57,8 +58,8 @@ private const val SELECTED_WIND_DROP = 9 // la colonne de vent de l'heure choisi
 private const val WIND_ROW_H = 46 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
-private const val BAND_H = 28
-private const val HOURS_H = 28 // la ligne des heures (les repères de marée sont dans l’eau, sur la courbe)
+private const val BAND_H = 18
+private const val HOURS_H = 22 // la ligne des heures (les repères de marée sont dans l’eau, sur la courbe)
 private const val SIDE_PAD = 4
 
 /**
@@ -86,7 +87,12 @@ fun DailyTimelineCard(
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Motivation du jour (« Prudent » / « Normal » / « Motivé »), un tap la change ; null = pas de réglage affiché.
+    motivationLabel: String? = null,
+    onMotivationSelect: (Int) -> Unit = {},
+    // La planche conseillée pour une heure (d'après les réponses du matériel) ; null = pas d'affichage.
+    boardOf: ((HourlyUiModel) -> String?)? = null
 ) {
     if (groupedByDate.isEmpty()) return
 
@@ -101,6 +107,7 @@ fun DailyTimelineCard(
     val ax0 = sunrise - 0.5f
     val ax1 = sunset + 0.5f
     val dayTides = dailyTides[selectedDate]?.let { tidesForDay(it, sunrise, sunset) } ?: emptyList()
+    val tideCurve = dailyTides[selectedDate]?.let { tideCurveMarks(it) } ?: emptyList()
     val allDay = (groupedByDate[selectedDate] ?: emptyList()).sortedBy { it.rawTime }
     val firstH = ceil(ax0).toInt().coerceAtLeast(0)
     val lastH = floor(ax1).toInt().coerceAtMost(23)
@@ -123,12 +130,13 @@ fun DailyTimelineCard(
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
+        Box {
+        Row(modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp)) { CardInfoButton("day"); CollapseChevron(isCollapsed, onToggleCollapse) }
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
             if (selectedIndex in ratings.indices) {
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
-                val level = gaugeLevel(shownRating)
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 60.dp, top = 2.dp, bottom = 2.dp)) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -143,25 +151,58 @@ fun DailyTimelineCard(
                             bandLabelWithTrend(shownRating), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
                             color = shownBand.textColor(), maxLines = 1
                         )
-                        if (shownRating.why.isNotBlank()) {
-                            Text(
-                                shownRating.why, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                                color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1, modifier = Modifier.padding(bottom = 1.dp)
-                            )
+                        val board = curveHours.getOrNull(selectedIndex)?.let { boardOf?.invoke(it) }
+                        if (board != null) {
+                            Text("Planche : $board", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
                         }
                     }
-                    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Row(modifier = Modifier.width(110.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                            for (i in 1..5) {
-                                Box(
-                                    Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp))
-                                        .background(if (i <= level) shownBand.color() else onSurfaceColor.copy(alpha = 0.15f))
-                                )
+                    // La phrase, sous l'heure et le libellé.
+                    if (shownRating.why.isNotBlank()) {
+                        Text(
+                            shownRating.why, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                            color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 2, modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                    // Coefficient puis les deux marées de la journée, sur une ligne sous la jauge.
+                    dailyTides[selectedDate]?.let { info ->
+                        val others = if (SkyGraphSettings.tideAll) info.extrema.filter { e -> dayTides.none { it.time == e.time } } else emptyList()
+                        TideLine(dayTides, info.coefficient, onSurfaceColor, others)
+                    }
+                    val coefNow = dailyTides[selectedDate]?.coefficient
+                    // Le coefficient a sa place ici, à droite de la ligne Motivation : hors du graphique, il ne peut gêner aucun repère.
+                    @Composable
+                    fun CoefBadge() {
+                        if (coefNow != null) {
+                            val dot = when { coefNow < 55 -> AppColors.WindLow; coefNow <= 80 -> AppColors.WindMid; else -> AppColors.WindHigh }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Canvas(modifier = Modifier.size(8.dp)) { drawCircle(dot, radius = size.minDimension / 2f) }
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Coef $coefNow", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1, softWrap = false)
                             }
                         }
                     }
-                    // Coefficient puis les deux marées de la journée, sur une ligne sous la jauge.
-                    dailyTides[selectedDate]?.let { TideLine(dayTides, it.coefficient, onSurfaceColor) }
+                    if (motivationLabel == null) Row(modifier = Modifier.padding(top = 6.dp)) { CoefBadge() }
+                    if (motivationLabel != null) {
+                        Row(modifier = Modifier.padding(top = 6.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Motivation", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.55f))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Trois états visibles d'un coup : on touche celui qu'on veut (Flemme, Normal, Motivé).
+                            Row(modifier = Modifier.clip(RoundedCornerShape(50)).background(onSurfaceColor.copy(alpha = 0.08f)).padding(2.dp)) {
+                                listOf(-1, 0, 1).forEach { m ->
+                                    val on = ToleranceSettings.label(m) == motivationLabel
+                                    Text(
+                                        ToleranceSettings.label(m), fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                        color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else onSurfaceColor.copy(alpha = 0.7f),
+                                        modifier = Modifier.clip(RoundedCornerShape(50))
+                                            .background(if (on) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                                            .clickable { onMotivationSelect(m) }.padding(horizontal = 10.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
+                            CoefBadge()
+                        }
+                    }
                 }
             } else {
                 Text(
@@ -182,11 +223,13 @@ fun DailyTimelineCard(
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
                         sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
-                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1),
+                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve, coefValue = dailyTides[selectedDate]?.coefficient,
                         beachFacing = idealSwellDirection, surferLevel = surferLevel
                     )
                 }
             }
+            if (!isCollapsed) CardSettingsPanel("day")
+        }
         }
     }
 }
@@ -219,6 +262,8 @@ private fun DailyTimelineBody(
     isDark: Boolean,
     onSurfaceColor: Color,
     tideMarks: List<TideMark>,
+    tideCurve: List<TideMark> = emptyList(),
+    coefValue: Int? = null,
     beachFacing: Int?,
     surferLevel: String
 ) {
@@ -280,7 +325,7 @@ private fun DailyTimelineBody(
                             modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            WindArrow(color, rotation, (windFont * 1.5f).dp)
+                            NavArrow(color, rotation, (windFont * 1.5f * windArrowScale(windFeelKmh(hourly))).dp)
                             Text(dirFr, fontSize = windFont.sp, fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp)
                             Text(
                                 SurfUnitsHelper.formatWindValue(windFeelKmh(hourly), windUnit), fontSize = windFont.sp,
@@ -343,16 +388,59 @@ private fun DailyTimelineBody(
                     DailyCurveCanvas(
                         modifier = Modifier.fillMaxSize(), hours = hours, ratings = ratings, selectedIndex = selectedIndex,
                         gridValues = gridValues, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
-                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour,
-                        tideMarks = tideMarks
+                        nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
                     )
+                }
+
+                // --- La marée : une petite courbe entre le graphique et la bande des heures (monte ou descend), triangles et heures dessus ---
+                if (tideCurve.size >= 2) {
+                    val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
+                    Canvas(modifier = Modifier.fillMaxWidth().height(SkyGraphSettings.tideDp.dp)) {
+                        val yHigh = size.height * 0.47f
+                        val yLow = size.height * 0.8f
+                        fun yAt(h: Float): Float {
+                            val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
+                            val a = tideCurve[i]; val b = tideCurve[i + 1]
+                            val t = ((h - a.hour) / (b.hour - a.hour)).coerceIn(0f, 1f)
+                            val ya = if (a.high) yHigh else yLow
+                            val yb = if (b.high) yHigh else yLow
+                            return ya + (yb - ya) * (1f - cos(PI * t).toFloat()) / 2f
+                        }
+                        val path = Path()
+                        var first = true
+                        var h = ax0
+                        while (h <= ax1 + 0.01f) {
+                            val p = Offset(xOf(h), yAt(h))
+                            if (first) { path.moveTo(p.x, p.y); first = false } else path.lineTo(p.x, p.y)
+                            h += 0.25f
+                        }
+                        drawPath(path, Color(0xFF3B8BE8), style = Stroke(1.6.dp.toPx()))
+                        if (selH != null && selH in ax0..ax1) {
+                            drawCircle(onSurfaceColor, radius = 2.8.dp.toPx(), center = Offset(xOf(selH), yAt(selH)))
+                        }
+                        for (m in tideMarks) {
+                            val c = Offset(xOf(m.hour), if (m.high) yHigh else yLow)
+                            drawTideTriangle(c, m.high, 6.dp.toPx())
+                            val txt = (m.hour.toInt()).toString() + ":" + (((m.hour - m.hour.toInt()) * 60).roundToInt().coerceAtMost(59)).toString().padStart(2, '0')
+                            val w = textMeasurer.measure(txt, tideStyle).size.width.toFloat()
+                            if (m.high) drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, (c.x - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx()), c.y - 7.dp.toPx())
+                            else {
+                                // L'horaire d'une basse mer se met du côté où le point de l'heure choisie ne passe pas.
+                                val dotX = if (selH != null) xOf(selH) else null
+                                val onRight = dotX != null && dotX >= c.x - 6.dp.toPx() && dotX <= c.x + w + 14.dp.toPx()
+                                val tx = if (onRight) (c.x - 7.dp.toPx() - w).coerceAtLeast(2.dp.toPx()) else c.x + 7.dp.toPx()
+                                drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, tx, c.y + 3.dp.toPx())
+                            }
+                        }
+                    }
                 }
 
                 // --- Bande jour et nuit, heure par heure ---
                 Canvas(modifier = Modifier.fillMaxWidth().height(BAND_H.dp)) {
                     val cellDark = if (isDark) Color(0xFF0F1822) else Color(0xFFD3DBE4)
                     val goldLo = Color(0xFF0B121A)
-                    val ico = 9.dp.toPx()
+                    val ico = 0f
                     val xr = xOf(sunrise)
                     val xs = xOf(sunset)
                     val cellH = 6.dp.toPx()
@@ -382,8 +470,6 @@ private fun DailyTimelineBody(
                             }
                         }
                     }
-                    drawSunEvent(Offset(xr, 10.dp.toPx()), true, sunGold, 1.15.dp.toPx())
-                    drawSunEvent(Offset(xs, 10.dp.toPx()), false, sunGold, 1.15.dp.toPx())
                 }
 
                 // --- Une seule ligne d'heures, dynamique ---
@@ -391,8 +477,6 @@ private fun DailyTimelineBody(
                     class Lbl(val h: Float, val text: String, val kind: Int, val prio: Int)
                     val items = ArrayList<Lbl>()
                     if (selH != null) items.add(Lbl(selH, "${selHour}:00", 0, 0))
-                    items.add(Lbl(sunrise, formatHm(sunrise), 1, 1))
-                    items.add(Lbl(sunset, formatHm(sunset), 1, 1))
                     for (h in hours.map { it.rawTime.hour }) {
                         if (h % 2 == 0 && abs(h - sunrise) >= 1.25f && abs(h - sunset) >= 1.25f) items.add(Lbl(h.toFloat(), "$h h", 2, 2))
                     }
@@ -553,7 +637,8 @@ private fun DailyCurveCanvas(
             fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight, color: Color, outline: Color) {
                 val style = TextStyle(color = color, fontSize = sp.sp, fontWeight = weight)
                 val layout = textMeasurer.measure(text, style)
-                val x = (cx - layout.size.width / 2f).coerceIn(2.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
+                // Jamais sur les graduations de gauche (1,5 / 1 / 0,5) : le texte se décale à droite, le point reste visible.
+                val x = (cx - layout.size.width / 2f).coerceIn(38.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
                 drawHaloTextAtBaseline(textMeasurer, text, style, outline, x, topY + layout.firstBaseline)
             }
             // Même style que la vue semaine (heightTextPaint / periodTextPaint) : blanc avec contour sombre, dans les deux thèmes.
@@ -606,8 +691,8 @@ internal fun hourIndexAt(x: Float, width: Float, count: Int): Int {
  * se resserre : de 2 à 6 m, moitié moins de hauteur par mètre ; au-delà de 6 m, un quart. Renvoie la position de [v] mètres
  * entre 0 (bas du graphique) et 1 (haut).
  */
-internal fun swellAxisFraction(v: Double): Float {
-    val a = SkyGraphSettings.waterFraction / 2.0
+internal fun swellAxisFraction(v: Double, fraction: Float = SkyGraphSettings.waterFraction): Float {
+    val a = fraction / 2.0
     val f = when {
         v <= 2.0 -> a * v
         v <= 6.0 -> a * 2.0 + a * 0.5 * (v - 2.0)
@@ -696,30 +781,21 @@ private fun DrawScope.drawTideTriangle(center: Offset, high: Boolean, size: Floa
  * puis les deux marées de la journée, chacune avec son triangle et son heure.
  */
 @Composable
-private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Color) {
-    if (tides.isEmpty() && coef == null) return
+private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Color, others: List<MareeExtremum> = emptyList()) {
+    if (others.isEmpty()) return
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (coef != null) {
-            val dotColor = when {
-                coef < 55 -> AppColors.WindLow
-                coef <= 80 -> AppColors.WindMid
-                else -> AppColors.WindHigh
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Coef $coef", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1)
-                Spacer(modifier = Modifier.width(3.dp))
-                Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = dotColor, radius = size.minDimension / 2f) }
-            }
-        }
-        for (t in tides) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Canvas(modifier = Modifier.size(9.dp)) { drawTideTriangle(Offset(size.width / 2f, size.height / 2f), t.type == "PM", size.minDimension * 0.85f) }
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(t.time, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1)
+        if (others.isNotEmpty()) {
+            Text("hors soleil", fontSize = 10.sp, color = onSurfaceColor.copy(alpha = 0.55f), maxLines = 1)
+            for (t in others) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Canvas(modifier = Modifier.size(9.dp)) { drawTideTriangle(Offset(size.width / 2f, size.height / 2f), t.type == "PM", size.minDimension * 0.85f) }
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(t.time, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1)
+                }
             }
         }
     }

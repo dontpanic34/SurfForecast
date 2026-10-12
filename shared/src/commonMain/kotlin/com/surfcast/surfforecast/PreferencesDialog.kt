@@ -40,8 +40,6 @@ fun SurfPreferencesDialog(
     onMoveCardDown: (String) -> Unit = {},
     displaySize: String = "normal",
     onDisplaySizeChanged: (String) -> Unit = {},
-    starsOffset: Int,
-    onStarsOffsetChanged: (Int) -> Unit,
     weeklyDensity: Int,
     onWeeklyDensityChanged: (Int) -> Unit,
     weeklyWindMode: String,
@@ -78,7 +76,6 @@ fun SurfPreferencesDialog(
     // Épinglage du widget d'accueil : Android seulement (null = bouton masqué).
     onPinWidget: (() -> Unit)? = null,
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
-    onShowIntro: (() -> Unit)? = null,
     onShowTour: (() -> Unit)? = null,
     // Orientation du spot affiché (null = pas de spot chargé : la carte est masquée).
     spotName: String = "",
@@ -109,13 +106,15 @@ fun SurfPreferencesDialog(
     var longTermWind by remember { mutableStateOf(weatherModelLabel(engineConfig.longTermWeather)) }
     var longTermWave by remember { mutableStateOf(waveModelLabel(engineConfig.longTermWave)) }
 
+    // Sources des prévisions : Auto (les modèles conseillés) ou choix à la main (modèles et orientation de la plage).
+    var autoModels by remember { mutableStateOf(engineConfig == ForecastEngineConfig()) }
     var showModelsInfo by remember { mutableStateOf(false) }
     var infoTab by remember { mutableStateOf("France") }
     var showScoreInfo by remember { mutableStateOf(false) }
     // Modèle de prévision dont on affiche la fiche (petit « i » à côté de chaque modèle).
     var modelInfo by remember { mutableStateOf<String?>(null) }
     // Page ouverte : null = menu des Paramètres, sinon "display", "forecast", "journal", "app" ou "help".
-    var page by remember { mutableStateOf(startPage) }
+    var page by remember { mutableStateOf(if (startPage == "profileQuiz") "profile" else startPage) }
 
     modelInfo?.let { name ->
         val info = forecastModelInfo(name)
@@ -237,14 +236,14 @@ fun SurfPreferencesDialog(
                                     .weight(1f)
                                     .clip(pillShape)
                                     .clickable { infoTab = tab },
-                                color = if (isSelected) colors.primary else colors.surfaceVariant
+                                color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                             ) {
                                 Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                     Text(
                                         text = tab,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                     )
                                 }
                             }
@@ -309,11 +308,10 @@ fun SurfPreferencesDialog(
                                 color = colors.onBackground
                             )
                         } else {
-                            TextButton(onClick = { page = null }) {
+                            TextButton(onClick = { page = if (page == "gear") "profile" else null }) {
                                 Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
                             }
                         }
-                        LanguageFlags(language = language, onChange = onLanguageChanged)
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(
@@ -334,10 +332,9 @@ fun SurfPreferencesDialog(
                     Text(
                         text = when (current) {
                             "profile" -> "Mon profil"
-                            "display" -> "Affichage"
+                            "gear" -> "Mon matériel"
                             "forecast" -> "Prévisions"
-                            "journal" -> "Journal de bord"
-                            "app" -> "Appli"
+                            "app" -> "Appli et journal"
                             "guide" -> "Comprendre les prévisions"
                             else -> "Aide"
                         },
@@ -361,13 +358,15 @@ fun SurfPreferencesDialog(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     if (page == null) {
-                        PrefMenuRow("🏄", "Mon profil", "Niveau, style de surf, mon matériel", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
-                        PrefMenuRow("🎛️", "Affichage", "Langue, taille, thème, unité du vent, encarts") { page = "display" }
-                        PrefMenuRow("🌊", "Prévisions", "Modèles utilisés, logs d'actualisation") { page = "forecast" }
-                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
-                        if (backup != null) PrefMenuRow("📓", "Journal de bord", "Sauvegarder, restaurer") { page = "journal" }
-                        if (onShowTour != null || onShowIntro != null) PrefMenuRow("💡", "Aide", "Visite guidée, introduction") { page = "help" }
-                        if ((install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) PrefMenuRow("📲", "Appli", "Installer, widget") { page = "app" }
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            DenseChoiceRow("Aa", "Taille", DISPLAY_SIZE_CHOICES, displaySize, onDisplaySizeChanged)
+                            DenseRow("🏄", "Mon profil", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
+                            DenseRow("🛰️", "Prévisions") { page = "forecast" }
+                            if (backup != null || (install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) {
+                                DenseRow("📲", "Appli et journal") { page = "app" }
+                            }
+                            DenseRow("💡", "Aide et langue") { page = "help" }
+                        }
                         if (!appVersion.isNullOrEmpty()) {
                             Text(
                                 text = "Surf Log v$appVersion",
@@ -383,22 +382,28 @@ fun SurfPreferencesDialog(
                         var profileFocus by remember { mutableStateOf(false) }
                         ProfilePage(
                             surferLevel = surferLevel,
-                            onLevelChanged = onSurferLevelChanged,
-                            savedCustom = customProfile,
-                            onCustomSaved = onCustomProfileSaved,
-                            exampleAnswers = exampleAnswers,
-                            onExampleAnswersChanged = onExampleAnswersChanged,
+                            onInfo = { showScoreInfo = true },
                             levelQuiz = levelQuiz,
-                            onFocusMode = { profileFocus = it },
-                            onInfo = { showScoreInfo = true }
+                            startQuiz = startPage == "profileQuiz",
+                            onFocusMode = { profileFocus = it }
                         )
-                        if (!profileFocus) {
-                        HorizontalDivider(color = colors.onBackground.copy(alpha = 0.1f))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    }
+
+                    if (page == "profile") Column(modifier = Modifier.fillMaxWidth()) {
+                        // Le matériel fait partie du profil : une planche (pas un sac à dos) qui ouvre la page.
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant)
+                                .clickable { page = "gear" }.padding(horizontal = 12.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             QuiverIcon(color = colors.onBackground, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Mon matériel", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Mon matériel", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
+                            Text("›", fontSize = 20.sp, color = colors.onSurfaceVariant)
                         }
+                    }
+
+                    if (page == "gear") Column(modifier = Modifier.fillMaxWidth()) {
                         GearContent(
                             quiverBoards = quiverBoards,
                             surferLevel = surferLevel,
@@ -407,308 +412,6 @@ fun SurfPreferencesDialog(
                             onAddBoard = onAddBoard,
                             onDeleteBoard = onDeleteBoard
                         )
-                        }
-                    }
-
-                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "Taille de l'affichage",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                DISPLAY_SIZE_CHOICES.forEach { (key, label) ->
-                                    val isSelected = displaySize == key
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(pillShape)
-                                            .clickable { onDisplaySizeChanged(key) },
-                                        color = if (isSelected) colors.primary else colors.surfaceVariant
-                                    ) {
-                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = label,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
-                                                maxLines = 1
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Thème",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf("light" to "☀️ Clair", "dark" to "🌙 Sombre", "system" to "Auto").forEach { (key, label) ->
-                                    val isSelected = themeMode == key
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(pillShape)
-                                            .clickable { onThemeModeChanged(key) },
-                                        color = if (isSelected) colors.primary else colors.surfaceVariant
-                                    ) {
-                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = label,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Graphiques de houle",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            @Composable
-                            fun graphSlider(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
-                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Text(label, fontSize = 12.sp, color = colors.onBackground, modifier = Modifier.weight(1f))
-                                    Text("$value %", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant)
-                                }
-                                Slider(
-                                    value = value.toFloat(),
-                                    onValueChange = { onChange(it.toInt()) },
-                                    valueRange = range.first.toFloat()..range.last.toFloat()
-                                )
-                            }
-                            graphSlider("Place du graphique, semaine", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
-                            graphSlider("Place du graphique, jour", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
-                            graphSlider("Hauteur de l'échelle (où arrive 2 m)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
-                            TextButton(onClick = { SkyGraphSettings.reset() }) { Text("Valeurs par défaut", fontSize = 12.sp) }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "1. Unité du vent",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                listOf("kmh" to "km/h", "knots" to "Nœuds", "bft" to "Beaufort").forEach { (key, label) ->
-                                    val isSelected = windUnit == key
-                                    Surface(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clip(pillShape)
-                                            .clickable { onWindUnitSelected(key) },
-                                        color = if (isSelected) colors.primary else colors.surfaceVariant
-                                    ) {
-                                        Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = label,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (page == "display") Column(modifier = Modifier.fillMaxWidth()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = "2. Encarts de l'écran principal",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Text(
-                                text = "Choisissez les encarts affichés sur l'écran principal.",
-                                fontSize = 12.sp,
-                                color = colors.onSurfaceVariant
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(colors.surfaceVariant)
-                            ) {
-                                CardVisibilityRow("Prévision semaine", showWeeklyCard, onToggleWeeklyCard, colors)
-
-                                if (showWeeklyCard) {
-                                    Column(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "Icônes par jour",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = colors.onSurfaceVariant
-                                        )
-                                        Text(
-                                            text = "Combien d'icônes météo et vent par jour (1 = léger, 3 = détaillé)",
-                                            fontSize = 11.5.sp,
-                                            color = colors.onSurfaceVariant.copy(alpha = 0.8f)
-                                        )
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            listOf(1, 2, 3).forEach { d ->
-                                                val isSelected = weeklyDensity == d
-                                                Surface(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .clip(pillShape)
-                                                        .clickable { onWeeklyDensityChanged(d) },
-                                                    color = if (isSelected) colors.primary else colors.background
-                                                ) {
-                                                    Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                        Text(
-                                                            text = d.toString(),
-                                                            fontSize = 12.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.height(2.dp))
-
-                                        Text(
-                                            text = "Étoiles des jours",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = colors.onSurfaceVariant
-                                        )
-                                        Text(
-                                            text = "Plus c'est exigeant, plus il faut un bon score pour avoir des étoiles. " +
-                                                "Exemple : un score de 70 donne ${starsText(starsForScore(70, starsOffset))} ★.",
-                                            fontSize = 11.5.sp,
-                                            color = colors.onSurfaceVariant.copy(alpha = 0.8f)
-                                        )
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            listOf(-10 to "Exigeant", 0 to "Normal", 10 to "Indulgent").forEach { (value, label) ->
-                                                val isSelected = starsOffset == value
-                                                Surface(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .clip(pillShape)
-                                                        .clickable { onStarsOffsetChanged(value) },
-                                                    color = if (isSelected) colors.primary else colors.background
-                                                ) {
-                                                    Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                        Text(
-                                                            text = label,
-                                                            fontSize = 12.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.height(2.dp))
-
-                                        Text(
-                                            text = "Indicateurs vent",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = colors.onSurfaceVariant
-                                        )
-                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun").forEach { (key, label) ->
-                                                val isSelected = weeklyWindMode == key
-                                                Surface(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .clip(pillShape)
-                                                        .clickable { onWeeklyWindModeChanged(key) },
-                                                    color = if (isSelected) colors.primary else colors.background
-                                                ) {
-                                                    Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
-                                                        Text(
-                                                            text = label,
-                                                            fontSize = 11.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
-                                                            maxLines = 1
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                CardVisibilityRow("Déroulé de la journée", showDailyTimelineCard, onToggleDailyTimelineCard, colors)
-                                CardVisibilityRow("Vagues & Houle", showSurfCard, onToggleSurfCard, colors)
-                                CardVisibilityRow("Vent", showWindCard, onToggleWindCard, colors)
-                                CardVisibilityRow("Mer de vent", showWindSeaCard, onToggleWindSeaCard, colors)
-                                CardVisibilityRow("Météo", showWeatherCard, onToggleWeatherCard, colors)
-                                CardVisibilityRow("Prévision heure par heure", showHourlyCard, onToggleHourlyCard, colors)
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = "Ordre des encarts",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.primary
-                            )
-                            Text(
-                                text = "Touche ▲ ▼ pour monter ou descendre un encart sur l'écran principal (les encarts masqués restent dans la liste).",
-                                fontSize = 11.5.sp,
-                                color = colors.onSurfaceVariant
-                            )
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(colors.surfaceVariant)
-                            ) {
-                                val labels = mapOf(
-                                    "weekly" to "Prévision semaine", "dailyTimeline" to "Déroulé de la journée",
-                                    "surf" to "Vagues & Houle", "wind" to "Vent", "windSea" to "Mer de vent",
-                                    "weather" to "Météo", "hourly" to "Prévision heure par heure"
-                                )
-                                val visible = mapOf(
-                                    "weekly" to showWeeklyCard, "dailyTimeline" to showDailyTimelineCard, "surf" to showSurfCard,
-                                    "wind" to showWindCard, "windSea" to showWindSeaCard, "weather" to showWeatherCard, "hourly" to showHourlyCard
-                                )
-                                val keys = cardsOrder.filter { it in labels }
-                                keys.forEachIndexed { index, key ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = labels.getValue(key),
-                                            fontSize = 12.5.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = colors.onBackground.copy(alpha = if (visible[key] == true) 1f else 0.4f),
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        TextButton(onClick = { onMoveCardUp(key) }, enabled = index > 0) { Text("▲", fontSize = 16.sp) }
-                                        TextButton(onClick = { onMoveCardDown(key) }, enabled = index < keys.lastIndex) { Text("▼", fontSize = 16.sp) }
-                                    }
-                                }
-                            }
-                        }
                     }
 
                     // Bouton d'épinglage du widget : Android seulement (rien à afficher sur le site).
@@ -725,7 +428,27 @@ fun SurfPreferencesDialog(
                         }
                     }
 
-                    if (page == "forecast") Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (page == "forecast") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Sources des prévisions", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+                        ChipChoices(listOf("auto" to "Auto (conseillé)", "manual" to "Choisir moi-même"), if (autoModels) "auto" else "manual", onSelect = { autoModels = it == "auto" })
+                        if (autoModels) {
+                            Text("Ce que fait Auto, sans que tu aies rien à régler :", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                            listOf(
+                                "Houle : MF-WAM (Météo-France) aujourd'hui et demain, puis ECMWF Wave jusqu'à J+7.",
+                                "Période de la houle : GFS Wave, comme Windguru et Surf-Forecast.",
+                                "Houle secondaire : affichée dès 0,2 m et 7 s.",
+                                "Vent : la moyenne de ECMWF et de GFS (direction en moyenne vectorielle, rafales moyennées), jusqu'à J+7.",
+                                "AROME HD : calculé en coulisses pour comparer, pas affiché.",
+                                "Ciel, température, pluie, nuages : Météo-France, AROME aujourd'hui et demain, puis ARPEGE jusqu'à environ 4 jours ; au-delà, ECMWF."
+                            ).forEach { line ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("•", fontSize = 12.sp, color = colors.primary)
+                                    Text(line, fontSize = 12.sp, color = colors.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                    if (page == "forecast" && !autoModels) Column(modifier = Modifier.fillMaxWidth()) {                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -753,14 +476,14 @@ fun SurfPreferencesDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf("AROME", "ARPEGE", "ECMWF").forEach { model ->
+                                    listOf("AROME", "ARPEGE", "ECMWF", "GFS").forEach { model ->
                                         val isSelected = shortTermWind == model
                                         Surface(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { shortTermWind = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -768,12 +491,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -796,7 +519,7 @@ fun SurfPreferencesDialog(
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { shortTermWave = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -804,12 +527,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -829,14 +552,14 @@ fun SurfPreferencesDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf("ECMWF", "ARPEGE").forEach { model ->
+                                    listOf("ECMWF", "ARPEGE", "GFS").forEach { model ->
                                         val isSelected = longTermWind == model
                                         Surface(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { longTermWind = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -844,12 +567,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -872,7 +595,7 @@ fun SurfPreferencesDialog(
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { longTermWave = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -880,12 +603,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -907,26 +630,19 @@ fun SurfPreferencesDialog(
                             }
                         }
                     }
-                    if (page == "forecast" && onBeachFacingChanged != null && spotName.isNotEmpty()) {
-                        BeachFacingCard(
-                            spotName = spotName,
-                            facing = beachFacing,
-                            defaultFacing = defaultBeachFacing,
-                            onChange = onBeachFacingChanged
-                        )
-                    }
-
                     if (page == "help") {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text("Langue", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                            LanguageFlags(language = language, onChange = onLanguageChanged)
+                        }
+                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (onShowTour != null) {
                             PrefMenuRow("🧭", "Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", onClick = onShowTour)
-                        }
-                        if (onShowIntro != null) {
-                            PrefMenuRow("👋", "Revoir l'introduction", "Ton niveau et l'aperçu des scores", onClick = onShowIntro)
                         }
                     }
                     if (page == "guide") ForecastGuideContent()
 
-                    if (page == "journal" && backup != null) {
+                    if (page == "app" && backup != null) {
                     var importMessage by remember { mutableStateOf<String?>(null) }
                     Text("Journal de bord", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -1014,8 +730,8 @@ fun SurfPreferencesDialog(
                                     onClick = { apkUri.openUri("https://surflog.fr/surflog.apk") },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = pillShape,
-                                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
-                                ) { Text("⬇ Télécharger l'APK", fontSize = 12.sp, color = colors.onPrimary) }
+                                    colors = ButtonDefaults.buttonColors(containerColor = colors.primaryContainer)
+                                ) { Text("⬇ Télécharger l'APK", fontSize = 12.sp, color = colors.onPrimaryContainer) }
                                 Text(
                                     "Android demandera d'autoriser l'installation depuis le navigateur. Le journal du site et celui de l'appli sont séparés : sauvegarde puis restaure pour transférer.",
                                     fontSize = 11.5.sp,
@@ -1055,7 +771,7 @@ fun SurfPreferencesDialog(
 
                     Button(
                         onClick = {
-                            val newConfig = ForecastEngineConfig(
+                            val newConfig = if (autoModels) ForecastEngineConfig() else ForecastEngineConfig(
                             shortTermWeather = weatherModelFromLabel(shortTermWind),
                             shortTermWave = waveModelFromLabel(shortTermWave),
                             longTermWeather = weatherModelFromLabel(longTermWind),
@@ -1067,7 +783,7 @@ fun SurfPreferencesDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = pillShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primaryContainer)
                 ) {
                     Text("Appliquer et fermer", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
@@ -1095,7 +811,7 @@ fun CardVisibilityRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(checkedThumbColor = colors.onPrimary, checkedTrackColor = colors.primary)
+            colors = SwitchDefaults.colors(checkedThumbColor = colors.onPrimaryContainer, checkedTrackColor = colors.primaryContainer)
         )
     }
 }
@@ -1114,11 +830,13 @@ private fun weatherModelLabel(model: WeatherModel): String = when (model) {
     WeatherModel.AROME -> "AROME"
     WeatherModel.ARPEGE -> "ARPEGE"
     WeatherModel.ECMWF_IFS -> "ECMWF"
+    WeatherModel.GFS -> "GFS"
 }
 
 private fun weatherModelFromLabel(label: String): WeatherModel = when (label) {
     "ARPEGE" -> WeatherModel.ARPEGE
     "ECMWF" -> WeatherModel.ECMWF_IFS
+    "GFS" -> WeatherModel.GFS
     else -> WeatherModel.AROME
 }
 
@@ -1157,8 +875,8 @@ private fun PrefMenuRow(icon: String, title: String, subtitle: String, badge: St
                 if (badge != null) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary,
-                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primary).padding(horizontal = 8.dp, vertical = 2.dp)
+                        badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimaryContainer,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
             }
@@ -1180,6 +898,9 @@ private fun forecastModelInfo(model: String): Pair<String, String> = when (model
     "ECMWF" -> "ECMWF IFS (centre européen)" to
         "Le modèle du Centre européen de prévision à moyen terme (9 km), l'un des meilleurs au monde. Très stable, il prévoit jusqu'à 10 jours. " +
         "Moins fin que AROME sur les brises locales."
+    "GFS" -> "GFS (NOAA)" to
+        "Le modèle américain (13 km), qui voit loin (plus d'une semaine). En mode Auto, le vent est la moyenne de ECMWF et de GFS : " +
+        "deux modèles indépendants qui se corrigent l'un l'autre."
     "MF-WAM" -> "MF-WAM (Météo-France)" to
         "Modèle de vagues de Météo-France (8 km). Bon sur les côtes françaises : il tient compte des fonds et des effets côtiers, " +
         "donc de la houle telle qu'elle arrive près du rivage."
@@ -1205,6 +926,104 @@ private fun LanguageFlags(language: String, onChange: (String) -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 FlagIcon(lang.code, if (selected) 20.dp else 17.dp)
+            }
+        }
+    }
+}
+
+
+/** Une rangée dense des réglages : icône, titre, flèche (badge facultatif). */
+@Composable
+private fun DenseRow(icon: String, title: String, badge: String? = null, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant)
+            .clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(icon, fontSize = 16.sp)
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
+        if (badge != null) {
+            Text(
+                badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimaryContainer,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text("›", fontSize = 20.sp, color = colors.onSurfaceVariant)
+    }
+}
+
+/** Une rangée dense avec le choix directement dessus (taille, unité du vent). */
+@Composable
+private fun DenseChoiceRow(icon: String, title: String, choices: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant).padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon == "Aa") Text("Aa", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = colors.primary) else Text(icon, fontSize = 16.sp)
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
+        ChipChoices(choices, selected, onSelect, small = true, modifier = Modifier.weight(2f))
+    }
+}
+
+@Composable
+private fun ChipChoices(
+    choices: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit,
+    small: Boolean = false, modifier: Modifier = Modifier.fillMaxWidth()
+) {
+    val colors = MaterialTheme.colorScheme
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        choices.forEach { (key, label) ->
+            val isSelected = selected == key
+            Box(
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(50))
+                    .background(if (isSelected) colors.primaryContainer else if (small) colors.background else colors.surfaceVariant)
+                    .clickable { onSelect(key) }.padding(vertical = if (small) 6.dp else 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(label, fontSize = if (small) 11.sp else 12.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                    color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** Aperçu en temps réel de la place du graphique : le ciel et la mer d'une carte de la semaine, aux proportions réglées. */
+@Composable
+private fun GraphPreview(weekPct: Int, dayPct: Int, waterPct: Int) {
+    val colors = MaterialTheme.colorScheme
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        listOf("Semaine" to weekPct, "Jour" to dayPct).forEach { (name, pct) ->
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, fontSize = 11.sp, color = colors.onSurfaceVariant)
+                Column(modifier = Modifier.fillMaxWidth().height(110.dp).clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant)) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(100f - pct).background(Color(0xFF9CC9F0)))
+                    Box(modifier = Modifier.fillMaxWidth().weight(pct.toFloat()).background(Color(0xFF29B6F6).copy(alpha = 0.55f)), contentAlignment = Alignment.TopCenter) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(top = (waterPct / 5).dp).height(2.dp).background(colors.onBackground.copy(alpha = 0.5f)))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Aperçu en temps réel de trois jours de la semaine : indicateurs de vent et icônes par jour. */
+@Composable
+private fun WeekPreview(windMode: String, density: Int) {
+    val colors = MaterialTheme.colorScheme
+    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf("Auj. 12" to "SO 14", "Dem. 13" to "O 9", "Mer. 14" to "NO 18").forEach { (day, wind) ->
+            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(day, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+                Text(listOf("☀️", "⛅", "☁️").take(density).joinToString(" "), fontSize = 13.sp)
+                if (windMode != "none") {
+                    val txt = when (windMode) { "arrow" -> "↗"; "text" -> wind; else -> "↗ $wind" }
+                    Text(txt, fontSize = 12.sp, color = colors.onBackground)
+                }
             }
         }
     }

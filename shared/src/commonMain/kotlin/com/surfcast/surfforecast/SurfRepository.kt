@@ -31,6 +31,10 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.roundToInt
 
 @Serializable
@@ -68,6 +72,7 @@ data class MareeExtremaResponse(
  * replis sur clés suffixées par modèle et valeurs nulles.
  */
 private const val AROME_HD_MODEL = "meteofrance_arome_france_hd"
+private const val GFS_MODEL = "gfs_seamless"
 
 /** Relais Cloudflare des marées (functions/api/maree) : jeton côté serveur + cache. Repli : appel direct. */
 const val MAREE_RELAY_BASE = "https://surflog.fr/api/maree"
@@ -172,7 +177,11 @@ class SurfRepository(
         // Mer de vent : 0 est une valeur légitime (pas de clapot), pas de repli sur le total.
         val windWaveHeights: List<Double>,
         val windWavePeriods: List<Double>,
-        val windWaveDirections: List<Float>
+        val windWaveDirections: List<Float>,
+        // Houle secondaire (Open-Meteo secondary_swell_wave_*) : 0 = pas de seconde houle.
+        val secHeights: List<Double> = emptyList(),
+        val secPeriods: List<Double> = emptyList(),
+        val secDirections: List<Float> = emptyList()
     )
 
     private class RawWeatherHourly(
@@ -185,13 +194,15 @@ class SurfRepository(
         val cloudCovers: List<Int>,
         val apparentTemperatures: List<Double>,
         val sunriseByDate: Map<LocalDate, LocalTime>,
-        val sunsetByDate: Map<LocalDate, LocalTime>
+        val sunsetByDate: Map<LocalDate, LocalTime>,
+        val uvIndexes: List<Double> = emptyList(),
+        val precipitations: List<Double> = emptyList()
     )
 
     private suspend fun fetchMarineBlock(lat: Double, lon: Double, waveModel: WaveModel, days: Int): RawMarineHourly {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
             "latitude=$lat&longitude=$lon" +
-            "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period" +
+            "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period,secondary_swell_wave_height,secondary_swell_wave_period,secondary_swell_wave_direction" +
             "&models=${waveModel.apiParam}" +
             "&forecast_days=$days" +
             "&timezone=auto"
@@ -219,8 +230,17 @@ class SurfRepository(
         val windWaveHeights = mutableListOf<Double>()
         val windWavePeriods = mutableListOf<Double>()
         val windWaveDirs = mutableListOf<Float>()
+        val secHArr = hourly.optArray("secondary_swell_wave_height")
+        val secPArr = hourly.optArray("secondary_swell_wave_period")
+        val secDArr = hourly.optArray("secondary_swell_wave_direction")
+        val secHeights = mutableListOf<Double>()
+        val secPeriods = mutableListOf<Double>()
+        val secDirs = mutableListOf<Float>()
 
         for (i in timeArr.indices) {
+            secHeights.add(secHArr.doubleAt(i) ?: 0.0)
+            secPeriods.add(secPArr.doubleAt(i) ?: 0.0)
+            secDirs.add(secDArr.doubleAt(i)?.toFloat() ?: 0f)
             times.add(LocalDateTime.parse(timeArr[i].jsonPrimitive.content))
 
             val swellH = swellHArr.doubleAt(i) ?: Double.NaN
@@ -266,7 +286,7 @@ class SurfRepository(
             windWaveDirs.add(windWaveDArr.doubleAt(i)?.toFloat() ?: 0f)
         }
 
-        return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs)
+        return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs, secHeights, secPeriods, secDirs)
     }
 
     /**
@@ -321,7 +341,7 @@ class SurfRepository(
 
         val url = "https://api.open-meteo.com/v1/forecast?" +
             "latitude=$lat&longitude=$lon" +
-            "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover,apparent_temperature" +
+            "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover,apparent_temperature,uv_index,precipitation" +
             modelParam +
             dailyParam +
             "&forecast_days=$safeDays" +
@@ -346,6 +366,10 @@ class SurfRepository(
         val windGustArr = getArray("wind_gusts_10m")
         val cloudArr = getArray("cloudcover")
         val apparentArr = getArray("apparent_temperature")
+        val uvArr = getArray("uv_index")
+        val precipArr = getArray("precipitation")
+        val uvs = mutableListOf<Double>()
+        val precips = mutableListOf<Double>()
 
         val times = mutableListOf<LocalDateTime>()
         val temps = mutableListOf<Double>()
@@ -369,6 +393,8 @@ class SurfRepository(
             clouds.add(cloudArr.doubleAt(i)?.toInt() ?: 0)
             // Repli sur la température de l'air si le ressenti manque pour cette heure.
             apparentTemps.add(apparentArr.doubleAt(i) ?: temp)
+            uvs.add(uvArr.doubleAt(i) ?: 0.0)
+            precips.add(precipArr.doubleAt(i) ?: 0.0)
         }
 
         val sunriseByDate = mutableMapOf<LocalDate, LocalTime>()
@@ -393,7 +419,7 @@ class SurfRepository(
             }
         }
 
-        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, windGusts, clouds, apparentTemps, sunriseByDate, sunsetByDate)
+        return RawWeatherHourly(times, temps, codes, windSpeeds, windDirs, windGusts, clouds, apparentTemps, sunriseByDate, sunsetByDate, uvs, precips)
     }
 
     /**
@@ -429,6 +455,49 @@ class SurfRepository(
     }
 
     /**
+     * Vent du modèle global GFS (vitesse, direction, rafales) sur [days] jours : il est moyenné avec ECMWF. Un échec ne fait
+     * jamais échouer la prévision : on garde alors ECMWF seul.
+     */
+    private suspend fun fetchGfsWind(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Triple<Double, Double, Double>> {
+        return try {
+            val url = "https://api.open-meteo.com/v1/forecast?" +
+                "latitude=$lat&longitude=$lon" +
+                "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
+                "&models=$GFS_MODEL" +
+                "&forecast_days=$days" +
+                "&timezone=auto"
+            val hourly = httpGet(url).getValue("hourly").jsonObject
+            val timeArr = hourly.getValue("time").jsonArray
+            val speedArr = hourly.optArray("wind_speed_10m") ?: hourly.optArray("wind_speed_10m_$GFS_MODEL")
+            val dirArr = hourly.optArray("wind_direction_10m") ?: hourly.optArray("wind_direction_10m_$GFS_MODEL")
+            val gustArr = hourly.optArray("wind_gusts_10m") ?: hourly.optArray("wind_gusts_10m_$GFS_MODEL")
+            if (speedArr == null || dirArr == null) return emptyMap()
+            buildMap {
+                for (i in timeArr.indices) {
+                    val speed = speedArr.doubleAt(i) ?: continue
+                    val dir = dirArr.doubleAt(i) ?: continue
+                    put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), Triple(speed, dir, gustArr.doubleAt(i) ?: speed))
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    /** Moyenne de deux directions de vent (en degrés) par les vecteurs, pour que 350° et 10° donnent 0° et non 180°. */
+    private fun meanDirection(a: Double, b: Double): Double {
+        val ra = a * PI / 180.0
+        val rb = b * PI / 180.0
+        val x = cos(ra) + cos(rb)
+        val y = sin(ra) + sin(rb)
+        if (x * x + y * y < 1e-9) return a
+        val deg = atan2(y, x) * 180.0 / PI
+        return (deg + 360.0) % 360.0
+    }
+
+    /**
      * `today` est injectable pour les tests ; par défaut, la date du jour du téléphone
      * (comme LocalDate.now() côté Android).
      */
@@ -454,6 +523,12 @@ class SurfRepository(
                 fetchWeatherBlock(lat, lon, config.longTermWeather, 7, includeDailySun = true)
             }
 
+            // Le ciel, la température, la pluie et les nuages viennent de Météo-France : AROME en court terme, puis ARPEGE aussi loin qu'il va
+            // (environ 4 jours) ; au-delà, ECMWF prend le relais. Le vent reste la moyenne ECMWF + GFS.
+            val mfWeatherDeferred = async {
+                runCatching { fetchWeatherBlock(lat, lon, WeatherModel.ARPEGE, 7) }.getOrNull()
+            }
+            val gfsWindDeferred = async { fetchGfsWind(lat, lon, 7) }
             val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
             val referencePeriodsDeferred = async { fetchReferencePeriods(lat, lon, 7) }
 
@@ -461,13 +536,16 @@ class SurfRepository(
             val longMarine = longMarineDeferred.await()
             val shortWeather = shortWeatherDeferred.await()
             val longWeather = longWeatherDeferred.await()
+            val mfWeather = mfWeatherDeferred.await()
             val aromeHdWind = aromeHdWindDeferred.await()
+            val gfsWind = gfsWindDeferred.await()
             val seaTemps = seaTempDeferred.await()
             val referencePeriods = referencePeriodsDeferred.await()
 
             val marineMapShort = shortMarine.times.indices.associateBy { shortMarine.times[it] }
             val weatherMapShort = shortWeather.times.indices.associateBy { shortWeather.times[it] }
             val weatherMapLong = longWeather.times.indices.associateBy { longWeather.times[it] }
+            val weatherMapMf = mfWeather?.let { mf -> mf.times.indices.associateBy { mf.times[it] } }.orEmpty()
 
             val resultList = mutableListOf<HourlyUiModel>()
 
@@ -489,6 +567,15 @@ class SurfRepository(
                     (weatherMapLong[t] ?: 0) to longWeather
                 }
 
+                // Source du ciel de cette heure : le modèle court terme (AROME), sinon ARPEGE s'il a l'heure, sinon le long terme.
+                val mfIndex = weatherMapMf[t]
+                val mfHasHour = mfWeather != null && mfIndex != null && !mfWeather.windSpeeds.getOrElse(mfIndex) { Double.NaN }.isNaN()
+                val (wxData, wxIndex) = when {
+                    wData === shortWeather -> wData to wIndex
+                    mfHasHour -> mfWeather!! to mfIndex!!
+                    else -> wData to wIndex
+                }
+
                 val h = mData.waveHeights[mIndex]
                 // Période : celle de GFS Wave (comme Windguru / Yadusurf / Surf-Forecast) ; à défaut, le modèle de la façade.
                 val basePeriod = mData.wavePeriods[mIndex]
@@ -506,12 +593,28 @@ class SurfRepository(
                 // inférieures au vent moyen affiché.
                 val primaryGust = wData.windGusts.getOrElse(wIndex) { Double.NaN }
                 val longGust = longIndex?.let { longWeather.windGusts.getOrElse(it) { Double.NaN } } ?: Double.NaN
+                val gfsGust = gfsWind[t]?.third
                 val gustRaw = when {
+                    !longGust.isNaN() && gfsGust != null && ecmwfOkEarly(longSpeed, longDir) -> (longGust + gfsGust) / 2.0
+                    gfsGust != null && longGust.isNaN() -> gfsGust
+                    !longGust.isNaN() && ecmwfOkEarly(longSpeed, longDir) -> longGust
                     !primaryGust.isNaN() -> primaryGust
                     !longGust.isNaN() -> longGust
                     else -> Double.NaN
                 }
+                // Vent affiché : la moyenne des deux modèles globaux (ECMWF et GFS), plus crédible que l'AROME sur la côte (relevé du
+                // 12 octobre : 8 km/h contre 15 à 19 sur les autres sites). L'AROME HD n'est plus qu'une comparaison, notée dans la source.
+                val gfs = gfsWind[t]
+                val ecmwfOk = !longSpeed.isNaN() && !longDir.isNaN()
+                val hdNote = hd?.let { " · AROME HD ${it.first.roundToInt()}" }.orEmpty()
+                val globalWind: Triple<Double, Double, String>? = when {
+                    ecmwfOk && gfs != null -> Triple((longSpeed + gfs.first) / 2.0, meanDirection(longDir, gfs.second), "ECMWF+GFS")
+                    ecmwfOk -> Triple(longSpeed, longDir, "ECMWF")
+                    gfs != null -> Triple(gfs.first, gfs.second, "GFS")
+                    else -> null
+                }
                 val (windSpeedRaw, windDirDeg, windSource) = when {
+                    globalWind != null -> Triple(globalWind.first, globalWind.second, globalWind.third + hdNote)
                     hd != null -> Triple(hd.first, hd.second, "AROME HD")
                     !primarySpeed.isNaN() && !primaryDir.isNaN() -> Triple(
                         primarySpeed,
@@ -532,16 +635,23 @@ class SurfRepository(
                         windWaveHeight = mData.windWaveHeights.getOrElse(mIndex) { 0.0 },
                         windWavePeriod = mData.windWavePeriods.getOrElse(mIndex) { 0.0 },
                         windWaveDirection = mData.windWaveDirections.getOrElse(mIndex) { 0f },
+                        secondaryHeight = mData.secHeights.getOrElse(mIndex) { 0.0 },
+                        secondaryPeriod = mData.secPeriods.getOrElse(mIndex) { 0.0 },
+                        secondaryDirection = mData.secDirections.getOrElse(mIndex) { 0f },
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
                         windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),
                         windDirectionStr = getCardinalDirection(windDirDeg),
                         windSource = windSource,
-                        weatherCode = wData.weatherCodes.getOrElse(wIndex) { 0 },
-                        temperature = wData.temperatures.getOrElse(wIndex) { 20.0 }.roundToInt(),
-                        cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 },
-                        feelsLike = wData.apparentTemperatures.getOrElse(wIndex) {
-                            wData.temperatures.getOrElse(wIndex) { 20.0 }
+                        weatherCode = wxData.weatherCodes.getOrElse(wxIndex) { 0 },
+                        temperature = wxData.temperatures.getOrElse(wxIndex) { 20.0 }.roundToInt(),
+                        cloudCover = wxData.cloudCovers.getOrElse(wxIndex) { 0 },
+                        // L'indice UV : celui de Météo-France s'il en donne un, sinon celui du long terme.
+                        uvIndex = wxData.uvIndexes.getOrElse(wxIndex) { 0.0 }.takeIf { it > 0.0 }
+                            ?: wData.uvIndexes.getOrElse(wIndex) { 0.0 },
+                        precipitationMm = wxData.precipitations.getOrElse(wxIndex) { 0.0 },
+                        feelsLike = wxData.apparentTemperatures.getOrElse(wxIndex) {
+                            wxData.temperatures.getOrElse(wxIndex) { 20.0 }
                         }.roundToInt(),
                         seaTemperature = seaTemps[t]
                     )
@@ -789,3 +899,5 @@ private fun JsonObject.optArray(key: String): JsonArray? = this[key] as? JsonArr
 // Valeur numérique à l'index i, null si absente, JSON null ou hors limites (≈ org.json isNull).
 private fun JsonArray?.doubleAt(i: Int): Double? =
     (this?.getOrNull(i) as? kotlinx.serialization.json.JsonPrimitive)?.doubleOrNull
+
+private fun ecmwfOkEarly(speed: Double, dir: Double) = !speed.isNaN() && !dir.isNaN()

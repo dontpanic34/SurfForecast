@@ -7,8 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val DarkColors = darkColorScheme(
-    primary = AppColors.DarkPillActive,
-    onPrimary = Color.White,
+    primary = Color(0xFF7FC3E6),
+    onPrimary = Color(0xFF0D1B22),
+    primaryContainer = Color(0xFF2C5A70),
+    onPrimaryContainer = Color(0xFFE6F3F9),
     background = AppColors.DarkBackground,
     onBackground = AppColors.DarkOnBackground,
     surface = AppColors.DarkSurface,
@@ -21,6 +23,8 @@ private val DarkColors = darkColorScheme(
 private val LightColors = lightColorScheme(
     primary = AppColors.LightPillActive,
     onPrimary = Color.White,
+    primaryContainer = AppColors.LightPillActive,
+    onPrimaryContainer = Color.White,
     background = AppColors.LightBackground,
     onBackground = AppColors.LightOnBackground,
     surface = AppColors.LightSurface,

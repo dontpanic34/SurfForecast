@@ -52,8 +52,8 @@ class SurfRepositoryTest {
 
     private val longWeather = """
         {"hourly":{"time":["2026-01-01T10:00","2026-01-04T10:00"],
-        "temperature_2m":[99.0,17.4],"weather_code":[99,1],"wind_speed_10m":[99.0,20.6],
-        "wind_direction_10m":[0.0,270.0],"cloudcover":[0,10],"apparent_temperature":[99.0,null]},
+        "temperature_2m":[99.0,17.4],"weather_code":[99,1],"wind_speed_10m":[14.0,20.6],
+        "wind_direction_10m":[270.0,270.0],"cloudcover":[0,10],"apparent_temperature":[99.0,null]},
         "daily":{"time":["2026-01-01"],"sunrise":["2026-01-01T08:40"],"sunset":["2026-01-01T17:25"]}}
     """.trimIndent()
 
@@ -93,13 +93,34 @@ class SurfRepositoryTest {
             respondJson(body)
         }
         val withHd = repository(engine("3.2")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
-        assertEquals(3, withHd.windSpeedKmh)
-        assertEquals("S", withHd.windDirectionStr)
-        assertEquals("AROME HD", withHd.windSource)
+        // Le vent affiché est celui des modèles globaux (ECMWF ici, GFS indisponible) ; l'AROME HD n'est qu'une note.
+        assertEquals(14, withHd.windSpeedKmh)
+        assertEquals("O", withHd.windDirectionStr)
+        assertEquals("ECMWF+GFS · AROME HD 3", withHd.windSource)
 
         val hdNull = repository(engine("null")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
-        assertEquals(12, hdNull.windSpeedKmh)
-        assertEquals("AROME", hdNull.windSource)
+        assertEquals(14, hdNull.windSpeedKmh)
+        assertEquals("ECMWF+GFS", hdNull.windSource)
+    }
+
+    @Test
+    fun windIsTheAverageOfEcmwfAndGfs() = runTest {
+        val engine = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            if (model == "ncep_gfswave016" || model == "meteofrance_arome_france_hd") return@MockEngine respondError(HttpStatusCode.InternalServerError)
+            val body = when {
+                request.url.host == "marine-api.open-meteo.com" -> if (model == "meteofrance_wave") shortMarine else longMarine
+                model == "gfs_seamless" ->
+                    """{"hourly":{"time":["2026-01-01T10:00","2026-01-04T10:00"],"wind_speed_10m":[20.0,20.0],"wind_direction_10m":[270.0,270.0],"wind_gusts_10m":[30.0,30.0]}}"""
+                model == "meteofrance_arome_france" -> shortWeather
+                else -> longWeather
+            }
+            respondJson(body)
+        }
+        val h = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        // ECMWF 14 km/h et GFS 20 km/h : 17 km/h.
+        assertEquals(17, h.windSpeedKmh)
+        assertEquals("ECMWF+GFS", h.windSource)
     }
 
     @Test
@@ -117,9 +138,9 @@ class SurfRepositoryTest {
         assertEquals(0.4, shortTerm.windWaveHeight)
         assertEquals(4.0, shortTerm.windWavePeriod)
         assertEquals(calculateWaveEnergyReal(1.5, 12.0), shortTerm.energyKj)
-        assertEquals(12, shortTerm.windSpeedKmh)
-        assertEquals("E", shortTerm.windDirectionStr)
-        assertEquals("AROME", shortTerm.windSource)
+        assertEquals(14, shortTerm.windSpeedKmh)
+        assertEquals("O", shortTerm.windDirectionStr)
+        assertEquals("ECMWF+GFS", shortTerm.windSource)
         assertEquals(15, shortTerm.temperature)
         assertEquals(12, shortTerm.feelsLike)
         assertEquals(3, shortTerm.weatherCode)

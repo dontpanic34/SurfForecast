@@ -8,7 +8,7 @@ import kotlin.math.abs
 data class SessionVector(
     val energyKj: Int,
     val windSpeedKmh: Int,
-    val windCategory: String, // "offshore" / "cross" / "onshore"
+    val windCategory: String, // "offshore" / "side-off" / "side" / "side-on" / "onshore"
     val waveDirDelta: Double, // ecart angulaire vs houle ideale du spot, 0 si spot sans direction ideale
     val tideCoeff: Int?
 )
@@ -52,9 +52,8 @@ fun sessionVectorFromForecast(hourlyModel: HourlyUiModel, idealSwellDirection: I
 // Distance categorielle entre categories de vent : meme categorie = 0, categories adjacentes
 // (offshore/cross ou cross/onshore) = 0.5, opposees (offshore/onshore) = 1.
 private fun windCategoryDistance(a: String, b: String): Double {
-    if (a == b) return 0.0
-    val opposite = (a == "offshore" && b == "onshore") || (a == "onshore" && b == "offshore")
-    return if (opposite) 1.0 else 0.5
+    fun pos(c: String) = when (c) { "offshore" -> 0.0; "side-off" -> 0.5; "side", "cross" -> 1.0; "side-on" -> 1.5; else -> 2.0 }
+    return kotlin.math.abs(pos(a) - pos(b)) / 2.0
 }
 
 // Score de similarite 0-100 entre une session de reference (bien notee) et un candidat

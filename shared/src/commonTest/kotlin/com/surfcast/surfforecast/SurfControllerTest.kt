@@ -24,12 +24,20 @@ class SurfControllerTest {
 
     @Test
     fun savedCardsOrderIsCompletedWithNewCards() = runTest {
-        val prefs = InMemoryKeyValueStore().apply { putString("cards_order", "hourly,surf") }
+        val prefs = InMemoryKeyValueStore().apply { putString("cards_order", "hourly,surf"); putBoolean("hourly_last_v1", true) }
         val c = controller(prefs)
         assertEquals(
             listOf("hourly", "surf", "weekly", "dailyTimeline", "wind", "windSea", "weather"),
             c.cardsOrder.toList()
         )
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun hourlyCardGoesLastOnceForExistingUsers() = runTest {
+        val prefs = InMemoryKeyValueStore().apply { putString("cards_order", "hourly,surf") }
+        val c = controller(prefs)
+        assertEquals("hourly", c.cardsOrder.last())
         advanceUntilIdle()
     }
 

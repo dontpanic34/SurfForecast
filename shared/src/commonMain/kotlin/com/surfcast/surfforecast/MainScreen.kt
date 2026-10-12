@@ -12,6 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -52,6 +53,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
     viewModel: SurfController,
@@ -91,6 +93,8 @@ fun MainScreen(
     var showPreferencesDialog by remember { mutableStateOf(false) }
     var showSessionLogDialog by remember { mutableStateOf(false) }
     var showSessionLogEntry by remember { mutableStateOf(false) }
+    // Jour proposé à l'ouverture de la saisie : 1 quand on répond « Noter ma session » à « Tu as surfé ? » (hier).
+    var entryInitialOffset by remember { mutableStateOf(0) }
     var showQuiverDialog by remember { mutableStateOf(false) }
     // Page des Paramètres à ouvrir directement (« profile » depuis la visite guidée).
     var preferencesStartPage by remember { mutableStateOf<String?>(null) }
@@ -128,14 +132,36 @@ fun MainScreen(
 
     // Première ouverture : unité du vent, niveau et origine des prévisions (une fois les données là,
     // pour ne pas masquer l'écran de démarrage).
-    if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
-        OnboardingDialog(
-            displaySize = viewModel.displaySize,
-            onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
-            surferLevel = viewModel.surferLevel,
-            onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
-            onDone = { viewModel.dismissOnboarding() }
+    if (!viewModel.spotChosen && uiState !is SurfUiState.Loading) {
+        SpotSelectionDialog(
+            currentFavorites = viewModel.favoriteSpots,
+            onDismiss = {},
+            onSpotSelected = {},
+            onAssignToSlot = { _, _ -> },
+            onRemoveFromSlot = {},
+            onOpenLiveCam = {},
+            mandatory = true,
+            onChosen = { viewModel.chooseFirstSpot(it) }
         )
+    } else if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
+        // Après le choix du spot : directement le questionnaire de niveau, puis la visite guidée de l'accueil.
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = {},
+            properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            androidx.compose.material3.Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.background) {
+                Column(
+                    modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    LevelQuestionnaire(
+                        initial = viewModel.levelAnswers, initialShift = viewModel.levelShift, initialTolerance = viewModel.tolerance,
+                        onDone = { a, shift, tol -> viewModel.saveLevelQuestionnaire(a, shift, tol); viewModel.dismissOnboarding() },
+                        onClose = { viewModel.dismissOnboarding() }
+                    )
+                }
+            }
+        }
     }
 
     val popupError = (uiState as? SurfUiState.Success)?.popupError
@@ -177,8 +203,6 @@ fun MainScreen(
             onMoveCardDown = { viewModel.moveCardDown(it) },
             displaySize = viewModel.displaySize,
             onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
-            starsOffset = viewModel.starsOffset,
-            onStarsOffsetChanged = { viewModel.changeStarsOffset(it) },
             weeklyDensity = viewModel.weeklyDensity,
             onWeeklyDensityChanged = { viewModel.changeWeeklyDensity(it) },
             weeklyWindMode = viewModel.weeklyWindMode,
@@ -211,10 +235,6 @@ fun MainScreen(
             onViewLogs = {
                 showPreferencesDialog = false
                 showForecastHistory = true
-            },
-            onShowIntro = {
-                showPreferencesDialog = false
-                viewModel.showOnboardingAgain()
             },
             spotName = (uiState as? SurfUiState.Success)?.spotName ?: "",
             beachFacing = (uiState as? SurfUiState.Success)?.spotName?.let { viewModel.facingFor(it) },
@@ -369,15 +389,6 @@ fun MainScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(surfaceColor)
                     ) {
-                                    // Profil pas encore renseigné : un message cliquable l'invite à le remplir.
-                                    if (viewModel.showProfileNudge) {
-                                        ProfileNudgeCard(
-                                            onOpen = { preferencesStartPage = "profile"; showPreferencesDialog = true },
-                                            onLater = { viewModel.hideProfileNudge() },
-                                            modifier = Modifier.coachTarget("bestSlot", coachTargets).padding(horizontal = 10.dp, vertical = 2.dp).padding(bottom = 6.dp)
-                                        )
-                                    }
-
                                     // Fiches de bancs : « Le banc magique : 16h–18h (descendant · 1,0–1,6 m) ».
                                     run {
                                         val day = selectedDate ?: today
@@ -410,6 +421,39 @@ fun MainScreen(
                                         }
                                     }
 
+                                    // Journal : le lendemain d'une bonne journée prévue, on demande « Tu as surfé ? ».
+                                    run {
+                                        val yesterday = today.minus(1, DateTimeUnit.DAY)
+                                        val sessions by viewModel.allSessions.collectAsState()
+                                        val alreadyLogged = sessions.any { epochMillisToLocalDateTime(it.session.startTime).date == yesterday }
+                                        val past = remember(state.spotName, yesterday) { viewModel.pastConditions(state.spotName, yesterday) }
+                                        val bestYesterday = past?.first?.takeIf { it.isNotEmpty() }?.let { hrs ->
+                                            hrs.maxOf { calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel).let { r -> if (r.tooBig) -1 else r.score } }
+                                        }
+                                        if (!alreadyLogged && viewModel.surfedAskDismissed != yesterday.toString() && bestYesterday != null && bestYesterday >= 40) {
+                                            val top = past!!.first.maxByOrNull { it.waveHeight }!!
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp)
+                                                    .clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text("Hier, ${state.spotName} · ${formatDecimal(top.waveHeight, 1).replace('.', ',')} m", fontSize = 12.sp, color = onSurfaceColor.copy(alpha = 0.65f))
+                                                Text("Tu as surfé ?", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurfaceColor)
+                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Text(
+                                                        "Noter ma session", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primaryContainer)
+                                                            .clickable { viewModel.dismissSurfedAsk(yesterday); entryInitialOffset = 1; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } }.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                    )
+                                                    Text(
+                                                        "Non", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable { viewModel.dismissSurfedAsk(yesterday) }.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     // Journal de session : bandeau "Pattern repere" si un creneau a venir
                                     // matche une session passee bien notee.
                                     if (bestPatternMatch != null) {
@@ -429,9 +473,9 @@ fun MainScreen(
                                             }
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
-                                                text = "Pattern repéré $matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour}h : " +
-                                                    "match ${bestPatternMatch.score}% avec ta session du $refDateFormatted à " +
-                                                    "${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model})",
+                                                text = "$matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour} h ressemble à ta session du $refDateFormatted " +
+                                                    "à ${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model}), " +
+                                                    "ressemblance ${bestPatternMatch.score} %",
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = onSurfaceColor.copy(alpha = 0.75f),
@@ -471,7 +515,17 @@ fun MainScreen(
                                 offshoreNight = hasOffshoreNight(night, idealSwellDirection)
                             )
                         }
-                        val dailyStars = dailyScores.map { it?.let { sc -> starsForScore(sc) } }
+                        // Les étoiles sont les mêmes pour tout le monde : le jour noté avec un profil neutre. Seuls les trois segments
+                        // (matin, midi, après-midi) prennent la couleur du niveau de chacun.
+                        val dailyStars = availableDates.map { date ->
+                            val hours = daylightHoursFor(date, scoringByDate, state.dailySunInfo)
+                            val night = groupedByDate[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 21 } +
+                                groupedByDate[date].orEmpty().filter { it.rawTime.hour < 7 }
+                            dayQualityScore(
+                                hours, idealSwellDirection, NEUTRAL_LEVEL, state.dailyTides[date],
+                                offshoreNight = hasOffshoreNight(night, idealSwellDirection)
+                            )?.let { sc -> starsForScore(sc, 0) }
+                        }
 
                         // Libellé du jour : celui de la note du jour. Les cas à part (trop gros, trop petit, challengeant, trop de
                         // vent) gardent leur nom quand c'est le cas de la meilleure heure.
@@ -486,7 +540,9 @@ fun MainScreen(
                         }
 
                         val dailyFeelsLike = availableDates.map { date ->
-                            state.dailySummaries[date]?.avgFeelsLike ?: 20
+                            // Le ressenti moyen des heures de jour (comme l'encart Météo), pas la moyenne de l'air sur 24 h.
+                            daylightHoursFor(date, groupedByDate, state.dailySunInfo).map { it.feelsLike }.takeIf { it.isNotEmpty() }?.average()?.roundToInt()
+                                ?: state.dailySummaries[date]?.avgFeelsLike ?: 20
                         }
 
                         val dailyWaterTemps = availableDates.map { date ->
@@ -510,26 +566,38 @@ fun MainScreen(
                                     .padding(horizontal = 6.dp),
                                 contentPadding = PaddingValues(bottom = 16.dp)
                             ) {
+                                stickyHeader {
+                                    // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
+                                    val darkTop = isDarkSurfaceTheme()
+                                    SpotHeader(
+                                        spotName = state.spotName,
+                                        favorites = viewModel.favoriteSpots.take(3),
+                                        activeIndex = viewModel.activeFavoriteIndex,
+                                        showHint = !viewModel.spotHintDone,
+                                        onHintShown = { viewModel.markSpotHintDone() },
+                                        onSelectIndex = { viewModel.selectFavoriteIndex(it) },
+                                        onOpenSpots = { showSpotDialog = true },
+                                        onToggleFavorite = {
+                                            val slot = viewModel.favoriteSpots.indexOf(state.spotName)
+                                            if (slot >= 0) viewModel.removeFavoriteSlot(slot)
+                                            else {
+                                                val free = viewModel.favoriteSpots.take(3).indexOfFirst { it == null }
+                                                if (free >= 0) viewModel.assignSpotToFavoriteSlot(state.spotName, free) else showSpotDialog = true
+                                            }
+                                        },
+                                        themeToggle = {
+                                            Column(
+                                                modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                                                    .clickable { viewModel.changeThemeMode(if (darkTop) "light" else "dark") }.padding(horizontal = 8.dp, vertical = 6.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                ThemeToggleIcon(isDarkActive = !darkTop, backgroundColor = MaterialTheme.colorScheme.background, iconColor = onSurfaceColor, modifier = Modifier.size(24.dp))
+                                            }
+                                        }
+                                    )
+                                }
                                 item {
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        FavoritesHeaderRow(
-                                            favoriteSpots = viewModel.favoriteSpots.take(3),
-                                            activeFavoriteIndex = viewModel.activeFavoriteIndex,
-                                            onSelectFavorite = { index -> viewModel.selectFavoriteIndex(index) },
-                                            onOpenSpotDialog = { showSpotDialog = true },
-                                            surfaceColor = surfaceColor,
-                                            onSurfaceColor = onSurfaceColor,
-                                            modifier = Modifier.weight(1f)
-                                        )
-
-                                    }
 
                                     if (showSessionLogDialog) {
                                         val allSessions by viewModel.allSessions.collectAsState()
@@ -594,6 +662,7 @@ fun MainScreen(
                                             showTips = viewModel.showJournalTips,
                                             onDismissTips = { viewModel.dismissJournalTips() },
                                             availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
+                                            initialDayOffset = entryInitialOffset,
                                             onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
                                                 val past = pastConditions[dayOffset]
                                                 val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
@@ -634,16 +703,6 @@ fun MainScreen(
                                         )
                                     }
 
-                                    run {
-                                        val updated = if (state.lastUpdatedTime.isNotEmpty()) "Mis à jour à ${state.lastUpdatedTime}" else ""
-                                        Text(
-                                            text = updated,
-                                            fontSize = 10.5.sp,
-                                            color = onSurfaceColor.copy(alpha = 0.5f),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                        )
-                                    }
-
                                     Spacer(modifier = Modifier.height(2.dp))
                                 }
 
@@ -652,9 +711,22 @@ fun MainScreen(
                                     val dailyTide = state.dailyTides[date]
 
                                     item {
+                                        CompositionLocalProvider(
+                                            LocalCardSettings provides CardSettingsControl(
+                                                windUnit = viewModel.windUnit, onWindUnit = { viewModel.changeWindUnit(it) },
+                                                weeklyWindMode = viewModel.weeklyWindMode, onWeeklyWindMode = { viewModel.changeWeeklyWindMode(it) },
+                                                weeklyDensity = viewModel.weeklyDensity, onWeeklyDensity = { viewModel.changeWeeklyDensity(it) }
+                                            )
+                                        ) {
                                         DynamicCardsSection(
+                                            onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
+                                            boardOfDay = if (GearPrefs.boardDayMode == "header" || GearPrefs.boardDayMode == "both")
+                                                boardOfTheDay(
+                                                    daylightHoursFor(date, groupedByDate, state.dailySunInfo).let { h -> h.minByOrNull { abs(it.rawTime.hour - 13) } },
+                                                    viewModel.quiverBoards.collectAsState().value, idealSwellDirection
+                                                )?.model else null,
                                             dailyTideInfo = dailyTide,
                                             isToday = (date == today),
                                             currentHour = clock.hour,
@@ -679,8 +751,10 @@ fun MainScreen(
                                             onSurfaceColor = onSurfaceColor,
                                             idealSwellDirection = idealSwellDirection,
                                             surferLevel = viewModel.surferLevel,
-                                            coachTargets = coachTargets
+                                            coachTargets = coachTargets,
+                                            onOpenWeatherDetail = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } }
                                         )
+                                        }
                                     }
                                 }
                             }
@@ -700,6 +774,16 @@ fun MainScreen(
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
+                                        updatedText = state.lastUpdatedTime,
+                                        isNight = daylightHoursFor(today, groupedByDate, state.dailySunInfo).let { d -> d.isNotEmpty() && d.none { it.rawTime == closest.rawTime } },
+                                        nightText = nightPhrase(
+                                            nightHours(state.hourlyForecast, state.dailySunInfo, clock),
+                                            idealSwellDirection
+                                        ),
+                                        onRefresh = { viewModel.refreshActiveSpot() },
+                                        onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
+                                        boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")
+                                            boardOfTheDay(closest, viewModel.quiverBoards.collectAsState().value, idealSwellDirection)?.model else null,
                                         rating = calculateSlotRating(
                                             hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
                                             idealSwellDirection, viewModel.surferLevel
@@ -711,14 +795,10 @@ fun MainScreen(
 
                             // Barre du bas : Prévisions, Journal, Météo, Réglages (toujours visible, à portée de pouce).
                             // Journal et Météo s'ouvrent depuis le haut de la liste : on y remonte d'abord.
-                            val darkNow = isDarkSurfaceTheme()
                             BottomNavBar(
                                 onForecast = { navScope.launch { mainListState.animateScrollToItem(0) } },
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
-                                onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
-                                isDark = darkNow,
-                                onToggleTheme = { viewModel.changeThemeMode(if (darkNow) "light" else "dark") },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
                                 coachTargets = coachTargets
@@ -750,26 +830,16 @@ fun MainScreen(
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(
-                        "settings", "⭐ Des prévisions 100 % sur-mesure",
-                        "Renseigner ton profil est LE réglage à faire en premier.\n" +
-                            "• Sans profil : les notes sont celles d'un surfeur moyen, et un message t'invite à remplir ton profil.\n" +
-                            "• Avec ton profil : les scores, les couleurs et la limite orange « trop gros » sont calculés pour toi.\n" +
-                            "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Avancé, Expert) ou ton réglage personnalisé (taille de vague, tolérance au vent, aux rafales, au clapot).\n" +
-                            "• Tes planches : ajoute-les avec leur volume, tu les retrouveras dans le journal.\n" +
-                            "Une minute suffit, et les scores, les étoiles et le « trop gros » deviennent les tiens.",
-                        actionLabel = "Renseigner mon profil maintenant",
-                        onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
+                        "weekCard", "★ Étoiles et couleurs",
+                        "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⚙ d'un encart : réglages et explications."
                     ),
-                    CoachStep("journal", "📓 Le journal de bord", "Note tes sessions en quelques secondes : l'appli enregistre toute seule la houle, le vent et la marée, et compare ce qu'elle avait prévu avec ton ressenti (tes étoiles). Au fil du temps, tu vois dans quelles conditions tu surfes le mieux."),
                     CoachStep(
-                        "weekCard", "📅 Un écran à ta façon",
-                        "Touche un jour de la semaine pour le détailler. Chaque encart (semaine, déroulé, vagues, vent, météo…) s'adapte à toi :\n" +
-                            "• Masquer ou afficher : dans Paramètres › Affichage.\n" +
-                            "• Replier : touche la flèche de l'encart pour ne garder que son titre.\n" +
-                            "• Déplacer : fais glisser la poignée de l'encart pour changer l'ordre.\n" +
-                            "Garde seulement ce qui t'intéresse."
+                        "settings", "⚙️ Ton profil",
+                        "Pour l'instant, les notes sont celles d'un surfeur moyen. Réponds à quelques questions : elles deviennent les tiennes (taille, vent, « gros jour »). Une minute.",
+                        actionLabel = "Renseigner mon profil",
+                        onAction = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true }
                     ),
-                    CoachStep("settings", "⚙️ Les paramètres", "Mon profil et mon matériel, modèles de prévision, orientation de la plage, unités, affichage, sauvegarde de tes données. Tu peux aussi y rejouer cette visite (Aide).")
+                    CoachStep("journal", "📓 Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
                 ),
                 targets = coachTargets,
                 onFinish = { viewModel.dismissHomeTour() }
@@ -872,14 +942,14 @@ fun FavoritesHeaderRow(
             val isSelected = activeFavoriteIndex == index
             Surface(
                 modifier = Modifier.clickable { onSelectFavorite(index) },
-                color = if (isSelected) MaterialTheme.colorScheme.primary else surfaceColor,
+                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else surfaceColor,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = spotName ?: "",
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else onSurfaceColor,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else onSurfaceColor,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                 )
             }
@@ -904,6 +974,7 @@ fun FavoritesHeaderRow(
 @Composable
 fun DynamicCardsSection(
     afterTimeline: @Composable () -> Unit,
+    onOpenProfile: () -> Unit = {},
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -918,6 +989,7 @@ fun DynamicCardsSection(
     dailyHeights: List<Double>,
     dailyFeelsLike: List<Int>,
     dailyStars: List<Float?>,
+    boardOfDay: String? = null,
     dailyLabels: List<SlotRating?> = emptyList(),
     dailyBands: List<List<ScoreBand>> = emptyList(),
     dailyWaterTemps: List<Int?>,
@@ -929,8 +1001,10 @@ fun DynamicCardsSection(
     idealSwellDirection: Int?,
     surferLevel: String,
     currentHour: Int = nowLocalDateTime().hour,
-    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null
+    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
+    onOpenWeatherDetail: (() -> Unit)? = null
 ) {
+    val boardsForBar by viewModel.quiverBoards.collectAsState()
     // currentHour en clé : à chaque changement d'heure (ou rechargement), la sélection
     // revient sur l'heure actuelle au lieu de rester figée sur celle du chargement.
     val initialSelectedHour = remember(hoursForSelectedDay, isToday, currentHour) {
@@ -1058,7 +1132,9 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth()
+                                modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth(),
+                                boardOfDay = boardOfDay,
+                                toleranceLabel = null
                             )
                         }
                         "dailyTimeline" -> {
@@ -1076,7 +1152,10 @@ fun DynamicCardsSection(
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                boardOf = if (GearPrefs.boardDayMode == "none") null else { h -> boardOfTheDay(h, boardsForBar, idealSwellDirection)?.model },
+                                motivationLabel = ToleranceSettings.label(viewModel.toleranceMode),
+                                onMotivationSelect = { viewModel.setTolerance(it) }
                             )
                         }
                         "surf" -> {
@@ -1089,7 +1168,8 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    beachFacing = idealSwellDirection
                                 )
                             }
                         }
@@ -1118,7 +1198,8 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    beachFacing = idealSwellDirection
                                 )
                             }
                         }
@@ -1132,7 +1213,9 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    sun = dailySunInfo[selectedHourlyItem?.rawTime?.date],
+                                    onOpenDetail = onOpenWeatherDetail
                                 )
                             }
                         }
@@ -1146,31 +1229,52 @@ fun DynamicCardsSection(
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)) {
                                     CardControlsRow(
-                                        title = "Prévision heure par heure",
+                                        title = "Prévision heure par heure", guide = "hourly",
                                         isCollapsed = isCollapsed,
                                         onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                         dragHandleModifier = dragMod,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                                     )
 
-                                    if (!isCollapsed) {
-                                        hoursForSelectedDay.forEach { hourlyData ->
-                                            val isCurrentOrSelected = hourlyData.rawTime == selectedHourlyItem?.rawTime
-
-                                            HourlyForecastRow(
-                                                hourlyData = hourlyData,
-                                                windUnit = viewModel.windUnit,
-                                                modifier = Modifier.clickable {
-                                                    selectedHourlyItem = hourlyData
-                                                },
-                                                dailyTideInfo = dailyTideInfo,
-                                                isSelected = isCurrentOrSelected
-                                            )
+                                    var showAllHours by remember { mutableStateOf(false) }
+                                    val selIdx = hoursForSelectedDay.indexOfFirst { it.rawTime == selectedHourlyItem?.rawTime }.coerceAtLeast(0)
+                                    // Replié : l'heure choisie (par défaut l'heure actuelle) et la suivante. Déplié : 2 heures avant, l'heure, 2 après.
+                                    val shown = when {
+                                        isCollapsed -> hoursForSelectedDay.drop(selIdx).take(2)
+                                        showAllHours -> hoursForSelectedDay
+                                        else -> {
+                                            val start = (selIdx - 2).coerceIn(0, maxOf(hoursForSelectedDay.size - 5, 0))
+                                            hoursForSelectedDay.drop(start).take(5)
                                         }
+                                    }
+                                    shown.forEach { hourlyData ->
+                                        HourlyForecastRow(
+                                            hourlyData = hourlyData,
+                                            windUnit = viewModel.windUnit,
+                                            modifier = Modifier.clickable { selectedHourlyItem = hourlyData },
+                                            dailyTideInfo = dailyTideInfo,
+                                            isSelected = hourlyData.rawTime == selectedHourlyItem?.rawTime
+                                        )
+                                    }
+                                    if (!isCollapsed && hoursForSelectedDay.size > 5) {
+                                        Text(
+                                            if (showAllHours) "Réduire" else "Voir toute la journée", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { showAllHours = !showAllHours }.padding(8.dp),
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
                                     }
                                 }
                             }
                         }
+                    }
+                    // Profil pas encore renseigné : un message entre la semaine et le déroulé de la journée invite à le remplir.
+                    if (cardKey == "weekly" && viewModel.showProfileNudge) {
+                        ProfileNudgeCard(
+                            onOpen = onOpenProfile,
+                            onLater = { viewModel.hideProfileNudge() },
+                            modifier = (if (coachTargets != null) Modifier.coachTarget("bestSlot", coachTargets) else Modifier).padding(horizontal = 6.dp, vertical = 6.dp)
+                        )
                     }
                     if (cardKey == afterKey) afterTimeline()
                 }
@@ -1187,10 +1291,7 @@ fun DynamicCardsSection(
 private fun BottomNavBar(
     onForecast: () -> Unit,
     onJournal: () -> Unit,
-    onWeather: () -> Unit,
     onSettings: () -> Unit,
-    isDark: Boolean,
-    onToggleTheme: () -> Unit,
     hasWebcam: Boolean,
     onWebcam: () -> Unit,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
@@ -1228,11 +1329,6 @@ private fun BottomNavBar(
                 }
                 Item("Journal", false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
-                }
-                Item("Météo", false, onWeather) { WeatherIcon("🌤️", 22.dp) }
-                // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
-                Item("Thème", false, onToggleTheme) {
-                    ThemeToggleIcon(isDarkActive = !isDark, backgroundColor = colors.surface, iconColor = colors.onSurface, modifier = Modifier.size(22.dp))
                 }
                 Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))

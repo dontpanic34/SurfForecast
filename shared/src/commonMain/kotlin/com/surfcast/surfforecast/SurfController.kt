@@ -139,16 +139,18 @@ class SurfController(
 
     // Écran de bienvenue (unité du vent, niveau, origine des prévisions) : affiché tant qu'il n'a
     // pas été fermé une fois, et rouvrable depuis les Paramètres.
+    /** Les utilisateurs existants (onboarding déjà fait) ont déjà un spot. */
+    var spotChosen by mutableStateOf(
+        prefs.getBoolean("spot_chosen", false) || prefs.getBoolean("onboarding_v1_done", false)
+    )
+        private set
+
     var showOnboarding by mutableStateOf(!prefs.getBoolean("onboarding_v1_done", false))
         private set
 
     fun dismissOnboarding() {
         showOnboarding = false
         prefs.putBoolean("onboarding_v1_done", true)
-    }
-
-    fun showOnboardingAgain() {
-        showOnboarding = true
     }
 
     // Visite guidée de la première utilisation (accueil) et astuces du journal : une seule fois,
@@ -176,13 +178,13 @@ class SurfController(
     var windUnit by mutableStateOf(prefs.getString("wind_unit", "kmh") ?: "kmh")
         private set
 
-    var showLiveOverlay by mutableStateOf(prefs.getBoolean("show_live_overlay", true))
+    var showLiveOverlay by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWeeklyCard by mutableStateOf(prefs.getBoolean("show_weekly_card", true))
+    var showWeeklyCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
+    var showDailyTimelineCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
     // Taille de l'affichage : "normal", "large" ou "xlarge". Nouveau (introduction pas encore faite) : « large ».
@@ -194,11 +196,37 @@ class SurfController(
     // Place des graphiques de houle (semaine, jour, eau), modifiable dans Affichage.
     @Suppress("unused")
     private val skyGraphInit = run {
-        SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER))
+        SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER), prefs.getInt("graph_water_week_pct", prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER)))
+        SkyGraphSettings.loadTideAll(prefs.getInt("graph_tide_all", 0) == 1)
+        SkyGraphSettings.loadTide(prefs.getInt("graph_tide_dp", SkyGraphSettings.DEFAULT_TIDE))
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
     }
-    var starsOffset by mutableIntStateOf((prefs.getInt("stars_offset", 0)).coerceIn(-15, 15).also { StarsSettings.offset = it })
+    // Mouvement d'accroche de l'en-tête des spots : joué une seule fois.
+    var spotHintDone by mutableStateOf(prefs.getBoolean("spot_hint_done", false))
         private set
+
+    fun markSpotHintDone() {
+        spotHintDone = true
+        prefs.putBoolean("spot_hint_done", true)
+    }
+
+    // Anciens réglages qui ne servent plus à rien : on les efface des préférences de l'appareil.
+    @Suppress("unused")
+    private val oldPrefsCleanup = run {
+        listOf(
+            "volume_level_idx", "body_height_cm", "body_fitness", "stars_offset", "show_live_overlay", "show_weekly_card",
+            "show_daily_timeline_card", "show_surf_card", "show_wind_card", "show_weather_card", "show_hourly_card", "show_wind_sea_card"
+        ).forEach { prefs.remove(it) }
+    }
+    // Grille « quand tu sors quelle planche », pratique et planche du jour (voir GearPrefs).
+    @Suppress("unused")
+    private val gearInit = run {
+        GearPrefs.load(
+            prefs.getString("gear_grid", "") ?: "", prefs.getString("gear_since", "") ?: "", prefs.getString("gear_frequency", "") ?: "",
+            prefs.getString("gear_season", "") ?: "", prefs.getString("gear_board_day", "both") ?: "both"
+        )
+        GearPrefs.persist = { k, v -> prefs.putString(k, v) }
+    }
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
         private set
 
@@ -208,19 +236,19 @@ class SurfController(
     var surferLevel by mutableStateOf(prefs.getString("surfer_level", "intermediate") ?: "intermediate")
         private set
 
-    var showSurfCard by mutableStateOf(prefs.getBoolean("show_surf_card", true))
+    var showSurfCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWindCard by mutableStateOf(prefs.getBoolean("show_wind_card", true))
+    var showWindCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWeatherCard by mutableStateOf(prefs.getBoolean("show_weather_card", true))
+    var showWeatherCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showHourlyCard by mutableStateOf(prefs.getBoolean("show_hourly_card", true))
+    var showHourlyCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWindSeaCard by mutableStateOf(prefs.getBoolean("show_wind_sea_card", true))
+    var showWindSeaCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
     var cardsOrder = mutableStateListOf(*DEFAULT_CARDS_ORDER.toTypedArray())
@@ -261,6 +289,12 @@ class SurfController(
                 .filter { it.isNotEmpty() }
             val merged = sanitized + DEFAULT_CARDS_ORDER.filter { it !in sanitized }
             cardsOrder.addAll(merged.ifEmpty { DEFAULT_CARDS_ORDER })
+            // Une fois : « Heure par heure » passe en dernier (il n'y a plus de poignée pour le déplacer à la main).
+            if (!prefs.getBoolean("hourly_last_v1", false)) {
+                if (cardsOrder.remove("hourly")) cardsOrder.add("hourly")
+                prefs.putString("cards_order", cardsOrder.joinToString(","))
+                prefs.putBoolean("hourly_last_v1", true)
+            }
         }
 
         // Première utilisation : seuls la semaine et le déroulé de la journée sont ouverts ;
@@ -295,6 +329,18 @@ class SurfController(
         prefs.putString("fav_1", favoriteSpots.getOrNull(1))
         prefs.putString("fav_2", favoriteSpots.getOrNull(2))
         prefs.putInt("active_fav_index", activeFavoriteIndex)
+    }
+
+    /** Première ouverture : le spot choisi devient le premier favori et s'affiche. */
+    fun chooseFirstSpot(name: String) {
+        favoriteSpots[0] = name
+        favoriteSpots[1] = null
+        favoriteSpots[2] = null
+        activeFavoriteIndex = 0
+        saveFavorites()
+        spotChosen = true
+        prefs.putBoolean("spot_chosen", true)
+        loadActiveSpot(initialLoad = false)
     }
 
     fun selectFavoriteIndex(index: Int) {
@@ -529,11 +575,6 @@ class SurfController(
 
     fun cycleDisplaySize() = changeDisplaySize(when (displaySize) { "normal" -> "large"; "large" -> "xlarge"; else -> "normal" })
 
-    fun changeStarsOffset(offset: Int) {
-        starsOffset = offset.coerceIn(-15, 15)
-        StarsSettings.offset = starsOffset
-        prefs.putInt("stars_offset", starsOffset)
-    }
 
     fun changeWeeklyDensity(density: Int) {
         weeklyDensity = density.coerceIn(1, 3)
@@ -616,6 +657,30 @@ class SurfController(
     var tolerance by mutableStateOf((prefs.getString("tolerance_v1", "") ?: "").split(",").mapNotNull { it.toIntOrNull() })
         private set
 
+    /** Tolérance du jour : -1 Prudent, 0 Normal, 1 Motivé (départ : les trois réponses de tolérance du questionnaire). */
+    var toleranceMode by mutableIntStateOf(
+        prefs.getInt("tolerance_mode_v1", 99).let { if (it in -1..1) it else toleranceFromAnswers(tolerance) }.also { ToleranceSettings.mode = it }
+    )
+        private set
+
+    fun setTolerance(mode: Int) {
+        toleranceMode = mode.coerceIn(-1, 1)
+        ToleranceSettings.mode = toleranceMode
+        prefs.putInt("tolerance_mode_v1", toleranceMode)
+    }
+
+    fun cycleTolerance() {
+        toleranceMode = ToleranceSettings.next(toleranceMode)
+        ToleranceSettings.mode = toleranceMode
+        prefs.putInt("tolerance_mode_v1", toleranceMode)
+    }
+
+    private fun toleranceFromAnswers(t: List<Int>): Int {
+        if (t.isEmpty()) return 0
+        val mean = t.average()
+        return when { mean < 0.67 -> 1; mean > 1.33 -> -1; else -> 0 }
+    }
+
     /** Le résultat du questionnaire (null tant qu'il n'a pas été fait). */
     val levelResult: LevelResult? get() = levelAnswers?.let { computeLevel(it, levelShift) }
 
@@ -627,6 +692,9 @@ class SurfController(
         prefs.putString("level_answers_v1", answers.serialize())
         prefs.putInt("level_shift_v1", shift)
         prefs.putString("tolerance_v1", tol.joinToString(","))
+        toleranceMode = toleranceFromAnswers(tol)
+        ToleranceSettings.mode = toleranceMode
+        prefs.putInt("tolerance_mode_v1", toleranceMode)
         body = body.copy(fitness = fitnessFromTraining(answers.training))
         changeSurferLevel(computeLevel(answers, shift).levelKey)
         markProfileReviewed()
@@ -686,6 +754,15 @@ class SurfController(
         runCatching { history.load() }.getOrDefault(emptyList())
 
     /** Conditions gardées pour un jour passé (journal de bord J-1/J-2), ou null. */
+    // « Tu as surfé ? » : le jour déjà traité (noté ou écarté), pour ne pas redemander.
+    var surfedAskDismissed by mutableStateOf(prefs.getString("surfed_ask_dismissed", "") ?: "")
+        private set
+
+    fun dismissSurfedAsk(date: LocalDate) {
+        surfedAskDismissed = date.toString()
+        prefs.putString("surfed_ask_dismissed", surfedAskDismissed)
+    }
+
     fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
         runCatching { history.conditionsFor(spotName, date) }.getOrNull()
 

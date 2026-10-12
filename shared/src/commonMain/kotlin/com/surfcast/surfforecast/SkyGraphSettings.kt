@@ -2,6 +2,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 /**
@@ -12,30 +13,53 @@ object SkyGraphSettings {
     const val DEFAULT_WEEK = 43
     const val DEFAULT_DAY = 43
     const val DEFAULT_WATER = 40
+    const val DEFAULT_TIDE = 30
 
     var weekPct by mutableIntStateOf(DEFAULT_WEEK)
         private set
     var dayPct by mutableIntStateOf(DEFAULT_DAY)
         private set
+    /** Échelle de la mer du jour (la semaine a la sienne : [waterWeekPct]). */
     var waterPct by mutableIntStateOf(DEFAULT_WATER)
+        private set
+    var waterWeekPct by mutableIntStateOf(DEFAULT_WATER)
+        private set
+
+    /** Hauteur de la petite courbe de marée du déroulé (dp). */
+    /** Marées de la nuit aussi (« hors soleil ») sur la ligne du coefficient. */
+    var tideAll by mutableStateOf(false)
+        private set
+
+    var tideDp by mutableIntStateOf(DEFAULT_TIDE)
         private set
 
     /** Branchée par le contrôleur : enregistre un réglage (clé, valeur). */
     var persist: (String, Int) -> Unit = { _, _ -> }
 
-    fun load(week: Int, day: Int, water: Int) {
+    fun load(week: Int, day: Int, water: Int, waterWeek: Int = water) {
         weekPct = week.coerceIn(25, 70)
         dayPct = day.coerceIn(25, 70)
         waterPct = water.coerceIn(20, 60)
+        waterWeekPct = waterWeek.coerceIn(20, 60)
     }
 
+    fun loadTide(dp: Int) { tideDp = dp.coerceIn(24, 60) }
+    fun loadTideAll(v: Boolean) { tideAll = v }
+    fun chooseTideAll(v: Boolean) { tideAll = v; persist("graph_tide_all", if (v) 1 else 0) }
+    fun setTide(dp: Int) { tideDp = dp.coerceIn(24, 60); persist("graph_tide_dp", tideDp) }
     fun setWeek(p: Int) { weekPct = p.coerceIn(25, 70); persist("graph_week_pct", weekPct) }
     fun setDay(p: Int) { dayPct = p.coerceIn(25, 70); persist("graph_day_pct", dayPct) }
     fun setWater(p: Int) { waterPct = p.coerceIn(20, 60); persist("graph_water_pct", waterPct) }
-    fun reset() { setWeek(DEFAULT_WEEK); setDay(DEFAULT_DAY); setWater(DEFAULT_WATER) }
+    fun setWaterWeek(p: Int) { waterWeekPct = p.coerceIn(20, 60); persist("graph_water_week_pct", waterWeekPct) }
+    /** Remet à zéro les réglages du jour (hauteur, échelle de la mer, marée). */
+    fun resetDay() { setDay(DEFAULT_DAY); setWater(DEFAULT_WATER); setTide(DEFAULT_TIDE) }
+    /** Remet à zéro les réglages de la semaine (hauteur, échelle de la mer). */
+    fun resetWeek() { setWeek(DEFAULT_WEEK); setWaterWeek(DEFAULT_WATER) }
+    fun reset() { resetDay(); resetWeek() }
 
     /** Hauteur de l'échelle : part du graphique à laquelle arrive une houle de 2 m (de 0 à 1). */
     val waterFraction: Float get() = waterPct / 100f
+    val waterWeekFraction: Float get() = waterWeekPct / 100f
 
     // Le reste de l'encart (titre, jours, vent, énergie ; titre, jauge, bande horaire) fait environ 155 dp pour la semaine et
     // 224 dp pour le jour : la hauteur du graphique en découle pour une part donnée de l'encart.

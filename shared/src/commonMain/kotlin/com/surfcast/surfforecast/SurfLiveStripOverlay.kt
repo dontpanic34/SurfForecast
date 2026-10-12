@@ -193,25 +193,7 @@ fun SurfLiveStripOverlay(
 
                 Spacer(modifier = Modifier.width(2.dp))
 
-                Canvas(modifier = Modifier.size(11.dp)) {
-                    val w = size.width
-                    val h = size.height
-
-                    rotate(rotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                        val path = Path().apply {
-                            moveTo(w * 0.5f, 0.5.dp.toPx())
-                            lineTo(w * 0.95f, h * 0.48f)
-                            lineTo(w * 0.68f, h * 0.48f)
-                            lineTo(w * 0.68f, h * 0.98f)
-                            lineTo(w * 0.32f, h * 0.98f)
-                            lineTo(w * 0.32f, h * 0.48f)
-                            lineTo(w * 0.05f, h * 0.48f)
-                            close()
-                        }
-                        drawPath(path = path, color = arrowColor)
-                        drawPath(path = path, color = Color.White.copy(alpha = 0.5f), style = Stroke(width = 0.8.dp.toPx()))
-                    }
-                }
+                NavArrow(arrowColor, rotationAngle, 11.dp)
 
                 Spacer(modifier = Modifier.width(2.dp))
 

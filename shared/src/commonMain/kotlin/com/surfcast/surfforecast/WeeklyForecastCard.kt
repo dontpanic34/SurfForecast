@@ -107,7 +107,11 @@ fun WeeklyForecastCard(
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Tolérance du jour (« Normal » / « Prudent » / « Motivé »), un tap la change.
+    toleranceLabel: String? = null,
+    onToleranceClick: () -> Unit = {},
+    boardOfDay: String? = null
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -118,11 +122,11 @@ fun WeeklyForecastCard(
             val phrase = remember(selectedDate, groupedByDate, dailySunInfo, dailyLabels, idealSwellDirection) {
                 val idx = availableDates.indexOf(selectedDate)
                 selectedDate?.let { d ->
-                    dayPhraseFor(daylightHoursFor(d, groupedByDate, dailySunInfo), dailyLabels.getOrNull(idx), idealSwellDirection)
+                    dayPhraseFor(daylightHoursFor(d, groupedByDate, dailySunInfo), dailyLabels.getOrNull(idx), idealSwellDirection, surferLevel)
                 }
             }
             if (phrase != null) {
-                DayPhraseHeader(phrase)
+                DayPhraseHeader(phrase, toleranceLabel, onToleranceClick, boardOfDay, isCollapsed, onToggleCollapse)
             } else {
                 CardControlsRow(
                     title = "Prévisions de la semaine",
@@ -194,7 +198,7 @@ fun WeeklyForecastCard(
                                     ) {
                                         val stars = dailyStars[index]
                                         if (stars == null) {
-                                            Text("Trop gros", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
+                                            Text("Gros jour", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color(), maxLines = 1)
                                         } else {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                                 // Une seule étoile avec la note (3,5), puis le libellé en une ligne, puis une barre par créneau.
@@ -297,6 +301,7 @@ fun WeeklyForecastCard(
                     )
                 }
             }
+            CardSettingsPanel("week")
 
             }
         }
@@ -305,12 +310,24 @@ fun WeeklyForecastCard(
 
 /** Le jour choisi en trois lignes, à la place du titre fixe de la semaine. */
 @Composable
-private fun DayPhraseHeader(phrase: DayPhrase) {
+private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, onToleranceClick: () -> Unit = {}, boardOfDay: String? = null, isCollapsed: Boolean = false, onToggleCollapse: () -> Unit = {}) {
     val onSurface = MaterialTheme.colorScheme.onSurface
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(phrase.title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurface, maxLines = 2)
-        Text(phrase.swell, fontSize = 12.5.sp, color = onSurface, maxLines = 1)
-        Text(phrase.wind, fontSize = 12.5.sp, color = onSurface, maxLines = 2)
+        Row(verticalAlignment = Alignment.Top) {
+            Text(phrase.title, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurface, maxLines = 2, modifier = Modifier.weight(1f))
+            if (toleranceLabel != null) {
+                Text(
+                    toleranceLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp).clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                        .clickable(onClick = onToleranceClick).padding(horizontal = 10.dp, vertical = 3.dp)
+                )
+            }
+            CardInfoButton("week")
+            CollapseChevron(isCollapsed, onToggleCollapse)
+        }
+        if (phrase.line.isNotBlank()) Text(phrase.line, fontSize = 13.sp, color = onSurface, maxLines = 2)
+        if (boardOfDay != null) Text("Planche du jour : $boardOfDay", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
     }
 }
 
@@ -381,7 +398,7 @@ internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifi
         val usableH = size.height - padTop - 16.dp.toPx()
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
         swellAxisGrid(rawMax).forEach { value ->
-            val y = padTop + usableH * (1f - swellAxisFraction(value))
+            val y = padTop + usableH * (1f - swellAxisFraction(value, SkyGraphSettings.waterWeekFraction))
             // Graduations DANS la courbe, collées à gauche : mêmes marges à gauche et à droite, comme le déroulé.
             drawHaloTextAtBaseline(textMeasurer, formatAxisHeight(value), axisLabelStyle, axisHalo, 4.dp.toPx(), y - 3.dp.toPx())
         }
@@ -437,7 +454,7 @@ fun ContinuousWaveCanvas(
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
         val gridValues = swellAxisGrid(rawMax)
         gridValues.forEach { value ->
-            val y = padTop + usableH * (1f - swellAxisFraction(value))
+            val y = padTop + usableH * (1f - swellAxisFraction(value, SkyGraphSettings.waterWeekFraction))
             // Pointillés au-dessus de 2 m, là où l'échelle est resserrée.
             val dash = if (value > SWELL_AXIS_BREAK) PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())) else null
             drawLine(
@@ -461,7 +478,7 @@ fun ContinuousWaveCanvas(
 
         val stepX = plotW / (allHourlyData.size - 1).coerceAtLeast(1).toFloat()
         val points = allHourlyData.mapIndexed { index, item ->
-            Offset(plotLeft + index * stepX, padTop + usableH * (1f - swellAxisFraction(item.waveHeight)))
+            Offset(plotLeft + index * stepX, padTop + usableH * (1f - swellAxisFraction(item.waveHeight, SkyGraphSettings.waterWeekFraction)))
         }
 
         val fillPath = Path().apply {
@@ -774,7 +791,7 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
     ) {
         if (showArrow) {
         // Même flèche que dans le déroulé de la journée, un peu plus grande qu'avant.
-        WindArrow(arrowColor, rotationAngle, 16.dp)
+        NavArrow(arrowColor, rotationAngle, (16 * windArrowScale(windFeelKmh(slot))).dp)
         }
 
         if (showText) {
@@ -819,6 +836,11 @@ internal fun weekSkyScene(
     val cover = ArrayList<Float>()
     val rain = ArrayList<Float>()
     val snow = ArrayList<Float>()
+    // La pluie et la neige se lisent heure par heure, comme dans le déroulé de la journée : sinon une averse de deux heures
+    // donnait l'impression qu'il pleut toute la journée.
+    val hx = ArrayList<Float>()
+    val hRain = ArrayList<Float>()
+    val hSnow = ArrayList<Float>()
     val suns = ArrayList<SunSpot>()
     dates.forEachIndexed { i, date ->
         val hours = daylightHoursFor(date, groupedByDate, sunInfo).ifEmpty { groupedByDate[date].orEmpty() }
@@ -827,8 +849,13 @@ internal fun weekSkyScene(
             val part = if (n == 0) emptyList() else hours.subList(j * n / 3, ((j + 1) * n / 3).coerceAtLeast(j * n / 3 + 1).coerceAtMost(n))
             xs.add((i + (j + 0.5f) / 3f) * dayW)
             cover.add(if (part.isEmpty()) 0f else part.map { it.cloudCover }.average().toFloat() / 100f)
-            rain.add(part.maxOfOrNull { rainAmountForCode(it.weatherCode) } ?: 0f)
-            snow.add(part.maxOfOrNull { snowAmountForCode(it.weatherCode) } ?: 0f)
+            rain.add(if (part.isEmpty()) 0f else part.map { rainAmountForCode(it.weatherCode) }.average().toFloat())
+            snow.add(if (part.isEmpty()) 0f else part.map { snowAmountForCode(it.weatherCode) }.average().toFloat())
+        }
+        hours.forEachIndexed { k, h ->
+            hx.add((i + (k + 0.5f) / n) * dayW)
+            hRain.add(rainAmountForCode(h.weatherCode))
+            hSnow.add(snowAmountForCode(h.weatherCode))
         }
         val sizePx = 32f * density
         suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 2f * density))
@@ -836,21 +863,23 @@ internal fun weekSkyScene(
     // Lissage sur près d'un demi-créneau : un changement de ciel ou de pluie s'étale sur plusieurs heures, sans colonne.
     val slotW = dayW / 3f
     val coverSmooth = 0.7f * slotW
-    val rainSmooth = 0.5f * slotW
+    // Lissage de la pluie : un peu plus d'une heure, pour garder les averses courtes courtes.
+    val hourW = if (hx.size > 1) (hx.last() - hx.first()) / (hx.size - 1) else slotW
+    val rainSmooth = 1.2f * hourW
     val top = 8f * density
     val bottom = size.height - 18f * density
     // Les nuages sont étalés sur le ciel, au-dessus de la houle la plus haute de la semaine.
     val padTop = 16f * density
     val usableH = size.height - 32f * density
     val weekMaxWave = dates.flatMap { daylightHoursFor(it, groupedByDate, sunInfo) }.maxOfOrNull { it.waveHeight } ?: 1.0
-    val waterline = padTop + usableH * (1f - swellAxisFraction(weekMaxWave.coerceAtLeast(0.3)))
+    val waterline = padTop + usableH * (1f - swellAxisFraction(weekMaxWave.coerceAtLeast(0.3), SkyGraphSettings.waterWeekFraction))
     return SkyScene(
         left = 0f, right = size.width, top = top, bottom = bottom,
         cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), coverSmooth),
-        rain = SkyCurve(xs.toFloatArray(), rain.toFloatArray(), rainSmooth),
-        snow = SkyCurve(xs.toFloatArray(), snow.toFloatArray(), rainSmooth),
+        rain = if (hx.size >= 2) SkyCurve(hx.toFloatArray(), hRain.toFloatArray(), rainSmooth) else SkyCurve(xs.toFloatArray(), rain.toFloatArray(), rainSmooth),
+        snow = if (hx.size >= 2) SkyCurve(hx.toFloatArray(), hSnow.toFloatArray(), rainSmooth) else SkyCurve(xs.toFloatArray(), snow.toFloatArray(), rainSmooth),
         suns = suns,
-        animate = rain.any { it > 0f } || snow.any { it > 0f },
+        animate = hRain.any { it > 0f } || hSnow.any { it > 0f } || rain.any { it > 0f } || snow.any { it > 0f },
         skyHeight = waterline - top + 8f * density
     )
 }

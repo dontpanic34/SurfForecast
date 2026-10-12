@@ -23,9 +23,9 @@ class DaylightTidesTest {
     }
 
     @Test
-    fun keepsTheTwoClosestToMiddayWhenThreeAreInside() {
+    fun keepsAllThreeWhenThreeAreInside() {
         val tides = listOf(e("PM", "07:50"), e("BM", "14:05"), e("PM", "20:20"))
-        assertEquals(listOf("07:50", "14:05"), daylightTides(tides, 7f, 20f).map { it.time })
+        assertEquals(listOf("07:50", "14:05", "20:20"), daylightTides(tides, 7f, 20f).map { it.time })
     }
 
     @Test
