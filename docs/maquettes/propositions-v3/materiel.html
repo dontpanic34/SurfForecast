@@ -1,0 +1,96 @@
+<title>Mon matériel v3</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;600&display=swap">
+<style>
+/* Mise en page : trois propositions en onglets ; le volume recommandé est un vrai calcul qui bouge quand on répond. */
+:root{--bg:#eef3f6;--fg:#10222e;--mut:#5a6d7a;--card:#fff;--line:#d3dde4;--acc:#0f5f8c;--ok:#1aa07a;--screen:#e4ecf1;--d:'Bricolage Grotesque',system-ui,sans-serif;--b:'Instrument Sans',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--line:#243846;--acc:#5fb4e6;--screen:#1b2f3c}}
+:root[data-theme="dark"]{--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--line:#243846;--acc:#5fb4e6;--screen:#1b2f3c;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--b);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:24px}
+main{max-width:760px;margin:0 auto}h1,h2,h3{font-family:var(--d);margin:0;text-wrap:balance}h1{font-size:1.9rem;font-weight:800}h2{font-size:1.2rem;margin-top:1.8rem}
+p{margin:.4rem 0;max-width:66ch}.mut{color:var(--mut)}
+.note{border-left:3px solid var(--acc);padding:.3rem .9rem;margin:.8rem 0;background:var(--card)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:1rem 0}
+.tabs button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:99px;padding:6px 14px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.ph{background:var(--screen);border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px;max-width:420px}
+.c{background:var(--card);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.vol{position:sticky;top:0;z-index:2;background:var(--card);border-radius:12px;padding:10px 12px;border:1px solid var(--acc)}
+.big{font-family:var(--d);font-weight:800;font-size:2rem;font-variant-numeric:tabular-nums}
+.gauge{height:8px;border-radius:5px;background:var(--line);position:relative}.gauge i{position:absolute;top:0;bottom:0;background:var(--ok);border-radius:5px;transition:all .25s}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.sp{justify-content:space-between}
+.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12.5px;font-weight:600;background:none;color:var(--fg);cursor:pointer;font-family:inherit}
+.chip[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.chip.s{padding:2px 8px;font-size:11.5px}
+label{font-size:13px;font-weight:600;display:flex;justify-content:space-between}input[type=range]{width:100%}
+.delta{font-size:12px;color:var(--ok);font-weight:600;min-height:1.2em}
+details{background:var(--card);border-radius:12px;padding:8px 12px}summary{font-weight:600;cursor:pointer}
+[hidden]{display:none!important}
+</style>
+<main>
+<h1>Mon matériel : trois façons de le refaire</h1>
+<div class="note"><b>Ce qui ne va pas aujourd'hui.</b> Une seule longue page : planches, formulaire de planche avec trois curseurs, grille, pratique, puis le volume tout en bas. Pour le volume, seuls comptent le poids, l'âge, la forme (tirée de l'entraînement du questionnaire) et ton niveau. <b>« Depuis quand », « fréquence » et « saison » n'influencent aucun chiffre</b> : ils sont enregistrés et ne servent à rien. Deux choix : ils agissent sur le volume (proposé ici pour la fréquence), ou on les retire.</div>
+<div class="note"><b>Essaie :</b> déplace les curseurs et change la fréquence, le volume se met à jour en direct. Les coefficients de fréquence sont <b>ma proposition</b> (à valider par toi, prof de surf) ; les autres reprennent le calcul de l'appli, simplifié ici pour l'illustration.</div>
+
+<div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-t="a">A · Trois onglets</button><button role="tab" aria-selected="false" data-t="b">B · Une page, volume fixe en haut</button><button role="tab" aria-selected="false" data-t="c">C · Assistant en étapes</button></div>
+
+<div class="ph" id="phone">
+ <div class="vol" id="vol"><div class="mut" style="font-size:12px">Volume conseillé · shortboard</div><div class="big" id="v">—</div><div class="gauge"><i id="g"></i></div><div class="delta" id="d"></div></div>
+
+ <div id="tabbar" class="row"><button class="chip" data-p="moi" aria-pressed="true">Moi</button><button class="chip" data-p="pl" aria-pressed="false">Mes planches</button><button class="chip" data-p="us" aria-pressed="false">Mon usage</button></div>
+
+ <div class="c" id="moi">
+  <label>Poids <span id="wv">75 kg</span></label><input id="w" type="range" min="45" max="120" value="75">
+  <label>Âge <span id="av">30 ans</span></label><input id="a" type="range" min="12" max="70" value="30">
+  <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Niveau (vient de ton profil)</div><div class="row" id="lv"></div></div>
+  <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Je surfe</div><div class="row" id="fr"></div></div>
+  <div class="mut" style="font-size:12px" id="why"></div>
+ </div>
+
+ <div id="pl" hidden>
+  <div class="c"><b>Xero Gravity</b><span class="mut">Shortboard · 5'10 · 28 L</span>
+   <div class="row"><span class="mut" style="font-size:12px">Je la sors :</span><button class="chip s" aria-pressed="true">Petit</button><button class="chip s" aria-pressed="false">Gros</button><button class="chip s" aria-pressed="true">Mou</button><button class="chip s" aria-pressed="false">Creux</button><button class="chip s" aria-pressed="false">Puissant</button><button class="chip s" aria-pressed="false">Longues</button></div></div>
+  <div class="c"><b>Mid 7'2</b><span class="mut">Mid-length · 42 L</span>
+   <div class="row"><span class="mut" style="font-size:12px">Je la sors :</span><button class="chip s" aria-pressed="false">Petit</button><button class="chip s" aria-pressed="false">Gros</button><button class="chip s" aria-pressed="true">Mou</button><button class="chip s" aria-pressed="false">Creux</button><button class="chip s" aria-pressed="false">Puissant</button><button class="chip s" aria-pressed="true">Longues</button></div></div>
+  <button class="chip" style="align-self:flex-start">+ Ajouter une planche</button>
+  <p class="mut" style="font-size:12px;margin:0">Les conditions sont sur chaque planche : plus de grille séparée, plus de tableau à lire en travers.</p>
+ </div>
+
+ <div id="us" hidden>
+  <div class="c"><b>Planche du jour</b><div class="row"><button class="chip" aria-pressed="false">En-tête</button><button class="chip" aria-pressed="false">Ligne Maintenant</button><button class="chip" aria-pressed="true">Les deux</button><button class="chip" aria-pressed="false">Aucune</button></div></div>
+  <div class="c"><b>Depuis</b><div class="row"><button class="chip" aria-pressed="false">&lt; 1 an</button><button class="chip" aria-pressed="true">3 à 10 ans</button><button class="chip" aria-pressed="false">&gt; 10 ans</button></div></div>
+  <div class="c"><b>Ma saison</b><div class="row"><button class="chip" aria-pressed="true">Toute l'année</button><button class="chip" aria-pressed="false">Quand l'eau est bonne</button></div></div>
+ </div>
+</div>
+
+<h2 id="expl">A · Trois onglets</h2>
+<p id="te"></p>
+<h2>Ma recommandation</h2>
+<p><b>A, avec le volume fixe en haut de B.</b> Trois petits écrans courts au lieu d'une longue page, et le résultat reste sous les yeux pendant qu'on répond. La fréquence agit sur le volume. « Depuis » et « saison » restent dans « Mon usage » et servent seulement à affiner la planche du jour, ou on les retire si tu préfères.</p>
+</main>
+<script>
+const LV=[['Débutant',.66],['Intermédiaire',.48],['Confirmé',.41],['Avancé',.37],['Expert',.35]];
+const FR=[['quelques fois par an',.15],['1 fois par mois',.10],['1 fois par semaine',.05],['plusieurs fois par semaine',0],['plusieurs fois par jour',0]];
+let lv=1,fr=3;
+const $=id=>document.getElementById(id);
+function mk(box,arr,cur,set){box.innerHTML='';arr.forEach((x,i)=>{const b=document.createElement('button');b.className='chip';b.textContent=x[0];b.setAttribute('aria-pressed',i===cur);b.onclick=()=>{set(i);calc()};box.appendChild(b)})}
+function base(w,a,l){const wf=w<=55?1.2:w>=85?1:1+0.2*(85-w)/30;const af=a<=35?1:1+0.004*(a-35);return w*LV[l][1]*wf*af}
+function calc(){
+ const w=+$('w').value,a=+$('a').value;$('wv').textContent=w+' kg';$('av').textContent=a+' ans';
+ mk($('lv'),LV,lv,i=>lv=i);mk($('fr'),FR,fr,i=>fr=i);
+ const b=base(w,a,lv),f=1+FR[fr][1],v=b*f;
+ $('v').textContent=(v-1.5).toFixed(0)+' à '+(v+1.5).toFixed(0)+' L';
+ const lo=20,hi=60;$('g').style.left=((v-1.5-lo)/(hi-lo)*100)+'%';$('g').style.width=(3/(hi-lo)*100)+'%';
+ $('d').textContent=FR[fr][1]>0?'+'+(v-b).toFixed(1)+' L parce que tu surfes '+FR[fr][0]:'';
+ $('why').textContent='Poids, âge, niveau et fréquence entrent dans le calcul. Le volume ne définit jamais ton niveau.';
+}
+const TXT={a:"Trois onglets : « Moi » (ce qui fait le volume), « Mes planches » (chaque planche porte ses conditions : plus de grille), « Mon usage » (planche du jour, depuis, saison). Le volume reste fixé en haut.",
+b:"Une seule page, comme aujourd'hui, mais le volume est collé en haut et bouge quand on répond. Plus simple à coder, mais on retombe sur une page longue.",
+c:"Au premier passage, une question à la fois (poids, âge, fréquence) avec le volume qui se précise, puis la page normale. Joli, mais plus de travail et inutile après la première fois. (Dans cette maquette, l'onglet C montre les mêmes champs.)"};
+function show(p){['moi','pl','us'].forEach(k=>$(k).hidden=k!==p);document.querySelectorAll('#tabbar .chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===p))}
+document.querySelectorAll('#tabbar .chip').forEach(b=>b.onclick=()=>show(b.dataset.p));
+document.querySelectorAll('.tabs button').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===t));
+ const k=t.dataset.t;$('expl').textContent=t.textContent;$('te').textContent=TXT[k];
+ $('tabbar').hidden=k!=='a';if(k!=='a'){['moi','pl','us'].forEach(x=>$(x).hidden=false)}else show('moi')});
+$('w').oninput=calc;$('a').oninput=calc;calc();$('te').textContent=TXT.a;
+document.querySelectorAll('#pl .chip.s,#us .chip').forEach(c=>c.onclick=()=>c.setAttribute('aria-pressed',c.getAttribute('aria-pressed')!=='true'));
+</script>

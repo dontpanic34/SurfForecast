@@ -412,7 +412,8 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "graph") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        GraphPreview(SkyGraphSettings.weekPct, SkyGraphSettings.dayPct, SkyGraphSettings.waterPct)
+                        WeekCardPreview(surferLevel, windUnit, weeklyWindMode, weeklyDensity, scale = 0.5f)
+                        DayCardPreview(surferLevel, windUnit, scale = 0.5f)
                         @Composable
                         fun graphSlider(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -432,7 +433,7 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "week") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WeekPreview(weeklyWindMode, weeklyDensity)
+                        WeekCardPreview(surferLevel, windUnit, weeklyWindMode, weeklyDensity, scale = 0.62f)
                         Text("Indicateurs vent", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
                         ChipChoices(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun"), weeklyWindMode, onWeeklyWindModeChanged)
                         Text("Icônes par jour", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
