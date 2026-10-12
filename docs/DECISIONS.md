@@ -129,3 +129,4 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **Barre du bas** : le Thème sort de la barre ; une icône « Thème » en haut à droite, à côté du choix des spots.
 
 - **Mon matériel** (13 octobre) : trois onglets validés : « Moi » (poids, âge, niveau), « Mes planches » (conditions sur chaque planche, plus de grille ; le réglage de la planche du jour est ici), « Mon expérience » (depuis quand, fréquence, saison). Le volume reste fixé en haut et se met à jour en direct ; la fréquence agit sur le volume (coefficients proposés : +5 % une fois par semaine, +10 % une fois par mois, +15 % quelques fois par an, à valider).
+- **Mon matériel, onglet Moi** : un sixième choix « Mon niveau » (celui calculé par l'appli) est sélectionné par défaut devant Débutant … Expert ; on peut toucher un autre niveau pour comparer le volume à son poids et son âge, et revenir à « Mon niveau » à tout moment.
