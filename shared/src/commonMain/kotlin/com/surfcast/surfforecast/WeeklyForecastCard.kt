@@ -843,8 +843,9 @@ internal fun weekSkyScene(
             val part = if (n == 0) emptyList() else hours.subList(j * n / 3, ((j + 1) * n / 3).coerceAtLeast(j * n / 3 + 1).coerceAtMost(n))
             xs.add((i + (j + 0.5f) / 3f) * dayW)
             cover.add(if (part.isEmpty()) 0f else part.map { it.cloudCover }.average().toFloat() / 100f)
-            rain.add(part.maxOfOrNull { rainAmountForCode(it.weatherCode) } ?: 0f)
-            snow.add(part.maxOfOrNull { snowAmountForCode(it.weatherCode) } ?: 0f)
+            // La moyenne du créneau, pas le maximum : une seule heure de pluie dans un créneau sec donnait une colonne grise isolée.
+            rain.add(if (part.isEmpty()) 0f else part.map { rainAmountForCode(it.weatherCode) }.average().toFloat())
+            snow.add(if (part.isEmpty()) 0f else part.map { snowAmountForCode(it.weatherCode) }.average().toFloat())
         }
         val sizePx = 32f * density
         suns.add(SunSpot((i + 0.5f) * dayW, sizePx, 2f * density))
@@ -852,7 +853,7 @@ internal fun weekSkyScene(
     // Lissage sur près d'un demi-créneau : un changement de ciel ou de pluie s'étale sur plusieurs heures, sans colonne.
     val slotW = dayW / 3f
     val coverSmooth = 0.7f * slotW
-    val rainSmooth = 0.5f * slotW
+    val rainSmooth = 0.9f * slotW
     val top = 8f * density
     val bottom = size.height - 18f * density
     // Les nuages sont étalés sur le ciel, au-dessus de la houle la plus haute de la semaine.
