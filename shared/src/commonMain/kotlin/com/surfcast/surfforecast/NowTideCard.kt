@@ -82,27 +82,17 @@ fun NowTideCard(
         }
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient
-        val rising = isTideRising(hourlyModel.rawTime.time, tideInfo)
-        val windKmh = effectiveWindKmh(hourlyModel)
-        val strength = when { windKmh < 10 -> "faible"; windKmh < 20 -> "modéré"; windKmh < 30 -> "fort"; else -> "très fort" }
-        val swell = "${formatDecimal(hourlyModel.waveHeight, 1).replace('.', ',')} m, ${hourlyModel.wavePeriod.toInt()} s"
-        Text(
-            "$swell, vent ${cardinalWordFr(dirFr)} $strength $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold,
-            color = colors.onSurface
-        )
-        if (rising != null || coef != null || next != null) {
-            Text(
-                buildAnnotatedString {
-                    val parts = mutableListOf<String>()
-                    if (rising != null) parts.add(if (rising) "Marée montante" else "Marée descendante")
-                    var first = true
-                    fun sep() { if (!first) append(", "); first = false }
-                    parts.forEach { sep(); append(it) }
-                    if (coef != null) { sep(); append("coef "); withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold)) { append("$coef") } }
-                    if (next != null) { sep(); append(if (next.first) "pleine haute" else "pleine basse"); append(" à "); append(next.second) }
-                },
-                fontSize = 13.sp, color = colors.onSurface
-            )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            NowTile("Houle", "${formatDecimal(hourlyModel.waveHeight, 1).replace('.', ',')} m", "${hourlyModel.wavePeriod.toInt()} s", Modifier.weight(1f))
+            NowTile("Vent", "$speed $unit", dirFr, Modifier.weight(1f))
+            if (coef != null || next != null) {
+                NowTile(
+                    "Marée",
+                    if (coef != null) "COEF $coef" else "",
+                    if (next != null) (if (next.first) "▲ " else "▼ ") + next.second else "",
+                    Modifier.weight(1f)
+                )
+            }
         }
     }
 }
@@ -129,4 +119,18 @@ internal fun cardinalWordFr(c: String): String {
         3 -> one(c[0]) + "-" + one(c[1]) + "-" + one(c[2])
         else -> c
     }.let { if (c.length == 2) it.replace("nord-", "nord-").replace("sud-", "sud-") else it }
+}
+
+/** Une tuile de « Maintenant » : un titre discret, la donnée en gros, un détail dessous. */
+@Composable
+private fun NowTile(title: String, value: String, detail: String, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier.clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp)
+    ) {
+        Text(title, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
+        if (value.isNotEmpty()) Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface, maxLines = 1)
+        if (detail.isNotEmpty()) Text(detail, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface.copy(alpha = 0.8f), maxLines = 1)
+    }
 }
