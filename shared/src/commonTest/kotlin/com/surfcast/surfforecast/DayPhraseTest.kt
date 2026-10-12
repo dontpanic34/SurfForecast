@@ -120,4 +120,18 @@ class NeutralStarsTest {
     fun nightPhraseNeedsEnoughHours() {
         assertNull(nightPhrase(night(Triple(1.0, 5, "E")), 275))
     }
+
+    @Test
+    fun nightAfterMidnightWorksWithoutYesterdaysSunTimes() {
+        val sunToday = DailySunInfo(sunrise = LocalTime(8, 15), sunset = LocalTime(19, 24))
+        val date = kotlinx.datetime.LocalDate(2026, 10, 13)
+        val hours = (0..6).map { h ->
+            HourlyUiModel(
+                timeFormatted = "$h h", rawTime = LocalDateTime(2026, 10, 13, h, 0), waveHeight = 1.4, wavePeriod = 11.0, waveDirection = 280f,
+                energyKj = 300, windSpeedKmh = 8, windDirectionStr = "E", weatherCode = 0, temperature = 12, windWaveHeight = 0.0
+            )
+        }
+        val night = nightHours(hours, mapOf(date to sunToday), LocalDateTime(2026, 10, 13, 0, 17))
+        assertEquals(7, night.size)
+    }
 }

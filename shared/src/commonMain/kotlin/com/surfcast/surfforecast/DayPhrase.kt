@@ -132,7 +132,8 @@ fun nightHours(all: List<HourlyUiModel>, sun: Map<LocalDate, DailySunInfo>, now:
     val toHour: Int
     if (now.time < todaySun.sunrise) {
         val yesterday = today.minus(1, DateTimeUnit.DAY)
-        val ySun = sun[yesterday] ?: return emptyList()
+        // Les horaires de la veille manquent après minuit (les prévisions commencent aujourd'hui) : le coucher d'hier vaut celui d'aujourd'hui, à une minute près.
+        val ySun = sun[yesterday] ?: todaySun
         fromDate = yesterday; fromHour = ySun.sunset.hour; toDate = today; toHour = todaySun.sunrise.hour
     } else {
         val tomorrow = today.plus(1, DateTimeUnit.DAY)
