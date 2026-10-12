@@ -1,0 +1,39 @@
+<title>Tranche de nuit dynamique</title>
+<style>
+/* Mise en page : une colonne de nuit étroite qui apparaît avant le lever et disparaît quand on n'en a plus besoin ; un curseur d'heure actuelle permet de voir quand elle s'affiche. La tranche horaire est écrite sous la colonne. Fond sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;--sel:#2c5a70;--night:#05090c;--y:#ffd21f;--o:#ff9a1f;--r:#ff5a55;--sea:#2f7f9a;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:470px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+h1{font-size:1.25rem;margin:0}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:8px 10px}.ct{font-size:11px;font-weight:700;color:var(--mut);margin-bottom:4px}
+input[type=range]{width:100%;accent-color:#5aa6cc}.now{font-weight:800;font-size:18px}
+.arr{display:flex;gap:2px;margin-bottom:3px}.arr>div{flex:1;min-width:0;text-align:center;font-size:12px;line-height:1.1}.arr .n{flex:.8;background:var(--night);border-radius:4px;color:#9fb4c0;font-size:10px}
+.strip{display:flex;gap:2px;align-items:flex-end;height:60px}.col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end}.col .b{width:100%;background:var(--sea);border-radius:3px 3px 0 0}
+.col.n{flex:.8;background:var(--night);border-radius:4px}.col.n .b{background:#173542}
+.lab{display:flex;gap:2px;margin-top:3px}.lab div{flex:1;min-width:0;text-align:center;font-size:9.5px;color:var(--mut)}.lab .n{flex:.8;color:#c4d3db;font-weight:700;line-height:1.1}
+.y{color:var(--y)}.o{color:var(--o)}.r{color:var(--r)}
+.state{font-size:12px;margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--tile)}
+</style>
+<main>
+<h1>Tranche de nuit dynamique</h1>
+<p class="mut sm">Une colonne de nuit très étroite, qui n'apparaît que quand elle sert : de la fin de la nuit jusqu'à 3 heures après le lever. Plus tard dans la journée, elle disparaît. La tranche horaire est écrite dessous. Déplace le curseur pour changer l'heure actuelle (lever du soleil à 8 h 15).</p>
+<div class="card"><div class="now" id="now"></div><input id="h" type="range" min="0" max="23" step="1" value="6" aria-label="Heure actuelle"><div class="state" id="state"></div></div>
+<div class="card"><div class="ct">Le déroulé de la journée</div><div class="arr" id="arr"></div><div class="strip" id="strip"></div><div class="lab" id="lab"></div></div>
+<div class="card"><div class="ct">Les règles</div><p class="sm">• La colonne montre les 4 heures avant le lever (4 h à 8 h) en une moyenne : houle, vent, température, avec une petite flèche de tendance.<br>• Elle s'affiche de la tombée de la nuit jusqu'à <b>lever + 3 h</b> (11 h ici), puis disparaît. Passé 11 h, on ne la montre plus.<br>• Pour un jour à venir (demain, après-demain), elle est toujours affichée : c'est la fenêtre de l'aube de ce jour.<br>• La tranche horaire est toujours écrite dessous, en clair (« Nuit 4 h à 8 h »).</p></div>
+</main>
+<script>
+var SUNRISE=8.25,SHOW_UNTIL=SUNRISE+3,HOURS=[8,9,10,11,12,13,14,15,16,17,18];
+var W={8:['O',12],9:['O',13],10:['O',12],11:['ONO',13],12:['NO',14],13:['NO',15],14:['NO',15],15:['NO',14],16:['NO',14],17:['NO',13],18:['NO',12]};
+function col(c){return c[1]>15?'r':c[1]>=8?'o':'y'}
+function render(){
+ var now=+document.getElementById('h').value;
+ document.getElementById('now').textContent='Heure actuelle : '+now+' h';
+ var show=now<SHOW_UNTIL||now>=19;
+ document.getElementById('state').textContent=show?(now>=19?'Le soir : la colonne annonce l’aube de demain.':'La colonne est affichée (jusqu’à '+Math.floor(SHOW_UNTIL)+' h).'):'La colonne a disparu : on n’a plus besoin de la nuit d’avant.';
+ var n=show?'<div class="n" style="padding-top:2px">☾ SO 9<br>↘</div>':'';
+ document.getElementById('arr').innerHTML=n+HOURS.map(function(h){var c=W[h];return '<div class="'+col(c)+'">➤<br>'+c[0]+' '+c[1]+'</div>'}).join('');
+ document.getElementById('strip').innerHTML=(show?'<div class="col n"><div class="b" style="height:70%"></div></div>':'')+HOURS.map(function(h){return '<div class="col"><div class="b" style="height:'+(42+(h%3)*2)+'%"></div></div>'}).join('');
+ document.getElementById('lab').innerHTML=(show?'<div class="n">Nuit<br>4–8 h</div>':'')+HOURS.map(function(h){return '<div>'+h+'</div>'}).join('');
+}
+document.getElementById('h').addEventListener('input',render);render();
+</script>
