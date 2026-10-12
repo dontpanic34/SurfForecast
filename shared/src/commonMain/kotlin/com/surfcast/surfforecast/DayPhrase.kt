@@ -56,11 +56,11 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
     if (maxH < FLAT_BELOW) return DayPhrase("Flat, va pêcher !")
     if (maxH >= MASSIVE_FROM) return DayPhrase("Massif, sors le jet !")
 
-    // La houle n'est dite que si elle bouge : « ça tient » ne dirait rien à qui n'a pas vu les prévisions la veille.
+    // La houle est toujours dite (grossit, tombe, constante) : on peut ouvrir l'appli sans avoir vu les prévisions la veille.
     val swell = when {
         pmH - amH >= 0.3 -> "ça grossit"
         amH - pmH >= 0.3 -> "ça tombe"
-        else -> null
+        else -> "houle constante"
     }
     fun colorOf(hs: List<HourlyUiModel>): Int {
         val dir = hs.filter { windFeelKmh(it) >= 4 }.groupingBy { windDirectionClass(it.windDirectionStr, beachFacing) }
@@ -90,7 +90,7 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
     val title = if (maxH < SMALL_BELOW) {
         if (bad) "Petit et venté" else "Petit mais propre, " + wind.removeSuffix(" toute la journée")
     } else {
-        if (swell == null) wind else swell + (if (bad && swell != "ça tombe") " mais " else if (bad) " et " else ", ") + wind
+        swell + (if (bad && swell != "ça tombe") " mais " else if (bad) " et " else ", ") + wind
     }
     return DayPhrase(title.replaceFirstChar { it.uppercase() })
 }
