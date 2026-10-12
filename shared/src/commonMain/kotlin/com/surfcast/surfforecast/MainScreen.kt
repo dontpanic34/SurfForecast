@@ -1176,7 +1176,8 @@ fun DynamicCardsSection(
                                         isCollapsed = isCollapsed,
                                         onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                         dragHandleModifier = dragMod,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                                        summary = selectedHourlyItem?.let { h -> "${h.rawTime.hour} h · ${formatDecimal(h.waveHeight, 1).replace('.', ',')} m · ${h.wavePeriod.roundToInt()} s" }
                                     )
 
                                     if (!isCollapsed) {

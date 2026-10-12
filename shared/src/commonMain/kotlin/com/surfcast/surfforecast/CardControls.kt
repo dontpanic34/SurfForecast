@@ -48,15 +48,15 @@ fun CardControlsRow(
     isCollapsed: Boolean,
     onToggleCollapse: () -> Unit,
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Une ligne qui résume l'encart quand il est réduit (ex. « 1,3 m · 12 s · ONO 287° »).
+    summary: String? = null
 ) {
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxWidth().clickable(onClick = onToggleCollapse).padding(horizontal = 4.dp, vertical = 4.dp)) {
 
     // Le titre et une flèche : toucher l'encart réduit ou déplie son contenu.
-    Row(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onToggleCollapse).padding(horizontal = 4.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = title,
             fontSize = 12.sp,
@@ -66,6 +66,10 @@ fun CardControlsRow(
             modifier = Modifier.weight(1f)
         )
         CollapseChevron(isCollapsed, onToggleCollapse)
+    }
+    if (isCollapsed && summary != null) {
+        Text(summary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurfaceColor, maxLines = 2)
+    }
     }
 }
 

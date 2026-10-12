@@ -83,7 +83,8 @@ fun WindCardComponent(
                 title = "Vent",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier
+                dragHandleModifier = dragHandleModifier,
+                summary = "$dirFr $formattedSpeed $unitSymbol" + (if (selectedHour.windGustKmh > selectedHour.windSpeedKmh) " · rafales $formattedGust" else "")
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))

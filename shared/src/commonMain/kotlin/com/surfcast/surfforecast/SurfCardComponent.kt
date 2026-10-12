@@ -74,7 +74,9 @@ fun SurfCardComponent(
                 title = "Houle",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier
+                dragHandleModifier = dragHandleModifier,
+                summary = "${formatDecimal(selectedHour.waveHeight, 1).replace('.', ',')} m · ${selectedHour.wavePeriod.roundToInt()} s · " +
+                    "${SurfUnitsHelper.formatCardinalFr(getCardinalDirection(selectedHour.waveDirection.toDouble()))} ${selectedHour.waveDirection.roundToInt()}° · ${selectedHour.energyKj} kJ"
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
