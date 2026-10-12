@@ -136,7 +136,6 @@ fun DailyTimelineCard(
             if (selectedIndex in ratings.indices) {
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
-                val level = gaugeLevel(shownRating)
                 Column(modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 60.dp, top = 2.dp, bottom = 2.dp)) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
@@ -156,22 +155,13 @@ fun DailyTimelineCard(
                         if (board != null) {
                             Text("Planche : $board", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
                         }
-                        if (shownRating.why.isNotBlank()) {
-                            Text(
-                                shownRating.why, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                                color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1, modifier = Modifier.padding(bottom = 1.dp)
-                            )
-                        }
                     }
-                    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Row(modifier = Modifier.width(110.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                            for (i in 1..5) {
-                                Box(
-                                    Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp))
-                                        .background(if (i <= level) shownBand.color() else onSurfaceColor.copy(alpha = 0.15f))
-                                )
-                            }
-                        }
+                    // La phrase, sous l'heure et le libellé.
+                    if (shownRating.why.isNotBlank()) {
+                        Text(
+                            shownRating.why, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                            color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 2, modifier = Modifier.padding(top = 2.dp)
+                        )
                     }
                     // Coefficient puis les deux marées de la journée, sur une ligne sous la jauge.
                     dailyTides[selectedDate]?.let { info ->
