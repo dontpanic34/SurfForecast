@@ -134,3 +134,7 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Pas encore branchés : « Quand tu les sors » et « Ma pratique » (Matériel), planche du jour, tolérance dans les couleurs, étoiles communes.
 - Vérifié : tests Android (host) verts, build web OK, captures de l'appli web (profil, questionnaire, Matériel).
 - Questionnaire (appli et maquette) : textes d'explication sous les questions et sous les réponses retirés (demande du propriétaire). Reste seulement « Plusieurs réponses possibles. » sur les deux questions à choix multiple.
+
+## 16 octobre 2026 : maquettes à choisir (dossier docs/maquettes/propositions/)
+- Une page par tâche, trois propositions chacune (onglets) : refonte des réglages (cockpit, recherche d'abord, une seule page), étoiles communes / couleurs par niveau, « Maintenant » (marée avec flèche et heure, sans rafales), rafales dans la carte Vent, marées de la journée de soleil, vent offshore / side-off / side / side-on / onshore, houle secondaire, Matériel (« quand tu les sors », planche du jour, ma pratique), tolérance aux conditions, comparer les niveaux, badges « Taille limite / Gros jour » et phrases « pour toi ».
+- Maquettes seulement : rien d'autre n'a été modifié. L'ancienne page « Mon profil » disparaît dans les trois propositions de réglages (le niveau passe par le questionnaire, les réglages fins sont repliés en « Réglages avancés »).
