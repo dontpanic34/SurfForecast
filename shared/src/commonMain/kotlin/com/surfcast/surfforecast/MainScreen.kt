@@ -12,6 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -132,13 +133,24 @@ fun MainScreen(
             onChosen = { viewModel.chooseFirstSpot(it) }
         )
     } else if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
-        OnboardingDialog(
-            displaySize = viewModel.displaySize,
-            onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
-            surferLevel = viewModel.surferLevel,
-            onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
-            onDone = { viewModel.dismissOnboarding() }
-        )
+        // Après le choix du spot : directement le questionnaire de niveau, puis la visite guidée de l'accueil.
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = {},
+            properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            androidx.compose.material3.Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.background) {
+                Column(
+                    modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    LevelQuestionnaire(
+                        initial = viewModel.levelAnswers, initialShift = viewModel.levelShift, initialTolerance = viewModel.tolerance,
+                        onDone = { a, shift, tol -> viewModel.saveLevelQuestionnaire(a, shift, tol); viewModel.dismissOnboarding() },
+                        onClose = { viewModel.dismissOnboarding() }
+                    )
+                }
+            }
+        }
     }
 
     val popupError = (uiState as? SurfUiState.Success)?.popupError

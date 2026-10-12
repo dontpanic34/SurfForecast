@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Première ouverture corrigée** (état : branche, pas en ligne, attend le go) : choix du spot obligatoire, puis directement le questionnaire de niveau (plus les anciennes cartes niveau / jour / journal), puis la visite guidée de l'accueil. Question en attente : supprimer l'onglet « Mon expérience » du matériel (seule la fréquence compte) et garder la fréquence dans « Moi ».
 - **Maquette** `nuit-deroule.html` : la colonne de nuit insérée dans une vraie capture du déroulé de la journée (thème sombre et clair), horaire « 4–8 h » sur une ligne, courbe de houle plate à la moyenne de la nuit, vent avec les mêmes flèches et couleurs. En attente de validation, pas de code.
 - **Maquette** `tranche-nuit-dynamique.html` : colonne de nuit très étroite et dynamique (visible de la tombée de la nuit à lever + 3 h, puis masquée ; toujours visible pour les jours à venir), avec la tranche horaire écrite dessous. En attente de choix, pas de code.
 - **Maquette** `tranche-nuit.html` : montrer les 4 dernières heures de nuit avant le lever dans le déroulé, la houle, le vent et la météo (A colonne large noire moyennée, B colonne étroite, C heures séparées assombries, D phrase noire seule). En attente de choix, pas de code.
