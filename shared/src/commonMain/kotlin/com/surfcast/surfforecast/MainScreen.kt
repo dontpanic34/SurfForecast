@@ -213,10 +213,6 @@ fun MainScreen(
                 showPreferencesDialog = false
                 showForecastHistory = true
             },
-            onShowIntro = {
-                showPreferencesDialog = false
-                viewModel.showOnboardingAgain()
-            },
             spotName = (uiState as? SurfUiState.Success)?.spotName ?: "",
             beachFacing = (uiState as? SurfUiState.Success)?.spotName?.let { viewModel.facingFor(it) },
             defaultBeachFacing = (uiState as? SurfUiState.Success)?.spotName?.let { viewModel.defaultFacingFor(it) },

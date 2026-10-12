@@ -34,7 +34,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 /**
- * Écran de bienvenue (première ouverture, puis Paramètres > « Revoir l'introduction ») : trois cartes courtes, une idée
+ * Écran de bienvenue (première ouverture seulement) : trois cartes courtes, une idée
  * chacune, et un geste à faire pour passer à la suivante (toucher un niveau, toucher un jour). Le geste retient
  * l'attention mieux qu'un bouton « Suivant » qu'on clique sans lire.
  */

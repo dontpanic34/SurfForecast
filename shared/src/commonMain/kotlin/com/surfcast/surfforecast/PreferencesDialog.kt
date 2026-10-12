@@ -76,7 +76,6 @@ fun SurfPreferencesDialog(
     // Épinglage du widget d'accueil : Android seulement (null = bouton masqué).
     onPinWidget: (() -> Unit)? = null,
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
-    onShowIntro: (() -> Unit)? = null,
     onShowTour: (() -> Unit)? = null,
     // Orientation du spot affiché (null = pas de spot chargé : la carte est masquée).
     spotName: String = "",
@@ -643,9 +642,6 @@ fun SurfPreferencesDialog(
                         PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (onShowTour != null) {
                             PrefMenuRow("🧭", "Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", onClick = onShowTour)
-                        }
-                        if (onShowIntro != null) {
-                            PrefMenuRow("👋", "Revoir l'introduction", "Ton niveau et l'aperçu des scores", onClick = onShowIntro)
                         }
                     }
                     if (page == "guide") ForecastGuideContent()

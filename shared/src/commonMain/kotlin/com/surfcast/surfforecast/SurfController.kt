@@ -150,10 +150,6 @@ class SurfController(
         prefs.putBoolean("onboarding_v1_done", true)
     }
 
-    fun showOnboardingAgain() {
-        showOnboarding = true
-    }
-
     // Visite guidée de la première utilisation (accueil) et astuces du journal : une seule fois,
     // rouvrable depuis les Paramètres.
     var showHomeTour by mutableStateOf(!prefs.getBoolean("coach_home_v1_done", false))
