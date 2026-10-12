@@ -173,13 +173,13 @@ class SurfController(
     var windUnit by mutableStateOf(prefs.getString("wind_unit", "kmh") ?: "kmh")
         private set
 
-    var showLiveOverlay by mutableStateOf(prefs.getBoolean("show_live_overlay", true))
+    var showLiveOverlay by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWeeklyCard by mutableStateOf(prefs.getBoolean("show_weekly_card", true))
+    var showWeeklyCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showDailyTimelineCard by mutableStateOf(prefs.getBoolean("show_daily_timeline_card", true))
+    var showDailyTimelineCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
     // Taille de l'affichage : "normal", "large" ou "xlarge". Nouveau (introduction pas encore faite) : « large ».
@@ -214,19 +214,19 @@ class SurfController(
     var surferLevel by mutableStateOf(prefs.getString("surfer_level", "intermediate") ?: "intermediate")
         private set
 
-    var showSurfCard by mutableStateOf(prefs.getBoolean("show_surf_card", true))
+    var showSurfCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWindCard by mutableStateOf(prefs.getBoolean("show_wind_card", true))
+    var showWindCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWeatherCard by mutableStateOf(prefs.getBoolean("show_weather_card", true))
+    var showWeatherCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showHourlyCard by mutableStateOf(prefs.getBoolean("show_hourly_card", true))
+    var showHourlyCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWindSeaCard by mutableStateOf(prefs.getBoolean("show_wind_sea_card", true))
+    var showWindSeaCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
     var cardsOrder = mutableStateListOf(*DEFAULT_CARDS_ORDER.toTypedArray())

@@ -476,7 +476,7 @@ fun MainScreen(
                         }
 
                         val dailyBands: List<List<ScoreBand>> = availableDates.map { date ->
-                            dayBandsInTimeOrder(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel, 3)
+                            dayBandsInTimeOrder(daylightHoursFor(date, scoringByDate, state.dailySunInfo), idealSwellDirection, viewModel.surferLevel, viewModel.weeklyDensity)
                         }
 
                         val dailyFeelsLike = availableDates.map { date ->
@@ -522,7 +522,17 @@ fun MainScreen(
                                             onSurfaceColor = onSurfaceColor,
                                             modifier = Modifier.weight(1f)
                                         )
-
+                                        // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
+                                        val darkTop = isDarkSurfaceTheme()
+                                        Column(
+                                            modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(10.dp))
+                                                .clickable { viewModel.changeThemeMode(if (darkTop) "light" else "dark") }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            ThemeToggleIcon(isDarkActive = !darkTop, backgroundColor = MaterialTheme.colorScheme.background, iconColor = onSurfaceColor, modifier = Modifier.size(22.dp))
+                                            Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.75f), maxLines = 1)
+                                        }
                                     }
 
                                     if (showSessionLogDialog) {
@@ -676,7 +686,8 @@ fun MainScreen(
                                             onSurfaceColor = onSurfaceColor,
                                             idealSwellDirection = idealSwellDirection,
                                             surferLevel = viewModel.surferLevel,
-                                            coachTargets = coachTargets
+                                            coachTargets = coachTargets,
+                                            onOpenWeatherDetail = { showWeatherDetail = true }
                                         )
                                     }
                                 }
@@ -710,14 +721,10 @@ fun MainScreen(
 
                             // Barre du bas : Prévisions, Journal, Météo, Réglages (toujours visible, à portée de pouce).
                             // Journal et Météo s'ouvrent depuis le haut de la liste : on y remonte d'abord.
-                            val darkNow = isDarkSurfaceTheme()
                             BottomNavBar(
                                 onForecast = { navScope.launch { mainListState.animateScrollToItem(0) } },
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
-                                onWeather = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
-                                isDark = darkNow,
-                                onToggleTheme = { viewModel.changeThemeMode(if (darkNow) "light" else "dark") },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
                                 coachTargets = coachTargets
@@ -914,7 +921,8 @@ fun DynamicCardsSection(
     idealSwellDirection: Int?,
     surferLevel: String,
     currentHour: Int = nowLocalDateTime().hour,
-    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null
+    coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
+    onOpenWeatherDetail: (() -> Unit)? = null
 ) {
     // currentHour en clé : à chaque changement d'heure (ou rechargement), la sélection
     // revient sur l'heure actuelle au lieu de rester figée sur celle du chargement.
@@ -1120,7 +1128,9 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    sun = dailySunInfo[selectedHourlyItem?.rawTime?.date],
+                                    onOpenDetail = onOpenWeatherDetail
                                 )
                             }
                         }
@@ -1175,10 +1185,7 @@ fun DynamicCardsSection(
 private fun BottomNavBar(
     onForecast: () -> Unit,
     onJournal: () -> Unit,
-    onWeather: () -> Unit,
     onSettings: () -> Unit,
-    isDark: Boolean,
-    onToggleTheme: () -> Unit,
     hasWebcam: Boolean,
     onWebcam: () -> Unit,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
@@ -1216,11 +1223,6 @@ private fun BottomNavBar(
                 }
                 Item("Journal", false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
-                }
-                Item("Météo", false, onWeather) { WeatherIcon("🌤️", 22.dp) }
-                // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
-                Item("Thème", false, onToggleTheme) {
-                    ThemeToggleIcon(isDarkActive = !isDark, backgroundColor = colors.surface, iconColor = colors.onSurface, modifier = Modifier.size(22.dp))
                 }
                 Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))

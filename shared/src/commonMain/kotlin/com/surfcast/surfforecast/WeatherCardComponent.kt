@@ -20,6 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -31,7 +36,9 @@ fun WeatherCardComponent(
     isCollapsed: Boolean = false,
     onToggleCollapse: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sun: DailySunInfo? = null,
+    onOpenDetail: (() -> Unit)? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -94,6 +101,8 @@ fun WeatherCardComponent(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
+            WeatherFacts(selectedHour, sun, onSurfaceColor, onOpenDetail)
+            Spacer(modifier = Modifier.height(6.dp))
 
             Box(
                 modifier = Modifier
@@ -183,5 +192,42 @@ fun WeatherCardComponent(
             }
             }
         }
+    }
+}
+
+private fun uvWord(uv: Double): String = when {
+    uv < 3 -> "faible"
+    uv < 6 -> "modéré"
+    uv < 8 -> "fort"
+    uv < 11 -> "très fort"
+    else -> "extrême"
+}
+
+private fun hm(t: kotlinx.datetime.LocalTime): String = "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
+
+/** Les chiffres de la météo de l'heure : ressenti, UV, pluie, nuages, eau, lever et coucher du soleil. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color, onOpenDetail: (() -> Unit)?) {
+    fun fact(label: String, value: String) = buildAnnotatedString {
+        append(label); append(" ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(value) }
+    }
+    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        val facts = buildList {
+            add(fact("Ressenti", "${h.feelsLike}°"))
+            add(fact("UV", "${h.uvIndex.roundToInt()} ${uvWord(h.uvIndex)}"))
+            add(fact("Pluie", if (h.precipitationMm < 0.05) "aucune" else formatDecimal(h.precipitationMm, 1).replace('.', ',') + " mm"))
+            add(fact("Nuages", "${h.cloudCover} %"))
+            h.seaTemperature?.let { add(fact("Eau", "${it.roundToInt()}°")) }
+            if (sun != null) { add(fact("☀︎ Lever", hm(sun.sunrise))); add(fact("Coucher", hm(sun.sunset))) }
+        }
+        facts.forEach { Text(it, fontSize = 12.5.sp, color = onSurface) }
+    }
+    if (onOpenDetail != null) {
+        Text(
+            "Détail sur la semaine ›", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp).clickable(onClick = onOpenDetail)
+        )
     }
 }

@@ -87,7 +87,7 @@ fun boardOfTheDay(hour: HourlyUiModel?, boards: List<QuiverBoard>, beachFacing: 
 }
 
 @Composable
-private fun PillChoices(choices: List<String>, selected: String, onSelect: (String) -> Unit) {
+internal fun PillChoices(choices: List<String>, selected: String, onSelect: (String) -> Unit) {
     val colors = MaterialTheme.colorScheme
     @OptIn(ExperimentalLayoutApi::class)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -102,54 +102,57 @@ private fun PillChoices(choices: List<String>, selected: String, onSelect: (Stri
     }
 }
 
-/** « Quand tu les sors » (la grille), « Ma pratique » et le réglage de la planche du jour. */
+/** Majoration du volume selon la fréquence de surf (proposition à valider) : 0 plusieurs fois par semaine ou plus. */
+internal fun frequencyBoost(frequency: String): Double = when (frequency) {
+    "1 fois par semaine" -> 0.05
+    "1 fois par mois" -> 0.10
+    "quelques fois par an" -> 0.15
+    else -> 0.0
+}
+
+/** Les conditions où l'on sort cette planche, sur sa carte (Petit, Gros, Mou, Creux, Puissant, Longues vagues). */
 @Composable
-fun GearUsageSection(boards: List<QuiverBoard>) {
+fun BoardConditionChips(boardId: Long) {
+    val colors = MaterialTheme.colorScheme
+    val set = GearPrefs.conditionsOf(boardId)
+    @OptIn(ExperimentalLayoutApi::class)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.padding(top = 4.dp)) {
+        Text("Je la sors :", fontSize = 11.5.sp, color = colors.onSurface.copy(alpha = 0.6f), modifier = Modifier.padding(top = 4.dp))
+        GEAR_CONDITIONS.forEach { (key, label) ->
+            val on = key in set
+            Text(
+                label, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                    .clickable { GearPrefs.toggle(boardId, key) }.padding(horizontal = 9.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+/** Où afficher la planche conseillée du jour : dans « Mes planches ». */
+@Composable
+fun BoardDayModeChooser() {
+    val colors = MaterialTheme.colorScheme
+    val modes = listOf("header" to "En-tête", "now" to "Ligne Maintenant", "both" to "Les deux", "none" to "Aucune")
+    Text("Planche du jour", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+    Text("Où afficher la planche conseillée d'après tes conditions", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
+    PillChoices(modes.map { it.second }, modes.first { it.first == GearPrefs.boardDayMode }.second) { label ->
+        GearPrefs.chooseBoardDayMode(modes.firstOrNull { it.second == label }?.first ?: GearPrefs.boardDayMode)
+    }
+}
+
+/** « Mon expérience » : depuis quand, fréquence, saison. Seule la fréquence change le volume conseillé. */
+@Composable
+fun ExperienceSection() {
     val colors = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (boards.isNotEmpty()) {
-            Text("Quand tu les sors", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-            Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Spacer(modifier = Modifier.weight(1.3f))
-                    GEAR_CONDITIONS.forEach { (_, label) ->
-                        Text(label.substringBefore(' '), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.65f), maxLines = 1,
-                            modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    }
-                }
-                boards.forEach { b ->
-                    val set = GearPrefs.conditionsOf(b.id)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(b.model, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface, maxLines = 1, modifier = Modifier.weight(1.3f))
-                        GEAR_CONDITIONS.forEach { (key, _) ->
-                            val on = key in set
-                            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                                Box(
-                                    modifier = Modifier.size(24.dp).clip(RoundedCornerShape(6.dp))
-                                        .background(if (on) colors.primary else colors.surfaceVariant)
-                                        .clickable { GearPrefs.toggle(b.id, key) },
-                                    contentAlignment = Alignment.Center
-                                ) { if (on) Text("✓", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary) }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Text("Ma pratique", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        Text("Je surfe depuis", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
+        Text("Je surfe depuis", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         PillChoices(listOf("moins d'1 an", "1 à 3 ans", "3 à 10 ans", "plus de 10 ans"), GearPrefs.since) { GearPrefs.chooseSince(it) }
-        Text("Je surfe", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
+        Text("Je surfe", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         PillChoices(listOf("quelques fois par an", "1 fois par mois", "1 fois par semaine", "plusieurs fois par semaine", "plusieurs fois par jour"), GearPrefs.frequency) { GearPrefs.chooseFrequency(it) }
-        Text("Ma saison", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
+        val boost = frequencyBoost(GearPrefs.frequency)
+        if (boost > 0) Text("+${(boost * 100).toInt()} % de volume conseillé : on surfe moins, il faut un peu plus de flottaison.", fontSize = 12.sp, color = colors.primary)
+        Text("Ma saison", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         PillChoices(listOf("toute l'année", "quand l'eau est bonne"), GearPrefs.season) { GearPrefs.chooseSeason(it) }
-
-        Text("Planche du jour", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        Text("Où afficher la planche conseillée d'après ta grille", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
-        val modes = listOf("header" to "En-tête", "now" to "Ligne Maintenant", "both" to "Les deux", "none" to "Aucune")
-        PillChoices(modes.map { it.second }, modes.first { it.first == GearPrefs.boardDayMode }.second) { label ->
-            GearPrefs.chooseBoardDayMode(modes.firstOrNull { it.second == label }?.first ?: GearPrefs.boardDayMode)
-        }
     }
 }

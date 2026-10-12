@@ -222,7 +222,11 @@ fun GearContent(
 ) {
     val colors = MaterialTheme.colorScheme
     val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
-    val levelIdx = volumeLevelIndex(surferLevel)
+    val myLevelIdx = volumeLevelIndex(surferLevel)
+    // Comparaison : un autre niveau que le sien, au même poids et au même âge (null = mon niveau calculé par l'appli).
+    var compareLevel by remember { mutableStateOf<Int?>(null) }
+    val levelIdx = compareLevel ?: myLevelIdx
+    var tab by remember { mutableStateOf("moi") }
     // Le volume en gros : celui de la famille de la première planche du quiver (shortboard à défaut).
     val firstFamily = quiverBoards.firstOrNull()?.family
     val mainFamily = when (firstFamily) {
@@ -230,7 +234,7 @@ fun GearContent(
         "twin", "groveler" -> "fish"
         else -> firstFamily
     }
-    val mainRange = recommendedVolumeRange(body, levelIdx, mainFamily)
+    val mainRange = recommendedVolumeRange(body, levelIdx, mainFamily)?.let { withFrequency(it, mainFamily) }
     var showInfo by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
 
@@ -250,6 +254,138 @@ fun GearContent(
     }
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // --- Mon volume : un seul chiffre en gros ---
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Mon volume", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+            IconButton(onClick = { showInfo = !showInfo }, modifier = Modifier.size(24.dp)) {
+                Icon(SurfIcons.Info, contentDescription = "Comment ce volume est calculé", tint = colors.primary, modifier = Modifier.size(15.dp))
+            }
+        }
+        if (showInfo) {
+            Column(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text("Comment on l'a calculé", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                Text("Volume = poids × ratio de ton niveau × petites corrections.", fontSize = 12.sp, color = colors.onSurface)
+                Text(
+                    "• Ratio de ton niveau (litres par kilo, shortboard) : débutant 0,66 · intermédiaire 0,48 · confirmé 0,41 · avancé 0,37 · expert 0,35.\n" +
+                        "• Poids : les surfeurs légers ont besoin de plus de litres par kilo, jusqu'à +20 % à 55 kg, rien à partir de 85 kg.\n" +
+                        "• Âge : aucune majoration jusqu'à 35 ans, puis un peu plus avec les années. Facultatif.\n" +
+                        "• Forme : déduite de ton entraînement hors surf (profil).\n" +
+                        "• Fish, twin, groveler : le shortboard + 1 à 2 L. Mid-length : 0,55 à 0,80 L par kilo. Longboard : 55 à 80 L et plus.",
+                    fontSize = 12.sp, color = colors.onSurface
+                )
+                Text(
+                    "Vérifié sur les planches de pilotes pros de JS Industries (0,34 à 0,42 L/kg selon le poids). Une recommandation, pas une vérité : " +
+                        "seul ton shaper connaît le bon volume pour toi. Le volume ne définit jamais ton niveau.",
+                    fontSize = 11.5.sp, color = colors.onSurface.copy(alpha = 0.65f)
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (mainRange != null) {
+                Text(
+                    RECOMMENDATION_FAMILIES.firstOrNull { it.first == mainFamily }?.second.orEmpty() + " · ${body.weightKg} kg" +
+                        (if (body.ageYears > 0) " · ${body.ageYears} ans" else ""),
+                    fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f)
+                )
+                Text(volumeRangeLabel(mainRange, mainFamily), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                VolumeGauge(mainRange)
+                if (body.ageYears <= 0) Text("Ajoute ton âge pour affiner.", fontSize = 12.sp, color = colors.primary)
+            } else {
+                Text("Ajoute ton poids", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                Text("Il suffit du poids pour voir ton volume conseillé.", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f))
+            }
+            if (mainRange != null) Text(
+                if (showMore) "Masquer le détail" else "Aller plus loin",
+                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary,
+                modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(50)).clickable { showMore = !showMore }.padding(vertical = 4.dp)
+            )
+            if (showMore && mainRange != null) {
+                if (body.weightKg > 0) {
+                    RECOMMENDATION_FAMILIES.filter { it.first != mainFamily && it.first != "mousse" }.forEach { (fam, label) ->
+                        recommendedVolumeRange(body, levelIdx, fam)?.let { withFrequency(it, fam) }?.let { r ->
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(label, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.7f))
+                                Text(volumeRangeLabel(r, fam), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                            }
+                        }
+                    }
+                    val pros = nearestPros(mainFamily, body.weightKg)
+                    if (pros.isNotEmpty()) {
+                        Text("Des pros de ton gabarit (fiches JS Industries)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface, modifier = Modifier.padding(top = 8.dp))
+                        pros.forEach { p ->
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("${p.name} · ${p.weightKg} kg", fontSize = 12.5.sp, color = colors.onSurface.copy(alpha = 0.7f))
+                                Text(formatFr(p.volumeL) + " L", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                            }
+                        }
+                    }
+                } else {
+                    Text("Ajoute ton poids pour voir le détail.", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f))
+                }
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("moi" to "Moi", "pl" to "Mes planches", "exp" to "Mon expérience").forEach { (k, label) ->
+                val on = tab == k
+                Text(
+                    label, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surface)
+                        .clickable { tab = k }.padding(horizontal = 14.dp, vertical = 7.dp)
+                )
+            }
+        }
+        if (tab == "moi") {
+        // --- Moi : poids, âge (facultatif) ---
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            var weightText by remember { mutableStateOf(if (body.weightKg > 0) body.weightKg.toString() else "") }
+            var ageText by remember { mutableStateOf(if (body.ageYears > 0) body.ageYears.toString() else "") }
+            fun push() = onBodyChanged(body.copy(ageYears = ageText.toIntOrNull() ?: 0, weightKg = weightText.toIntOrNull() ?: 0))
+            OutlinedTextField(
+                value = weightText, onValueChange = { v -> weightText = v.filter { it.isDigit() }.take(3); push() },
+                label = { Text("Poids") }, suffix = { Text("Kg") }, singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = ageText, onValueChange = { v -> ageText = v.filter { it.isDigit() }.take(3); push() },
+                label = { Text("Âge (facultatif)") }, suffix = { Text("Ans") }, singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f)
+            )
+        }
+        Text(
+            "Ces données restent sur ton appareil et servent à calculer ton volume conseillé.",
+            fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f)
+        )
+        Text("Niveau", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val mine = compareLevel == null
+            Text(
+                "Mon niveau : " + (levelLabel(surferLevel)), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
+                color = if (mine) colors.onPrimary else colors.onSurfaceVariant,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (mine) colors.primary else colors.surface)
+                    .clickable { compareLevel = null }.padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+            LEVEL_NAMES.forEachIndexed { i, name ->
+                val on = compareLevel == i
+                Text(
+                    name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surface)
+                        .clickable { compareLevel = i }.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+        Text(
+            if (compareLevel == null) "Le niveau calculé par l'appli." else "Comparaison : le volume d'un autre niveau, à ton poids et ton âge.",
+            fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f)
+        )
+        }
+        if (tab == "pl") {
         // --- Mes planches ---
         Text("Mes planches", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         if (quiverBoards.isEmpty()) {
@@ -278,6 +414,7 @@ fun GearContent(
                             val verdict = if (board.volumeL != null && boardRange != null) " · " + volumeVerdict(board.volumeL, boardRange) else ""
                             Text(summary + verdict, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.primary)
                         }
+                        BoardConditionChips(board.id)
                     }
                     Text(
                         text = "Supprimer", fontSize = 12.sp, color = AppColors.WindHigh,
@@ -371,107 +508,11 @@ fun GearContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-        GearUsageSection(quiverBoards)
-
-        // --- Mon volume : un seul chiffre en gros ---
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Mon volume", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-            IconButton(onClick = { showInfo = !showInfo }, modifier = Modifier.size(24.dp)) {
-                Icon(SurfIcons.Info, contentDescription = "Comment ce volume est calculé", tint = colors.primary, modifier = Modifier.size(15.dp))
-            }
+            BoardDayModeChooser()
         }
-        if (showInfo) {
-            Column(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text("Comment on l'a calculé", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                Text("Volume = poids × ratio de ton niveau × petites corrections.", fontSize = 12.sp, color = colors.onSurface)
-                Text(
-                    "• Ratio de ton niveau (litres par kilo, shortboard) : débutant 0,66 · intermédiaire 0,48 · confirmé 0,41 · avancé 0,37 · expert 0,35.\n" +
-                        "• Poids : les surfeurs légers ont besoin de plus de litres par kilo, jusqu'à +20 % à 55 kg, rien à partir de 85 kg.\n" +
-                        "• Âge : aucune majoration jusqu'à 35 ans, puis un peu plus avec les années. Facultatif.\n" +
-                        "• Forme : déduite de ton entraînement hors surf (profil).\n" +
-                        "• Fish, twin, groveler : le shortboard + 1 à 2 L. Mid-length : 0,55 à 0,80 L par kilo. Longboard : 55 à 80 L et plus.",
-                    fontSize = 12.sp, color = colors.onSurface
-                )
-                Text(
-                    "Vérifié sur les planches de pilotes pros de JS Industries (0,34 à 0,42 L/kg selon le poids). Une recommandation, pas une vérité : " +
-                        "seul ton shaper connaît le bon volume pour toi. Le volume ne définit jamais ton niveau.",
-                    fontSize = 11.5.sp, color = colors.onSurface.copy(alpha = 0.65f)
-                )
-            }
+        if (tab == "exp") {
+            ExperienceSection()
         }
-        Column(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (mainRange != null) {
-                Text(
-                    RECOMMENDATION_FAMILIES.firstOrNull { it.first == mainFamily }?.second.orEmpty() + " · ${body.weightKg} kg" +
-                        (if (body.ageYears > 0) " · ${body.ageYears} ans" else ""),
-                    fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f)
-                )
-                Text(volumeRangeLabel(mainRange, mainFamily), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                VolumeGauge(mainRange)
-                if (body.ageYears <= 0) Text("Ajoute ton âge pour affiner.", fontSize = 12.sp, color = colors.primary)
-            } else {
-                Text("Ajoute ton poids", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                Text("Il suffit du poids pour voir ton volume conseillé.", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f))
-            }
-            if (mainRange != null) Text(
-                if (showMore) "Masquer le détail" else "Aller plus loin",
-                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary,
-                modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(50)).clickable { showMore = !showMore }.padding(vertical = 4.dp)
-            )
-            if (showMore && mainRange != null) {
-                if (body.weightKg > 0) {
-                    RECOMMENDATION_FAMILIES.filter { it.first != mainFamily && it.first != "mousse" }.forEach { (fam, label) ->
-                        recommendedVolumeRange(body, levelIdx, fam)?.let { r ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(label, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.7f))
-                                Text(volumeRangeLabel(r, fam), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                            }
-                        }
-                    }
-                    val pros = nearestPros(mainFamily, body.weightKg)
-                    if (pros.isNotEmpty()) {
-                        Text("Des pros de ton gabarit (fiches JS Industries)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface, modifier = Modifier.padding(top = 8.dp))
-                        pros.forEach { p ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("${p.name} · ${p.weightKg} kg", fontSize = 12.5.sp, color = colors.onSurface.copy(alpha = 0.7f))
-                                Text(formatFr(p.volumeL) + " L", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                            }
-                        }
-                    }
-                } else {
-                    Text("Ajoute ton poids pour voir le détail.", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.65f))
-                }
-            }
-        }
-
-        // --- Moi : poids, âge (facultatif) ---
-        Spacer(modifier = Modifier.height(4.dp))
-        Text("Moi", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            var weightText by remember { mutableStateOf(if (body.weightKg > 0) body.weightKg.toString() else "") }
-            var ageText by remember { mutableStateOf(if (body.ageYears > 0) body.ageYears.toString() else "") }
-            fun push() = onBodyChanged(body.copy(ageYears = ageText.toIntOrNull() ?: 0, weightKg = weightText.toIntOrNull() ?: 0))
-            OutlinedTextField(
-                value = weightText, onValueChange = { v -> weightText = v.filter { it.isDigit() }.take(3); push() },
-                label = { Text("Poids") }, suffix = { Text("Kg") }, singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f)
-            )
-            OutlinedTextField(
-                value = ageText, onValueChange = { v -> ageText = v.filter { it.isDigit() }.take(3); push() },
-                label = { Text("Âge (facultatif)") }, suffix = { Text("Ans") }, singleLine = true, keyboardOptions = numeric, modifier = Modifier.weight(1f)
-            )
-        }
-        Text(
-            "Ces données restent sur ton appareil et servent à calculer ton volume conseillé.",
-            fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f)
-        )
     }
 
     boardPendingDelete?.let { board ->
@@ -523,4 +564,11 @@ fun QuiverScreen(
             }
         }
     }
+}
+
+/** Le volume d'une plage, majoré selon la fréquence de surf (celui qui surfe moins a besoin d'un peu plus de volume). */
+internal fun withFrequency(range: ClosedFloatingPointRange<Double>, family: String): ClosedFloatingPointRange<Double> {
+    if (family == "longboard") return range
+    val k = 1.0 + frequencyBoost(GearPrefs.frequency)
+    return (range.start * k)..(range.endInclusive * k)
 }

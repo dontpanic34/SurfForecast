@@ -1,5 +1,8 @@
 # À faire
 
+## À coder après le « go » (réponses du 13 octobre au soir)
+Marées toutes affichées + COEF et heures sur une ligne ; icônes B (essai) ; encart Météo enrichi (ressenti, UV, pluie, nuages, eau, lever/coucher), onglet Météo retiré de la barre ; Thème en haut à droite ; Prévisions en Auto. À maquetter d'abord : visite guidée, journal (« Tu as surfé ? », « + Session », « ressemble à ta session du… »), textes de l'échelle.
+
 ## Fait le 13 octobre (les neuf points) : à valider par le propriétaire sur le site
 Réglages denses, étoiles communes + segments, Maintenant version C, side-off / side-on, houle secondaire, grille de matériel, tolérance, échelle des niveaux, badges « Petit jour » / « Gros jour ». Restent ouverts : toutes les marées de la journée dans le déroulé (aucune proposition choisie), explication de « Prévisions », contenu détaillé de l'échelle des niveaux, `unified` pas mis à jour.
 
