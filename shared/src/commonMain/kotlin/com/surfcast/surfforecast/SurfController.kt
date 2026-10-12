@@ -192,6 +192,7 @@ class SurfController(
     @Suppress("unused")
     private val skyGraphInit = run {
         SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER))
+        SkyGraphSettings.loadTide(prefs.getInt("graph_tide_dp", SkyGraphSettings.DEFAULT_TIDE))
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
     }
     // Grille « quand tu sors quelle planche », pratique et planche du jour (voir GearPrefs).
