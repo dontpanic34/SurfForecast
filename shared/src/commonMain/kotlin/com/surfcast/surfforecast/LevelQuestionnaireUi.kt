@@ -75,8 +75,8 @@ private val LEVEL_DEFINITIONS = listOf(
         "Te lever à chaque vague, et te placer seul.",
     "Tu es autonome : tu localises une vague même s'il n'y a personne. Ton take-off est solide, tu passes la barre sans souci et la rame suit." to
         "Suivre la vague le plus longtemps possible.",
-    "Tu enchaînes les vagues et tu gères ton rythme sur la vague : tu reprends de la vitesse si elle devient molle, tu fais un cutback si tu t'éloignes trop, tu sais attendre un peu quand il faut." to
-        "Rester en rythme avec la vague, en gérant tes replacements.",
+    "Tu lis la vague avant qu'elle ne change : tes replacements deviennent naturels et tu surfes de plus en plus près de la partie qui pousse. Tes manœuvres restent simples." to
+        "Surfer plus près de la partie qui pousse.",
     "Tu cherches la taille où tu peux faire de vraies manœuvres et l'endroit critique de la vague. Tu sais faire des manœuvres de pro, mais pas de façon régulière : il te reste une marge de progression avant de les considérer acquises." to
         "Exprimer tes manœuvres, t'améliorer, être plus critique.",
     "Ton mouvement est bon sur tes manœuvres de pro ; il te reste quelques détails à régler pour replaquer à chaque fois." to

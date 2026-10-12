@@ -68,7 +68,7 @@ internal val NEXT_STEP_ADVICE = listOf(
     "Passe de la mousse à la vague : va au large les petits jours, avec du monde autour pour te rassurer.",
     "Rends ton take-off plus régulier sur les petites vagues.",
     "Apprends à te placer : repère le pic tout seul.",
-    "Gère tes manœuvres de replacement pour rester en rythme avec la vague : reprends de la vitesse si elle devient molle, fais un cutback si tu t'éloignes trop, attends un peu quand il faut.",
+    "Gère tes manœuvres de replacement pour rester en rythme avec la vague. Tu ne cherches plus seulement à la suivre : tu commences à revenir ou à rester dans la zone critique.",
     "Cherche l'endroit critique de la vague et des manœuvres plus engagées.",
     "Travaille tes manœuvres : le mouvement est là, vise une réception propre.",
     "Replaque tes manœuvres à chaque fois, avec puissance et style."
