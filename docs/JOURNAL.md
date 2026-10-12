@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Maquette** `couleur-selection.html` : couleur de sélection du thème sombre (3 palettes). Aussi en réflexion : rouage ⚙ par encart à la place du ⓘ, réglages sans doublon (unité du vent, graphique de houle, onglet Semaine des Paramètres). En attente de choix, pas de code.
 - **En-tête du spot allégé** (état : en ligne dès publication sur `web`) : nom centré, sans étoile ni petite flèche ▾ (le favori se gère dans la liste des spots), chevrons ‹ › gris et seulement s'il y a plusieurs favoris, thème à droite. « Mis à jour 17:20 ↻ » déplacé sous le titre « Actuellement » (toucher relance les prévisions).
 - **Maquette** `entete-v2.html` : en-tête du spot plus léger (3 propositions) et où mettre « Mis à jour » (3 propositions). En attente de choix, pas de code.
 - **Fenêtres ⓘ allégées** (état : en ligne dès publication sur `web`) : 2 à 3 lignes courtes + les réglages de l'encart ; le détail complet (ancienne visite guidée) est derrière « En savoir plus ». Fenêtre plus légère (coins arrondis, texte petit, plus de gros bouton « Compris »). Plus d'explication de l'icône de l'eau.
