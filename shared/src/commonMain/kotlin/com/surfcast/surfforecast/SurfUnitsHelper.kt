@@ -122,9 +122,11 @@ object SurfUnitsHelper {
             1, 2 -> if (isDay) "🌤️" else "☁️"
             3 -> "☁️"
             45, 48 -> "🌫️"
-            51, 53, 55, 61, 63, 65 -> "🌧️"
+            // Forte pluie : codes de pluie forte, ou au moins 4 mm dans l'heure ; sinon pluie, ou averse avec du soleil.
+            65, 67, 82 -> "☔"
+            51, 53, 55, 61, 63 -> if (hourly.precipitationMm >= 4.0) "☔" else "🌧️"
             71, 73, 75, 77, 85, 86 -> "❄️"
-            80, 81, 82 -> "🌦️"
+            80, 81 -> if (hourly.precipitationMm >= 4.0) "☔" else "🌦️"
             95, 96, 99 -> "⛈️"
             else -> if (hourly.cloudCover > 60) "☁️" else if (isDay) "☀️" else "🌙"
         }

@@ -31,6 +31,10 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.roundToInt
 
 @Serializable
@@ -68,6 +72,7 @@ data class MareeExtremaResponse(
  * replis sur clés suffixées par modèle et valeurs nulles.
  */
 private const val AROME_HD_MODEL = "meteofrance_arome_france_hd"
+private const val GFS_MODEL = "gfs_seamless"
 
 /** Relais Cloudflare des marées (functions/api/maree) : jeton côté serveur + cache. Repli : appel direct. */
 const val MAREE_RELAY_BASE = "https://surflog.fr/api/maree"
@@ -450,6 +455,49 @@ class SurfRepository(
     }
 
     /**
+     * Vent du modèle global GFS (vitesse, direction, rafales) sur [days] jours : il est moyenné avec ECMWF. Un échec ne fait
+     * jamais échouer la prévision : on garde alors ECMWF seul.
+     */
+    private suspend fun fetchGfsWind(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Triple<Double, Double, Double>> {
+        return try {
+            val url = "https://api.open-meteo.com/v1/forecast?" +
+                "latitude=$lat&longitude=$lon" +
+                "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
+                "&models=$GFS_MODEL" +
+                "&forecast_days=$days" +
+                "&timezone=auto"
+            val hourly = httpGet(url).getValue("hourly").jsonObject
+            val timeArr = hourly.getValue("time").jsonArray
+            val speedArr = hourly.optArray("wind_speed_10m") ?: hourly.optArray("wind_speed_10m_$GFS_MODEL")
+            val dirArr = hourly.optArray("wind_direction_10m") ?: hourly.optArray("wind_direction_10m_$GFS_MODEL")
+            val gustArr = hourly.optArray("wind_gusts_10m") ?: hourly.optArray("wind_gusts_10m_$GFS_MODEL")
+            if (speedArr == null || dirArr == null) return emptyMap()
+            buildMap {
+                for (i in timeArr.indices) {
+                    val speed = speedArr.doubleAt(i) ?: continue
+                    val dir = dirArr.doubleAt(i) ?: continue
+                    put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), Triple(speed, dir, gustArr.doubleAt(i) ?: speed))
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    /** Moyenne de deux directions de vent (en degrés) par les vecteurs, pour que 350° et 10° donnent 0° et non 180°. */
+    private fun meanDirection(a: Double, b: Double): Double {
+        val ra = a * PI / 180.0
+        val rb = b * PI / 180.0
+        val x = cos(ra) + cos(rb)
+        val y = sin(ra) + sin(rb)
+        if (x * x + y * y < 1e-9) return a
+        val deg = atan2(y, x) * 180.0 / PI
+        return (deg + 360.0) % 360.0
+    }
+
+    /**
      * `today` est injectable pour les tests ; par défaut, la date du jour du téléphone
      * (comme LocalDate.now() côté Android).
      */
@@ -475,6 +523,7 @@ class SurfRepository(
                 fetchWeatherBlock(lat, lon, config.longTermWeather, 7, includeDailySun = true)
             }
 
+            val gfsWindDeferred = async { fetchGfsWind(lat, lon, 7) }
             val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
             val referencePeriodsDeferred = async { fetchReferencePeriods(lat, lon, 7) }
 
@@ -483,6 +532,7 @@ class SurfRepository(
             val shortWeather = shortWeatherDeferred.await()
             val longWeather = longWeatherDeferred.await()
             val aromeHdWind = aromeHdWindDeferred.await()
+            val gfsWind = gfsWindDeferred.await()
             val seaTemps = seaTempDeferred.await()
             val referencePeriods = referencePeriodsDeferred.await()
 
@@ -527,12 +577,28 @@ class SurfRepository(
                 // inférieures au vent moyen affiché.
                 val primaryGust = wData.windGusts.getOrElse(wIndex) { Double.NaN }
                 val longGust = longIndex?.let { longWeather.windGusts.getOrElse(it) { Double.NaN } } ?: Double.NaN
+                val gfsGust = gfsWind[t]?.third
                 val gustRaw = when {
+                    !longGust.isNaN() && gfsGust != null && ecmwfOkEarly(longSpeed, longDir) -> (longGust + gfsGust) / 2.0
+                    gfsGust != null && longGust.isNaN() -> gfsGust
+                    !longGust.isNaN() && ecmwfOkEarly(longSpeed, longDir) -> longGust
                     !primaryGust.isNaN() -> primaryGust
                     !longGust.isNaN() -> longGust
                     else -> Double.NaN
                 }
+                // Vent affiché : la moyenne des deux modèles globaux (ECMWF et GFS), plus crédible que l'AROME sur la côte (relevé du
+                // 12 octobre : 8 km/h contre 15 à 19 sur les autres sites). L'AROME HD n'est plus qu'une comparaison, notée dans la source.
+                val gfs = gfsWind[t]
+                val ecmwfOk = !longSpeed.isNaN() && !longDir.isNaN()
+                val hdNote = hd?.let { " · AROME HD ${it.first.roundToInt()}" }.orEmpty()
+                val globalWind: Triple<Double, Double, String>? = when {
+                    ecmwfOk && gfs != null -> Triple((longSpeed + gfs.first) / 2.0, meanDirection(longDir, gfs.second), "ECMWF+GFS")
+                    ecmwfOk -> Triple(longSpeed, longDir, "ECMWF")
+                    gfs != null -> Triple(gfs.first, gfs.second, "GFS")
+                    else -> null
+                }
                 val (windSpeedRaw, windDirDeg, windSource) = when {
+                    globalWind != null -> Triple(globalWind.first, globalWind.second, globalWind.third + hdNote)
                     hd != null -> Triple(hd.first, hd.second, "AROME HD")
                     !primarySpeed.isNaN() && !primaryDir.isNaN() -> Triple(
                         primarySpeed,
@@ -815,3 +881,5 @@ private fun JsonObject.optArray(key: String): JsonArray? = this[key] as? JsonArr
 // Valeur numérique à l'index i, null si absente, JSON null ou hors limites (≈ org.json isNull).
 private fun JsonArray?.doubleAt(i: Int): Double? =
     (this?.getOrNull(i) as? kotlinx.serialization.json.JsonPrimitive)?.doubleOrNull
+
+private fun ecmwfOkEarly(speed: Double, dir: Double) = !speed.isNaN() && !dir.isNaN()

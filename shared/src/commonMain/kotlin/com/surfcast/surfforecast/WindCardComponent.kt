@@ -127,24 +127,7 @@ fun WindCardComponent(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Canvas(modifier = Modifier.size(13.dp)) {
-                            val w = size.width
-                            val h = size.height
-                            rotate(rotationAngle, pivot = Offset(w / 2f, h / 2f)) {
-                                val path = Path().apply {
-                                    moveTo(w * 0.5f, 0.5.dp.toPx())
-                                    lineTo(w * 0.95f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.48f)
-                                    lineTo(w * 0.68f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.98f)
-                                    lineTo(w * 0.32f, h * 0.48f)
-                                    lineTo(w * 0.05f, h * 0.48f)
-                                    close()
-                                }
-                                drawPath(path = path, color = currentArrowColor)
-                                drawPath(path = path, color = onSurfaceColor.copy(alpha = 0.5f), style = Stroke(width = 0.8.dp.toPx()))
-                            }
-                        }
+                        NavArrow(currentArrowColor, rotationAngle, (13 * windArrowScale(windFeelKmh(selectedHour))).dp)
                         Text(
                             text = dirFr,
                             fontSize = 14.sp,

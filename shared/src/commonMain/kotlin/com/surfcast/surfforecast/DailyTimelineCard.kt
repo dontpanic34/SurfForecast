@@ -58,8 +58,8 @@ private const val SELECTED_WIND_DROP = 9 // la colonne de vent de l'heure choisi
 private const val WIND_ROW_H = 46 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
-private const val BAND_H = 28
-private const val HOURS_H = 28 // la ligne des heures (les repères de marée sont dans l’eau, sur la courbe)
+private const val BAND_H = 18
+private const val HOURS_H = 22 // la ligne des heures (les repères de marée sont dans l’eau, sur la courbe)
 private const val SIDE_PAD = 4
 
 /**
@@ -312,7 +312,7 @@ private fun DailyTimelineBody(
                             modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            WindArrow(color, rotation, (windFont * 1.5f).dp)
+                            NavArrow(color, rotation, (windFont * 1.5f * windArrowScale(windFeelKmh(hourly))).dp)
                             Text(dirFr, fontSize = windFont.sp, fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp)
                             Text(
                                 SurfUnitsHelper.formatWindValue(windFeelKmh(hourly), windUnit), fontSize = windFont.sp,
@@ -433,7 +433,7 @@ private fun DailyTimelineBody(
                 Canvas(modifier = Modifier.fillMaxWidth().height(BAND_H.dp)) {
                     val cellDark = if (isDark) Color(0xFF0F1822) else Color(0xFFD3DBE4)
                     val goldLo = Color(0xFF0B121A)
-                    val ico = 9.dp.toPx()
+                    val ico = 0f
                     val xr = xOf(sunrise)
                     val xs = xOf(sunset)
                     val cellH = 6.dp.toPx()
@@ -463,8 +463,6 @@ private fun DailyTimelineBody(
                             }
                         }
                     }
-                    drawSunEvent(Offset(xr, 10.dp.toPx()), true, sunGold, 1.15.dp.toPx())
-                    drawSunEvent(Offset(xs, 10.dp.toPx()), false, sunGold, 1.15.dp.toPx())
                 }
 
                 // --- Une seule ligne d'heures, dynamique ---

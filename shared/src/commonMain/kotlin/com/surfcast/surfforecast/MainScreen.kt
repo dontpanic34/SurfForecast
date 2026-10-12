@@ -1115,7 +1115,8 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    beachFacing = idealSwellDirection
                                 )
                             }
                         }
