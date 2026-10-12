@@ -436,6 +436,8 @@ fun SurfPreferencesDialog(
                             Text("${SkyGraphSettings.tideDp} dp", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant)
                         }
                         Slider(value = SkyGraphSettings.tideDp.toFloat(), onValueChange = { SkyGraphSettings.setTide(it.toInt()) }, valueRange = 24f..60f)
+                        Text("Marées affichées", fontSize = 12.sp, color = colors.onBackground)
+                        ChipChoices(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun", onSelect = { SkyGraphSettings.chooseTideAll(it == "all") })
                         TextButton(onClick = { SkyGraphSettings.reset() }) { Text("Valeurs par défaut", fontSize = 12.sp) }
                     }
 

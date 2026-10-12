@@ -2,6 +2,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 /**
@@ -22,6 +23,10 @@ object SkyGraphSettings {
         private set
 
     /** Hauteur de la petite courbe de marée du déroulé (dp). */
+    /** Marées de la nuit aussi (« hors soleil ») sur la ligne du coefficient. */
+    var tideAll by mutableStateOf(false)
+        private set
+
     var tideDp by mutableIntStateOf(DEFAULT_TIDE)
         private set
 
@@ -35,6 +40,8 @@ object SkyGraphSettings {
     }
 
     fun loadTide(dp: Int) { tideDp = dp.coerceIn(24, 60) }
+    fun loadTideAll(v: Boolean) { tideAll = v }
+    fun chooseTideAll(v: Boolean) { tideAll = v; persist("graph_tide_all", if (v) 1 else 0) }
     fun setTide(dp: Int) { tideDp = dp.coerceIn(24, 60); persist("graph_tide_dp", tideDp) }
     fun setWeek(p: Int) { weekPct = p.coerceIn(25, 70); persist("graph_week_pct", weekPct) }
     fun setDay(p: Int) { dayPct = p.coerceIn(25, 70); persist("graph_day_pct", dayPct) }
