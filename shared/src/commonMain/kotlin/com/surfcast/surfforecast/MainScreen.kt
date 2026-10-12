@@ -85,6 +85,8 @@ fun MainScreen(
     var showPreferencesDialog by remember { mutableStateOf(false) }
     var showSessionLogDialog by remember { mutableStateOf(false) }
     var showSessionLogEntry by remember { mutableStateOf(false) }
+    // Jour proposé à l'ouverture de la saisie : 1 quand on répond « Noter ma session » à « Tu as surfé ? » (hier).
+    var entryInitialOffset by remember { mutableStateOf(0) }
     var showQuiverDialog by remember { mutableStateOf(false) }
     // Page des Paramètres à ouvrir directement (« profile » depuis la visite guidée).
     var preferencesStartPage by remember { mutableStateOf<String?>(null) }
@@ -416,7 +418,7 @@ fun MainScreen(
                                                     Text(
                                                         "Noter ma session", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary,
                                                         modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary)
-                                                            .clickable { viewModel.dismissSurfedAsk(yesterday); showSessionLogEntry = true }.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                            .clickable { viewModel.dismissSurfedAsk(yesterday); entryInitialOffset = 1; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } }.padding(horizontal = 14.dp, vertical = 7.dp)
                                                     )
                                                     Text(
                                                         "Non", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
@@ -631,6 +633,7 @@ fun MainScreen(
                                             showTips = viewModel.showJournalTips,
                                             onDismissTips = { viewModel.dismissJournalTips() },
                                             availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
+                                            initialDayOffset = entryInitialOffset,
                                             onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
                                                 val past = pastConditions[dayOffset]
                                                 val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
@@ -720,7 +723,7 @@ fun MainScreen(
                                             idealSwellDirection = idealSwellDirection,
                                             surferLevel = viewModel.surferLevel,
                                             coachTargets = coachTargets,
-                                            onOpenWeatherDetail = { showWeatherDetail = true }
+                                            onOpenWeatherDetail = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } }
                                         )
                                     }
                                 }
@@ -741,7 +744,7 @@ fun MainScreen(
                                             ?: todayHours.mapNotNull { it.seaTemperature }.takeIf { it.isNotEmpty() }?.average())
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
-                                        onAddSession = { showSessionLogEntry = true },
+                                        onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")
                                             boardOfTheDay(closest, viewModel.quiverBoards.collectAsState().value, idealSwellDirection)?.model else null,
                                         rating = calculateSlotRating(
