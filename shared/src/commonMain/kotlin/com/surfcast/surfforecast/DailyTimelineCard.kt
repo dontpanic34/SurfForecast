@@ -172,8 +172,22 @@ fun DailyTimelineCard(
                         val others = if (SkyGraphSettings.tideAll) info.extrema.filter { e -> dayTides.none { it.time == e.time } } else emptyList()
                         TideLine(dayTides, info.coefficient, onSurfaceColor, others)
                     }
+                    val coefNow = dailyTides[selectedDate]?.coefficient
+                    // Le coefficient a sa place ici, à droite de la ligne Motivation : hors du graphique, il ne peut gêner aucun repère.
+                    @Composable
+                    fun CoefBadge() {
+                        if (coefNow != null) {
+                            val dot = when { coefNow < 55 -> AppColors.WindLow; coefNow <= 80 -> AppColors.WindMid; else -> AppColors.WindHigh }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Canvas(modifier = Modifier.size(8.dp)) { drawCircle(dot, radius = size.minDimension / 2f) }
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Coef $coefNow", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1, softWrap = false)
+                            }
+                        }
+                    }
+                    if (motivationLabel == null) Row(modifier = Modifier.padding(top = 6.dp)) { CoefBadge() }
                     if (motivationLabel != null) {
-                        Row(modifier = Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.padding(top = 6.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text("Motivation", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.55f))
                             Spacer(modifier = Modifier.width(8.dp))
                             // Trois états visibles d'un coup : on touche celui qu'on veut (Flemme, Normal, Motivé).
@@ -189,6 +203,8 @@ fun DailyTimelineCard(
                                     )
                                 }
                             }
+                            Spacer(modifier = Modifier.weight(1f))
+                            CoefBadge()
                         }
                     }
                 }
@@ -419,12 +435,6 @@ private fun DailyTimelineBody(
                                 val tx = if (onRight) (c.x - 7.dp.toPx() - w).coerceAtLeast(2.dp.toPx()) else c.x + 7.dp.toPx()
                                 drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, tx, c.y + 3.dp.toPx())
                             }
-                        }
-                        // Le coefficient, à gauche de la courbe : point de couleur puis « Coef 94 ».
-                        if (coefValue != null) {
-                            val dot = when { coefValue < 55 -> AppColors.WindLow; coefValue <= 80 -> AppColors.WindMid; else -> AppColors.WindHigh }
-                            drawCircle(dot, radius = 3.dp.toPx(), center = Offset(5.dp.toPx(), 7.dp.toPx()))
-                            drawHaloTextAtBaseline(textMeasurer, "Coef $coefValue", tideStyle, tideHalo, 11.dp.toPx(), 10.dp.toPx())
                         }
                     }
                 }

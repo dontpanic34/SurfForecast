@@ -61,3 +61,35 @@ class DayPhraseTest {
         assertNull(tideStateWord(LocalTime(9, 0), null))
     }
 }
+
+/** Les étoiles (note « neutre ») ne dépendent ni du niveau, ni de la motivation, et un offshore vaut plus qu'un onshore. */
+class NeutralStarsTest {
+    private fun hour(h: Int, waveM: Double, windKmh: Int, windDir: String) = HourlyUiModel(
+        timeFormatted = "$h h", rawTime = LocalDateTime(2026, 10, 12, h, 0), waveHeight = waveM, wavePeriod = 12.0, waveDirection = 280f,
+        energyKj = calculateWaveEnergyReal(waveM, 12.0), windSpeedKmh = windKmh, windDirectionStr = windDir, weatherCode = 0,
+        temperature = 18, windWaveHeight = 0.0
+    )
+
+    private fun day(waveM: Double, wind: Int, dir: String) = (8..19).map { hour(it, waveM, wind, dir) }
+
+    @Test
+    fun starsDoNotMoveWithMotivation() {
+        val d = day(1.2, 15, "NO")
+        ToleranceSettings.mode = 0
+        val normal = dayQualityScore(d, 275, NEUTRAL_LEVEL, null)
+        ToleranceSettings.mode = 1
+        val motivated = dayQualityScore(d, 275, NEUTRAL_LEVEL, null)
+        ToleranceSettings.mode = -1
+        val lazy = dayQualityScore(d, 275, NEUTRAL_LEVEL, null)
+        ToleranceSettings.mode = 0
+        assertEquals(normal, motivated)
+        assertEquals(normal, lazy)
+    }
+
+    @Test
+    fun offshoreBeatsOnshoreAtTheSameSize() {
+        val offshore = dayQualityScore(day(1.2, 12, "E"), 275, NEUTRAL_LEVEL, null)!!
+        val onshore = dayQualityScore(day(1.2, 15, "NO"), 275, NEUTRAL_LEVEL, null)!!
+        kotlin.test.assertTrue(offshore > onshore, "offshore $offshore, onshore $onshore")
+    }
+}
