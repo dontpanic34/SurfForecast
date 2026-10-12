@@ -1,0 +1,31 @@
+<title>Couleurs de la notation</title>
+<style>
+/* Mise en page : l'échelle des six niveaux sur fond sombre et sur fond clair, pour trois choix de verts ; chaque ligne montre le libellé, la jauge à cinq segments et le trait d'un créneau de la semaine. */
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+h1{font-size:1.25rem;margin:0}h2{font-size:1rem;margin:14px 0 0;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.pal{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.box{border-radius:12px;padding:10px 12px}.dark{background:var(--card);color:var(--fg)}.light{background:#dfe9ee;color:#10222e}
+.row{display:flex;align-items:center;gap:8px;margin:5px 0}
+.lab{font-weight:800;width:92px;font-size:14px}
+.g{display:flex;gap:2px;width:70px}.g i{flex:1;height:4px;border-radius:2px;display:block}
+.bar{height:4px;width:34px;border-radius:2px}
+</style>
+<main>
+<h1>Couleurs de la notation</h1>
+<p class="mut sm">Parfait a sa propre couleur : un vert foncé. Très bon garde le vert vif. Reste à choisir celle de Bon. À gauche fond sombre (l'appli), à droite fond clair. Le libellé, la jauge et le trait d'un créneau de la semaine prennent la même couleur.</p>
+<div id="out"></div>
+</main>
+<script>
+var base={'Mauvais':'#9b1c31','Médiocre':'#e53935','Correct':'#ffd21f'};
+var opts=[
+ ['A · Bon en vert-jaune (lime)',{'Bon':['#9acd32','#6b9a12'],'Très bon':['#2bd47a','#14a35c'],'Parfait':['#0f8a52','#0b6b3f']}],
+ ['B · Bon en vert tendre',{'Bon':['#7bd88f','#3f9e57'],'Très bon':['#2bd47a','#14a35c'],'Parfait':['#0f8a52','#0b6b3f']}],
+ ['C · Bon en vert d\'eau',{'Bon':['#3fd0b0','#1a9c82'],'Très bon':['#2bd47a','#14a35c'],'Parfait':['#0f8a52','#0b6b3f']}]];
+var lv=[['Mauvais',1],['Médiocre',2],['Correct',3],['Bon',4],['Très bon',5],['Parfait',5]];
+function rows(o,dark){return lv.map(function(l){var c=base[l[0]]?[base[l[0]],base[l[0]]]:o[l[0]];var col=dark?c[0]:c[1];
+ var seg='';for(var i=1;i<=5;i++)seg+='<i style="background:'+(i<=l[1]?col:(dark?'#ffffff26':'#0000001f'))+'"></i>';
+ return '<div class="row"><span class="lab" style="color:'+col+'">'+l[0]+'</span><span class="g">'+seg+'</span><span class="bar" style="background:'+col+'"></span></div>'}).join('')}
+document.getElementById('out').innerHTML=opts.map(function(p){return '<h2>'+p[0]+'</h2><div class="pal"><div class="box dark">'+rows(p[1],true)+'</div><div class="box light">'+rows(p[1],false)+'</div></div>'}).join('')+'<h2>Ma recommandation</h2><p class="sm">A ou B : Bon doit se distinguer nettement de Très bon, et le vert foncé de Parfait doit rester lisible. Sur fond sombre, le vert foncé de Parfait est éclairci pour le texte (comme le vert sombre de Bon aujourd\'hui).</p>';
+</script>
