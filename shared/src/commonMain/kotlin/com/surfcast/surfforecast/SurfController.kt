@@ -668,6 +668,15 @@ class SurfController(
         runCatching { history.load() }.getOrDefault(emptyList())
 
     /** Conditions gardées pour un jour passé (journal de bord J-1/J-2), ou null. */
+    // « Tu as surfé ? » : le jour déjà traité (noté ou écarté), pour ne pas redemander.
+    var surfedAskDismissed by mutableStateOf(prefs.getString("surfed_ask_dismissed", "") ?: "")
+        private set
+
+    fun dismissSurfedAsk(date: LocalDate) {
+        surfedAskDismissed = date.toString()
+        prefs.putString("surfed_ask_dismissed", surfedAskDismissed)
+    }
+
     fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
         runCatching { history.conditionsFor(spotName, date) }.getOrNull()
 

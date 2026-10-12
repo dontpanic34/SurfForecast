@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +40,8 @@ fun NowTideCard(
     rating: SlotRating? = null,
     spotName: String = "",
     boardOfDay: String? = null,
+    // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
+    onAddSession: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = MaterialTheme.colorScheme
@@ -64,6 +67,13 @@ fun NowTideCard(
                 title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f),
                 maxLines = 1, modifier = Modifier.weight(1f)
             )
+            if (onAddSession != null) {
+                Text(
+                    "+ Session", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.primary,
+                    modifier = Modifier.padding(end = 6.dp).clip(RoundedCornerShape(50)).background(colors.primary.copy(alpha = 0.15f))
+                        .clickable(onClick = onAddSession).padding(horizontal = 9.dp, vertical = 2.dp)
+                )
+            }
             if (rating != null) {
                 val band = conditionBand(rating)
                 Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(band.color()).padding(horizontal = 8.dp, vertical = 2.dp)) {
