@@ -41,6 +41,9 @@ fun NowTideCard(
     // La note de l'heure, avec son libellé et sa tendance (null = pas de libellé).
     rating: SlotRating? = null,
     spotName: String = "",
+    // « mis à jour 17:20 ↻ » sous le titre ; toucher relance les prévisions.
+    updatedText: String = "",
+    onRefresh: (() -> Unit)? = null,
     boardOfDay: String? = null,
     // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
     onAddSession: (() -> Unit)? = null,
@@ -64,10 +67,15 @@ fun NowTideCard(
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f),
-                maxLines = 1, modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f), maxLines = 1)
+                if (updatedText.isNotEmpty()) {
+                    Text(
+                        "mis à jour $updatedText ↻", fontSize = 10.sp, color = colors.onSurface.copy(alpha = 0.45f), maxLines = 1,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).let { if (onRefresh != null) it.clickable(onClick = onRefresh) else it }
+                    )
+                }
+            }
             if (onAddSession != null) {
                 Text(
                     "+ Session", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.primary,
