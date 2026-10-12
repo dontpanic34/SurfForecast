@@ -58,7 +58,7 @@ input[type=number]{width:100%;padding:9px 10px;border-radius:10px;border:1px sol
    <details id="usec" hidden><summary class="row">Quand tu les sors <span id="usesum"></span></summary><div class="in" id="use"></div></details></div>
   <div class="card pad" id="today" style="margin-top:10px"></div>
   <p class="grp">Mon volume <button class="ibtn" id="vinfo" aria-expanded="false" aria-label="Comment ce volume est calculé">i</button></p>
-  <div class="card" id="vexp" hidden><div class="in" style="padding-top:14px"><p style="margin:0 0 8px;font-weight:800">Comment on l'a calculé</p><p style="margin:0 0 8px">Volume = poids × ratio de ton niveau × petites corrections.</p><ul style="margin:0 0 8px;padding-left:18px"><li><b>Ratio de ton niveau</b> (litres par kilo, shortboard) : débutant 0,66 · intermédiaire 0,48 · confirmé 0,41 · avancé 0,37 · expert 0,35.</li><li><b>Poids :</b> les surfeurs légers ont besoin de plus de litres par kilo, jusqu'à +20 % à 55 kg, rien à partir de 85 kg.</li><li><b>Âge :</b> aucune majoration jusqu'à 35 ans, puis un peu plus avec les années. Facultatif.</li><li><b>Fish, twin, groveler :</b> le shortboard + 1 à 4 L. <b>Mid-length :</b> 0,55 à 0,80 L par kilo. <b>Longboard :</b> 55 à 80 L et plus.</li></ul><p style="margin:0;color:var(--muted)">Vérifié sur les planches de pilotes pros de JS Industries (0,34 à 0,42 L/kg selon le poids). Une recommandation, pas une vérité : seul ton shaper connaît le bon volume pour toi. Le volume ne définit jamais ton niveau.</p></div></div>
+  <div class="card" id="vexp" hidden><div class="in" style="padding-top:14px"><p style="margin:0 0 8px;font-weight:800">Comment on l'a calculé</p><p style="margin:0 0 8px">Volume = poids × ratio de ton niveau × petites corrections.</p><ul style="margin:0 0 8px;padding-left:18px"><li><b>Ratio de ton niveau</b> (litres par kilo, shortboard) : débutant 0,66 · intermédiaire 0,48 · confirmé 0,41 · avancé 0,37 · expert 0,35.</li><li><b>Poids :</b> les surfeurs légers ont besoin de plus de litres par kilo, jusqu'à +20 % à 55 kg, rien à partir de 85 kg.</li><li><b>Âge :</b> aucune majoration jusqu'à 35 ans, puis un peu plus avec les années. Facultatif.</li><li><b>Fish, twin, groveler :</b> le shortboard + 1 à 2 L (mesuré sur les pilotes JS : environ +3 %). <b>Mid-length :</b> 0,55 à 0,80 L par kilo. <b>Longboard :</b> 55 à 80 L et plus.</li></ul><p style="margin:0;color:var(--muted)">Vérifié sur les planches de pilotes pros de JS Industries (0,34 à 0,42 L/kg selon le poids). Une recommandation, pas une vérité : seul ton shaper connaît le bon volume pour toi. Le volume ne définit jamais ton niveau.</p></div></div>
   <div class="card"><div class="pad hero" id="hero"></div>
    <details><summary class="row">Aller plus loin</summary><div class="in" id="more"></div></details></div>
   <p class="grp">Moi</p>
@@ -83,7 +83,7 @@ function lvl(){return +$('dlvl').value}
 function fr(v){return String(v).replace('.',',')}
 function name(k){return BO.filter(function(x){return x[0]===k})[0][1]}
 function range(k,w,a){var b=w*RATIO[lvl()]*wF(w)*aF(a)*1.05,lo=b*0.95,hi=b*1.05;
- if(k==='short')return[lo,hi];if(k==='fish')return[lo+1,hi+4];if(k==='mid')return[w*0.55,w*0.8];if(k==='long')return[55,80];return null}
+ if(k==='short')return[lo,hi];if(k==='fish')return[lo+1,hi+2];if(k==='mid')return[w*0.55,w*0.8];if(k==='long')return[55,80];return null}
 function fmt(k,r){return k==='long'?'55 à 80 L et plus':Math.round(r[0])+' à '+Math.round(r[1])+' L'}
 function X(v){return Math.max(0,Math.min(100,(v-15)/75*100))}
 function draw(){
