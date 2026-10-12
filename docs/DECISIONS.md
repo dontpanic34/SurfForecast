@@ -90,3 +90,15 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - Score : jamais affiché en clair. Seule la barre d'XP avec le nom du niveau ; le chiffre est dans un « i ». Validé par le propriétaire.
 - Compétitions : retirées (pas un indicateur de condition physique). Valable pour la maquette et pour l'appli.
 - Matériel : page courte, un seul chiffre de volume en gros ; pros, calcul et autres planches seulement derrière « Aller plus loin ». Taille du surfeur retirée. Ne jamais afficher une donnée qu'on ne connaît pas (âge non renseigné = rien d'affiché). Validé par le propriétaire.
+
+## Choix du propriétaire sur les maquettes à choisir (16 octobre 2026)
+- **Encarts de l'écran principal** : on retire les options d'affichage et d'ordre des Réglages. Tous les encarts restent sur la page d'accueil ; chacun peut être **réduit** (par exemple « Heure par heure » et « Vent et mer / clapot »). Par défaut tous sont ouverts.
+- **Réglages** : une seule page, **sans défilement**, mélange du cockpit et de la page unique. Le niveau avec le style de la page unique (barre d'XP plus jolie, volume écrit). La phrase « Pour passer Expert : tes manœuvres » est retirée de cette carte.
+- **Étoiles** : on garde la semaine, proposition C (barre colorée), mais la barre n'est **pas dégradée** : trois segments (matin, midi, après-midi) qui montrent la tendance, colorés selon le niveau.
+- **Encart Maintenant** : tuiles (proposition B) réduites en taille, **sans titres** (« Houle », « Vent », « Marée »), pas de mot « Marée descendante » : pour la marée, une phrase du genre « prochaine marée » avec l'heure et la flèche.
+- **Vent** : proposition A (rafales : zone grise derrière la courbe ; mots et couleurs : offshore, side-off, side, side-on, onshore).
+- **Houle secondaire** : dessous, en plus petit. Orientation écrite en lettres (OSO), les degrés sous la flèche, la puissance en kJ en dessous ; pareil pour la secondaire.
+- **Matériel** : « Quand tu les sors » en grille. Planche du jour : à discuter (ne pas prendre de place à l'écran).
+- **Tolérance aux conditions** : un interrupteur ; où le mettre reste à discuter. Peu d'infos sur l'accueil.
+- **Comparer les niveaux** : l'échelle ; en touchant une marche, ce qui est acquis (plus gros, en gras) et ce qui manque (plus petit).
+- **Badges** : proposition B (« Petit jour » / « Gros jour »).
