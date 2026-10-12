@@ -51,7 +51,7 @@ fun NowTideCard(
     val speed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyModel), windUnit)
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val title = buildString {
-        append("Maintenant")
+        append("Actuellement")
         append(" · ").append(hourlyModel.rawTime.hour).append(" h")
     }
 
@@ -77,9 +77,8 @@ fun NowTideCard(
             }
             if (rating != null) {
                 val band = conditionBand(rating)
-                Box(modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(band.color()).padding(horizontal = 8.dp, vertical = 2.dp)) {
-                    Text(bandLabelWithTrend(rating).uppercase(), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = band.onColor(), maxLines = 1)
-                }
+                // Le libellé de la note, sans fond : juste le mot, dans la couleur de la note (comme dans le déroulé).
+                Text(bandLabelWithTrend(rating), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = band.textColor(), maxLines = 1)
             }
         }
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)

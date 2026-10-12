@@ -133,7 +133,7 @@ fun BoardConditionChips(boardId: Long) {
 @Composable
 fun BoardDayModeChooser() {
     val colors = MaterialTheme.colorScheme
-    val modes = listOf("header" to "En-tête", "now" to "Ligne Maintenant", "both" to "Les deux", "none" to "Aucune")
+    val modes = listOf("header" to "En-tête", "now" to "Ligne Actuellement", "both" to "Les deux", "none" to "Aucune")
     Text("Planche du jour", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
     Text("Où afficher la planche conseillée d'après tes conditions", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.7f))
     PillChoices(modes.map { it.second }, modes.first { it.first == GearPrefs.boardDayMode }.second) { label ->
