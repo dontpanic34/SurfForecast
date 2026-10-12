@@ -37,7 +37,7 @@ private val STEPS: List<Step> = listOf(
         listOf("J'y vais, c'est l'occasion de progresser", "J'hésite : j'y vais si c'est accessible et que je suis en forme", "Je reste au sec")),
     Step("tol3", SEC_PREFS, "Ça souffle onshore, ou c'est dur physiquement…", "",
         listOf("Je me débrouille, il y a toujours des bouts à prendre", "Je tente un peu, puis je vois", "Je préfère rester au sec")),
-    Step("what", SEC_LEVEL, "Tu surfes…", "", listOf("La mousse", "La réforme", "Le large")),
+    Step("what", SEC_LEVEL, "Tu surfes…", "", listOf("La mousse", "La reforme", "Le large")),
     Step("barre", SEC_LEVEL, "Jusqu'à quelle hauteur de vague tu passes la barre ?", options = listOf(
         "Je ne passe pas encore la barre", "Vagues jusqu'aux genoux (environ 0,5 m)", "Vagues jusqu'à la taille (environ 0,8 m)", "Vagues jusqu'à la poitrine (environ 1,2 m)", "Vagues jusqu'à la tête (environ 1,5 m)", "Vagues plus hautes que la tête (environ 2 m)")),
     Step("tk", SEC_LEVEL, "Définis ton take-off", options = listOf(
@@ -63,15 +63,24 @@ private val STEPS: List<Step> = listOf(
         "Je me déplace pour suivre les conditions, si ça vaut le coup", "Je pars à l'étranger chercher les vagues (surf trips)"), multi = true)
 )
 
+/** Définition et « ce que tu cherches », une par tranche (Débutant, Débutant +, Intermédiaire, …, Expert). */
 private val LEVEL_DEFINITIONS = listOf(
-    "Tu surfes la mousse (ou les réformes). Ton take-off est à travailler ou se fait en plusieurs temps. Tu ne passes pas la barre, ou seulement quand c'est tout petit." to
+    "Tu surfes la mousse (ou les reformes). Ton take-off est à travailler ou se fait en plusieurs temps. Tu ne passes pas la barre, ou seulement quand c'est tout petit." to
         "Te lever, et garder la mousse le plus longtemps possible.",
+    "Tu surfes la mousse (ou les reformes) et ton take-off est sûr, en un seul temps. Tu as envie d'aller vers la vague : tu regardes les petits jours, avec du monde autour pour te rassurer." to
+        "Passer de la mousse à la vague.",
     "Tu passes la barre quand c'est accessible et tu surfes l'épaule. Tu te lèves souvent sur la vague. Tu te places en fonction des autres : le monde te rassure. Le pic t'impressionne." to
         "Réussir tes take-offs sur la vague.",
+    "Tu surfes l'épaule avec des take-offs de plus en plus réguliers. Tu commences à te placer tout seul vers le pic, même si tu préfères encore qu'il y ait du monde." to
+        "Te lever à chaque vague, et te placer seul.",
     "Tu es autonome : tu localises une vague même s'il n'y a personne. Ton take-off est solide, tu passes la barre sans souci et la rame suit." to
         "Suivre la vague le plus longtemps possible.",
+    "Tu enchaînes les vagues et tu gères ton rythme sur la vague : tu reprends de la vitesse si elle devient molle, tu fais un cutback si tu t'éloignes trop, tu sais attendre un peu quand il faut." to
+        "Rester en rythme avec la vague, en gérant tes replacements.",
     "Tu cherches la taille où tu peux faire de vraies manœuvres et l'endroit critique de la vague. Tu sais faire des manœuvres de pro, mais pas de façon régulière : il te reste une marge de progression avant de les considérer acquises." to
         "Exprimer tes manœuvres, t'améliorer, être plus critique.",
+    "Ton mouvement est bon sur tes manœuvres de pro ; il te reste quelques détails à régler pour replaquer à chaque fois." to
+        "Rendre tes manœuvres régulières, avec puissance et style.",
     "Toutes les manœuvres sont acquises : tu les perfectionnes. Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c'est pourri : tu trouves le bon créneau et tu tiens le courant à la rame." to
         "Perfectionner des manœuvres que tu maîtrises déjà."
 )
@@ -166,7 +175,7 @@ fun LevelQuestionnaire(
 
     if (finished) {
         val result = computeLevel(answers, shift)
-        val level = LEVEL_DEFINITIONS[result.level]
+        val level = LEVEL_DEFINITIONS[result.bandIndex]
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Ton niveau", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurfaceVariant, letterSpacing = 0.8.sp)
             Column(
