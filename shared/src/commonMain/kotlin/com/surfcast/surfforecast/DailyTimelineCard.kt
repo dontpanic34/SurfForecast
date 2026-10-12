@@ -90,7 +90,9 @@ fun DailyTimelineCard(
     modifier: Modifier = Modifier,
     // Motivation du jour (« Prudent » / « Normal » / « Motivé »), un tap la change ; null = pas de réglage affiché.
     motivationLabel: String? = null,
-    onMotivationSelect: (Int) -> Unit = {}
+    onMotivationSelect: (Int) -> Unit = {},
+    // La planche conseillée pour une heure (d'après les réponses du matériel) ; null = pas d'affichage.
+    boardOf: ((HourlyUiModel) -> String?)? = null
 ) {
     if (groupedByDate.isEmpty()) return
 
@@ -129,13 +131,13 @@ fun DailyTimelineCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Box {
-        CollapseChevron(isCollapsed, onToggleCollapse, modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp))
+        Row(modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp)) { CardInfoButton("day"); CollapseChevron(isCollapsed, onToggleCollapse) }
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
             if (selectedIndex in ratings.indices) {
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
                 val level = gaugeLevel(shownRating)
-                Column(modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 30.dp, top = 2.dp, bottom = 2.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 60.dp, top = 2.dp, bottom = 2.dp)) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -150,6 +152,10 @@ fun DailyTimelineCard(
                             bandLabelWithTrend(shownRating), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
                             color = shownBand.textColor(), maxLines = 1
                         )
+                        val board = curveHours.getOrNull(selectedIndex)?.let { boardOf?.invoke(it) }
+                        if (board != null) {
+                            Text("Planche : $board", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+                        }
                         if (shownRating.why.isNotBlank()) {
                             Text(
                                 shownRating.why, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,

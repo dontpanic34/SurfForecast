@@ -50,7 +50,10 @@ fun CardControlsRow(
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
     // Une ligne qui résume l'encart quand il est réduit (ex. « 1,3 m · 12 s · ONO 287° »).
-    summary: String? = null
+    summary: String? = null,
+    // Clé de la visite guidée de l'encart (le petit « i ») et un bloc facultatif à droite du titre.
+    guide: String? = null,
+    trailing: (@Composable () -> Unit)? = null
 ) {
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxWidth().clickable(onClick = onToggleCollapse).padding(horizontal = 4.dp, vertical = 4.dp)) {
@@ -65,6 +68,8 @@ fun CardControlsRow(
             maxLines = 1,
             modifier = Modifier.weight(1f)
         )
+        if (trailing != null) trailing()
+        if (guide != null) CardInfoButton(guide)
         CollapseChevron(isCollapsed, onToggleCollapse)
     }
     if (isCollapsed && summary != null) {

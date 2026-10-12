@@ -168,8 +168,6 @@ fun MainScreen(
             onMoveCardDown = { viewModel.moveCardDown(it) },
             displaySize = viewModel.displaySize,
             onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
-            starsOffset = viewModel.starsOffset,
-            onStarsOffsetChanged = { viewModel.changeStarsOffset(it) },
             weeklyDensity = viewModel.weeklyDensity,
             onWeeklyDensityChanged = { viewModel.changeWeeklyDensity(it) },
             weeklyWindMode = viewModel.weeklyWindMode,
@@ -692,6 +690,13 @@ fun MainScreen(
                                     val dailyTide = state.dailyTides[date]
 
                                     item {
+                                        CompositionLocalProvider(
+                                            LocalCardSettings provides CardSettingsControl(
+                                                windUnit = viewModel.windUnit, onWindUnit = { viewModel.changeWindUnit(it) },
+                                                weeklyWindMode = viewModel.weeklyWindMode, onWeeklyWindMode = { viewModel.changeWeeklyWindMode(it) },
+                                                weeklyDensity = viewModel.weeklyDensity, onWeeklyDensity = { viewModel.changeWeeklyDensity(it) }
+                                            )
+                                        ) {
                                         DynamicCardsSection(
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
@@ -727,6 +732,7 @@ fun MainScreen(
                                             coachTargets = coachTargets,
                                             onOpenWeatherDetail = { navScope.launch { mainListState.scrollToItem(0); showWeatherDetail = true } }
                                         )
+                                        }
                                     }
                                 }
                             }
@@ -781,7 +787,7 @@ fun MainScreen(
                 steps = listOf(
                     CoachStep(
                         "weekCard", "★ Étoiles et couleurs",
-                        "Les étoiles sont les mêmes pour tous. Les segments de couleur suivent ton profil."
+                        "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⓘ de chaque encart : il t'explique tout."
                     ),
                     CoachStep(
                         "settings", "⚙️ Ton profil",
@@ -953,6 +959,7 @@ fun DynamicCardsSection(
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
     onOpenWeatherDetail: (() -> Unit)? = null
 ) {
+    val boardsForBar by viewModel.quiverBoards.collectAsState()
     // currentHour en clé : à chaque changement d'heure (ou rechargement), la sélection
     // revient sur l'heure actuelle au lieu de rester figée sur celle du chargement.
     val initialSelectedHour = remember(hoursForSelectedDay, isToday, currentHour) {
@@ -1101,6 +1108,7 @@ fun DynamicCardsSection(
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                 dragHandleModifier = dragMod,
                                 modifier = Modifier.fillMaxWidth(),
+                                boardOf = if (GearPrefs.boardDayMode == "none") null else { h -> boardOfTheDay(h, boardsForBar, idealSwellDirection)?.model },
                                 motivationLabel = ToleranceSettings.label(viewModel.toleranceMode),
                                 onMotivationSelect = { viewModel.setTolerance(it) }
                             )
@@ -1145,7 +1153,8 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    beachFacing = idealSwellDirection
                                 )
                             }
                         }
@@ -1175,7 +1184,7 @@ fun DynamicCardsSection(
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)) {
                                     CardControlsRow(
-                                        title = "Prévision heure par heure",
+                                        title = "Prévision heure par heure", guide = "hourly",
                                         isCollapsed = isCollapsed,
                                         onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                         dragHandleModifier = dragMod,
