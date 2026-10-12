@@ -20,35 +20,41 @@ class DayPhraseTest {
         assertNull(dayPhraseFor(emptyList(), null, beachFacing))
     }
 
+    private fun day(vararg hs: HourlyUiModel) = dayPhraseFor(hs.toList(), null, beachFacing)!!
+
     @Test
-    fun swellLineGivesTheRangeOfTheDay() {
-        val p = dayPhraseFor(listOf(hour(9, 1.0, 5, "E"), hour(15, 1.4, 5, "E")), null, beachFacing)!!
-        assertEquals("1,0 m à 1,4 m, 10 s.", p.swell)
+    fun lineSaysSwellThenWindMorningThenAfternoon() {
+        val p = day(hour(9, 0.7, 10, "SO"), hour(11, 0.7, 10, "SO"), hour(14, 1.3, 20, "O"), hour(17, 1.3, 20, "O"))
+        assertEquals("0,7 m → 1,3 m · side-on modéré → onshore soutenu", p.line)
     }
 
     @Test
-    fun periodIsARangeOnlyWhenItReallyChanges() {
-        fun h(hh: Int, period: Double) = hour(hh, 1.0, 5, "E").copy(wavePeriod = period)
-        assertEquals("1,0 m, période de 8 à 14 s.", dayPhraseFor(listOf(h(9, 8.0), h(15, 14.0)), null, beachFacing)!!.swell)
-        assertEquals("1,0 m, 8 s.", dayPhraseFor(listOf(h(9, 8.0), h(15, 9.0)), null, beachFacing)!!.swell)
+    fun sameHalvesAreSaidOnce() {
+        val p = day(hour(9, 1.0, 10, "E"), hour(14, 1.0, 10, "E"))
+        assertEquals("1,0 m · offshore modéré", p.line)
     }
 
     @Test
-    fun offshoreAllDayGettingStrongerSaysSo() {
-        val hours = listOf(hour(9, 1.0, 6, "E"), hour(11, 1.0, 8, "E"), hour(14, 1.0, 16, "E"), hour(17, 1.0, 18, "E"))
-        assertEquals("Offshore soutenu toute la journée, plus fort l'après-midi.", dayPhraseFor(hours, null, beachFacing)!!.wind)
+    fun windThatTurnsOnshoreSpoilsTheAfternoon() {
+        val p = day(hour(9, 1.3, 8, "E"), hour(11, 1.3, 8, "E"), hour(14, 1.3, 20, "O"), hour(17, 1.3, 20, "O"))
+        assertEquals("Le vent gâte l'après-midi", p.title)
     }
 
     @Test
-    fun windThatTurnsIsNamedMorningThenAfternoon() {
-        val hours = listOf(hour(9, 1.0, 10, "E"), hour(11, 1.0, 10, "E"), hour(14, 1.0, 14, "O"), hour(17, 1.0, 14, "O"))
-        assertEquals("Offshore modéré le matin, onshore modéré l'après-midi.", dayPhraseFor(hours, null, beachFacing)!!.wind)
+    fun windThatFallsMakesTheAfternoonBetter() {
+        val p = day(hour(9, 1.3, 20, "O"), hour(11, 1.3, 20, "O"), hour(14, 1.3, 8, "E"), hour(17, 1.3, 8, "E"))
+        assertEquals("Mieux l'après-midi", p.title)
     }
 
     @Test
-    fun titleIsTheBestHourPhrase() {
-        val p = dayPhraseFor(listOf(hour(12, 1.0, 5, "E")), SlotRating(score = 80, tooBig = false, why = "Bonne taille, vent propre"), beachFacing)!!
-        assertEquals("Bonne taille, vent propre", p.title)
+    fun cleanDayIsSaidClean() {
+        val p = day(hour(9, 1.0, 6, "E"), hour(14, 1.0, 6, "E")).copy(title = day(hour(9, 1.2, 6, "E"), hour(14, 1.2, 6, "E")).title)
+        assertEquals("Journée propre", p.title)
+    }
+
+    @Test
+    fun noWindIsSaidSo() {
+        assertEquals("1,3 m · pas de vent", day(hour(9, 1.3, 1, "E"), hour(14, 1.3, 1, "E")).line)
     }
 
     @Test

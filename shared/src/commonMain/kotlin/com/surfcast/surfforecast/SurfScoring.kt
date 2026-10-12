@@ -425,7 +425,7 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, wi
     ConditionKind.CHALLENGING -> when (windCategory) {
         "offshore" -> "Creux et puissant"
         "onshore" -> "Gros, accessible"
-        else -> "Gros, vent de côté"
+        else -> "Gros, vent de travers"
     }
     ConditionKind.NORMAL -> {
         // (nom, facteur, seuil « un peu », seuil « fort ») : le vent suit la règle du vent, les autres facteurs 0,85 / 0,55.
@@ -446,7 +446,7 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, wi
                 "gusts" -> if (strong) "Rafales fortes" else "Des rafales gênent"
                 "chop" -> if (strong) "Beaucoup de clapot" else "Un peu de clapot"
                 "period" -> if (strong) "Houle trop courte" else "Houle un peu courte"
-                else -> "Houle de biais"
+                else -> "Houle de travers"
             }
         }
     }

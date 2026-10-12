@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Résumé de la journée (Semaine)** (état : en ligne dès publication sur `web`) : un verdict en titre (« Le vent gâte l'après-midi », « Mieux le matin », « Mieux l'après-midi », « Journée propre », « Venté toute la journée », « Petit mais propre », etc.), puis une ligne « houle matin → après-midi · vent matin → après-midi ». Vocabulaire : « venté » (pas ventilé), « vent de travers » (pas de côté), « houle de travers » (pas de biais). Priorité : trop gros, taille, vent qui change de camp, limite (rafales, clapot, période, travers), propre.
 - **Résumé de la journée : solution B choisie** (verdict en titre, puis une ligne houle et vent matin / après-midi). Maquette `resume-journee-catalogue.html` : tous les cas possibles. En attente de validation, pas de code.
 - **Maquette** `resume-journee.html` : résumé de la journée de l'encart Semaine (matin / après-midi, houle et vent), 3 propositions. En attente de choix, pas de code. Aussi publié : jauge 1 à 5 du déroulé supprimée.
 - **Déroulé de la journée : jauge 1 à 5 supprimée** (état : en ligne dès publication sur `web`). L'en-tête montre l'heure et le libellé, et la phrase (« Taille un peu juste »…) passe sur sa propre ligne dessous.
