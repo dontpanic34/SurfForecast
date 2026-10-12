@@ -201,7 +201,7 @@ fun isCustomLevel(level: String) = level.startsWith(SurfProfile.CUSTOM_PREFIX)
  */
 object ToleranceSettings {
     var mode by mutableIntStateOf(0)
-    fun label(m: Int = mode) = when (m) { -1 -> "Prudent"; 1 -> "Motivé"; else -> "Normal" }
+    fun label(m: Int = mode) = when (m) { -1 -> "Flemme"; 1 -> "Motivé"; else -> "Normal" }
     fun next(m: Int = mode) = when (m) { 0 -> 1; 1 -> -1; else -> 0 }
 }
 

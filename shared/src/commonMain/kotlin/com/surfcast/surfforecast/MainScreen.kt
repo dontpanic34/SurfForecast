@@ -1102,7 +1102,7 @@ fun DynamicCardsSection(
                                 dragHandleModifier = dragMod,
                                 modifier = Modifier.fillMaxWidth(),
                                 motivationLabel = ToleranceSettings.label(viewModel.toleranceMode),
-                                onMotivationClick = { viewModel.cycleTolerance() }
+                                onMotivationSelect = { viewModel.setTolerance(it) }
                             )
                         }
                         "surf" -> {

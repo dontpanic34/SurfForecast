@@ -90,7 +90,7 @@ fun DailyTimelineCard(
     modifier: Modifier = Modifier,
     // Motivation du jour (« Prudent » / « Normal » / « Motivé »), un tap la change ; null = pas de réglage affiché.
     motivationLabel: String? = null,
-    onMotivationClick: () -> Unit = {}
+    onMotivationSelect: (Int) -> Unit = {}
 ) {
     if (groupedByDate.isEmpty()) return
 
@@ -176,13 +176,19 @@ fun DailyTimelineCard(
                         Row(modifier = Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("Motivation", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.55f))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                motivationLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                    .clickable(onClick = onMotivationClick).padding(horizontal = 10.dp, vertical = 3.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("règle la couleur des heures", fontSize = 10.5.sp, color = onSurfaceColor.copy(alpha = 0.5f), maxLines = 1)
+                            // Trois états visibles d'un coup : on touche celui qu'on veut (Flemme, Normal, Motivé).
+                            Row(modifier = Modifier.clip(RoundedCornerShape(50)).background(onSurfaceColor.copy(alpha = 0.08f)).padding(2.dp)) {
+                                listOf(-1, 0, 1).forEach { m ->
+                                    val on = ToleranceSettings.label(m) == motivationLabel
+                                    Text(
+                                        ToleranceSettings.label(m), fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                        color = if (on) MaterialTheme.colorScheme.onPrimary else onSurfaceColor.copy(alpha = 0.7f),
+                                        modifier = Modifier.clip(RoundedCornerShape(50))
+                                            .background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                            .clickable { onMotivationSelect(m) }.padding(horizontal = 10.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -406,7 +412,13 @@ private fun DailyTimelineBody(
                             val txt = (m.hour.toInt()).toString() + ":" + (((m.hour - m.hour.toInt()) * 60).roundToInt().coerceAtMost(59)).toString().padStart(2, '0')
                             val w = textMeasurer.measure(txt, tideStyle).size.width.toFloat()
                             if (m.high) drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, (c.x - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx()), c.y - 7.dp.toPx())
-                            else drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, c.x + 7.dp.toPx(), c.y + 3.dp.toPx())
+                            else {
+                                // L'horaire d'une basse mer se met du côté où le point de l'heure choisie ne passe pas.
+                                val dotX = if (selH != null) xOf(selH) else null
+                                val onRight = dotX != null && dotX >= c.x - 6.dp.toPx() && dotX <= c.x + w + 14.dp.toPx()
+                                val tx = if (onRight) (c.x - 7.dp.toPx() - w).coerceAtLeast(2.dp.toPx()) else c.x + 7.dp.toPx()
+                                drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, tx, c.y + 3.dp.toPx())
+                            }
                         }
                         // Le coefficient, à gauche de la courbe : point de couleur puis « Coef 94 ».
                         if (coefValue != null) {
@@ -620,7 +632,8 @@ private fun DailyCurveCanvas(
             fun haloText(text: String, cx: Float, topY: Float, sp: Float, weight: FontWeight, color: Color, outline: Color) {
                 val style = TextStyle(color = color, fontSize = sp.sp, fontWeight = weight)
                 val layout = textMeasurer.measure(text, style)
-                val x = (cx - layout.size.width / 2f).coerceIn(2.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
+                // Jamais sur les graduations de gauche (1,5 / 1 / 0,5) : le texte se décale à droite, le point reste visible.
+                val x = (cx - layout.size.width / 2f).coerceIn(38.dp.toPx(), size.width - layout.size.width - 2.dp.toPx())
                 drawHaloTextAtBaseline(textMeasurer, text, style, outline, x, topY + layout.firstBaseline)
             }
             // Même style que la vue semaine (heightTextPaint / periodTextPaint) : blanc avec contour sombre, dans les deux thèmes.

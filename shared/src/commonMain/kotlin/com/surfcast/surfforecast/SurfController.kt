@@ -585,6 +585,12 @@ class SurfController(
     )
         private set
 
+    fun setTolerance(mode: Int) {
+        toleranceMode = mode.coerceIn(-1, 1)
+        ToleranceSettings.mode = toleranceMode
+        prefs.putInt("tolerance_mode_v1", toleranceMode)
+    }
+
     fun cycleTolerance() {
         toleranceMode = ToleranceSettings.next(toleranceMode)
         ToleranceSettings.mode = toleranceMode
