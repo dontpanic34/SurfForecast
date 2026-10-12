@@ -1,0 +1,67 @@
+<title>Étoiles et vent</title>
+<style>
+/* Mise en page : un simulateur d'heure (curseurs houle, période, vent, direction) qui compare l'ancienne note et la nouvelle, puis la semaine type avant / après. Fond sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;--sel:#2c5a70;--g:#2bd47a;--y:#ffd21f;--o:#ff9a1f;--r:#ff5a55;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+h1{font-size:1.25rem;margin:0}h2{font-size:1rem;margin:16px 0 0;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:10px 12px}
+label{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:8px}label b{color:var(--fg)}
+input[type=range]{width:100%;accent-color:#5aa6cc}select{background:var(--tile);color:var(--fg);border:0;border-radius:8px;padding:6px 8px;width:100%;margin-top:4px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.box{background:var(--tile);border-radius:10px;padding:8px 10px;text-align:center}.box small{display:block;color:var(--mut);font-size:11px}.box b{font-size:22px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 4px;text-align:center;border-bottom:1px solid #243846}th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600;font-size:11px}
+.up{color:var(--g);font-weight:800}.down{color:var(--r);font-weight:800}
+</style>
+<main>
+<h1>Étoiles et vent</h1>
+<p class="mut sm">Le mélange de A et B, plus un nouveau point : un offshore fort aplatit une petite houle. Les chiffres ci-dessous sont calculés par un simulateur qui reprend les courbes de l'appli ; les valeurs de la semaine sont estimées d'après tes captures.</p>
+
+<h2>Le simulateur d'une heure</h2>
+<div class="card">
+<label>Houle <b id="hv"></b></label><input id="h" type="range" min="0.2" max="2.5" step="0.1" value="0.7">
+<label>Période <b id="tv"></b></label><input id="t" type="range" min="6" max="16" step="1" value="10">
+<label>Vent ressenti <b id="wv"></b></label><input id="w" type="range" min="0" max="40" step="1" value="22">
+<label>Direction</label><select id="c"><option value="offshore" selected>Offshore</option><option value="side-off">Side-off</option><option value="side">Sideshore</option><option value="side-on">Side-on</option><option value="onshore">Onshore</option></select>
+<div class="cmp"><div class="box"><small>Avant</small><b id="b1"></b><small id="s1"></small></div><div class="box"><small>Après</small><b id="b2"></b><small id="s2"></small></div></div>
+<p class="sm mut" style="margin-top:8px" id="why"></p></div>
+
+<h2>La semaine type, avant et après</h2>
+<div class="card"><table><thead><tr><th>Jour</th><th>Vent</th><th>Avant</th><th>Après</th></tr></thead><tbody id="days"></tbody></table>
+<p class="sm mut" style="margin-top:8px">Le jour = 60 % le meilleur créneau + 40 % la moyenne de toutes les heures de jour. Étoiles : 30 ou moins = 0,5 ★, 100 = 5 ★.</p></div>
+
+<h2>Ce que contient le mélange</h2>
+<div class="card"><p class="sm"><b>A (jour)</b> : le jour ne se juge plus sur ses seules meilleures heures. <b>B (onshore)</b> : l'onshore pèse davantage (10 km/h : 0,65 au lieu de 0,82 ; 14 km/h : 0,45 au lieu de 0,62). <b>Nouveau</b> : un offshore d'environ 20 km/h sur une houle de 0,4 m donne un plan d'eau presque plat, donc la note s'effondre ; la même force de vent sur 1,2 m ne change rien.</p></div>
+</main>
+<script>
+function interp(x,p){if(x<=p[0][0])return p[0][1];for(var i=1;i<p.length;i++){if(x<=p[i][0]){var a=p[i-1],b=p[i];return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0])}}return p[p.length-1][1]}
+var OFF=[[0,1],[15,1],[25,.75],[35,.45],[45,.25],[55,.15]],CROSS=[[0,1],[12,1],[18,.88],[24,.65],[32,.4],[45,.15]];
+var ON_OLD=[[0,1],[6,.95],[10,.82],[14,.62],[20,.4],[30,.15],[40,0]],ON_NEW=[[0,1],[6,.85],[10,.65],[14,.45],[20,.25],[30,.1],[40,0]];
+function fit(H,T){var e=1.962*H*H*T*T;if(e<100)return .6*e/100;if(e<250)return .6+.4*(e-100)/150;return 1}
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
+function windF(H,w,c,onCurve){var d=clamp(Math.pow(H,.9),.8,1.6),k=w/d;if(c==='onshore')return interp(k,onCurve);var sw=c==='side-off'?.9:c==='side-on'?1.1:1;return interp(k*sw,c==='offshore'?OFF:CROSS)}
+function flat(H,w,c){if(c!=='offshore'&&c!=='side-off')return 1;var k=clamp((w-8)/14,0,1)*clamp((1.2-H)/.8,0,1)*(c==='side-off'?.5:1);return Math.max(.15,1-k)}
+function oldScore(H,T,w,c){return Math.round(100*fit(H,T)*windF(H,w,c,ON_OLD))}
+function newScore(H,T,w,c){return Math.round(100*fit(H,T)*windF(H,w,c,ON_NEW)*flat(H,w,c))}
+function stars(s){var v=clamp(s,0,100),r=.5+Math.max(v-30,0)/70*4.5;return clamp(Math.round(r*2)/2,.5,5)}
+function fmt(x){return String(x).replace('.',',')}
+function dayScore(hs,f,mix){var sc=hs.map(function(h){return f(h)}),m=[],a=[];hs.forEach(function(h,i){(h[5]<13?m:a).push(sc[i])});
+ function best(arr){var b=0;for(var i=0;i+2<arr.length+0;i++){var s=(arr[i]+arr[i+1]+arr[i+2])/3;if(s>b)b=s}return arr.length<3?Math.max.apply(null,arr.concat([0])):b}
+ var bw=(best(m)+best(a))/2;if(!mix)return Math.round(bw);var mean=sc.reduce(function(x,y){return x+y},0)/sc.length;return Math.round(.6*bw+.4*mean)}
+function sim(){var H=+h.value,T=+t.value,W=+w.value,C=c.value;hv.textContent=fmt(H)+' m';tv.textContent=T+' s';wv.textContent=W+' km/h';
+ var o=oldScore(H,T,W,C),n=newScore(H,T,W,C);b1.textContent=o;s1.textContent=fmt(stars(o))+' ★';b2.textContent=n;s2.textContent=fmt(stars(n))+' ★';
+ why.textContent=n<o-5?'La nouvelle note baisse : '+(C==='onshore'?'l\\u2019onshore pèse plus.':'le vent aplatit la houle.'):'La note reste proche.'}
+['h','t','w','c'].forEach(function(id){document.getElementById(id).addEventListener('input',sim)});sim();
+function mk(n,hrs){return hrs.map(function(x,i){return [x[0],x[1],x[2],x[3],0,8+i]})}
+// [houle m, période s, vent km/h, catégorie, -, heure]
+var DAYS=[
+ ['Aujourd\\u2019hui','onshore 15',[[.7,11,9,'onshore'],[.7,11,12,'onshore'],[.8,11,14,'onshore'],[.9,12,15,'onshore'],[1.0,12,16,'onshore'],[1.1,13,16,'onshore'],[1.2,13,15,'onshore'],[1.2,13,15,'onshore'],[1.3,13,14,'onshore'],[1.3,13,13,'onshore'],[1.3,14,12,'onshore']]],
+ ['Mardi','onshore 13-15',[[1.3,12,11,'onshore'],[1.3,12,12,'onshore'],[1.3,12,13,'onshore'],[1.3,12,13,'onshore'],[1.3,12,13,'onshore'],[1.2,12,13,'onshore'],[1.1,12,15,'onshore'],[1.1,12,14,'onshore'],[1.1,12,15,'onshore'],[1.1,12,15,'onshore'],[1.1,12,13,'onshore']]],
+ ['Mercredi','offshore 10',[[1.0,11,9,'offshore'],[1.0,11,10,'offshore'],[1.0,11,10,'offshore'],[1.0,11,11,'offshore'],[1.0,11,11,'offshore'],[.9,11,11,'offshore'],[.9,11,10,'offshore'],[.9,11,10,'offshore'],[.9,11,10,'offshore'],[.9,11,10,'offshore'],[.9,11,9,'offshore']]],
+ ['Jeudi','offshore 15',[[1.4,13,14,'offshore'],[1.4,13,15,'offshore'],[1.4,13,15,'offshore'],[1.4,13,16,'offshore'],[1.4,13,16,'offshore'],[1.3,13,16,'offshore'],[1.3,13,16,'offshore'],[1.3,13,16,'offshore'],[1.3,13,17,'offshore'],[1.3,13,17,'offshore'],[1.3,13,16,'offshore']]],
+ ['Petit, offshore fort','offshore 22',[[.7,10,18,'offshore'],[.7,10,20,'offshore'],[.7,10,22,'offshore'],[.7,10,22,'offshore'],[.7,10,23,'offshore'],[.7,10,23,'offshore'],[.7,10,22,'offshore'],[.7,10,22,'offshore'],[.7,10,21,'offshore'],[.7,10,20,'offshore'],[.7,10,19,'offshore']]]
+];
+document.getElementById('days').innerHTML=DAYS.map(function(d){var hrs=mk(d[0],d[2]);
+ var o=dayScore(hrs,function(x){return oldScore(x[0],x[1],x[2],x[3])},false),n=dayScore(hrs,function(x){return newScore(x[0],x[1],x[2],x[3])},true);
+ var so=stars(o),sn=stars(n),cls=sn<so?'down':sn>so?'up':'';
+ return '<tr><td>'+d[0]+'</td><td class="mut">'+d[1]+'</td><td>'+fmt(so)+' ★</td><td class="'+cls+'">'+fmt(sn)+' ★</td></tr>'}).join('');
+</script>
