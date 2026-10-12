@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Maquette** `semaine-complete.html` : l'encart Semaine avec verdict en parlé (ça grossit / ça tombe / c'est stable, ça tourne onshore / offshore, glassy, venté seulement pour un onshore soutenu, « Flat, va pêcher ! » sous 0,4 m, « Massif, sors le jet ! » à partir de 3 m), couleurs du vent par direction, 10 jours types calculés. En attente de validation, pas de code.
 - **Maquette** `titres-semaine.html` : couleurs du vent par direction (jaune jusqu'à 45° de l'offshore, orange de 45° à 100°, rouge au-delà ; la force ne compte plus) et tous les titres de l'encart Semaine avec le vent dans le titre (« Journée propre, offshore léger »), la houle dans la ligne dessous ; pour le vent qui change, version longue et courte. En attente de choix, pas de code.
 - **Résumé de la semaine : « à » à la place des flèches** (état : branche, pas en ligne, attend le go) : « 0,7 m à 1,2 m · side-on modéré à onshore soutenu » (houle puis vent, matin à après-midi).
 - **Maquette** `reglages-meteo-heures.html` : réglages des encarts Météo (eau, lever/coucher, UV et nuages, pluie en mm, température ressentie ou réelle) et Heure par heure (3 / 5 / 7 / toute la journée, colonnes, suit l'heure choisie, repli). En attente de choix, pas de code. Étoiles : nouveau calcul publié (1.0.315).
