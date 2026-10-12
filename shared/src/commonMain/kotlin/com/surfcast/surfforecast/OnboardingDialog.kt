@@ -143,14 +143,14 @@ private fun PillChoice(options: List<Pair<String, String>>, selected: String, on
                     .weight(1f)
                     .clip(pillShape)
                     .clickable { onSelect(key) },
-                color = if (isSelected) colors.primary else colors.surfaceVariant
+                color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
             ) {
                 Box(modifier = Modifier.padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
                     Text(
                         text = label,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
+                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant,
                         maxLines = 1
                     )
                 }

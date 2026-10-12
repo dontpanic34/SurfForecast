@@ -37,13 +37,13 @@ private fun ChoiceRow(choices: List<Pair<Double, String>>, current: Double, onPi
             val selected = abs(value - current) < 0.001
             Surface(
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).clickable { onPick(value) },
-                color = if (selected) colors.primary else colors.background
+                color = if (selected) colors.primaryContainer else colors.background
             ) {
                 Box(modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp), contentAlignment = Alignment.Center) {
                     Text(
                         label, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = if (selected) colors.onPrimary else colors.onSurfaceVariant
+                        color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant
                     )
                 }
             }
@@ -110,12 +110,12 @@ fun SurferProfileSection(
                             modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).clickable {
                                 if (key == "custom") { if (!custom) update(if (savedCustom.isNotBlank()) SurfProfile.fromLevel(savedCustom) else profile) } else onLevelChanged(key)
                             },
-                            color = if (selected) colors.primary else colors.background
+                            color = if (selected) colors.primaryContainer else colors.background
                         ) {
                             Box(modifier = Modifier.padding(vertical = 7.dp), contentAlignment = Alignment.Center) {
                                 Text(
                                     label, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                                    color = if (selected) colors.onPrimary else colors.onSurfaceVariant
+                                    color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                 )
                             }
                         }

@@ -136,10 +136,10 @@ private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit) {
         text = label,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = if (selected) colors.onPrimary else colors.onSurfaceVariant,
+        color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (selected) colors.primary else colors.surfaceVariant)
+            .background(if (selected) colors.primaryContainer else colors.surfaceVariant)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 5.dp)
     )

@@ -98,8 +98,8 @@ fun SpotSelectionDialog(
                             val on = selectedRegion == region.name
                             Text(
                                 text = region.name, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                                color = if (on) colors.onPrimary else colors.onSurfaceVariant,
-                                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                                color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surfaceVariant)
                                     .clickable { selectedRegion = region.name }.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
                         }
@@ -125,8 +125,8 @@ fun SpotSelectionDialog(
                             currentFavorites.take(FAVORITE_SLOTS).forEachIndexed { i, name ->
                                 if (name != null) {
                                     Text(
-                                        name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary, maxLines = 1,
-                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primary)
+                                        name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onPrimaryContainer, maxLines = 1,
+                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primaryContainer)
                                             .clickable { onAssignToSlot(spot, i); pendingReplace = null }.padding(horizontal = 10.dp, vertical = 6.dp)
                                     )
                                 }

@@ -301,6 +301,7 @@ fun WeeklyForecastCard(
                     )
                 }
             }
+            CardSettingsPanel("week")
 
             }
         }

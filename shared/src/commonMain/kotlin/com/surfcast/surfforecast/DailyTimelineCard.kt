@@ -202,9 +202,9 @@ fun DailyTimelineCard(
                                     val on = ToleranceSettings.label(m) == motivationLabel
                                     Text(
                                         ToleranceSettings.label(m), fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                                        color = if (on) MaterialTheme.colorScheme.onPrimary else onSurfaceColor.copy(alpha = 0.7f),
+                                        color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else onSurfaceColor.copy(alpha = 0.7f),
                                         modifier = Modifier.clip(RoundedCornerShape(50))
-                                            .background(if (on) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                            .background(if (on) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
                                             .clickable { onMotivationSelect(m) }.padding(horizontal = 10.dp, vertical = 3.dp)
                                     )
                                 }
@@ -238,6 +238,7 @@ fun DailyTimelineCard(
                     )
                 }
             }
+            if (!isCollapsed) CardSettingsPanel("day")
         }
         }
     }

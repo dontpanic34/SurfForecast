@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
-import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -22,6 +20,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Les réglages qu'on peut changer depuis le « i » d'un encart (le contrôleur les branche). */
+/** Les réglages qu'on peut changer depuis le ⚙ d'un encart (le contrôleur les branche). */
 class CardSettingsControl(
     val windUnit: String,
     val onWindUnit: (String) -> Unit,
@@ -41,83 +42,91 @@ class CardSettingsControl(
 
 val LocalCardSettings = compositionLocalOf<CardSettingsControl?> { null }
 
-/** Une visite guidée de l'encart : un titre et des étapes courtes, lues dans l'ordre de ce qu'on voit à l'écran. */
-class CardGuide(val title: String, val steps: List<String>, val quick: List<String> = emptyList())
+/** Une ligne « Comprendre » : un titre qu'on touche pour lire une ou deux phrases. */
+class CardHelp(val title: String, val text: String)
 
-/** Les visites guidées, par clé d'encart : « week », « day », « swell », « wind », « weather », « windsea », « hourly ». */
-val CARD_GUIDES: Map<String, CardGuide> = mapOf(
-    "week" to CardGuide("La semaine", listOf(
-        "En haut, la phrase du jour que tu as touché : le titre, la houle, le vent.",
-        "★ La note du jour, la même pour tout le monde. Dessous, trois traits : matin, midi, après-midi, dans la couleur de ton niveau.",
-        "La flèche et le mot sous chaque jour : d'où vient le vent. Plus la flèche est grande, plus il souffle.",
-        "Le graphique : la houle du jour (taille, période), le ciel, l'énergie en kJ en bas.",
-        "Touche un jour pour le détailler."
-    ), listOf("La note du jour, puis matin, midi, après-midi.", "Flèche : d’où vient le vent, grande = fort.", "Touche un jour pour le détailler.")),
-    "day" to CardGuide("Le déroulé de la journée", listOf(
-        "En haut : l'heure choisie, sa note et la raison, par exemple « Un peu d'onshore ».",
-        "Motivation : Flemme, Normal ou Motivé. Elle change seulement les couleurs, jamais les étoiles.",
-        "Les flèches du vent, heure par heure. Grande flèche = vent fort ; la couleur dit s'il gêne (jaune, orange, rouge).",
-        "Le graphique : la houle (1,5 m, 10 s) sur le ciel et la mer. Glisse ton doigt pour changer d'heure.",
-        "La petite courbe bleue : la marée. Ça monte ou ça descend ; les triangles sont les pleines et basses mers.",
-        "La bande jaune : les heures de jour. Plus elle est claire, plus le soleil est haut."
-    ), listOf("Glisse sur le graphique pour changer d’heure.", "Flèches : le vent, la couleur dit s’il gêne.", "Courbe bleue : la marée. Bande jaune : le jour.")),
-    "swell" to CardGuide("La houle", listOf(
-        "À gauche, la taille et la période de la houle principale, plus grosses que la secondaire en dessous.",
-        "À droite : d'où elle vient, sa flèche et son énergie en kJ.",
-        "La flèche est grande si la houle arrive bien face à ta plage, petite si elle arrive de biais.",
-        "Les barres : la houle sur la journée. Touche-en une pour changer d'heure."
-    ), listOf("Taille et période de la houle, la secondaire dessous.", "Grande flèche : elle arrive bien face à la plage.")),
-    "wind" to CardGuide("Le vent", listOf(
-        "Le chiffre : le vent ressenti, c'est le vent moyen plus 35 % de l'écart avec les rafales (8 km/h de moyenne et rafales à 22 donnent 13).",
-        "La flèche : d'où il vient. Sa taille dit sa force, sa couleur dit s'il gêne : jaune propre, orange gênant, rouge fort.",
-        "La zone grise derrière les barres : les rafales.",
-        "Change l'unité en bas : kilomètre par heure, nœuds ou Beaufort. Ça change partout dans l'appli."
-    ), listOf("Le chiffre est le vent ressenti, rafales comprises.", "Flèche : d’où il vient. Zone grise : les rafales.")),
-    "weather" to CardGuide("La météo", listOf(
-        "L'icône du ciel et la température ressentie de l'heure ; la pluie s'ajoute à côté quand il pleut.",
-        "À droite, l'indice UV et les nuages ; dessous, lever et coucher du soleil.",
-        "« Détail sur la semaine » ouvre la météo des jours à venir."
-    ), listOf("Ciel, température ressentie, pluie, eau.", "UV, nuages, lever et coucher à droite.")),
-    "windsea" to CardGuide("La mer de vent", listOf(
-        "C'est le clapot : les petites vagues que le vent fabrique sur place, par-dessus la houle.",
-        "La flèche donne la direction du clapot ; elle est grande s'il arrive bien face à la plage.",
-        "Beaucoup de clapot, la vague est moins propre."
-    ), listOf("Le clapot : les petites vagues du vent local.", "Beaucoup de clapot, vague moins propre.")),
-    "hourly" to CardGuide("Heure par heure", listOf(
-        "Une ligne par heure : houle, vent, météo.",
-        "Touche une ligne pour la choisir : tous les encarts suivent."
-    ), listOf("Une ligne par heure.", "Touches-en une : tous les encarts suivent."))
+/** Les explications de chaque encart, repliées par défaut dans le panneau de réglages. */
+val CARD_HELP: Map<String, List<CardHelp>> = mapOf(
+    "week" to listOf(
+        CardHelp("Comment la note est calculée", "La note (1 à 5 étoiles) compare houle, période, direction et vent à ce que le spot aime. Elle est la même pour tout le monde : ni ton niveau ni ta motivation ne la changent."),
+        CardHelp("Les trois traits", "Matin, midi, après-midi. Ils prennent la couleur de la condition à cette heure : vert propre, jaune moyen, rouge mauvais."),
+        CardHelp("Le vent de la semaine", "La flèche donne d'où il vient et sa taille la force. C'est la moyenne de deux modèles (ECMWF et GFS).")
+    ),
+    "day" to listOf(
+        CardHelp("Motivation : Flemme, Normal, Motivé", "Elle change seulement les couleurs et le libellé de l'heure (un peu plus exigeant ou plus indulgent). Elle ne change jamais les étoiles."),
+        CardHelp("Comment le vent est calculé", "Moyenne des modèles ECMWF et GFS. Le chiffre affiché est le vent ressenti : le vent moyen plus 35 % de l'écart avec les rafales. La couleur dit s'il gêne."),
+        CardHelp("Modèles de prévision", "Houle : modèle de vagues Open-Meteo. Vent : ECMWF + GFS. AROME HD (Météo-France) tourne en coulisses pour comparer."),
+        CardHelp("La courbe bleue et le coef", "La marée monte ou descend. Les triangles sont les pleines et basses mers, le coefficient dit la taille de la marée.")
+    ),
+    "swell" to listOf(
+        CardHelp("Taille et période", "Hauteur de la houle principale en mètres et période en secondes. Plus la période est longue, plus la houle a de la puissance."),
+        CardHelp("L'énergie en kJ", "Elle combine hauteur et période : deux houles de même hauteur n'ont pas la même force."),
+        CardHelp("Houle secondaire", "Affichée dès 0,2 m et 7 s. Elle vient d'une autre direction et peut brouiller la houle principale.")
+    ),
+    "wind" to listOf(
+        CardHelp("Comment le vent est calculé", "Moyenne ECMWF + GFS, direction en moyenne vectorielle. Le chiffre est le vent ressenti (rafales comprises)."),
+        CardHelp("Les couleurs", "Jaune : propre. Orange : gênant. Rouge : fort ou onshore. Elles dépendent de la direction par rapport à la plage.")
+    ),
+    "weather" to listOf(
+        CardHelp("D'où vient la météo", "Open-Meteo : ciel, température ressentie, pluie en mm, UV, nuages. Température de l'eau : modèle marin."),
+        CardHelp("Température ressentie", "Elle tient compte du vent : plus fraîche qu'au thermomètre quand il souffle.")
+    ),
+    "windsea" to listOf(
+        CardHelp("Le clapot", "Les petites vagues que le vent fabrique sur place, par-dessus la houle. Beaucoup de clapot, la vague est moins propre."),
+        CardHelp("La flèche", "Direction du clapot ; grande s'il arrive bien face à la plage.")
+    ),
+    "hourly" to listOf(
+        CardHelp("Heure par heure", "Une ligne par heure : houle, vent, météo. Touches-en une : tous les encarts suivent.")
+    )
 )
 
-/** Le petit « i » d'un encart : il ouvre sa visite guidée et les réglages qui le concernent. */
+/** L'engrenage ouvert (un seul à la fois) : son panneau s'affiche sous le titre de l'encart. */
+object CardGear {
+    var open by mutableStateOf<String?>(null)
+}
+
+/** L'engrenage d'un encart : il ouvre ou ferme ses réglages, juste sous le titre, l'encart reste visible et bouge en direct. */
 @Composable
 fun CardInfoButton(guideKey: String) {
-    val guide = CARD_GUIDES[guideKey] ?: return
-    var open by remember { mutableStateOf(false) }
+    val on = CardGear.open == guideKey
+    val colors = MaterialTheme.colorScheme
     Text(
-        "ⓘ", fontSize = 16.sp, color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { open = true }.padding(horizontal = 8.dp, vertical = 2.dp)
+        "⚙", fontSize = 17.sp, color = if (on) colors.onPrimaryContainer else colors.onSurface.copy(alpha = 0.55f),
+        modifier = Modifier.clip(CircleShape).background(if (on) colors.primaryContainer else Color.Transparent)
+            .clickable { CardGear.open = if (on) null else guideKey }.padding(horizontal = 7.dp, vertical = 2.dp)
     )
-    if (open) {
-        var more by remember { mutableStateOf(false) }
-        Dialog(onDismissRequest = { open = false }) {
-            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
-                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(guide.title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    val lines = if (more || guide.quick.isEmpty()) guide.steps else guide.quick
-                    lines.forEach { Text(it, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)) }
-                    CardGuideSettings(guideKey)
+}
+
+/** Le panneau de réglages de l'encart, à placer sous son titre. N'affiche rien si l'engrenage n'est pas ouvert. */
+@Composable
+fun CardSettingsPanel(key: String) {
+    if (CardGear.open != key) return
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        CardGuideSettings(key)
+        CARD_HELP[key]?.let { items ->
+            Text("COMPRENDRE", fontSize = 10.5.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp, color = colors.primary)
+            items.forEach { h ->
+                var more by remember { mutableStateOf(false) }
+                Column(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant)
+                        .clickable { more = !more }.padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        if (!more && guide.quick.isNotEmpty()) {
-                            Text("En savoir plus", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable { more = true }.padding(vertical = 4.dp))
-                        } else Box {}
-                        Text("OK", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { open = false }.padding(vertical = 4.dp))
+                        Text(h.title, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                        Text(if (more) "–" else "+", fontSize = 14.sp, color = colors.primary)
                     }
+                    if (more) Text(h.text, fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
+        Text(
+            "Fermer", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.primary,
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { CardGear.open = null }.padding(vertical = 4.dp, horizontal = 2.dp)
+        )
     }
 }
 
@@ -131,51 +140,50 @@ private fun CardGuideSettings(key: String) {
             choices.forEach { (k, label) ->
                 val on = k == selected
                 Box(
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surfaceVariant)
                         .clickable { onSelect(k) }.padding(vertical = 7.dp),
                     contentAlignment = Alignment.Center
-                ) { Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant, maxLines = 1) }
+                ) { Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant, maxLines = 1) }
             }
         }
     }
     val c = LocalCardSettings.current
+    @Composable
+    fun Label(t: String) = Text(t, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+    @Composable
+    fun Pct(label: String, value: Int, range: IntRange, set: (Int) -> Unit) {
+        Label(label)
+        Slider(value = value.toFloat(), onValueChange = { set(it.toInt()) }, valueRange = range.first.toFloat()..range.last.toFloat())
+    }
     when (key) {
         "wind" -> if (c != null) {
-            Text("Unité du vent", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+            Label("Unité du vent")
             Chips(listOf("kmh" to "km/h", "knots" to "nœuds", "bft" to "Beaufort"), c.windUnit, c.onWindUnit)
         }
-        "week" -> if (c != null) {
-            Text("Indicateurs du vent", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-            Chips(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun"), c.weeklyWindMode, c.onWeeklyWindMode)
-            Text("Créneaux par jour", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-            Chips(listOf("1" to "1", "2" to "2", "3" to "3"), c.weeklyDensity.toString()) { c.onWeeklyDensity(it.toInt()) }
+        "week" -> {
+            if (c != null) {
+                Label("Indicateurs du vent")
+                Chips(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun"), c.weeklyWindMode, c.onWeeklyWindMode)
+                Label("Créneaux par jour")
+                Chips(listOf("1" to "1", "2" to "2", "3" to "3"), c.weeklyDensity.toString()) { c.onWeeklyDensity(it.toInt()) }
+            }
+            Pct("Hauteur de l'encart (graphique)", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
+            Pct("Échelle de la mer (commune à la semaine et au jour)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
         }
         "day" -> {
-            Text("Marées affichées", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
+            Pct("Hauteur de l'encart (graphique)", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
+            Pct("Échelle de la mer (commune à la semaine et au jour)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
+            Pct("Hauteur de la courbe de marée", SkyGraphSettings.tideDp, 24..60) { SkyGraphSettings.setTide(it) }
+            Label("Marées affichées")
             Chips(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
-            Text("Hauteur de la courbe de marée", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-            Slider(value = SkyGraphSettings.tideDp.toFloat(), onValueChange = { SkyGraphSettings.setTide(it.toInt()) }, valueRange = 24f..60f)
         }
-        "swell" -> {
-            Text("Hauteur de l'échelle des graphiques", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-            Slider(value = SkyGraphSettings.waterPct.toFloat(), onValueChange = { SkyGraphSettings.setWater(it.toInt()) }, valueRange = 20f..60f)
-        }
+        "swell" -> Pct("Échelle de la mer (commune à la semaine et au jour)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
+    }
+    if (key == "week" || key == "day" || key == "swell") {
+        Text(
+            "Valeurs par défaut", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary,
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { SkyGraphSettings.reset() }.padding(vertical = 2.dp)
+        )
     }
 }
 
-/** Les trois unités du vent, en petites pastilles dans l'en-tête de l'encart Vent : on touche, ça change partout. */
-@Composable
-fun WindUnitChips() {
-    val c = LocalCardSettings.current ?: return
-    val colors = MaterialTheme.colorScheme
-    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        listOf("kmh" to "km/h", "knots" to "nœuds", "bft" to "Beaufort").forEach { (k, label) ->
-            val on = k == c.windUnit
-            Text(
-                label, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurface.copy(alpha = 0.7f),
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.onSurface.copy(alpha = 0.08f))
-                    .clickable { c.onWindUnit(k) }.padding(horizontal = 7.dp, vertical = 3.dp)
-            )
-        }
-    }
-}

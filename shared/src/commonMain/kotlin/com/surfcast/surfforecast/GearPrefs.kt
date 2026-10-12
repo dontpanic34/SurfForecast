@@ -110,8 +110,8 @@ internal fun PillChoices(choices: List<String>, selected: String, onSelect: (Str
         choices.forEach { c ->
             val on = c == selected
             Text(
-                c, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surface)
+                c, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surface)
                     .clickable { onSelect(if (on) "" else c) }.padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
@@ -137,8 +137,8 @@ fun BoardConditionChips(boardId: Long) {
         GEAR_CONDITIONS.forEach { (key, label) ->
             val on = key in set
             Text(
-                label, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                label, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surfaceVariant)
                     .clickable { GearPrefs.toggle(boardId, key) }.padding(horizontal = 9.dp, vertical = 4.dp)
             )
         }

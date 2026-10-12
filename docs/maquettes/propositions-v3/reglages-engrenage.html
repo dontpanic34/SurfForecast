@@ -1,0 +1,85 @@
+<title>Réglages par encart</title>
+<style>
+/* Mise en page : un écran de téléphone sombre, des encarts avec un engrenage ; l'engrenage ouvre juste dessous les réglages de cet encart et un aperçu qui bouge en direct. Palette A (bleu océan éteint). */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--pill:#23404c;--fg:#ecf0f1;--mut:#90a4ae;--sel:#2c5a70;--selt:#e6f3f9;--link:#7fc3e6;--line:#2a4552;--warn:#e6a23c;--ok:#5fbf8a;--bad:#e5645a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:430px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+h1{font-size:1.25rem;margin:0}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:14px;padding:10px 12px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.head b{font-size:15px}
+.gear{border:0;background:var(--tile);color:var(--mut);width:34px;height:34px;border-radius:50%;font-size:18px;cursor:pointer}
+.gear[aria-expanded=true]{background:var(--sel);color:var(--selt)}
+.gear:focus-visible,.chip:focus-visible,input:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.panel{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:12px}
+.panel[hidden]{display:none}
+.lab{font-size:12px;font-weight:700;color:var(--mut);margin-bottom:5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:0;background:var(--pill);color:#b8c7ce;border-radius:99px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--sel);color:var(--selt)}
+input[type=range]{width:100%;accent-color:#5aa6cc}
+.more{color:var(--link);font-weight:700;font-size:13px;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.live{background:var(--bg);border-radius:12px;padding:8px}
+.live .t{font-size:11px;color:var(--mut);margin-bottom:4px}
+.row{display:flex;justify-content:space-between;gap:4px}
+.day{flex:1;text-align:center;background:var(--tile);border-radius:8px;padding:4px 2px;min-width:0}
+.bars{display:flex;gap:2px;justify-content:center;margin-top:3px}.bars i{height:3px;width:10px;border-radius:2px;display:block}
+.arrows{display:flex;justify-content:space-between;margin:4px 0}.arr{font-size:11px;text-align:center;flex:1}
+svg{display:block;width:100%}
+.big{font-size:26px;font-weight:800}
+.guide{color:var(--mut);font-size:12px}
+.sec{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--link)}
+details{background:var(--tile);border-radius:10px;padding:8px 10px}summary{cursor:pointer;font-weight:700;font-size:13px;list-style:none;display:flex;justify-content:space-between}summary::after{content:'+';color:var(--link)}details[open] summary::after{content:'–'}details p{margin-top:6px;color:#b8c7ce;font-size:12.5px}
+</style>
+<main>
+<h1>Réglages par encart</h1>
+<p class="mut sm">Touche un engrenage. Les réglages de l'encart s'ouvrent dessous, avec un aperçu qui change en direct. Chaque encart a ses propres réglages, rien n'est partagé.</p>
+<div id="cards"></div>
+</main>
+<script>
+var S={week:{wind:'both',slots:3,height:70,water:55},day:{height:90,water:55,tide:40,tides:'sun'},swell:{scale:50,second:true},wind:{unit:'kmh'},weather:{water:true,sun:true}};
+var DEF=JSON.parse(JSON.stringify(S));
+var open=null;
+var TITLES={week:'Prévisions de la semaine',day:'Le déroulé de la journée',swell:'La houle',wind:'Le vent',weather:'La météo'};
+var GUIDE={week:'Note du jour, trois créneaux, flèche du vent, graphique de houle. Touche un jour pour le détailler.',day:'Glisse sur le graphique pour changer d’heure. Flèches : le vent. Courbe bleue : la marée.',swell:'Taille et période de la houle, la secondaire dessous.',wind:'Le chiffre est le vent ressenti, rafales comprises.',weather:'Ciel, température ressentie, pluie, eau, UV.'};
+var HELP={
+week:[['Comment la note est calculée','La note (1 à 5 étoiles) compare houle, période, direction et vent à ce que le spot aime. Elle est la même pour tout le monde : ni ton niveau ni ta motivation ne la changent.'],['Les trois traits','Matin, midi, après-midi. Ils prennent la couleur de la condition à cette heure : vert propre, jaune moyen, rouge mauvais.'],['Le vent de la semaine','La flèche donne d’où il vient et sa taille la force. C’est la moyenne de deux modèles, voir « Modèles ».']],
+day:[['Motivation : Flemme, Normal, Motivé','Elle change seulement les couleurs et le libellé de l’heure (un peu plus exigeant ou plus indulgent). Elle ne change jamais les étoiles.'],['Comment le vent est calculé','Moyenne des modèles ECMWF et GFS. Le chiffre affiché est le vent ressenti : le vent moyen plus 35 % de l’écart avec les rafales. La couleur dit s’il gêne.'],['Modèles de prévision','Houle : modèle de vagues Open-Meteo. Vent : ECMWF + GFS. AROME HD (Météo-France) tourne en coulisses pour comparer.'],['La courbe bleue et le coef','La marée monte ou descend. Les triangles sont les pleines et basses mers, le coefficient dit la taille de la marée.']],
+swell:[['Taille et période','Hauteur de la houle principale en mètres et période en secondes. Plus la période est longue, plus la houle a de la puissance.'],['L’énergie en kJ','Elle combine hauteur et période : deux houles de même hauteur n’ont pas la même force.'],['Houle secondaire','Affichée dès 0,2 m et 7 s. Elle vient d’une autre direction et peut brouiller la houle principale.']],
+wind:[['Comment le vent est calculé','Moyenne ECMWF + GFS, direction en moyenne vectorielle. Le chiffre est le vent ressenti (rafales comprises).'],['Les couleurs','Jaune : propre. Orange : gênant. Rouge : fort ou onshore. Elles dépendent de la direction par rapport à la plage.']],
+weather:[['D’où vient la météo','Open-Meteo : ciel, température ressentie, pluie en mm, UV, nuages. Température de l’eau : modèle marin.'],['Température ressentie','Elle tient compte du vent : plus frais qu’au thermomètre quand il souffle.']]};
+function help(key){return '<div class="sec">Comprendre</div>'+HELP[key].map(function(h){return '<details><summary>'+h[0]+'</summary><p>'+h[1]+'</p></details>'}).join('')}
+function chips(key,field,list){return '<div class="chips">'+list.map(function(o){return '<button class="chip" aria-pressed="'+(S[key][field]==o[0])+'" data-k="'+key+'" data-f="'+field+'" data-v="'+o[0]+'">'+o[1]+'</button>'}).join('')+'</div>'}
+function range(key,field,min,max){return '<input type="range" min="'+min+'" max="'+max+'" value="'+S[key][field]+'" data-k="'+key+'" data-f="'+field+'" aria-label="'+field+'">'}
+function ctrl(label,html){return '<div><div class="lab">'+label+'</div>'+html+'</div>'}
+var DAYS=[['Auj.',3,'SO',9],['Dem.',4,'O',13],['Mer.',4,'E',10],['Jeu.',5,'SE',16]];
+function swellSvg(h,second,lv){lv=(lv||55)/55;var H=h,pts=[0.45,0.5,0.62,0.7,0.66,0.55,0.5,0.52];var d='M0 '+H;pts.forEach(function(p,i){d+=' L'+(i*(300/7))+' '+(H-Math.min(.95,p*lv)*H*0.9)});d+=' L300 '+H+'Z';
+ var s=second?'<path d="'+d.replace(/L(\d+\.?\d*) (\d+\.?\d*)/g,function(m,x,y){return 'L'+x+' '+(H-(H-y)*0.45)})+'" fill="#3e7d92" opacity=".55"/>':'';
+ return '<svg viewBox="0 0 300 '+H+'" height="'+H+'" preserveAspectRatio="none"><rect width="300" height="'+H+'" fill="#1a3a4a"/><path d="'+d+'" fill="#2f7f9a"/>'+s+'</svg>'}
+function tideSvg(h,all){var H=h,d='';for(var x=0;x<=300;x+=6){d+=(x?'L':'M')+x+' '+(H/2+Math.sin(x/300*Math.PI*(all?4:2)+0.6)*(H*0.38))}
+ return '<svg viewBox="0 0 300 '+H+'" height="'+H+'" preserveAspectRatio="none"><path d="'+d+'" fill="none" stroke="#5aa6cc" stroke-width="2"/></svg><div class="row sm mut"><span>▲ 08:05</span><span>▼ 14:27</span>'+(all?'<span>▲ 20:40</span><span>▼ 02:10</span>':'')+'</div>'}
+var KM={kmh:1,knots:0.54,bft:0};
+function windVal(){var u=S.wind.unit,k=17;if(u=='kmh')return '17 km/h';if(u=='knots')return Math.round(k*0.54)+' nœuds';return 'Beaufort 4'}
+function preview(key){var s=S[key];
+ if(key=='week'){var cols=DAYS.slice(0,4).map(function(d){var w=s.wind;var a=(w=='arrow'||w=='both')?'<div style="color:var(--warn)">➤</div>':'';var t=(w=='text'||w=='both')?'<div class="sm">'+d[2]+' '+d[3]+'</div>':'';var bars='';for(var i=0;i<s.slots;i++)bars+='<i style="background:'+['#e6c34a','#5fbf8a','#5fbf8a'][i]+'"></i>';return '<div class="day"><b>'+d[0]+'</b><div>★ '+d[1]+'</div><div class="bars">'+bars+'</div>'+a+t+'</div>'}).join('');return '<div class="row">'+cols+'</div><div style="margin-top:6px">'+swellSvg(s.height,false,s.water)+'</div>'}
+ if(key=='day'){var arr='<div class="arrows">'+['SO 9','SO 11','OSO 16','OSO 17','OSO 14','SO 11'].map(function(x,i){return '<div class="arr" style="color:'+(i>1&&i<5?'var(--bad)':'var(--warn)')+'">➤<br>'+x+'</div>'}).join('')+'</div>';
+  return '<div><b>17 h</b> <span style="color:var(--warn);font-weight:800">Médiocre à Correct</span></div>'+arr+swellSvg(s.height,true,s.water)+'<div style="margin-top:6px">'+tideSvg(s.tide,s.tides=='all')+'</div>'}
+ if(key=='swell'){var bars='';[.5,.6,.8,1,.9,.7,.6,.55].forEach(function(p){bars+='<i style="display:inline-block;width:11%;margin-right:1%;background:#2f7f9a;height:'+Math.round(p*s.scale*1.4)+'px;vertical-align:bottom"></i>'});return '<div class="big">1,3 m <span class="sm mut">13 s</span></div>'+(s.second?'<div class="sm mut">secondaire 0,4 m · 8 s</div>':'')+'<div style="height:'+(s.scale*1.4+6)+'px;display:flex;align-items:flex-end">'+bars+'</div>'}
+ if(key=='wind')return '<div class="big">'+windVal()+'</div><div class="sm mut">OSO · rafales plus fortes</div>';
+ if(key=='weather')return '<div class="big">21° <span class="sm mut">☂ 0,1 mm'+(s.water?' · eau 19°':'')+'</span></div>'+(s.sun?'<div class="sm mut">UV 0 · 100 % · lever 8 h 15 · coucher 19 h 24</div>':'<div class="sm mut">UV 0 · 100 %</div>')}
+function panel(key){var h='';
+ if(key=='week')h=ctrl('Indicateurs du vent',chips(key,'wind',[['arrow','Flèche'],['text','Texte'],['both','Les deux'],['none','Aucun']]))+ctrl('Créneaux par jour',chips(key,'slots',[[1,'1'],[2,'2'],[3,'3']]))+ctrl('Hauteur de l’encart (graphique)',range(key,'height',40,160))+ctrl('Part de la mer dans le graphique',range(key,'water',30,100));
+ if(key=='day')h=ctrl('Hauteur de l’encart (graphique)',range(key,'height',40,160))+ctrl('Part de la mer dans le graphique',range(key,'water',30,100))+ctrl('Hauteur de la courbe de marée',range(key,'tide',20,70))+ctrl('Marées affichées',chips(key,'tides',[['sun','Journée de soleil'],['all','Toutes']]));
+ if(key=='swell')h=ctrl('Hauteur de l’échelle',range(key,'scale',20,80))+ctrl('Houle secondaire',chips(key,'second',[[true,'Afficher'],[false,'Masquer']]));
+ if(key=='wind')h=ctrl('Unité',chips(key,'unit',[['kmh','km/h'],['knots','nœuds'],['bft','Beaufort']]));
+ if(key=='weather')h=ctrl('Température de l’eau',chips(key,'water',[[true,'Afficher'],[false,'Masquer']]))+ctrl('Lever et coucher',chips(key,'sun',[[true,'Afficher'],[false,'Masquer']]));
+ return '<div class="panel" id="p-'+key+'"><div class="sec">Régler</div>'+h+'<div class="live"><div class="t">Aperçu en direct</div>'+preview(key)+'</div><div class="row"><button class="more" data-reset="'+key+'">Remettre par défaut</button></div>'+help(key)+'</div>'}
+function render(){var el=document.getElementById('cards');el.innerHTML=Object.keys(TITLES).map(function(k){var o=open==k;return '<div class="card" style="margin-bottom:12px"><div class="head"><b>'+TITLES[k]+'</b><button class="gear" aria-expanded="'+o+'" aria-label="Réglages : '+TITLES[k]+'" data-gear="'+k+'">⚙</button></div>'+(o?panel(k):'')+'</div>'}).join('')}
+document.addEventListener('click',function(e){var t=e.target;if(t.dataset.gear){open=open==t.dataset.gear?null:t.dataset.gear;render();return}
+ if(t.dataset.f){var v=t.dataset.v;if(v==='true')v=true;else if(v==='false')v=false;else if(!isNaN(v))v=+v;S[t.dataset.k][t.dataset.f]=v;render();return}
+ if(t.dataset.more){var g=document.getElementById('g-'+t.dataset.more);g.hidden=!g.hidden;return}
+ if(t.dataset.reset){S[t.dataset.reset]=JSON.parse(JSON.stringify(DEF[t.dataset.reset]));render()}});
+document.addEventListener('input',function(e){var t=e.target;if(t.type=='range'){S[t.dataset.k][t.dataset.f]=+t.value;var p=document.querySelector('#p-'+t.dataset.k+' .live');p.innerHTML='<div class="t">Aperçu en direct</div>'+preview(t.dataset.k)}});
+open='day';render();
+</script>

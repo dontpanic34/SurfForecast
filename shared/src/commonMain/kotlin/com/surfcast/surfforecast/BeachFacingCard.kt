@@ -95,12 +95,12 @@ fun BeachFacingCard(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(50))
-                            .background(if (selected) colors.primary else colors.background)
+                            .background(if (selected) colors.primaryContainer else colors.background)
                             .clickable { onChange(deg) }
                             .padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (selected) colors.onPrimary else colors.onBackground)
+                        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (selected) colors.onPrimaryContainer else colors.onBackground)
                     }
                 }
             }

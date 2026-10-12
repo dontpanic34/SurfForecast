@@ -80,7 +80,7 @@ fun WindCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             CardControlsRow(
-                title = "Vent", guide = "wind", trailing = { WindUnitChips() },
+                title = "Vent", guide = "wind",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
