@@ -108,3 +108,9 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - À vérifier dans le code : `starsForScore` (Stars.kt) convertit un score en étoiles, et ce score doit être calculé avec un profil neutre, le même pour tout le monde. Aujourd'hui il dépend sans doute du niveau choisi.
 - Le réglage « sévérité des étoiles » (`StarsSettings.offset`) contredit cette règle : il décale les étoiles d'un surfeur à l'autre. À supprimer ou à déplacer vers les couleurs.
 - Maquette d'abord (étoiles identiques pour un débutant et un expert sur la même journée, couleurs différentes), puis code après validation.
+
+## Reste à faire après le code du profil et de Matériel
+- Brancher : « Quand tu les sors » et « Ma pratique » (depuis, fréquence, saison) dans Matériel ; la planche du jour (note par planche du quiver) ; la tolérance aux conditions dans les couleurs ; la forme dans les recommandations.
+- Valider le profil « Avancé » du moteur (plafond 1700 kJ, vent 22 km/h, onshore 11 km/h).
+- Aligner l'organigramme sur la planche en choix multiple retirée du questionnaire.
+- Retirer les anciens réglages devenus inutiles (`volume_level_idx`, `body_height_cm`, `body_fitness`) : lues nulle part, elles restent dans les préférences des utilisateurs sans effet.

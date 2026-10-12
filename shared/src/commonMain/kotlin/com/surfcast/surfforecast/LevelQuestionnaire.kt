@@ -125,3 +125,22 @@ fun computeLevel(a: LevelAnswers, shift: Int = 0): LevelResult {
 
 /** La question « maneuvers » ne s'affiche que si on cherche au moins à devenir radical, critique et engagé. */
 fun showManeuvers(a: LevelAnswers): Boolean = a.what == 2 && a.goals.isNotEmpty() && a.goals.max() >= 2
+
+/** Texte stocké : « what;barre;takeOff;peak;goals;maneuvers;wantLarge;feel;training;where » (listes séparées par « , », vide = pas de réponse). */
+fun LevelAnswers.serialize(): String = listOf(
+    what.toString(), barre?.toString() ?: "", takeOff?.toString() ?: "", peak?.toString() ?: "", goals.joinToString(","),
+    maneuvers?.toString() ?: "", wantLarge?.toString() ?: "", feel?.toString() ?: "", training?.toString() ?: "", where.joinToString(",")
+).joinToString(";")
+
+/** Relit [serialize] ; null si le texte est vide ou invalide. */
+fun parseLevelAnswers(text: String): LevelAnswers? {
+    val p = text.split(";")
+    if (p.size != 10) return null
+    fun int(i: Int) = p[i].toIntOrNull()
+    fun list(i: Int) = p[i].split(",").mapNotNull { it.toIntOrNull() }
+    val what = int(0) ?: return null
+    return LevelAnswers(
+        what = what, barre = int(1), takeOff = int(2), peak = int(3), goals = list(4), maneuvers = int(5),
+        wantLarge = int(6), feel = int(7), training = int(8), where = list(9)
+    )
+}
