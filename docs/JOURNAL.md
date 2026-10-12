@@ -11,7 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
-- **Décision** : couleur de sélection du thème sombre = option A (bleu océan éteint), pas encore codée. **Maquette interactive** `reglages-engrenage.html` : engrenage ⚙ à la place du ⓘ, réglages propres à chaque encart avec aperçu en direct. En attente de validation avant le code.
+- **Décision** : couleur de sélection du thème sombre = option A (bleu océan éteint), pas encore codée. **Maquette interactive (taille = hauteur du graphique, comme dans les anciens Paramètres)** `reglages-engrenage.html` : engrenage ⚙ à la place du ⓘ, réglages propres à chaque encart avec aperçu en direct. En attente de validation avant le code.
 - **Maquette** `couleur-selection.html` : couleur de sélection du thème sombre (3 palettes). Aussi en réflexion : rouage ⚙ par encart à la place du ⓘ, réglages sans doublon (unité du vent, graphique de houle, onglet Semaine des Paramètres). En attente de choix, pas de code.
 - **En-tête du spot allégé** (état : en ligne dès publication sur `web`) : nom centré, sans étoile ni petite flèche ▾ (le favori se gère dans la liste des spots), chevrons ‹ › gris et seulement s'il y a plusieurs favoris, thème à droite. « Mis à jour 17:20 ↻ » déplacé sous le titre « Actuellement » (toucher relance les prévisions).
 - **Maquette** `entete-v2.html` : en-tête du spot plus léger (3 propositions) et où mettre « Mis à jour » (3 propositions). En attente de choix, pas de code.

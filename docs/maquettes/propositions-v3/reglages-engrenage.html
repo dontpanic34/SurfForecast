@@ -36,7 +36,7 @@ svg{display:block;width:100%}
 <div id="cards"></div>
 </main>
 <script>
-var S={week:{wind:'both',slots:3,graph:60},day:{size:'normal',swell:50,tide:40,tides:'sun'},swell:{scale:50,second:true},wind:{unit:'kmh'},weather:{water:true,sun:true}};
+var S={week:{wind:'both',slots:3,height:70,water:55},day:{height:90,water:55,tide:40,tides:'sun'},swell:{scale:50,second:true},wind:{unit:'kmh'},weather:{water:true,sun:true}};
 var DEF=JSON.parse(JSON.stringify(S));
 var open=null;
 var TITLES={week:'Prévisions de la semaine',day:'Le déroulé de la journée',swell:'La houle',wind:'Le vent',weather:'La météo'};
@@ -45,7 +45,7 @@ function chips(key,field,list){return '<div class="chips">'+list.map(function(o)
 function range(key,field,min,max){return '<input type="range" min="'+min+'" max="'+max+'" value="'+S[key][field]+'" data-k="'+key+'" data-f="'+field+'" aria-label="'+field+'">'}
 function ctrl(label,html){return '<div><div class="lab">'+label+'</div>'+html+'</div>'}
 var DAYS=[['Auj.',3,'SO',9],['Dem.',4,'O',13],['Mer.',4,'E',10],['Jeu.',5,'SE',16]];
-function swellSvg(h,second){var H=h,pts=[0.45,0.5,0.62,0.7,0.66,0.55,0.5,0.52];var d='M0 '+H;pts.forEach(function(p,i){d+=' L'+(i*(300/7))+' '+(H-p*H*0.9)});d+=' L300 '+H+'Z';
+function swellSvg(h,second,lv){lv=(lv||55)/55;var H=h,pts=[0.45,0.5,0.62,0.7,0.66,0.55,0.5,0.52];var d='M0 '+H;pts.forEach(function(p,i){d+=' L'+(i*(300/7))+' '+(H-Math.min(.95,p*lv)*H*0.9)});d+=' L300 '+H+'Z';
  var s=second?'<path d="'+d.replace(/L(\d+\.?\d*) (\d+\.?\d*)/g,function(m,x,y){return 'L'+x+' '+(H-(H-y)*0.45)})+'" fill="#3e7d92" opacity=".55"/>':'';
  return '<svg viewBox="0 0 300 '+H+'" height="'+H+'" preserveAspectRatio="none"><rect width="300" height="'+H+'" fill="#1a3a4a"/><path d="'+d+'" fill="#2f7f9a"/>'+s+'</svg>'}
 function tideSvg(h,all){var H=h,d='';for(var x=0;x<=300;x+=6){d+=(x?'L':'M')+x+' '+(H/2+Math.sin(x/300*Math.PI*(all?4:2)+0.6)*(H*0.38))}
@@ -53,15 +53,15 @@ function tideSvg(h,all){var H=h,d='';for(var x=0;x<=300;x+=6){d+=(x?'L':'M')+x+'
 var KM={kmh:1,knots:0.54,bft:0};
 function windVal(){var u=S.wind.unit,k=17;if(u=='kmh')return '17 km/h';if(u=='knots')return Math.round(k*0.54)+' nœuds';return 'Beaufort 4'}
 function preview(key){var s=S[key];
- if(key=='week'){var cols=DAYS.slice(0,4).map(function(d){var w=s.wind;var a=(w=='arrow'||w=='both')?'<div style="color:var(--warn)">➤</div>':'';var t=(w=='text'||w=='both')?'<div class="sm">'+d[2]+' '+d[3]+'</div>':'';var bars='';for(var i=0;i<s.slots;i++)bars+='<i style="background:'+['#e6c34a','#5fbf8a','#5fbf8a'][i]+'"></i>';return '<div class="day"><b>'+d[0]+'</b><div>★ '+d[1]+'</div><div class="bars">'+bars+'</div>'+a+t+'</div>'}).join('');return '<div class="row">'+cols+'</div><div style="margin-top:6px">'+swellSvg(s.graph,false)+'</div>'}
- if(key=='day'){var f={compact:.8,normal:1,large:1.25}[s.size];var arr='<div class="arrows">'+['SO 9','SO 11','OSO 16','OSO 17','OSO 14','SO 11'].map(function(x,i){return '<div class="arr" style="color:'+(i>1&&i<5?'var(--bad)':'var(--warn)')+';font-size:'+Math.round(11*f)+'px">➤<br>'+x+'</div>'}).join('')+'</div>';
-  return '<div style="font-size:'+Math.round(14*f)+'px"><b>17 h</b> <span style="color:var(--warn);font-weight:800">Médiocre à Correct</span></div>'+arr+swellSvg(s.swell,true)+'<div style="margin-top:6px">'+tideSvg(s.tide,s.tides=='all')+'</div>'}
+ if(key=='week'){var cols=DAYS.slice(0,4).map(function(d){var w=s.wind;var a=(w=='arrow'||w=='both')?'<div style="color:var(--warn)">➤</div>':'';var t=(w=='text'||w=='both')?'<div class="sm">'+d[2]+' '+d[3]+'</div>':'';var bars='';for(var i=0;i<s.slots;i++)bars+='<i style="background:'+['#e6c34a','#5fbf8a','#5fbf8a'][i]+'"></i>';return '<div class="day"><b>'+d[0]+'</b><div>★ '+d[1]+'</div><div class="bars">'+bars+'</div>'+a+t+'</div>'}).join('');return '<div class="row">'+cols+'</div><div style="margin-top:6px">'+swellSvg(s.height,false,s.water)+'</div>'}
+ if(key=='day'){var arr='<div class="arrows">'+['SO 9','SO 11','OSO 16','OSO 17','OSO 14','SO 11'].map(function(x,i){return '<div class="arr" style="color:'+(i>1&&i<5?'var(--bad)':'var(--warn)')+'">➤<br>'+x+'</div>'}).join('')+'</div>';
+  return '<div><b>17 h</b> <span style="color:var(--warn);font-weight:800">Médiocre à Correct</span></div>'+arr+swellSvg(s.height,true,s.water)+'<div style="margin-top:6px">'+tideSvg(s.tide,s.tides=='all')+'</div>'}
  if(key=='swell'){var bars='';[.5,.6,.8,1,.9,.7,.6,.55].forEach(function(p){bars+='<i style="display:inline-block;width:11%;margin-right:1%;background:#2f7f9a;height:'+Math.round(p*s.scale*1.4)+'px;vertical-align:bottom"></i>'});return '<div class="big">1,3 m <span class="sm mut">13 s</span></div>'+(s.second?'<div class="sm mut">secondaire 0,4 m · 8 s</div>':'')+'<div style="height:'+(s.scale*1.4+6)+'px;display:flex;align-items:flex-end">'+bars+'</div>'}
  if(key=='wind')return '<div class="big">'+windVal()+'</div><div class="sm mut">OSO · rafales plus fortes</div>';
  if(key=='weather')return '<div class="big">21° <span class="sm mut">☂ 0,1 mm'+(s.water?' · eau 19°':'')+'</span></div>'+(s.sun?'<div class="sm mut">UV 0 · 100 % · lever 8 h 15 · coucher 19 h 24</div>':'<div class="sm mut">UV 0 · 100 %</div>')}
 function panel(key){var h='';
- if(key=='week')h=ctrl('Indicateurs du vent',chips(key,'wind',[['arrow','Flèche'],['text','Texte'],['both','Les deux'],['none','Aucun']]))+ctrl('Créneaux par jour',chips(key,'slots',[[1,'1'],[2,'2'],[3,'3']]))+ctrl('Hauteur du graphique de houle',range(key,'graph',30,100));
- if(key=='day')h=ctrl('Taille de l’encart',chips(key,'size',[['compact','Compact'],['normal','Normal'],['large','Grand']]))+ctrl('Hauteur de la courbe de houle',range(key,'swell',30,100))+ctrl('Hauteur de la courbe de marée',range(key,'tide',20,70))+ctrl('Marées affichées',chips(key,'tides',[['sun','Journée de soleil'],['all','Toutes']]));
+ if(key=='week')h=ctrl('Indicateurs du vent',chips(key,'wind',[['arrow','Flèche'],['text','Texte'],['both','Les deux'],['none','Aucun']]))+ctrl('Créneaux par jour',chips(key,'slots',[[1,'1'],[2,'2'],[3,'3']]))+ctrl('Hauteur de l’encart (graphique)',range(key,'height',40,160))+ctrl('Part de la mer dans le graphique',range(key,'water',30,100));
+ if(key=='day')h=ctrl('Hauteur de l’encart (graphique)',range(key,'height',40,160))+ctrl('Part de la mer dans le graphique',range(key,'water',30,100))+ctrl('Hauteur de la courbe de marée',range(key,'tide',20,70))+ctrl('Marées affichées',chips(key,'tides',[['sun','Journée de soleil'],['all','Toutes']]));
  if(key=='swell')h=ctrl('Hauteur de l’échelle',range(key,'scale',20,80))+ctrl('Houle secondaire',chips(key,'second',[[true,'Afficher'],[false,'Masquer']]));
  if(key=='wind')h=ctrl('Unité',chips(key,'unit',[['kmh','km/h'],['knots','nœuds'],['bft','Beaufort']]));
  if(key=='weather')h=ctrl('Température de l’eau',chips(key,'water',[[true,'Afficher'],[false,'Masquer']]))+ctrl('Lever et coucher',chips(key,'sun',[[true,'Afficher'],[false,'Masquer']]));
