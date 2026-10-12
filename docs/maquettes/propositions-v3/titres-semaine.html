@@ -1,0 +1,66 @@
+<title>Titres de la semaine</title>
+<style>
+/* Mise en page : d'abord l'échelle de couleurs du vent par direction (rose des vents), puis tous les titres possibles de l'encart Semaine, chacun avec la ligne de houle dessous ; pour le vent qui change, une version longue et une version courte. Fond sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;--sel:#2c5a70;--y:#ffd21f;--o:#ff9a1f;--r:#ff5a55;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+h1{font-size:1.25rem;margin:0}h2{font-size:1rem;margin:16px 0 2px;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:10px 12px}
+.t{font-size:16px;font-weight:800}.l{font-size:13px;margin-top:2px;color:#d6e0e5}.alt{font-size:12px;color:var(--mut);margin-top:6px;border-top:1px solid #243846;padding-top:6px}
+.dirs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.d{background:var(--tile);border-radius:10px;padding:6px;text-align:center;font-size:12px}.d i{display:block;font-style:normal;font-size:22px;line-height:1.1}
+.y{color:var(--y)}.o{color:var(--o)}.r{color:var(--r)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-top:4px}
+</style>
+<main>
+<h1>Titres de la semaine</h1>
+<p class="mut sm">Le vent est dans le titre, la houle dans la ligne dessous. Les couleurs du vent suivent la direction seulement (pour Montalivet, l'offshore vient de l'est).</p>
+
+<h2>Couleurs du vent par direction</h2>
+<div class="card"><div class="dirs" id="dirs"></div>
+<div class="legend"><span class="y">● jaune : jusqu'à 45° de l'offshore</span><span class="o">● orange : de 45° à 100°</span><span class="r">● rouge : au-delà</span></div>
+<p class="sm mut" style="margin-top:6px">La force ne change plus la couleur (elle reste dans le chiffre et la taille de la flèche).</p></div>
+
+<h2>Tous les titres</h2>
+<div id="titles"></div>
+<h2>Vent qui change : long ou court ?</h2>
+<p class="sm mut">Pour les cas où le vent change dans la journée, chaque carte montre la version longue, puis la courte (sans la force).</p>
+</main>
+<script>
+var DIRS=[['N',0],['NNE',22.5],['NE',45],['ENE',67.5],['E',90],['ESE',112.5],['SE',135],['SSE',157.5],['S',180],['SSO',202.5],['SO',225],['OSO',247.5],['O',270],['ONO',292.5],['NO',315],['NNO',337.5]];
+function ang(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d}
+function col(deg){var d=ang(deg,90);return d<=45?'y':d<=100?'o':'r'}
+document.getElementById('dirs').innerHTML=DIRS.map(function(x){return '<div class="d"><i class="'+col(x[1])+'" style="transform:rotate('+(x[1]+180)+'deg)">➤</i>'+x[0]+'</div>'}).join('');
+var T=[
+['La taille décide',[
+ ['Tout petit, pas de vent','0,4 m'],
+ ['Petit et venté, onshore modéré','0,7 m'],
+ ['Petit mais propre, offshore modéré','1,0 m'],
+ ['Ça s’éteint l’après-midi, side-off léger','1,1 m à 0,6 m'],
+ ['Ça se lève l’après-midi, offshore léger','0,6 m à 1,3 m'],
+ ['La houle monte, offshore léger','0,9 m à 1,4 m'],
+ ['La houle baisse, offshore léger','1,5 m à 1,0 m'],
+ ['Journée propre, offshore léger','1,4 m'],
+ ['Journée propre, sideshore léger','1,3 m'],
+ ['Gros et propre, offshore modéré','2,2 m'],
+ ['Gros et venté, onshore fort','2,4 m'],
+ ['Massif, sors le jet ! (onshore fort)','3,1 m']]],
+['Le vent décide',[
+ ['Venté toute la journée, onshore modéré','1,1 m'],
+ ['Offshore toute la journée, offshore soutenu','1,3 m'],
+ ['Vent de travers toute la journée, sideshore modéré','1,2 m'],
+ ['Journée sans vent, pas de vent','1,3 m']]],
+['Le vent change',[
+ ['Le vent gâte l’après-midi, offshore léger puis onshore soutenu','1,3 m','Le vent gâte l’après-midi, offshore puis onshore'],
+ ['Mieux le matin, offshore léger puis onshore modéré','0,9 m à 1,2 m','Mieux le matin, offshore puis onshore'],
+ ['Mieux l’après-midi, onshore modéré puis offshore léger','1,2 m','Mieux l’après-midi, onshore puis offshore'],
+ ['Le vent se calme, onshore soutenu puis onshore léger','1,3 m','Le vent se calme, onshore'],
+ ['Fenêtre courte le matin, offshore léger puis onshore fort','1,2 m','Fenêtre courte le matin, offshore puis onshore']]],
+['Les autres limites',[
+ ['Rafales gênantes, offshore modéré','1,3 m'],
+ ['Clapot, onshore modéré','1,2 m + clapot'],
+ ['Houle trop courte, side-on léger','1,3 m à 6 s'],
+ ['Houle de travers, side-off léger','1,2 m'],
+ ['Creux et puissant, offshore fort','1,8 m']]]
+];
+document.getElementById('titles').innerHTML=T.map(function(g){return '<p class="sm mut" style="margin-top:10px;font-weight:700">'+g[0]+'</p>'+g[1].map(function(x){return '<div class="card"><div class="t">'+x[0]+'</div><div class="l">'+x[1]+'</div>'+(x[2]?'<div class="alt">Version courte : <b>'+x[2]+'</b></div>':'')+'</div>'}).join('')}).join('');
+</script>
