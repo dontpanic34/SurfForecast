@@ -73,7 +73,7 @@ fun SurfCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
             CardControlsRow(
-                title = "Houle",
+                title = "Houle", guide = "swell",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,

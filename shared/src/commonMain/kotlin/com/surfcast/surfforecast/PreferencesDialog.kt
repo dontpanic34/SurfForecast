@@ -40,8 +40,6 @@ fun SurfPreferencesDialog(
     onMoveCardDown: (String) -> Unit = {},
     displaySize: String = "normal",
     onDisplaySizeChanged: (String) -> Unit = {},
-    starsOffset: Int,
-    onStarsOffsetChanged: (Int) -> Unit,
     weeklyDensity: Int,
     onWeeklyDensityChanged: (Int) -> Unit,
     weeklyWindMode: String,
@@ -311,7 +309,7 @@ fun SurfPreferencesDialog(
                                 color = colors.onBackground
                             )
                         } else {
-                            TextButton(onClick = { page = null }) {
+                            TextButton(onClick = { page = if (page == "gear") "profile" else null }) {
                                 Text("‹ Paramètres", fontSize = 13.sp, color = colors.primary)
                             }
                         }
@@ -364,9 +362,8 @@ fun SurfPreferencesDialog(
                 ) {
                     if (page == null) {
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            DenseChoiceRow("Aa", "Taille", DISPLAY_SIZE_CHOICES, displaySize, onDisplaySizeChanged)
                             DenseRow("🏄", "Mon profil", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
-                            DenseRow("🎒", "Mon matériel") { page = "gear" }
-                            DenseChoiceRow("🔠", "Taille", DISPLAY_SIZE_CHOICES, displaySize, onDisplaySizeChanged)
                             DenseChoiceRow("💨", "Vent", listOf("kmh" to "km/h", "knots" to "nœuds", "bft" to "Beaufort"), windUnit, onWindUnitSelected)
                             DenseRow("🌊", "Graphique de houle") { page = "graph" }
                             DenseRow("📅", "Semaine") { page = "week" }
@@ -400,6 +397,20 @@ fun SurfPreferencesDialog(
                             onFocusMode = { profileFocus = it },
                             onInfo = { showScoreInfo = true }
                         )
+                    }
+
+                    if (page == "profile") Column(modifier = Modifier.fillMaxWidth()) {
+                        // Le matériel fait partie du profil : une planche (pas un sac à dos) qui ouvre la page.
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant)
+                                .clickable { page = "gear" }.padding(horizontal = 12.dp, vertical = 11.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            QuiverIcon(color = colors.onBackground, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Mon matériel", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
+                            Text("›", fontSize = 20.sp, color = colors.onSurfaceVariant)
+                        }
                     }
 
                     if (page == "gear") Column(modifier = Modifier.fillMaxWidth()) {
@@ -990,7 +1001,7 @@ private fun DenseChoiceRow(icon: String, title: String, choices: List<Pair<Strin
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant).padding(horizontal = 12.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(icon, fontSize = 16.sp)
+        if (icon == "Aa") Text("Aa", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = colors.primary) else Text(icon, fontSize = 16.sp)
         Spacer(modifier = Modifier.width(10.dp))
         Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
         ChipChoices(choices, selected, onSelect, small = true, modifier = Modifier.weight(2f))

@@ -80,7 +80,7 @@ fun WindCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             CardControlsRow(
-                title = "Vent",
+                title = "Vent", guide = "wind", trailing = { WindUnitChips() },
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
@@ -109,18 +109,6 @@ fun WindCardComponent(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = onSurfaceColor.copy(alpha = 0.7f)
-                        )
-                    }
-                    var showInfo by remember { mutableStateOf(false) }
-                    IconButton(onClick = { showInfo = true }, modifier = Modifier.size(22.dp)) {
-                        Icon(SurfIcons.Info, contentDescription = "Comment le vent ressenti est calculé", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                    }
-                    if (showInfo) {
-                        AlertDialog(
-                            onDismissRequest = { showInfo = false },
-                            title = { Text(WIND_FEEL_INFO_TITLE) },
-                            text = { Text(WIND_FEEL_INFO_TEXT) },
-                            confirmButton = { TextButton(onClick = { showInfo = false }) { Text("OK") } }
                         )
                     }
                     Row(

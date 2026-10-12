@@ -34,7 +34,9 @@ fun WindSeaCardComponent(
     isCollapsed: Boolean = false,
     onToggleCollapse: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Orientation de la plage : la flèche du clapot est grande s'il arrive bien face à la plage, petite s'il arrive de biais.
+    beachFacing: Int? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -74,7 +76,7 @@ fun WindSeaCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
             CardControlsRow(
-                title = "Mer de vent",
+                title = "Mer de vent", guide = "windsea",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
@@ -111,7 +113,7 @@ fun WindSeaCardComponent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    NavArrow(primaryColor, windWaveRotationAngle, 13.dp)
+                    NavArrow(primaryColor, windWaveRotationAngle, (13 * swellArrowScale(selectedHour.windWaveDirection, beachFacing)).dp)
 
                     Text(
                         text = "$windWaveDeg°",

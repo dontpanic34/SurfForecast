@@ -78,12 +78,28 @@ fun gearConditionsOf(hour: HourlyUiModel, beachFacing: Int?): Set<String> {
     return out
 }
 
-/** La planche du quiver qui colle le mieux aux conditions de [hour] d'après la grille du surfeur (null si rien ne colle). */
+/**
+ * La planche du quiver qui colle le mieux aux conditions de [hour] : d'abord d'après ta grille « Je la sors quand… » ; tant que
+ * la grille est vide, d'après le type de planche (petit ou mou : mid-length, longboard, fish ; gros, creux ou puissant :
+ * shortboard). Null sans planche ou sans aucune idée.
+ */
 fun boardOfTheDay(hour: HourlyUiModel?, boards: List<QuiverBoard>, beachFacing: Int?): QuiverBoard? {
     if (hour == null || boards.isEmpty()) return null
     val now = gearConditionsOf(hour, beachFacing)
-    return boards.map { b -> b to GearPrefs.conditionsOf(b.id).count { it in now } }
-        .filter { it.second > 0 }.maxByOrNull { it.second }?.first
+    val byGrid = boards.map { b -> b to GearPrefs.conditionsOf(b.id).count { it in now } }.filter { it.second > 0 }.maxByOrNull { it.second }?.first
+    if (byGrid != null) return byGrid
+    if (boards.any { GearPrefs.conditionsOf(it.id).isNotEmpty() }) return null
+    val soft = "petit" in now || "mou" in now || "longues" in now
+    val strong = "gros" in now || "creux" in now || "puissant" in now
+    fun fit(b: QuiverBoard): Int = when (b.family) {
+        "longboard" -> if (soft) 3 else 0
+        "mid-length" -> if (soft) 2 else 1
+        "fish", "twin", "groveler" -> if (soft) 2 else 1
+        "shortboard" -> if (strong) 3 else 1
+        "mousse" -> 0
+        else -> 1
+    }
+    return boards.maxByOrNull { fit(it) }?.takeIf { fit(it) > 0 }
 }
 
 @Composable

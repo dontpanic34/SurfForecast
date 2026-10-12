@@ -322,6 +322,7 @@ private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, o
                         .clickable(onClick = onToleranceClick).padding(horizontal = 10.dp, vertical = 3.dp)
                 )
             }
+            CardInfoButton("week")
             CollapseChevron(isCollapsed, onToggleCollapse)
         }
         Text(phrase.swell, fontSize = 12.5.sp, color = onSurface, maxLines = 1)

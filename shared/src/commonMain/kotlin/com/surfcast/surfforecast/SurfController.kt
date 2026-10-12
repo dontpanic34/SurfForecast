@@ -196,6 +196,14 @@ class SurfController(
         SkyGraphSettings.loadTide(prefs.getInt("graph_tide_dp", SkyGraphSettings.DEFAULT_TIDE))
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
     }
+    // Anciens réglages qui ne servent plus à rien : on les efface des préférences de l'appareil.
+    @Suppress("unused")
+    private val oldPrefsCleanup = run {
+        listOf(
+            "volume_level_idx", "body_height_cm", "body_fitness", "stars_offset", "show_live_overlay", "show_weekly_card",
+            "show_daily_timeline_card", "show_surf_card", "show_wind_card", "show_weather_card", "show_hourly_card", "show_wind_sea_card"
+        ).forEach { prefs.remove(it) }
+    }
     // Grille « quand tu sors quelle planche », pratique et planche du jour (voir GearPrefs).
     @Suppress("unused")
     private val gearInit = run {
@@ -205,8 +213,6 @@ class SurfController(
         )
         GearPrefs.persist = { k, v -> prefs.putString(k, v) }
     }
-    var starsOffset by mutableIntStateOf(0)
-        private set
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
         private set
 
@@ -492,11 +498,6 @@ class SurfController(
 
     fun cycleDisplaySize() = changeDisplaySize(when (displaySize) { "normal" -> "large"; "large" -> "xlarge"; else -> "normal" })
 
-    fun changeStarsOffset(offset: Int) {
-        starsOffset = offset.coerceIn(-15, 15)
-        StarsSettings.offset = starsOffset
-        prefs.putInt("stars_offset", starsOffset)
-    }
 
     fun changeWeeklyDensity(density: Int) {
         weeklyDensity = density.coerceIn(1, 3)

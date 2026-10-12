@@ -1,0 +1,67 @@
+<title>En-tête, soleil et marées de nuit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;600&display=swap">
+<style>
+/* Mise en page : trois sujets, chacun avec ses propositions dessinées à l'échelle d'un téléphone. */
+:root{--bg:#eef3f6;--fg:#10222e;--mut:#5a6d7a;--card:#fff;--tile:#e3ebf1;--line:#d3dde4;--acc:#0f5f8c;--gold:#e0a800;--tide:#3b8be8;--d:'Bricolage Grotesque',system-ui,sans-serif;--b:'Instrument Sans',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--tile:#1f3441;--line:#243846;--acc:#5fb4e6}}
+:root[data-theme="dark"]{--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--tile:#1f3441;--line:#243846;--acc:#5fb4e6;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--b);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:24px}
+main{max-width:860px;margin:0 auto}h1,h2,h3{font-family:var(--d);margin:0;text-wrap:balance}h1{font-size:1.8rem;font-weight:800}h2{font-size:1.25rem;margin-top:2.2rem;padding-top:1rem;border-top:2px solid var(--fg)}h3{font-size:1rem;margin:.2rem 0 .4rem}
+p{margin:.4rem 0;max-width:66ch}.mut{color:var(--mut)}.sm{font-size:13px}
+.note{border-left:3px solid var(--acc);padding:.3rem .9rem;margin:.8rem 0;background:var(--card)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:.8rem}
+.ph{background:var(--card);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.chip{display:inline-block;border-radius:99px;padding:3px 11px;font-weight:700;font-size:13px;background:var(--tile)}.chip.on{background:var(--acc);color:#fff}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sp{justify-content:space-between}
+.tile{background:var(--tile);border-radius:10px;padding:6px 10px}.t{font-size:10.5px;font-weight:700;color:var(--mut)}
+svg{display:block;width:100%;height:auto}text{font-family:var(--b);fill:var(--fg)}
+.big{font-family:var(--d);font-weight:800;font-size:22px}
+</style>
+<main>
+<h1>Trois sujets, des propositions</h1>
+
+<h2>1. L'en-tête : les spots</h2>
+<div class="note"><b>Constat.</b> Aujourd'hui : trois pastilles « Montalivet · Lacanau · Capbreton » et « … » (les autres spots), plus Thème et « Mis à jour à 14:56 ». C'est fonctionnel mais c'est une barre d'outils, pas un titre : on ne sait pas d'un coup d'œil quel spot on regarde, et « … » ne dit pas ce qu'il cache.</div>
+<div class="grid">
+ <div><h3>A · Le spot en titre</h3><div class="ph">
+  <div class="row sp"><span class="big">Montalivet ▾</span><span class="sm mut">☾ Thème</span></div>
+  <span class="sm mut">Mis à jour à 14:56 · Lacanau · Capbreton</span>
+  <p class="sm mut" style="margin:0">Le nom du spot en grand. Toucher ▾ ouvre la liste de tes spots et la recherche. Les autres favoris passent en une ligne discrète.</p></div></div>
+ <div><h3>B · On glisse de spot en spot</h3><div class="ph">
+  <div class="row sp"><span class="big">‹ Montalivet ›</span><span class="sm mut">☾ Thème</span></div>
+  <div class="row" style="justify-content:center"><span style="width:8px;height:8px;border-radius:50%;background:var(--acc)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--line)"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--line)"></span><span class="sm">+</span></div>
+  <p class="sm mut" style="margin:0">On balaie l'écran vers la gauche pour passer à Lacanau. Les points disent combien de spots ; « + » ajoute un spot. Très naturel au doigt, mais caché pour qui n'y pense pas.</p></div></div>
+ <div><h3>C · Initiales rondes</h3><div class="ph">
+  <div class="row sp"><div class="row"><span class="chip on">M</span><span class="chip">L</span><span class="chip">C</span><span class="chip">＋</span></div><span class="sm mut">☾ Thème</span></div>
+  <div class="big">Montalivet</div><span class="sm mut">Mis à jour à 14:56</span>
+  <p class="sm mut" style="margin:0">De petites pastilles rondes à initiales (touche pour changer), le nom du spot dessous en titre. Garde la rapidité d'aujourd'hui, ajoute la lisibilité.</p></div></div>
+</div>
+<p><b>Je recommande A</b> pour la clarté, avec le balayage de B en plus (les deux se combinent sans conflit).</p>
+
+<h2>2. Lever et coucher du soleil dans la Météo</h2>
+<div class="note"><b>Constat.</b> « 🌅 8 h 18   🌇 19 h 20 » en texte sous la température donne deux horaires sans rapport avec le reste, et ça mange de la place à gauche. Voici trois autres façons de le dire.</div>
+<div class="grid">
+ <div><h3>A · L'arc du soleil</h3><div class="ph">
+  <svg viewBox="0 0 300 62"><path d="M20 52 Q150 -22 280 52" fill="none" stroke="var(--line)" stroke-width="3"/><path d="M20 52 Q85 4 150 8" fill="none" stroke="var(--gold)" stroke-width="3"/><circle cx="150" cy="8" r="7" fill="var(--gold)"/><text x="6" y="60" font-size="11">8 h 18</text><text x="250" y="60" font-size="11">19 h 20</text></svg>
+  <p class="sm mut" style="margin:0">Un arc fin, le soleil à sa position de l'heure choisie, les deux horaires aux pieds. On voit s'il reste du jour sans lire un chiffre. C'est l'idée de « soleil qui monte et descend » que tu avais aimée.</p></div></div>
+ <div><h3>B · Une ligne avec la durée</h3><div class="ph">
+  <div class="row sp"><span>🌅 8 h 18 → 19 h 20</span><b>11 h 02 de jour</b></div>
+  <p class="sm mut" style="margin:0">Une seule ligne, en bas de l'encart, pleine largeur. Le chiffre qui compte pour une session (la durée de jour) devient le plus lisible.</p></div></div>
+ <div><h3>C · Dans la colonne de droite</h3><div class="ph">
+  <div class="row sp"><div><div class="big">23 °C</div><div class="sm">🌧 0 mm</div></div><div style="text-align:right"><div class="sm">☀ UV 2</div><div class="sm">☁ 45 %</div><div class="sm">🌅 8 h 18 · 🌇 19 h 20</div></div></div>
+  <p class="sm mut" style="margin:0">Lever et coucher rejoignent UV et nuages, à droite, en petit. La colonne de gauche reste libre pour température, pluie et eau. Simple, mais la colonne devient dense.</p></div></div>
+</div>
+<p><b>Je recommande A</b> : c'est la seule qui raconte la journée au lieu de recopier deux horaires.</p>
+
+<h2>3. Les marées de nuit sur la courbe : à quoi ça servirait ?</h2>
+<div class="note"><b>Mon avis franc : peu.</b> La courbe sert à répondre à « ça monte ou ça descend pendant ma session ? ». Les marées de nuit ne répondent à rien tant qu'on ne surfe pas de nuit. Deux usages réels : (1) partir à l'aube, une demi-heure avant le lever, la marée de 5 h compte ; (2) deviner le niveau à l'heure du lever en voyant où en est le cycle. Les deux sont déjà couverts : la fenêtre du déroulé commence une demi-heure avant le lever, et la courbe se prolonge d'une demi-période avant et après.</div>
+<div class="grid">
+ <div><h3>Aujourd'hui (journée de soleil)</h3><div class="ph">
+  <svg viewBox="0 0 300 70"><path d="M10 40 C50 40 60 14 100 14 S150 40 190 40 S240 14 290 18" fill="none" stroke="var(--tide)" stroke-width="2"/><text x="100" y="9" font-size="10" text-anchor="middle" font-weight="700">8:05</text><text x="190" y="55" font-size="10" text-anchor="middle" font-weight="700">14:27</text><rect x="10" y="62" width="280" height="6" rx="3" fill="#d8c27a"/></svg>
+  <p class="sm mut" style="margin:0">Deux ou trois marées, lisibles, la courbe sert à une chose.</p></div></div>
+ <div><h3>Avec les marées de nuit (24 h)</h3><div class="ph">
+  <svg viewBox="0 0 300 70"><path d="M5 22 C20 22 25 8 40 8 S55 22 70 22 S85 8 100 8 S115 22 130 22 S145 8 160 8 S175 22 190 22 S205 8 220 8 S235 22 250 22 S265 8 280 8" fill="none" stroke="var(--tide)" stroke-width="2"/><rect x="5" y="40" width="85" height="22" fill="var(--line)" opacity=".5"/><rect x="90" y="40" width="135" height="22" fill="#d8c27a" opacity=".6"/><rect x="225" y="40" width="70" height="22" fill="var(--line)" opacity=".5"/><text x="30" y="55" font-size="9">nuit</text><text x="140" y="55" font-size="9">jour</text><text x="250" y="55" font-size="9">nuit</text></svg>
+  <p class="sm mut" style="margin:0">Toutes les marées sur 24 h : quatre ondulations, la journée de soleil n'occupe plus qu'un tiers de la largeur. La partie utile devient plus petite et plus serrée.</p></div></div>
+</div>
+<p><b>Je ne recommande pas de le faire.</b> Aujourd'hui, l'option « Toutes » met les marées de nuit en texte (« hors soleil ») : c'est ce qu'il faut pour planifier une session à l'aube ou au crépuscule. Dis-moi si tu veux quand même la version 24 h.</p>
+</main>
