@@ -474,7 +474,7 @@ fun GearContent(
             }
         }
 
-            BoardDayModeChooser()
+            if (quiverBoards.size >= 2) BoardDayModeChooser()
         }
     }
 
