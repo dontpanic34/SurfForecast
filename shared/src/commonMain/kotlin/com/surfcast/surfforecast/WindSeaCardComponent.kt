@@ -77,7 +77,9 @@ fun WindSeaCardComponent(
                 title = "Mer de vent",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier
+                dragHandleModifier = dragHandleModifier,
+                summary = "${formatDecimal(selectedHour.windWaveHeight, 1).replace('.', ',')} m" +
+                    (if (selectedHour.windWavePeriod > 0) " · ${selectedHour.windWavePeriod.roundToInt()} s" else "")
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))

@@ -77,7 +77,9 @@ fun WeatherCardComponent(
                 title = "Météo",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
-                dragHandleModifier = dragHandleModifier
+                dragHandleModifier = dragHandleModifier,
+                summary = "${selectedHour.feelsLike}° ressentis · nuages ${selectedHour.cloudCover} %" +
+                    (if (selectedHour.precipitationMm >= 0.05) " · pluie ${formatDecimal(selectedHour.precipitationMm, 1).replace('.', ',')} mm" else "")
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
