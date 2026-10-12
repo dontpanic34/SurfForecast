@@ -373,15 +373,6 @@ fun MainScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(surfaceColor)
                     ) {
-                                    // Profil pas encore renseigné : un message cliquable l'invite à le remplir.
-                                    if (viewModel.showProfileNudge) {
-                                        ProfileNudgeCard(
-                                            onOpen = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
-                                            onLater = { viewModel.hideProfileNudge() },
-                                            modifier = Modifier.coachTarget("bestSlot", coachTargets).padding(horizontal = 10.dp, vertical = 2.dp).padding(bottom = 6.dp)
-                                        )
-                                    }
-
                                     // Fiches de bancs : « Le banc magique : 16h–18h (descendant · 1,0–1,6 m) ».
                                     run {
                                         val day = selectedDate ?: today
@@ -710,6 +701,7 @@ fun MainScreen(
                                             )
                                         ) {
                                         DynamicCardsSection(
+                                            onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             boardOfDay = if (GearPrefs.boardDayMode == "header" || GearPrefs.boardDayMode == "both")
@@ -949,6 +941,7 @@ fun FavoritesHeaderRow(
 @Composable
 fun DynamicCardsSection(
     afterTimeline: @Composable () -> Unit,
+    onOpenProfile: () -> Unit = {},
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -1241,6 +1234,14 @@ fun DynamicCardsSection(
                                 }
                             }
                         }
+                    }
+                    // Profil pas encore renseigné : un message entre la semaine et le déroulé de la journée invite à le remplir.
+                    if (cardKey == "weekly" && viewModel.showProfileNudge) {
+                        ProfileNudgeCard(
+                            onOpen = onOpenProfile,
+                            onLater = { viewModel.hideProfileNudge() },
+                            modifier = (if (coachTargets != null) Modifier.coachTarget("bestSlot", coachTargets) else Modifier).padding(horizontal = 6.dp, vertical = 6.dp)
+                        )
                     }
                     if (cardKey == afterKey) afterTimeline()
                 }

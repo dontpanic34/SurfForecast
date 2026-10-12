@@ -225,7 +225,6 @@ fun GearContent(
     val myLevelIdx = volumeLevelIndex(surferLevel)
     // Comparaison : un autre niveau que le sien, au même poids et au même âge (null = mon niveau calculé par l'appli).
     val levelIdx = myLevelIdx
-    var tab by remember { mutableStateOf("moi") }
     // Le volume en gros : celui de la famille de la première planche du quiver (shortboard à défaut).
     val firstFamily = quiverBoards.firstOrNull()?.family
     val mainFamily = when (firstFamily) {
@@ -233,7 +232,7 @@ fun GearContent(
         "twin", "groveler" -> "fish"
         else -> firstFamily
     }
-    val mainRange = recommendedVolumeRange(body, levelIdx, mainFamily)?.let { withFrequency(it, mainFamily) }
+    val mainRange = recommendedVolumeRange(body, levelIdx, mainFamily)
     var showInfo by remember { mutableStateOf(false) }
     var showMore by remember { mutableStateOf(false) }
 
@@ -308,7 +307,7 @@ fun GearContent(
             if (showMore && mainRange != null) {
                 if (body.weightKg > 0) {
                     RECOMMENDATION_FAMILIES.filter { it.first != mainFamily && it.first != "mousse" }.forEach { (fam, label) ->
-                        recommendedVolumeRange(body, levelIdx, fam)?.let { withFrequency(it, fam) }?.let { r ->
+                        recommendedVolumeRange(body, levelIdx, fam)?.let { r ->
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(label, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.7f))
                                 Text(volumeRangeLabel(r, fam), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
@@ -331,18 +330,9 @@ fun GearContent(
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf("moi" to "Moi", "pl" to "Mes planches", "exp" to "Mon expérience").forEach { (k, label) ->
-                val on = tab == k
-                Text(
-                    label, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surface)
-                        .clickable { tab = k }.padding(horizontal = 14.dp, vertical = 7.dp)
-                )
-            }
-        }
-        if (tab == "moi") {
-        // --- Moi : poids, âge (facultatif) ---
+        run {
+        // --- Mes mensurations : poids, âge (facultatif) ---
+        Text("Mes mensurations", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             var weightText by remember { mutableStateOf(if (body.weightKg > 0) body.weightKg.toString() else "") }
             var ageText by remember { mutableStateOf(if (body.ageYears > 0) body.ageYears.toString() else "") }
@@ -361,7 +351,7 @@ fun GearContent(
             fontSize = 11.5.sp, color = colors.onBackground.copy(alpha = 0.6f)
         )
         }
-        if (tab == "pl") {
+        run {
         // --- Mes planches ---
         Text("Mes planches", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         if (quiverBoards.isEmpty()) {
@@ -486,9 +476,6 @@ fun GearContent(
 
             BoardDayModeChooser()
         }
-        if (tab == "exp") {
-            ExperienceSection()
-        }
     }
 
     boardPendingDelete?.let { board ->
@@ -542,9 +529,3 @@ fun QuiverScreen(
     }
 }
 
-/** Le volume d'une plage, majoré selon la fréquence de surf (celui qui surfe moins a besoin d'un peu plus de volume). */
-internal fun withFrequency(range: ClosedFloatingPointRange<Double>, family: String): ClosedFloatingPointRange<Double> {
-    if (family == "longboard") return range
-    val k = 1.0 + frequencyBoost(GearPrefs.frequency)
-    return (range.start * k)..(range.endInclusive * k)
-}

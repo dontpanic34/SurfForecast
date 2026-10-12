@@ -118,13 +118,6 @@ internal fun PillChoices(choices: List<String>, selected: String, onSelect: (Str
     }
 }
 
-/** Majoration du volume selon la fréquence de surf (proposition à valider) : 0 plusieurs fois par semaine ou plus. */
-internal fun frequencyBoost(frequency: String): Double = when (frequency) {
-    "1 fois par semaine" -> 0.05
-    "1 fois par mois" -> 0.10
-    "quelques fois par an" -> 0.15
-    else -> 0.0
-}
 
 /** Les conditions où l'on sort cette planche, sur sa carte (Petit, Gros, Mou, Creux, Puissant, Longues vagues). */
 @Composable
@@ -157,18 +150,3 @@ fun BoardDayModeChooser() {
     }
 }
 
-/** « Mon expérience » : depuis quand, fréquence, saison. Seule la fréquence change le volume conseillé. */
-@Composable
-fun ExperienceSection() {
-    val colors = MaterialTheme.colorScheme
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Je surfe depuis", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        PillChoices(listOf("moins d'1 an", "1 à 3 ans", "3 à 10 ans", "plus de 10 ans"), GearPrefs.since) { GearPrefs.chooseSince(it) }
-        Text("Je surfe", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        PillChoices(listOf("quelques fois par an", "1 fois par mois", "1 fois par semaine", "plusieurs fois par semaine", "plusieurs fois par jour"), GearPrefs.frequency) { GearPrefs.chooseFrequency(it) }
-        val boost = frequencyBoost(GearPrefs.frequency)
-        if (boost > 0) Text("+${(boost * 100).toInt()} % de volume conseillé : on surfe moins, il faut un peu plus de flottaison.", fontSize = 12.sp, color = colors.primary)
-        Text("Ma saison", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        PillChoices(listOf("toute l'année", "quand l'eau est bonne"), GearPrefs.season) { GearPrefs.chooseSeason(it) }
-    }
-}
