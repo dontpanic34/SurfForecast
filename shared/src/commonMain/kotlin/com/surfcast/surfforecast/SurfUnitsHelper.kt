@@ -97,9 +97,9 @@ object SurfUnitsHelper {
     fun windTextColor(windColor: Color, isDarkTheme: Boolean): Color {
         if (isDarkTheme) return windColor
         return when (windColor) {
-            WIND_YELLOW -> Color(0xFFA77B00)
-            WIND_ORANGE -> Color(0xFFC46200)
-            else -> Color(0xFFC62828)
+            WIND_YELLOW -> Color(0xFFBF8F00)
+            WIND_ORANGE -> Color(0xFFE65100)
+            else -> Color(0xFFD32F2F)
         }
     }
 

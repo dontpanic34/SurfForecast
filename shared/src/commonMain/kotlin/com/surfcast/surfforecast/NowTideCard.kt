@@ -82,22 +82,27 @@ fun NowTideCard(
         }
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient
-        if (boardOfDay != null) Text("Planche du jour : $boardOfDay", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary, maxLines = 1)
-        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        val rising = isTideRising(hourlyModel.rawTime.time, tideInfo)
+        val windKmh = effectiveWindKmh(hourlyModel)
+        val strength = when { windKmh < 10 -> "faible"; windKmh < 20 -> "modéré"; windKmh < 30 -> "fort"; else -> "très fort" }
+        val swell = "${formatDecimal(hourlyModel.waveHeight, 1).replace('.', ',')} m, ${hourlyModel.wavePeriod.toInt()} s"
+        Text(
+            "$swell, vent ${cardinalWordFr(dirFr)} $strength $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold,
+            color = colors.onSurface
+        )
+        if (rising != null || coef != null || next != null) {
             Text(
-                "Houle ${formatDecimal(hourlyModel.waveHeight, 1)} m · ${hourlyModel.wavePeriod.toInt()} s",
-                fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface
+                buildAnnotatedString {
+                    val parts = mutableListOf<String>()
+                    if (rising != null) parts.add(if (rising) "Marée montante" else "Marée descendante")
+                    var first = true
+                    fun sep() { if (!first) append(", "); first = false }
+                    parts.forEach { sep(); append(it) }
+                    if (coef != null) { sep(); append("coef "); withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold)) { append("$coef") } }
+                    if (next != null) { sep(); append(if (next.first) "pleine haute" else "pleine basse"); append(" à "); append(next.second) }
+                },
+                fontSize = 13.sp, color = colors.onSurface
             )
-            Text("Vent $dirFr $speed $unit", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-            if (coef != null || next != null) {
-                Text(
-                    buildAnnotatedString {
-                        if (coef != null) { withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold)) { append("COEF $coef") } }
-                        if (next != null) { if (coef != null) append(" "); append(if (next.first) "▲ " else "▼ "); append(next.second) }
-                    },
-                    fontSize = 13.sp, color = colors.onSurface, maxLines = 1
-                )
-            }
         }
     }
 }
@@ -112,4 +117,16 @@ internal fun nextTide(now: kotlinx.datetime.LocalTime, info: DailyTideInfo?): Pa
     val n = cands.filter { it.second.toSecondOfDay() > now.toSecondOfDay() }.minByOrNull { it.second.toSecondOfDay() } ?: return null
     val t = n.second
     return (n.first.type == "PM") to "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
+}
+
+/** Le point cardinal en toutes lettres : « S » devient « sud », « OSO » devient « ouest-sud-ouest ». */
+internal fun cardinalWordFr(c: String): String {
+    val names = mapOf("N" to "nord", "S" to "sud", "E" to "est", "O" to "ouest")
+    fun one(ch: Char) = names[ch.toString()] ?: ch.toString()
+    return when (c.length) {
+        1 -> one(c[0])
+        2 -> one(c[0]) + "-" + one(c[1])
+        3 -> one(c[0]) + "-" + one(c[1]) + "-" + one(c[2])
+        else -> c
+    }.let { if (c.length == 2) it.replace("nord-", "nord-").replace("sud-", "sud-") else it }
 }
