@@ -168,7 +168,7 @@ class SurfScoringTest {
         assertEquals(ScoreBand.FAIR, scoreBand(40))
         assertEquals(ScoreBand.GOOD, scoreBand(55))
         assertEquals(ScoreBand.VERY_GOOD, scoreBand(70))
-        assertEquals(ScoreBand.EXCELLENT, scoreBand(85))
+        assertEquals(ScoreBand.EXCELLENT, scoreBand(90))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(-1))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(50, tooBig = true))
         assertEquals("Parfait", ScoreBand.EXCELLENT.label)
@@ -188,7 +188,7 @@ class SurfScoringTest {
     fun labelsSayWhereTheScoreIsHeadedNearALimit() {
         assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(53, false)))
         assertEquals("Bon à Très bon", bandLabelWithTrend(SlotRating(71, false)))
-        assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(83, false)))
+        assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(88, false)))
         assertEquals("Médiocre à Correct", bandLabelWithTrend(SlotRating(38, false)))
         // Loin d'une limite : le niveau seul. Les cas à part n'ont pas de tendance.
         assertEquals("Bon", bandLabelWithTrend(SlotRating(62, false)))

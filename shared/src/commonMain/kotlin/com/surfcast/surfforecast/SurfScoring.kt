@@ -316,7 +316,13 @@ fun calculateSlotRating(
         if (t > 13.0) score *= 0.8
     }
 
-    val final = (score + profile.scoreOffset).roundToInt().coerceIn(0, 100)
+    var final = (score + profile.scoreOffset).roundToInt().coerceIn(0, 100)
+    // « Parfait » : le vent des trois heures d'avant n'a pas touché le plan d'eau. Sinon la note reste sous le seuil.
+    val pastDirty = hourlyModel.pastWind.any { p ->
+        windFactorOf(hourlyModel.copy(windSpeedKmh = p.speedKmh, windGustKmh = p.gustKmh, windDirectionStr = p.direction), h, profile,
+            windCategoryFor(p.direction, idealSwellDirection)) < WIND_CLEAN
+    }
+    if (pastDirty) final = minOf(final, PERFECT_MIN - 1 - ToleranceSettings.mode * 8)
     val kind = when {
         energyKj < profile.idealMin * TOO_SMALL_RATIO -> ConditionKind.TOO_SMALL
         windFactor < TOO_WINDY_FACTOR -> ConditionKind.TOO_WINDY
@@ -485,7 +491,9 @@ fun windMemoryAdjusted(hours: List<HourlyUiModel>, keep: Double = 0.75): List<Ho
     var memSpeed = 0.0
     var memGust = 0.0
     var memDir = ""
-    return hours.sortedBy { it.rawTime }.map { h ->
+    val sorted = hours.sortedBy { it.rawTime }
+    return sorted.mapIndexed { idx, h ->
+        val past = sorted.subList(maxOf(0, idx - 3), idx).map { WindSample(it.windSpeedKmh, it.windGustKmh, it.windDirectionStr) }
         val speed = h.windSpeedKmh.toDouble()
         val decayedSpeed = memSpeed * keep
         val decayedGust = memGust * keep
@@ -496,8 +504,8 @@ fun windMemoryAdjusted(hours: List<HourlyUiModel>, keep: Double = 0.75): List<Ho
             memSpeed = decayedSpeed
         }
         memGust = maxOf(h.windGustKmh.toDouble(), decayedGust)
-        if (memSpeed.roundToInt() == h.windSpeedKmh && memGust.roundToInt() == h.windGustKmh && memDir == h.windDirectionStr) h
-        else h.copy(windSpeedKmh = memSpeed.roundToInt(), windGustKmh = memGust.roundToInt(), windDirectionStr = memDir)
+        if (memSpeed.roundToInt() == h.windSpeedKmh && memGust.roundToInt() == h.windGustKmh && memDir == h.windDirectionStr) h.copy(pastWind = past)
+        else h.copy(windSpeedKmh = memSpeed.roundToInt(), windGustKmh = memGust.roundToInt(), windDirectionStr = memDir, pastWind = past)
     }
 }
 

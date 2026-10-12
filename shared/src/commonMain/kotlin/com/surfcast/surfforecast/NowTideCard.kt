@@ -43,6 +43,8 @@ fun NowTideCard(
     spotName: String = "",
     // « mis à jour 17:20 ↻ » sous le titre ; toucher relance les prévisions.
     updatedText: String = "",
+    // Il fait nuit : pas de libellé de qualité (« Nuit »).
+    isNight: Boolean = false,
     onRefresh: (() -> Unit)? = null,
     boardOfDay: String? = null,
     // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
@@ -83,7 +85,9 @@ fun NowTideCard(
                         .clickable(onClick = onAddSession).padding(horizontal = 9.dp, vertical = 2.dp)
                 )
             }
-            if (rating != null) {
+            if (isNight) {
+                Text("Nuit", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
+            } else if (rating != null) {
                 val band = conditionBand(rating)
                 // Le libellé de la note, sans fond : juste le mot, dans la couleur de la note (comme dans le déroulé).
                 Text(bandLabelWithTrend(rating), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = band.textColor(), maxLines = 1)

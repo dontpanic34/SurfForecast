@@ -44,4 +44,16 @@ class WindFeelTest {
         // Sans l'heure affichée, la phrase décrit le vent retenu.
         assertNotEquals(WHY_WIND_MEMORY, calculateSlotRating(kept, 275, "intermediate").why)
     }
+
+    @Test
+    fun perfectNeedsThreeCleanHoursBefore() {
+        // Vent de mer 18 km/h à 17 h, 18 h et 19 h, puis 10 km/h de terre à 20 h : la note de 20 h ne peut pas être « Parfait ».
+        val hours = listOf(hour(16, 4, "E"), hour(17, 18, "O", 24), hour(18, 18, "O", 24), hour(19, 18, "O", 24), hour(20, 4, "E"))
+        val kept = windMemoryAdjusted(hours)[4]
+        assertEquals(3, kept.pastWind.size)
+        assertEquals(true, calculateSlotRating(kept, 275, "intermediate").score < PERFECT_MIN)
+        // Sans vent avant, la même heure peut monter plus haut.
+        val clean = windMemoryAdjusted(listOf(hour(17, 4, "E"), hour(18, 4, "E"), hour(19, 4, "E"), hour(20, 4, "E")))[3]
+        assertEquals(true, calculateSlotRating(clean, 275, "intermediate").score >= calculateSlotRating(kept, 275, "intermediate").score)
+    }
 }
