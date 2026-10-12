@@ -72,6 +72,7 @@ fun CardControlsRow(
         if (guide != null) CardInfoButton(guide)
         CollapseChevron(isCollapsed, onToggleCollapse)
     }
+    if (!isCollapsed && guide != null) CardSettingsPanel(guide)
     if (isCollapsed && summary != null) {
         Text(summary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurfaceColor, maxLines = 2)
     }

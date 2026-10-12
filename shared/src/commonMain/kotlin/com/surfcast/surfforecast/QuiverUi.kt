@@ -146,7 +146,7 @@ internal fun PillRow(options: List<String>, selected: Int, onSelect: (Int) -> Un
                         Text(
                             label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            color = if (on) colors.onPrimary else colors.onBackground
+                            color = if (on) colors.onPrimaryContainer else colors.onBackground
                         )
                     }
                 }
@@ -195,7 +195,7 @@ private fun VolumeGauge(range: ClosedFloatingPointRange<Double>) {
     val end = frac(range.endInclusive).coerceAtLeast(start + 0.02f)
     Row(modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(colors.onSurface.copy(alpha = 0.10f))) {
         if (start > 0f) Spacer(modifier = Modifier.weight(start))
-        Box(modifier = Modifier.weight(end - start).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(colors.primary))
+        Box(modifier = Modifier.weight(end - start).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(colors.primaryContainer))
         if (end < 1f) Spacer(modifier = Modifier.weight(1f - end))
     }
 }
@@ -336,8 +336,8 @@ fun GearContent(
             listOf("moi" to "Moi", "pl" to "Mes planches", "exp" to "Mon expérience").forEach { (k, label) ->
                 val on = tab == k
                 Text(
-                    label, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surface)
+                    label, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surface)
                         .clickable { tab = k }.padding(horizontal = 14.dp, vertical = 7.dp)
                 )
             }
@@ -367,15 +367,15 @@ fun GearContent(
             val mine = compareLevel == null
             Text(
                 "Mon niveau : " + (levelLabel(surferLevel)), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
-                color = if (mine) colors.onPrimary else colors.onSurfaceVariant,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (mine) colors.primary else colors.surface)
+                color = if (mine) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (mine) colors.primaryContainer else colors.surface)
                     .clickable { compareLevel = null }.padding(horizontal = 12.dp, vertical = 6.dp)
             )
             LEVEL_NAMES.forEachIndexed { i, name ->
                 val on = compareLevel == i
                 Text(
-                    name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurfaceVariant,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surface)
+                    name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surface)
                         .clickable { compareLevel = i }.padding(horizontal = 12.dp, vertical = 6.dp)
                 )
             }

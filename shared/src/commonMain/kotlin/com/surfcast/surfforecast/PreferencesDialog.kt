@@ -237,14 +237,14 @@ fun SurfPreferencesDialog(
                                     .weight(1f)
                                     .clip(pillShape)
                                     .clickable { infoTab = tab },
-                                color = if (isSelected) colors.primary else colors.surfaceVariant
+                                color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                             ) {
                                 Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                     Text(
                                         text = tab,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                     )
                                 }
                             }
@@ -334,8 +334,6 @@ fun SurfPreferencesDialog(
                         text = when (current) {
                             "profile" -> "Mon profil"
                             "gear" -> "Mon matériel"
-                            "graph" -> "Graphique de houle"
-                            "week" -> "Semaine"
                             "forecast" -> "Prévisions"
                             "app" -> "Appli et journal"
                             "guide" -> "Comprendre les prévisions"
@@ -364,9 +362,6 @@ fun SurfPreferencesDialog(
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             DenseChoiceRow("Aa", "Taille", DISPLAY_SIZE_CHOICES, displaySize, onDisplaySizeChanged)
                             DenseRow("🏄", "Mon profil", badge = if (profileReviewed) null else "Recommandé") { page = "profile" }
-                            DenseChoiceRow("💨", "Vent", listOf("kmh" to "km/h", "knots" to "nœuds", "bft" to "Beaufort"), windUnit, onWindUnitSelected)
-                            DenseRow("🌊", "Graphique de houle") { page = "graph" }
-                            DenseRow("📅", "Semaine") { page = "week" }
                             DenseRow("🛰️", "Prévisions") { page = "forecast" }
                             if (backup != null || (install != null && (!install.isInstalled() || install.platform == "android")) || onPinWidget != null) {
                                 DenseRow("📲", "Appli et journal") { page = "app" }
@@ -424,42 +419,6 @@ fun SurfPreferencesDialog(
                         )
                     }
 
-                    if (page == "graph") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        WeekCardPreview(surferLevel, windUnit, weeklyWindMode, weeklyDensity, scale = 0.5f)
-                        DayCardPreview(surferLevel, windUnit, scale = 0.5f)
-                        @Composable
-                        fun graphSlider(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Text(label, fontSize = 12.sp, color = colors.onBackground, modifier = Modifier.weight(1f))
-                                Text("$value %", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant)
-                            }
-                            Slider(
-                                value = value.toFloat(),
-                                onValueChange = { onChange(it.toInt()) },
-                                valueRange = range.first.toFloat()..range.last.toFloat()
-                            )
-                        }
-                        graphSlider("Place du graphique, semaine", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
-                        graphSlider("Place du graphique, jour", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
-                        graphSlider("Hauteur de l'échelle (où arrive 2 m)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
-                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Hauteur de la courbe de marée", fontSize = 12.sp, color = colors.onBackground, modifier = Modifier.weight(1f))
-                            Text("${SkyGraphSettings.tideDp} dp", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant)
-                        }
-                        Slider(value = SkyGraphSettings.tideDp.toFloat(), onValueChange = { SkyGraphSettings.setTide(it.toInt()) }, valueRange = 24f..60f)
-                        Text("Marées affichées", fontSize = 12.sp, color = colors.onBackground)
-                        ChipChoices(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun", onSelect = { SkyGraphSettings.chooseTideAll(it == "all") })
-                        TextButton(onClick = { SkyGraphSettings.reset() }) { Text("Valeurs par défaut", fontSize = 12.sp) }
-                    }
-
-                    if (page == "week") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WeekCardPreview(surferLevel, windUnit, weeklyWindMode, weeklyDensity, scale = 0.62f)
-                        Text("Indicateurs vent", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-                        ChipChoices(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun"), weeklyWindMode, onWeeklyWindModeChanged)
-                        Text("Icônes par jour", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-                        ChipChoices(listOf("1" to "1", "2" to "2", "3" to "3"), weeklyDensity.toString(), onSelect = { onWeeklyDensityChanged(it.toInt()) })
-                    }
-
                     // Bouton d'épinglage du widget : Android seulement (rien à afficher sur le site).
                     if (page == "app" && onPinWidget != null) {
                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -514,7 +473,7 @@ fun SurfPreferencesDialog(
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { shortTermWind = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -522,12 +481,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -550,7 +509,7 @@ fun SurfPreferencesDialog(
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { shortTermWave = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -558,12 +517,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -590,7 +549,7 @@ fun SurfPreferencesDialog(
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { longTermWind = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -598,12 +557,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -626,7 +585,7 @@ fun SurfPreferencesDialog(
                                                 .weight(1f)
                                                 .clip(pillShape)
                                                 .clickable { longTermWave = model },
-                                            color = if (isSelected) colors.primary else colors.surfaceVariant
+                                            color = if (isSelected) colors.primaryContainer else colors.surfaceVariant
                                         ) {
                                             Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -634,12 +593,12 @@ fun SurfPreferencesDialog(
                                                         text = model,
                                                         fontSize = 12.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant
+                                                        color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Icon(
                                                         SurfIcons.Info, contentDescription = "À quoi correspond $model",
-                                                        tint = if (isSelected) colors.onPrimary else colors.primary,
+                                                        tint = if (isSelected) colors.onPrimaryContainer else colors.primary,
                                                         modifier = Modifier.size(15.dp).clip(CircleShape).clickable { modelInfo = model }
                                                     )
                                                 }
@@ -773,8 +732,8 @@ fun SurfPreferencesDialog(
                                     onClick = { apkUri.openUri("https://surflog.fr/surflog.apk") },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = pillShape,
-                                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
-                                ) { Text("⬇ Télécharger l'APK", fontSize = 12.sp, color = colors.onPrimary) }
+                                    colors = ButtonDefaults.buttonColors(containerColor = colors.primaryContainer)
+                                ) { Text("⬇ Télécharger l'APK", fontSize = 12.sp, color = colors.onPrimaryContainer) }
                                 Text(
                                     "Android demandera d'autoriser l'installation depuis le navigateur. Le journal du site et celui de l'appli sont séparés : sauvegarde puis restaure pour transférer.",
                                     fontSize = 11.5.sp,
@@ -826,7 +785,7 @@ fun SurfPreferencesDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = pillShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.primaryContainer)
                 ) {
                     Text("Appliquer et fermer", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
@@ -854,7 +813,7 @@ fun CardVisibilityRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(checkedThumbColor = colors.onPrimary, checkedTrackColor = colors.primary)
+            colors = SwitchDefaults.colors(checkedThumbColor = colors.onPrimaryContainer, checkedTrackColor = colors.primaryContainer)
         )
     }
 }
@@ -916,8 +875,8 @@ private fun PrefMenuRow(icon: String, title: String, subtitle: String, badge: St
                 if (badge != null) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary,
-                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primary).padding(horizontal = 8.dp, vertical = 2.dp)
+                        badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimaryContainer,
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
             }
@@ -984,8 +943,8 @@ private fun DenseRow(icon: String, title: String, badge: String? = null, onClick
         Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
         if (badge != null) {
             Text(
-                badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimary,
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primary).padding(horizontal = 8.dp, vertical = 2.dp)
+                badge, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onPrimaryContainer,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -1019,12 +978,12 @@ private fun ChipChoices(
             val isSelected = selected == key
             Box(
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(50))
-                    .background(if (isSelected) colors.primary else if (small) colors.background else colors.surfaceVariant)
+                    .background(if (isSelected) colors.primaryContainer else if (small) colors.background else colors.surfaceVariant)
                     .clickable { onSelect(key) }.padding(vertical = if (small) 6.dp else 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(label, fontSize = if (small) 11.sp else 12.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                    color = if (isSelected) colors.onPrimary else colors.onSurfaceVariant)
+                    color = if (isSelected) colors.onPrimaryContainer else colors.onSurfaceVariant)
             }
         }
     }

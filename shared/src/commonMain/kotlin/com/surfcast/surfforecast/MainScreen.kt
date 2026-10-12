@@ -426,8 +426,8 @@ fun MainScreen(
                                                 Text("Tu as surfé ?", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurfaceColor)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                     Text(
-                                                        "Noter ma session", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary,
-                                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primary)
+                                                        "Noter ma session", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primaryContainer)
                                                             .clickable { viewModel.dismissSurfedAsk(yesterday); entryInitialOffset = 1; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } }.padding(horizontal = 14.dp, vertical = 7.dp)
                                                     )
                                                     Text(
@@ -794,7 +794,7 @@ fun MainScreen(
                 steps = listOf(
                     CoachStep(
                         "weekCard", "★ Étoiles et couleurs",
-                        "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⓘ de chaque encart : il t'explique tout."
+                        "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⚙ d'un encart : réglages et explications."
                     ),
                     CoachStep(
                         "settings", "⚙️ Ton profil",
@@ -905,14 +905,14 @@ fun FavoritesHeaderRow(
             val isSelected = activeFavoriteIndex == index
             Surface(
                 modifier = Modifier.clickable { onSelectFavorite(index) },
-                color = if (isSelected) MaterialTheme.colorScheme.primary else surfaceColor,
+                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else surfaceColor,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = spotName ?: "",
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else onSurfaceColor,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else onSurfaceColor,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                 )
             }

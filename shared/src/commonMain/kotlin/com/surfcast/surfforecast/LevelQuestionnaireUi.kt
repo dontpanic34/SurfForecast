@@ -225,7 +225,7 @@ fun LevelQuestionnaire(
             fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurfaceVariant, letterSpacing = 0.8.sp
         )
         Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(colors.surfaceVariant)) {
-            Box(modifier = Modifier.fillMaxWidth((index + 1f) / steps.size).fillMaxHeight().background(colors.primary))
+            Box(modifier = Modifier.fillMaxWidth((index + 1f) / steps.size).fillMaxHeight().background(colors.primaryContainer))
         }
         if (known >= 2) {
             val live = computeLevel(answers)
@@ -241,7 +241,7 @@ fun LevelQuestionnaire(
             val on = i in selected
             Column(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                    .background(if (on) colors.primary else colors.surfaceVariant)
+                    .background(if (on) colors.primaryContainer else colors.surfaceVariant)
                     .clickable {
                         if (step.multi) {
                             state[step.id] = if (on) selected - i else selected + i
@@ -252,9 +252,9 @@ fun LevelQuestionnaire(
                     }
                     .padding(horizontal = 12.dp, vertical = 11.dp)
             ) {
-                Text(label, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onBackground)
+                Text(label, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onBackground)
                 step.optionHints.getOrNull(i)?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, fontSize = 11.5.sp, color = if (on) colors.onPrimary else colors.onSurfaceVariant)
+                    Text(it, fontSize = 11.5.sp, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant)
                 }
             }
         }

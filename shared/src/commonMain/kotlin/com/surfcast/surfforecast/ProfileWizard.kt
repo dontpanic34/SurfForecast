@@ -193,10 +193,10 @@ internal fun ProfileDaysPreview(profile: SurfProfile, items: List<ProfileConditi
 private fun RoundButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Box(
-        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(if (enabled) colors.primary else colors.surfaceVariant)
+        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(if (enabled) colors.primaryContainer else colors.surfaceVariant)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center
-    ) { Text(label, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = if (enabled) colors.onPrimary else colors.onSurfaceVariant) }
+    ) { Text(label, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = if (enabled) colors.onPrimaryContainer else colors.onSurfaceVariant) }
 }
 
 /** − valeur + : un réglage qui se lit en gros. */
@@ -301,10 +301,10 @@ private fun ChoiceChips(labels: List<String>, selected: Int, onPick: (Int) -> Un
         labels.forEachIndexed { i, label ->
             val on = i == selected
             Box(
-                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surfaceVariant)
                     .clickable { onPick(i) }.padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (on) colors.onPrimary else colors.onBackground)
+                Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (on) colors.onPrimaryContainer else colors.onBackground)
             }
         }
     }
@@ -397,7 +397,7 @@ fun ProfileWizard(
         // Progression
         Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
             WIZARD_TITLES.indices.forEach { i ->
-                Box(modifier = Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(if (i <= step) colors.primary else colors.surfaceVariant))
+                Box(modifier = Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(if (i <= step) colors.primaryContainer else colors.surfaceVariant))
             }
         }
         Column {

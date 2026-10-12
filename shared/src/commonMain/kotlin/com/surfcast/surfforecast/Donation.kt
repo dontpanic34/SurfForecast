@@ -60,8 +60,8 @@ fun DonationButton(modifier: Modifier = Modifier) {
         onClick = { open = true },
         modifier = modifier,
         shape = RoundedCornerShape(50),
-        colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
-    ) { Text("❤️ Soutenir Surf Log", fontSize = 13.sp, color = colors.onPrimary) }
+        colors = ButtonDefaults.buttonColors(containerColor = colors.primaryContainer)
+    ) { Text("❤️ Soutenir Surf Log", fontSize = 13.sp, color = colors.onPrimaryContainer) }
 
     if (open) {
         AlertDialog(
