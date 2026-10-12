@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 data class DayPhrase(val title: String, val line: String)
 
 private fun categoryWord(category: String): String = when (category) {
-    "side" -> "de travers"
+    "side" -> "sideshore"
     else -> category
 }
 
@@ -65,7 +65,7 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
         else -> null
     }
     val title = when {
-        amBest.kind == ConditionKind.TOO_BIG && pmBest.kind == ConditionKind.TOO_BIG -> "Gros jour"
+        amBest.kind == ConditionKind.TOO_BIG && pmBest.kind == ConditionKind.TOO_BIG -> "Massif, sors le jet !"
         amSmall && pmSmall -> when {
             maxOf(amH, pmH) < 0.5 -> "Tout petit, mer lisse"
             amBad || pmBad -> "Petit et venté"
