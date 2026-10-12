@@ -523,6 +523,11 @@ class SurfRepository(
                 fetchWeatherBlock(lat, lon, config.longTermWeather, 7, includeDailySun = true)
             }
 
+            // Le ciel, la température, la pluie et les nuages viennent de Météo-France : AROME en court terme, puis ARPEGE aussi loin qu'il va
+            // (environ 4 jours) ; au-delà, ECMWF prend le relais. Le vent reste la moyenne ECMWF + GFS.
+            val mfWeatherDeferred = async {
+                runCatching { fetchWeatherBlock(lat, lon, WeatherModel.ARPEGE, 7) }.getOrNull()
+            }
             val gfsWindDeferred = async { fetchGfsWind(lat, lon, 7) }
             val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
             val referencePeriodsDeferred = async { fetchReferencePeriods(lat, lon, 7) }
@@ -531,6 +536,7 @@ class SurfRepository(
             val longMarine = longMarineDeferred.await()
             val shortWeather = shortWeatherDeferred.await()
             val longWeather = longWeatherDeferred.await()
+            val mfWeather = mfWeatherDeferred.await()
             val aromeHdWind = aromeHdWindDeferred.await()
             val gfsWind = gfsWindDeferred.await()
             val seaTemps = seaTempDeferred.await()
@@ -539,6 +545,7 @@ class SurfRepository(
             val marineMapShort = shortMarine.times.indices.associateBy { shortMarine.times[it] }
             val weatherMapShort = shortWeather.times.indices.associateBy { shortWeather.times[it] }
             val weatherMapLong = longWeather.times.indices.associateBy { longWeather.times[it] }
+            val weatherMapMf = mfWeather?.let { mf -> mf.times.indices.associateBy { mf.times[it] } }.orEmpty()
 
             val resultList = mutableListOf<HourlyUiModel>()
 
@@ -558,6 +565,15 @@ class SurfRepository(
                     shortWeatherIndex to shortWeather
                 } else {
                     (weatherMapLong[t] ?: 0) to longWeather
+                }
+
+                // Source du ciel de cette heure : le modèle court terme (AROME), sinon ARPEGE s'il a l'heure, sinon le long terme.
+                val mfIndex = weatherMapMf[t]
+                val mfHasHour = mfWeather != null && mfIndex != null && !mfWeather.windSpeeds.getOrElse(mfIndex) { Double.NaN }.isNaN()
+                val (wxData, wxIndex) = when {
+                    wData === shortWeather -> wData to wIndex
+                    mfHasHour -> mfWeather!! to mfIndex!!
+                    else -> wData to wIndex
                 }
 
                 val h = mData.waveHeights[mIndex]
@@ -627,13 +643,15 @@ class SurfRepository(
                         windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),
                         windDirectionStr = getCardinalDirection(windDirDeg),
                         windSource = windSource,
-                        weatherCode = wData.weatherCodes.getOrElse(wIndex) { 0 },
-                        temperature = wData.temperatures.getOrElse(wIndex) { 20.0 }.roundToInt(),
-                        cloudCover = wData.cloudCovers.getOrElse(wIndex) { 0 },
-                        uvIndex = wData.uvIndexes.getOrElse(wIndex) { 0.0 },
-                        precipitationMm = wData.precipitations.getOrElse(wIndex) { 0.0 },
-                        feelsLike = wData.apparentTemperatures.getOrElse(wIndex) {
-                            wData.temperatures.getOrElse(wIndex) { 20.0 }
+                        weatherCode = wxData.weatherCodes.getOrElse(wxIndex) { 0 },
+                        temperature = wxData.temperatures.getOrElse(wxIndex) { 20.0 }.roundToInt(),
+                        cloudCover = wxData.cloudCovers.getOrElse(wxIndex) { 0 },
+                        // L'indice UV : celui de Météo-France s'il en donne un, sinon celui du long terme.
+                        uvIndex = wxData.uvIndexes.getOrElse(wxIndex) { 0.0 }.takeIf { it > 0.0 }
+                            ?: wData.uvIndexes.getOrElse(wIndex) { 0.0 },
+                        precipitationMm = wxData.precipitations.getOrElse(wxIndex) { 0.0 },
+                        feelsLike = wxData.apparentTemperatures.getOrElse(wxIndex) {
+                            wxData.temperatures.getOrElse(wxIndex) { 20.0 }
                         }.roundToInt(),
                         seaTemperature = seaTemps[t]
                     )

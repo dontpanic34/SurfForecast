@@ -439,7 +439,7 @@ fun SurfPreferencesDialog(
                                 "Houle secondaire : affichée dès 0,2 m et 7 s.",
                                 "Vent : la moyenne de ECMWF et de GFS (direction en moyenne vectorielle, rafales moyennées), jusqu'à J+7.",
                                 "AROME HD : calculé en coulisses pour comparer, pas affiché.",
-                                "Ciel, température, pluie, UV : AROME aujourd'hui et demain, puis ECMWF."
+                                "Ciel, température, pluie, nuages : Météo-France, AROME aujourd'hui et demain, puis ARPEGE jusqu'à environ 4 jours ; au-delà, ECMWF."
                             ).forEach { line ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Text("•", fontSize = 12.sp, color = colors.primary)
