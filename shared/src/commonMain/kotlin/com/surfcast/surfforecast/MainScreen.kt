@@ -569,11 +569,10 @@ fun MainScreen(
                                         themeToggle = {
                                             Column(
                                                 modifier = Modifier.clip(RoundedCornerShape(10.dp))
-                                                    .clickable { viewModel.changeThemeMode(if (darkTop) "light" else "dark") }.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    .clickable { viewModel.changeThemeMode(if (darkTop) "light" else "dark") }.padding(horizontal = 8.dp, vertical = 6.dp),
                                                 horizontalAlignment = Alignment.CenterHorizontally
                                             ) {
-                                                ThemeToggleIcon(isDarkActive = !darkTop, backgroundColor = MaterialTheme.colorScheme.background, iconColor = onSurfaceColor, modifier = Modifier.size(22.dp))
-                                                Text("Thème", fontSize = 9.5.sp, color = onSurfaceColor.copy(alpha = 0.75f), maxLines = 1)
+                                                ThemeToggleIcon(isDarkActive = !darkTop, backgroundColor = MaterialTheme.colorScheme.background, iconColor = onSurfaceColor, modifier = Modifier.size(24.dp))
                                             }
                                         }
                                     )
