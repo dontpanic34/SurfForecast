@@ -29,173 +29,6 @@ private val OFFSHORE_CHOICES = listOf(
 private val GUST_CHOICES = listOf(20.0 to "Sensible\n20\u00A0km/h", 25.0 to "Normal\n25\u00A0km/h", 30.0 to "Tolérant\n30\u00A0km/h")
 private val CHOP_CHOICES = listOf(0.15 to "Strict\n0,15\u00A0m", 0.2 to "Sensible\n0,2\u00A0m", 0.3 to "Normal\n0,3\u00A0m", 0.6 to "Tolérant\n0,6\u00A0m")
 
-@Composable
-private fun ChoiceRow(choices: List<Pair<Double, String>>, current: Double, onPick: (Double) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-        choices.forEach { (value, label) ->
-            val selected = abs(value - current) < 0.001
-            Surface(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).clickable { onPick(value) },
-                color = if (selected) colors.primaryContainer else colors.background
-            ) {
-                Box(modifier = Modifier.padding(horizontal = 4.dp, vertical = 7.dp), contentAlignment = Alignment.Center) {
-                    Text(
-                        label, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingBlock(title: String, valueText: String? = null, hint: String? = null, content: @Composable () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(colors.surfaceVariant).padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(title, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f))
-            if (valueText != null) Text(valueText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-        }
-        if (hint != null) Text(hint, fontSize = 11.5.sp, color = colors.onSurfaceVariant)
-        content()
-    }
-}
-
-/**
- * Mon profil : 5 profils de départ (Débutant, Intermédiaire, Confirmé, Avancé, Expert) + « Personnalisé ».
- * Un profil règle plus que l'énergie : vent, onshore, rafales, clapot et période suivent. Le niveau
- * choisi est stocké sous forme de texte (« beginner »… ou « custom:… »), voir [SurfProfile.fromLevel].
- */
-@Composable
-fun SurferProfileSection(
-    surferLevel: String,
-    onLevelChanged: (String) -> Unit,
-    // Profil Personnalisé gardé à part (texte « custom:… », vide = aucun) et sa sauvegarde.
-    savedCustom: String,
-    onCustomSaved: (String) -> Unit,
-    onInfo: () -> Unit
-) {
-    val colors = MaterialTheme.colorScheme
-    val custom = isCustomLevel(surferLevel)
-    val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
-    fun update(p: SurfProfile) {
-        val serialized = p.serialize()
-        onLevelChanged(serialized)
-        onCustomSaved(serialized)
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(colors.surfaceVariant).padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Mon profil", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onBackground, modifier = Modifier.weight(1f))
-                IconButton(onClick = onInfo, modifier = Modifier.size(18.dp)) {
-                    Icon(SurfIcons.Info, contentDescription = "Comment le score est calculé", tint = colors.primary, modifier = Modifier.size(14.dp))
-                }
-            }
-            val pills = LEVELS.map { it to levelLabel(it) } + ("custom" to "Personnalisé")
-            pills.chunked(3).forEach { rowPills ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    rowPills.forEach { (key, label) ->
-                        val selected = if (key == "custom") custom else surferLevel == key
-                        Surface(
-                            modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).clickable {
-                                if (key == "custom") { if (!custom) update(if (savedCustom.isNotBlank()) SurfProfile.fromLevel(savedCustom) else profile) } else onLevelChanged(key)
-                            },
-                            color = if (selected) colors.primaryContainer else colors.background
-                        ) {
-                            Box(modifier = Modifier.padding(vertical = 7.dp), contentAlignment = Alignment.Center) {
-                                Text(
-                                    label, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1,
-                                    color = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                    repeat(3 - rowPills.size) { Spacer(modifier = Modifier.weight(1f)) }
-                }
-            }
-            Text(
-                text = when (surferLevel) {
-                    "beginner" -> "Tu surfes plutôt les mousses."
-                    "intermediate" -> "Tu commences à aller au large et à suivre les vagues."
-                    "confirmed" -> "Tu es autonome dans l'eau et tu surfes seul."
-                    "advanced" -> "Tu cherches l'endroit critique de la vague et tu travailles tes manœuvres."
-                    "expert" -> "Tu utilises le plein potentiel de la vague et tu cherches la puissance."
-                    else -> "Pars du profil choisi, puis ajuste à ta sauce."
-                },
-                fontSize = 12.sp, color = colors.onSurfaceVariant
-            )
-            if (!custom && savedCustom.isNotBlank()) {
-                Text(
-                    "Ton profil Personnalisé est gardé : touche « Personnalisé » pour le retrouver tel que tu l'as réglé.",
-                    fontSize = 11.sp, color = colors.primary
-                )
-            }
-            if (!custom) {
-                Text(
-                    "Ce profil règle : vagues " + waveRangeText(profile) +
-                        " · vent ${profile.windTolerance.roundToInt()} km/h · onshore ${profile.onshoreMax.roundToInt()} km/h" +
-                        " · rafales ${profile.gustThreshold.roundToInt()} km/h · clapot ${formatFr(profile.chopThreshold, 2)} m · période ${profile.minPeriod.roundToInt()} s min.",
-                    fontSize = 11.sp, color = colors.onSurfaceVariant.copy(alpha = 0.85f)
-                )
-            }
-        }
-
-        if (custom) {
-            SettingBlock("Vagues", hint = "Ta plus petite vague intéressante et ta plus grosse vague, en hauteur et en période.") {
-                WaveRangeEditor(profile, "custom") { update(it) }
-            }
-            SettingBlock("Période minimum", "${profile.minPeriod.roundToInt()} s", "Houle courte et clapoteuse ↔ houle longue.") {
-                Slider(
-                    value = profile.minPeriod.toFloat(),
-                    onValueChange = { update(profile.copy(minPeriod = it.roundToInt().toDouble())) },
-                    valueRange = 4f..14f, steps = 9
-                )
-            }
-            SettingBlock("Vent", "${profile.windTolerance.roundToInt()} km/h", "Force de vent bien tolérée (offshore et side-shore). Plus on cherche la qualité de la vague, plus le vent, le clapot et l'onshore pèsent.") {
-                Slider(
-                    value = profile.windTolerance.toFloat(),
-                    onValueChange = { update(profile.copy(windTolerance = (it / 5f).roundToInt() * 5.0)) },
-                    valueRange = 10f..50f, steps = 7
-                )
-                Text("Onshore toléré jusqu'à", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
-                ChoiceRow(ONSHORE_CHOICES, profile.onshoreMax) { update(profile.copy(onshoreMax = it)) }
-                Text("Offshore", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
-                Text(
-                    "L'offshore creuse la vague et fait les tubes : un débutant n'y est pas sensible, un intermédiaire l'apprécie avec modération, un confirmé ou un expert le recherche.",
-                    fontSize = 11.sp, color = colors.onSurfaceVariant
-                )
-                ChoiceRow(OFFSHORE_CHOICES.map { it.first to it.third }, profile.directionMatters) { dm ->
-                    val choice = OFFSHORE_CHOICES.first { it.first == dm }
-                    update(profile.copy(directionMatters = choice.first, offshoreMinFactor = choice.second))
-                }
-                Text("Rafales gênantes à partir de", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
-                ChoiceRow(GUST_CHOICES, profile.gustThreshold) { update(profile.copy(gustThreshold = it)) }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text("Compter les rafales dans la note", fontSize = 12.sp, color = colors.onBackground, modifier = Modifier.weight(1f))
-                    Switch(checked = profile.countGusts, onCheckedChange = { update(profile.copy(countGusts = it)) })
-                }
-                Text("Clapot gênant à partir de", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
-                ChoiceRow(CHOP_CHOICES, profile.chopThreshold) { update(profile.copy(chopThreshold = it)) }
-            }
-        }
-
-        // Aperçu : le vrai calcul, sur 5 journées types, avec les réglages en cours.
-        SettingBlock("Aperçu en direct", hint = "La note de vraies journées avec ton profil.") {
-            ScorePreviewList(surferLevel)
-        }
-    }
-}
-
 /** Le vrai calcul de la note sur 5 vraies journées de Montalivet, pour le niveau donné (aussi utilisé par l'introduction). */
 @Composable
 internal fun ScorePreviewList(surferLevel: String) {
@@ -267,84 +100,36 @@ fun ProfileNudgeCard(onOpen: () -> Unit, onLater: () -> Unit, modifier: Modifier
 }
 
 /**
- * Page « Mon profil » : un résumé et les vraies journées notées, puis « Personnaliser » (assistant en étapes) ou
- * « Tout voir d'un coup » (tous les réglages sur une page, pour les habitués).
+ * Page « Mon profil » : le questionnaire de niveau (« Trouver mon niveau ») et son résultat. Rien d'autre sur le niveau.
  */
 @Composable
 fun ProfilePage(
     surferLevel: String,
-    onLevelChanged: (String) -> Unit,
-    savedCustom: String,
-    onCustomSaved: (String) -> Unit,
-    exampleAnswers: String,
-    onExampleAnswersChanged: (String) -> Unit,
     onInfo: () -> Unit,
     levelQuiz: LevelQuizHost? = null,
     // Ouvre directement le questionnaire (depuis « Renseigner mon profil »).
     startQuiz: Boolean = false,
-    // Vrai quand le questionnaire ou l'assistant occupe la page : l'écran parent masque alors le reste (Mon matériel).
+    // Vrai quand le questionnaire occupe la page : l'écran parent masque alors le reste (Mon matériel).
     onFocusMode: (Boolean) -> Unit = {}
 ) {
-    val colors = MaterialTheme.colorScheme
-    // « overview », « wizard » ou « advanced ».
     var mode by remember { mutableStateOf(if (startQuiz && levelQuiz != null) "quiz" else "overview") }
-    val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
-    LaunchedEffect(mode) { onFocusMode(mode == "quiz" || mode == "wizard") }
+    LaunchedEffect(mode) { onFocusMode(mode == "quiz") }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        when (mode) {
-            "quiz" -> if (levelQuiz != null) LevelQuestionnaire(
+        if (mode == "quiz" && levelQuiz != null) {
+            LevelQuestionnaire(
                 initial = levelQuiz.answers, initialShift = levelQuiz.shift, initialTolerance = levelQuiz.tolerance,
                 onDone = { a, shift, tol -> levelQuiz.onSave(a, shift, tol); mode = "overview" },
                 onClose = { mode = "overview" }
             )
-            "wizard" -> ProfileWizard(
-                level = surferLevel,
-                answers = exampleAnswers,
-                onLevelChanged = onLevelChanged,
-                onCustomSaved = onCustomSaved,
-                onAnswersChanged = onExampleAnswersChanged,
-                onClose = { mode = "overview" }
-            )
-            "advanced" -> {
-                Text(
-                    "‹ Retour", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).clickable { mode = "overview" }.padding(vertical = 4.dp, horizontal = 4.dp)
-                )
-                SurferProfileSection(
-                    surferLevel = surferLevel,
-                    onLevelChanged = onLevelChanged,
-                    savedCustom = savedCustom,
-                    onCustomSaved = onCustomSaved,
-                    onInfo = onInfo
-                )
+        } else {
+            ProfileBenefitsCard()
+            val result = levelQuiz?.result?.takeIf { it.levelKey == surferLevel }
+            if (result != null) {
+                LevelCard(result)
+                LevelLadder(result)
             }
-            else -> {
-                ProfileBenefitsCard()
-                Column(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant).padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text("Mon profil", fontSize = 13.sp, color = colors.onSurfaceVariant)
-                    val quizResult = levelQuiz?.result?.takeIf { it.levelKey == surferLevel }
-                    if (quizResult != null) LevelCard(quizResult) else Text(
-                        if (isCustomLevel(surferLevel)) "Personnalisé" else levelLabel(surferLevel),
-                        fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.onBackground
-                    )
-                    Text("Vagues : " + waveRangeText(profile), fontSize = 12.sp, color = colors.onSurfaceVariant)
-                    Text(
-                        "Onshore gênant dès ${profile.onshoreMax.roundToInt()} km/h · période ${profile.minPeriod.roundToInt()} s minimum",
-                        fontSize = 12.sp, color = colors.onSurfaceVariant
-                    )
-                }
-                levelQuiz?.result?.takeIf { it.levelKey == surferLevel }?.let { LevelLadder(it) }
-                if (levelQuiz != null) Button(onClick = { mode = "quiz" }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire", fontWeight = FontWeight.Bold)
-                }
-                Text(
-                    "Tout voir d'un coup", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary,
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).clickable { mode = "advanced" }.padding(8.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+            if (levelQuiz != null) Button(onClick = { mode = "quiz" }, modifier = Modifier.fillMaxWidth()) {
+                Text(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire", fontWeight = FontWeight.Bold)
             }
         }
     }

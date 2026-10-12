@@ -1,0 +1,59 @@
+<title>Tranche de nuit</title>
+<style>
+/* Mise en page : quatre propositions pour montrer les dernières heures de nuit avant le lever ; chaque proposition montre le déroulé de la journée, la houle, le vent et la météo avec la même tranche. La nuit est sombre, les heures de jour gardent leurs couleurs. Fond sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;--sel:#2c5a70;--night:#05090c;--y:#ffd21f;--o:#ff9a1f;--r:#ff5a55;--sea:#2f7f9a;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:470px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+h1{font-size:1.25rem;margin:0}h2{font-size:1.05rem;margin:18px 0 0;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:8px 10px;margin-top:6px}
+.ct{font-size:11px;font-weight:700;color:var(--mut);margin-bottom:4px}
+.strip{display:flex;gap:2px;align-items:flex-end;height:64px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:10px}
+.col .b{width:100%;background:var(--sea);border-radius:3px 3px 0 0}
+.col.n{background:var(--night);border-radius:4px}.col.n .b{background:#173542}
+.wide{flex:3.2}.mid{flex:2}
+.lab{font-size:9.5px;color:var(--mut);margin-top:2px;text-align:center;line-height:1.1}
+.arr{display:flex;gap:2px;margin-bottom:3px}.arr div{flex:1;min-width:0;text-align:center;font-size:12px;line-height:1.1}.arr .n{background:var(--night);border-radius:4px;color:#9fb4c0}
+.sun{display:flex;gap:2px}.sun div{flex:1;min-width:0;text-align:center;font-size:13px;padding:2px 0}.sun .n{background:var(--night);border-radius:4px;color:#9fb4c0}
+.chip{background:var(--night);border-radius:10px;padding:6px 9px;font-size:12px;color:#c4d3db;margin-bottom:6px}
+.y{color:var(--y)}.o{color:var(--o)}.r{color:var(--r)}
+</style>
+<main>
+<h1>Tranche de nuit</h1>
+<p class="mut sm">Les 4 dernières heures de nuit (de 4 h à 8 h, quand le soleil se lève à 8 h 15) apparaissent avant les heures de jour, en noir. Les données sont des exemples.</p>
+<p class="sm"><b>Mon avis :</b> c'est une bonne idée, parce que c'est la fenêtre de l'aube. Les 3 ou 4 heures d'avant le lever disent dans quel état on trouve le plan d'eau. Je garderais 4 h maximum, et je fusionnerais seulement quand la tranche est large : une moyenne seule cache une tendance (vent qui tombe, houle qui monte), donc j'ajouterais une petite flèche de tendance.</p>
+<div id="out"></div>
+</main>
+<script>
+var DAY=[[8,1.2,'O',12,'☁'],[9,1.2,'O',13,'☁'],[10,1.3,'O',12,'☁'],[11,1.3,'ONO',13,'☁'],[12,1.3,'NO',14,'⛅'],[13,1.2,'NO',15,'⛅'],[14,1.2,'NO',15,'⛅']];
+var NIGHT=[[4,1.4,'SO',10,'☾'],[5,1.4,'SO',10,'☾'],[6,1.4,'SO',9,'☾'],[7,1.3,'O',9,'☾']];
+var avgH='1,4 m ↘',avgW='SO 9',avgT='11°';
+function arrow(w){return w[2]+' '+w[3]}
+function strips(p){
+ // p : 'A' large, 'B' étroite, 'C' séparées, 'D' chip seul
+ var nightCols;
+ if(p==='A')nightCols='<div class="col n wide"><div class="b" style="height:70%"></div><div class="lab">Nuit 4 h à 8 h</div></div>';
+ else if(p==='B')nightCols='<div class="col n mid"><div class="b" style="height:70%"></div><div class="lab">Nuit</div></div>';
+ else if(p==='C')nightCols=NIGHT.map(function(h){return '<div class="col n"><div class="b" style="height:'+(h[1]*35)+'%"></div><div class="lab">'+h[0]+' h</div></div>'}).join('');
+ else nightCols='';
+ var dayCols=DAY.map(function(h){return '<div class="col"><div class="b" style="height:'+(h[1]*35)+'%"></div><div class="lab">'+h[0]+' h</div></div>'}).join('');
+ return nightCols+dayCols}
+function windRow(p){
+ var n;
+ if(p==='A')n='<div class="n" style="flex:3.2">'+avgW+' km/h</div>';else if(p==='B')n='<div class="n" style="flex:2">'+avgW+'</div>';else if(p==='C')n=NIGHT.map(function(h){return '<div class="n">'+arrow(h)+'</div>'}).join('');else n='';
+ return n+DAY.map(function(h){var c=h[2]==='SO'||h[2]==='O'||h[2]==='ONO'||h[2]==='NO'?(h[3]>15?'r':'o'):'y';return '<div class="'+c+'">➤<br>'+arrow(h)+'</div>'}).join('')}
+function sunRow(p){
+ var n;
+ if(p==='A')n='<div class="n" style="flex:3.2">☾ '+avgT+'</div>';else if(p==='B')n='<div class="n" style="flex:2">☾ '+avgT+'</div>';else if(p==='C')n=NIGHT.map(function(){return '<div class="n">☾</div>'}).join('');else n='';
+ return n+DAY.map(function(h){return '<div>'+h[4]+'</div>'}).join('')}
+var NAMES={A:'A · Une colonne large et noire, moyennée',B:'B · Une colonne étroite et noire',C:'C · Les heures séparées, assombries (pas de fusion)',D:'D · Pas de colonne : une phrase noire au-dessus'};
+var DESC={A:'La tranche est fusionnée en une seule colonne large. On y lit la moyenne (houle, vent, température) et « Nuit 4 h à 8 h ». C’est la proposition la plus proche de ton idée.',B:'Même idée, mais la colonne est plus étroite : elle prend moins de place et la journée reste lisible. Moins de détail dedans.',C:'On garde chaque heure (4, 5, 6, 7 h) mais en noir. Rien n’est perdu, mais il y a quatre colonnes de plus à lire, donc plus long.',D:'Pas de colonne dans les graphes. Une bande noire au-dessus dit la nuit en une phrase (la même que dans « Actuellement »). Le plus léger.'};
+var html='';['A','B','C','D'].forEach(function(p){
+ var chip=p==='D'?'<div class="chip">Nuit 4 h à 8 h : houle autour de 1,4 m qui baisse, vent faible de sud-ouest. Au lever, plan d’eau plutôt correct.</div>':'';
+ html+='<h2>'+NAMES[p]+'</h2><p class="sm mut">'+DESC[p]+'</p>'
+ +'<div class="card"><div class="ct">Le déroulé de la journée</div>'+chip+'<div class="arr">'+windRow(p)+'</div><div class="strip">'+strips(p)+'</div></div>'
+ +'<div class="card"><div class="ct">La houle</div>'+chip+'<div class="strip">'+strips(p)+'</div></div>'
+ +'<div class="card"><div class="ct">Le vent</div>'+chip+'<div class="arr">'+windRow(p)+'</div></div>'
+ +'<div class="card"><div class="ct">La météo</div>'+chip+'<div class="sun">'+sunRow(p)+'</div></div>'});
+document.getElementById('out').innerHTML=html;
+</script>

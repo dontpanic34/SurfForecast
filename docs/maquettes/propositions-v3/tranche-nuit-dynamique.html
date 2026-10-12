@@ -1,0 +1,42 @@
+<title>Tranche de nuit dynamique</title>
+<style>
+/* Mise en page : une colonne de nuit étroite qui apparaît avant le lever et disparaît quand on n'en a plus besoin ; un curseur d'heure actuelle permet de voir quand elle s'affiche. La tranche horaire est écrite sous la colonne. Fond sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;--sel:#2c5a70;--night:#05090c;--fade:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.72));--nt:#c4d3db;--y:#ffd21f;--o:#ff9a1f;--r:#ff5a55;--sea:#2f7f9a;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:470px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+h1{font-size:1.25rem;margin:0}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:8px 10px}.ct{font-size:11px;font-weight:700;color:var(--mut);margin-bottom:4px}
+input[type=range]{width:100%;accent-color:#5aa6cc}.now{font-weight:800;font-size:18px}
+.arr{display:flex;gap:2px;margin-bottom:3px}.arr>div{flex:1;min-width:0;text-align:center;font-size:12px;line-height:1.1}.arr .n{flex:.8}
+.strip{display:flex;gap:2px;align-items:flex-end;height:60px}.col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end}.col .b{width:100%;background:var(--sea);border-radius:3px 3px 0 0}
+.col.n{flex:.8}.col.n .b{background:var(--sea);opacity:.55}
+.lab{display:flex;gap:2px;margin-top:3px}.lab div{flex:1;min-width:0;text-align:center;font-size:9.5px;color:var(--mut)}.lab .n{flex:.8}
+.y{color:var(--y)}.o{color:var(--o)}.r{color:var(--r)}
+.state{font-size:12px;margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--tile)}
+:root[data-theme="light"]{--bg:#e8eef2;--card:#ffffff;--tile:#e3ebf1;--fg:#10222e;--mut:#5a6d7a;--link:#0f5f8c;--sel:#c5dbe8;--y:#d9a400;--o:#e07b00;--r:#d32f2f;--sea:#6bb7d6;--fade:linear-gradient(to bottom,rgba(40,60,80,0),rgba(40,60,80,.4));--nt:#10222e;color-scheme:light}
+.tg{border:0;background:var(--tile);color:var(--fg);border-radius:99px;padding:6px 12px;font-weight:700;cursor:pointer;margin-top:8px}
+.col.n{position:relative;background:var(--fade)!important;border-radius:4px}.col.n .tx{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:9px;font-weight:700;color:var(--nt);line-height:1.1}
+</style>
+<main>
+<h1>Tranche de nuit dynamique</h1>
+<p class="mut sm">Une colonne de nuit très étroite, qui n'apparaît que quand elle sert : de la fin de la nuit jusqu'à 3 heures après le lever. Plus tard dans la journée, elle disparaît. La tranche horaire est écrite dessous. Déplace le curseur pour changer l'heure actuelle (lever du soleil à 8 h 15).</p>
+<div class="card"><div class="now" id="now"></div><input id="h" type="range" min="0" max="23" step="1" value="6" aria-label="Heure actuelle"><button class="tg" id="tg">Thème clair / sombre</button><div class="state" id="state"></div></div>
+<div class="card"><div class="ct">Le déroulé de la journée</div><div class="arr" id="arr"></div><div class="strip" id="strip"></div><div class="lab" id="lab"></div></div>
+<div class="card"><div class="ct">Les règles</div><p class="sm">• La colonne montre les 4 heures avant le lever (4 h à 8 h) en une moyenne : houle, vent, température, avec une petite flèche de tendance.<br>• Elle s'affiche de la tombée de la nuit jusqu'à <b>lever + 3 h</b> (11 h ici), puis disparaît. Passé 11 h, on ne la montre plus.<br>• Le soir, elle revient <b>2 h après le coucher</b> (ici 21 h 24).<br>• Le vent utilise les mêmes flèches et les mêmes couleurs que le reste ; plus de lune.<br>• Le fond est un fondu noir (thème sombre) ou gris (thème clair), avec l'horaire écrit à l'intérieur, en bas.<br>• Pour un jour à venir (demain, après-demain), elle est toujours affichée : c'est la fenêtre de l'aube de ce jour.<br>• La tranche horaire est toujours écrite dessous, en clair (« Nuit 4 h à 8 h »).</p></div>
+</main>
+<script>
+var SUNRISE=8.25,SUNSET=19.4,SHOW_UNTIL=SUNRISE+3,SHOW_FROM=SUNSET+2,HOURS=[8,9,10,11,12,13,14,15,16,17,18];
+var W={8:['O',12],9:['O',13],10:['O',12],11:['ONO',13],12:['NO',14],13:['NO',15],14:['NO',15],15:['NO',14],16:['NO',14],17:['NO',13],18:['NO',12]};
+function col(c){return c[1]>15?'r':c[1]>=8?'o':'y'}
+function render(){
+ var now=+document.getElementById('h').value;
+ document.getElementById('now').textContent='Heure actuelle : '+now+' h';
+ var show=now<SHOW_UNTIL||now>=SHOW_FROM;
+ document.getElementById('state').textContent=show?(now>=19?'Le soir (2 h après le coucher, ici dès 21 h 24) : la colonne annonce l\u2019aube de demain.':'La colonne est affichée (jusqu’à '+Math.floor(SHOW_UNTIL)+' h).'):'La colonne a disparu : on n’a plus besoin de la nuit d’avant.';
+ var n=show?'<div class="n o">➤<br>SO 9<br>↘</div>':'';
+ document.getElementById('arr').innerHTML=n+HOURS.map(function(h){var c=W[h];return '<div class="'+col(c)+'">➤<br>'+c[0]+' '+c[1]+'</div>'}).join('');
+ document.getElementById('strip').innerHTML=(show?'<div class="col n"><div class="b" style="height:70%"></div><div class="tx">Nuit<br>4–8 h</div></div>':'')+HOURS.map(function(h){return '<div class="col"><div class="b" style="height:'+(42+(h%3)*2)+'%"></div></div>'}).join('');
+ document.getElementById('lab').innerHTML=(show?'<div class="n"></div>':'')+HOURS.map(function(h){return '<div>'+h+'</div>'}).join('');
+}
+document.getElementById('h').addEventListener('input',render);document.getElementById('tg').addEventListener('click',function(){var r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='light'?'dark':'light')});render();
+</script>

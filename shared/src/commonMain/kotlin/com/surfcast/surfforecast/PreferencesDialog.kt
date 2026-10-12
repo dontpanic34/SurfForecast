@@ -382,15 +382,10 @@ fun SurfPreferencesDialog(
                         var profileFocus by remember { mutableStateOf(false) }
                         ProfilePage(
                             surferLevel = surferLevel,
-                            onLevelChanged = onSurferLevelChanged,
-                            savedCustom = customProfile,
-                            onCustomSaved = onCustomProfileSaved,
-                            exampleAnswers = exampleAnswers,
-                            onExampleAnswersChanged = onExampleAnswersChanged,
+                            onInfo = { showScoreInfo = true },
                             levelQuiz = levelQuiz,
                             startQuiz = startPage == "profileQuiz",
-                            onFocusMode = { profileFocus = it },
-                            onInfo = { showScoreInfo = true }
+                            onFocusMode = { profileFocus = it }
                         )
                     }
 

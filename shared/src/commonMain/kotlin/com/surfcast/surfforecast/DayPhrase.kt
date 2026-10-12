@@ -56,10 +56,11 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
     if (maxH < FLAT_BELOW) return DayPhrase("Flat, va pêcher !")
     if (maxH >= MASSIVE_FROM) return DayPhrase("Massif, sors le jet !")
 
+    // La houle est toujours dite (grossit, tombe, constante) : on peut ouvrir l'appli sans avoir vu les prévisions la veille.
     val swell = when {
         pmH - amH >= 0.3 -> "ça grossit"
         amH - pmH >= 0.3 -> "ça tombe"
-        else -> "ça tient"
+        else -> "houle constante"
     }
     fun colorOf(hs: List<HourlyUiModel>): Int {
         val dir = hs.filter { windFeelKmh(it) >= 4 }.groupingBy { windDirectionClass(it.windDirectionStr, beachFacing) }
@@ -132,7 +133,8 @@ fun nightHours(all: List<HourlyUiModel>, sun: Map<LocalDate, DailySunInfo>, now:
     val toHour: Int
     if (now.time < todaySun.sunrise) {
         val yesterday = today.minus(1, DateTimeUnit.DAY)
-        val ySun = sun[yesterday] ?: return emptyList()
+        // Les horaires de la veille manquent après minuit (les prévisions commencent aujourd'hui) : le coucher d'hier vaut celui d'aujourd'hui, à une minute près.
+        val ySun = sun[yesterday] ?: todaySun
         fromDate = yesterday; fromHour = ySun.sunset.hour; toDate = today; toHour = todaySun.sunrise.hour
     } else {
         val tomorrow = today.plus(1, DateTimeUnit.DAY)

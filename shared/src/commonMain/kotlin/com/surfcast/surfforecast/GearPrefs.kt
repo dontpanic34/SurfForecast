@@ -81,14 +81,14 @@ fun gearConditionsOf(hour: HourlyUiModel, beachFacing: Int?): Set<String> {
 /**
  * La planche du quiver qui colle le mieux aux conditions de [hour] : d'abord d'après ta grille « Je la sors quand… » ; tant que
  * la grille est vide, d'après le type de planche (petit ou mou : mid-length, longboard, fish ; gros, creux ou puissant :
- * shortboard). Null sans planche ou sans aucune idée.
+ * shortboard). Toujours une planche à partir de deux planches ; null avec moins de deux.
  */
 fun boardOfTheDay(hour: HourlyUiModel?, boards: List<QuiverBoard>, beachFacing: Int?): QuiverBoard? {
-    if (hour == null || boards.isEmpty()) return null
+    // Une seule planche : rien à conseiller. À partir de deux planches, il y a toujours une proposition.
+    if (hour == null || boards.size < 2) return null
     val now = gearConditionsOf(hour, beachFacing)
     val byGrid = boards.map { b -> b to GearPrefs.conditionsOf(b.id).count { it in now } }.filter { it.second > 0 }.maxByOrNull { it.second }?.first
     if (byGrid != null) return byGrid
-    if (boards.any { GearPrefs.conditionsOf(it.id).isNotEmpty() }) return null
     val soft = "petit" in now || "mou" in now || "longues" in now
     val strong = "gros" in now || "creux" in now || "puissant" in now
     fun fit(b: QuiverBoard): Int = when (b.family) {
@@ -99,7 +99,7 @@ fun boardOfTheDay(hour: HourlyUiModel?, boards: List<QuiverBoard>, beachFacing: 
         "mousse" -> 0
         else -> 1
     }
-    return boards.maxByOrNull { fit(it) }?.takeIf { fit(it) > 0 }
+    return boards.maxByOrNull { fit(it) }
 }
 
 @Composable
@@ -118,13 +118,6 @@ internal fun PillChoices(choices: List<String>, selected: String, onSelect: (Str
     }
 }
 
-/** Majoration du volume selon la fréquence de surf (proposition à valider) : 0 plusieurs fois par semaine ou plus. */
-internal fun frequencyBoost(frequency: String): Double = when (frequency) {
-    "1 fois par semaine" -> 0.05
-    "1 fois par mois" -> 0.10
-    "quelques fois par an" -> 0.15
-    else -> 0.0
-}
 
 /** Les conditions où l'on sort cette planche, sur sa carte (Petit, Gros, Mou, Creux, Puissant, Longues vagues). */
 @Composable
@@ -157,18 +150,3 @@ fun BoardDayModeChooser() {
     }
 }
 
-/** « Mon expérience » : depuis quand, fréquence, saison. Seule la fréquence change le volume conseillé. */
-@Composable
-fun ExperienceSection() {
-    val colors = MaterialTheme.colorScheme
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Je surfe depuis", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        PillChoices(listOf("moins d'1 an", "1 à 3 ans", "3 à 10 ans", "plus de 10 ans"), GearPrefs.since) { GearPrefs.chooseSince(it) }
-        Text("Je surfe", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        PillChoices(listOf("quelques fois par an", "1 fois par mois", "1 fois par semaine", "plusieurs fois par semaine", "plusieurs fois par jour"), GearPrefs.frequency) { GearPrefs.chooseFrequency(it) }
-        val boost = frequencyBoost(GearPrefs.frequency)
-        if (boost > 0) Text("+${(boost * 100).toInt()} % de volume conseillé : on surfe moins, il faut un peu plus de flottaison.", fontSize = 12.sp, color = colors.primary)
-        Text("Ma saison", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        PillChoices(listOf("toute l'année", "quand l'eau est bonne"), GearPrefs.season) { GearPrefs.chooseSeason(it) }
-    }
-}

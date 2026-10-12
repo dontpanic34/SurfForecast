@@ -12,6 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -132,13 +133,24 @@ fun MainScreen(
             onChosen = { viewModel.chooseFirstSpot(it) }
         )
     } else if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
-        OnboardingDialog(
-            displaySize = viewModel.displaySize,
-            onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
-            surferLevel = viewModel.surferLevel,
-            onSurferLevelChanged = { viewModel.changeSurferLevel(it) },
-            onDone = { viewModel.dismissOnboarding() }
-        )
+        // Après le choix du spot : directement le questionnaire de niveau, puis la visite guidée de l'accueil.
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = {},
+            properties = androidx.compose.ui.window.DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            androidx.compose.material3.Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.background) {
+                Column(
+                    modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    LevelQuestionnaire(
+                        initial = viewModel.levelAnswers, initialShift = viewModel.levelShift, initialTolerance = viewModel.tolerance,
+                        onDone = { a, shift, tol -> viewModel.saveLevelQuestionnaire(a, shift, tol); viewModel.dismissOnboarding() },
+                        onClose = { viewModel.dismissOnboarding() }
+                    )
+                }
+            }
+        }
     }
 
     val popupError = (uiState as? SurfUiState.Success)?.popupError
@@ -361,15 +373,6 @@ fun MainScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(surfaceColor)
                     ) {
-                                    // Profil pas encore renseigné : un message cliquable l'invite à le remplir.
-                                    if (viewModel.showProfileNudge) {
-                                        ProfileNudgeCard(
-                                            onOpen = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
-                                            onLater = { viewModel.hideProfileNudge() },
-                                            modifier = Modifier.coachTarget("bestSlot", coachTargets).padding(horizontal = 10.dp, vertical = 2.dp).padding(bottom = 6.dp)
-                                        )
-                                    }
-
                                     // Fiches de bancs : « Le banc magique : 16h–18h (descendant · 1,0–1,6 m) ».
                                     run {
                                         val day = selectedDate ?: today
@@ -698,6 +701,7 @@ fun MainScreen(
                                             )
                                         ) {
                                         DynamicCardsSection(
+                                            onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             boardOfDay = if (GearPrefs.boardDayMode == "header" || GearPrefs.boardDayMode == "both")
@@ -937,6 +941,7 @@ fun FavoritesHeaderRow(
 @Composable
 fun DynamicCardsSection(
     afterTimeline: @Composable () -> Unit,
+    onOpenProfile: () -> Unit = {},
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -1229,6 +1234,14 @@ fun DynamicCardsSection(
                                 }
                             }
                         }
+                    }
+                    // Profil pas encore renseigné : un message entre la semaine et le déroulé de la journée invite à le remplir.
+                    if (cardKey == "weekly" && viewModel.showProfileNudge) {
+                        ProfileNudgeCard(
+                            onOpen = onOpenProfile,
+                            onLater = { viewModel.hideProfileNudge() },
+                            modifier = (if (coachTargets != null) Modifier.coachTarget("bestSlot", coachTargets) else Modifier).padding(horizontal = 6.dp, vertical = 6.dp)
+                        )
                     }
                     if (cardKey == afterKey) afterTimeline()
                 }

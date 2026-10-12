@@ -127,22 +127,6 @@ class ProfileWizardTest {
     }
 
     @Test
-    fun waveRangeIsReadInMetersAndSeconds() {
-        assertEquals("0,5 m · 8 s  →  1,3 m · 10 s", waveRangeText(SurfProfile.preset("beginner")))
-        assertEquals("0,8 m · 9 s  →  1,7 m · 10 s", waveRangeText(SurfProfile.preset("intermediate")))
-        assertEquals("0,8 m · 9 s  →  2,0 m · 11 s", waveRangeText(SurfProfile.preset("confirmed")))
-        assertEquals("0,8 m · 9 s  →  aucune limite", waveRangeText(SurfProfile.preset("expert")))
-    }
-
-    @Test
-    fun aSavedCustomProfileIsReadBackInMetersAndSeconds() {
-        val custom = SurfProfile.preset("intermediate").copy(idealMin = waveEnergyKj(0.9, 9.0), cap = waveEnergyKj(1.7, 10.0))
-        assertEquals("0,9 m · 9 s  →  1,7 m · 10 s", waveRangeText(custom))
-        val big = SurfProfile.preset("confirmed").copy(idealMin = waveEnergyKj(1.2, 10.0), cap = waveEnergyKj(2.5, 12.0))
-        assertEquals("1,2 m · 10 s  →  2,5 m · 12 s", waveRangeText(big))
-    }
-
-    @Test
     fun bestRatingOfTheDayIsTheBestHour() {
         val hours = listOf(
             hour(8, windKmh = 30, windDir = "O"),
