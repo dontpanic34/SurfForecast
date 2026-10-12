@@ -114,3 +114,10 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Valider le profil « Avancé » du moteur (plafond 1700 kJ, vent 22 km/h, onshore 11 km/h).
 - Aligner l'organigramme sur la planche en choix multiple retirée du questionnaire.
 - Retirer les anciens réglages devenus inutiles (`volume_level_idx`, `body_height_cm`, `body_fitness`) : lues nulle part, elles restent dans les préférences des utilisateurs sans effet.
+
+## Réglages : points à reprendre (17 octobre)
+- **Prévisions** (combos de prévision, modèles) : on y reviendra. Pistes : garder une valeur par défaut et l'expliquer en une phrase, ne laisser le réglage que pour les habitués.
+- **Icônes par jour** (semaine) : que garder maintenant que la semaine affiche la flèche du vent et les trois segments de couleur ? À trancher avec les « Indicateurs vent » (flèche, texte, les deux, aucun).
+- **Contenu de l'échelle des niveaux** : à tirer des réponses du questionnaire (barre, take-off, pic, manœuvres) ; retravailler la marche Avancé.
+- **Planche du jour** : option provisoire « En-tête / Ligne Maintenant / Les deux / Aucune » dans les Réglages.
+- Retirer des Réglages : thème, étoiles des jours (sévérité), visibilité et ordre des encarts. Garder « réduire un encart ».

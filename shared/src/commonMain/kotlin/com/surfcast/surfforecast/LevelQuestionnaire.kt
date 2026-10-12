@@ -22,7 +22,7 @@ internal val LEVEL_BANDS: List<LevelBand> = listOf(
 
 /** Réponses au questionnaire ; un index = la position de la réponse dans la liste d'options de l'écran. */
 data class LevelAnswers(
-    /** 0 = la mousse, 1 = la réforme, 2 = le large. */
+    /** 0 = la mousse, 1 = la reforme, 2 = le large. */
     val what: Int = 2,
     /** Taille de la barre passée : 0 = pas encore … 5 = au-dessus de la tête (environ 2 m). */
     val barre: Int? = null,
@@ -34,7 +34,7 @@ data class LevelAnswers(
     val goals: List<Int> = emptyList(),
     /** Manœuvres (seulement si on vise « radical » ou plus) : 0 = pas là … 3 = replaque à chaque fois. */
     val maneuvers: Int? = null,
-    /** Mousse ou réforme : veut passer au large ? 0 = oui bientôt, 1 = pas pour l'instant. */
+    /** Mousse ou reforme : veut passer au large ? 0 = oui bientôt, 1 = pas pour l'instant. */
     val wantLarge: Int? = null,
     /** Forme, sans effet sur le niveau : ressenti à la barre (0 = prêt … 3 = au bon moment). */
     val feel: Int? = null,
@@ -54,10 +54,25 @@ data class LevelResult(
     /** Ce qui retient au niveau actuel, en français, pour l'encart « Pour passer à … ». */
     val holdBack: List<String>
 ) {
+    /** Ce qu'il faut travailler pour passer à la tranche d'après (une phrase différente pour chaque tranche), ou null au sommet. */
+    val advice: String? get() = NEXT_STEP_ADVICE.getOrNull(bandIndex)
+
     /** Clé du niveau pour le moteur de notation : « beginner » … « expert », suivie de « + » si besoin. */
     val levelKey: String get() = LEVEL_KEYS[level] + if (plus && level < 4) "+" else ""
     val nextName: String? get() = LEVEL_BANDS.getOrNull(bandIndex + 1)?.name
 }
+
+/** Pour chaque tranche (0 = Débutant … 7 = Avancé +) : ce qui fait passer à la suivante. */
+internal val NEXT_STEP_ADVICE = listOf(
+    "Rends ton take-off sûr, en un seul temps, dans la mousse.",
+    "Passe de la mousse à la vague : va au large les petits jours, avec du monde autour pour te rassurer.",
+    "Rends ton take-off plus régulier sur les petites vagues.",
+    "Apprends à te placer : repère le pic tout seul.",
+    "Gère tes manœuvres de replacement pour rester en rythme avec la vague. Tu ne cherches plus seulement à la suivre : tu commences à revenir ou à rester dans la zone critique.",
+    "Cherche l'endroit critique de la vague et des manœuvres plus engagées.",
+    "Travaille tes manœuvres : le mouvement est là, vise une réception propre.",
+    "Replaque tes manœuvres à chaque fois, avec puissance et style."
+)
 
 internal val LEVEL_KEYS = listOf("beginner", "intermediate", "confirmed", "advanced", "expert")
 internal val LEVEL_NAMES = listOf("Débutant", "Intermédiaire", "Confirmé", "Avancé", "Expert")
@@ -77,7 +92,7 @@ fun computeLevel(a: LevelAnswers, shift: Int = 0): LevelResult {
     val limits = ArrayList<Limit>()
     var forcePlus = false
     if (!largeWater) {
-        limits += Limit(0, if (a.takeOff != null && a.takeOff != 0) "tu ne surfes que la mousse ou la réforme et ton take-off n'est pas encore sûr" else "tu ne surfes que la mousse ou la réforme")
+        limits += Limit(0, if (a.takeOff != null && a.takeOff != 0) "tu ne surfes que la mousse ou la reforme et ton take-off n'est pas encore sûr" else "tu ne surfes que la mousse ou la reforme")
         forcePlus = a.takeOff == 0 && a.wantLarge == 0
     } else {
         if (a.goals.isNotEmpty()) {

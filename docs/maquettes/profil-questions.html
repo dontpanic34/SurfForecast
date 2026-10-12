@@ -187,18 +187,18 @@ details.lv5 p{margin:0 0 8px;font-size:12.5px}
 
 <script>
 var LEVELS=[
- {n:'Débutant',goal:'Te lever, et garder la mousse le plus longtemps possible.',def:'Tu surfes la mousse (ou les réformes). Ton take-off est à travailler ou se fait en plusieurs temps. Tu ne passes pas la barre, ou seulement quand c\'est tout petit. L\'offshore, c\'est du creux : si tu dépasses ta zone de confort, tu risques de planter.'},
- {n:'Intermédiaire',goal:'Réussir tes take-offs sur la vague.',def:'Tu commences à surfer la vague, sur petites vagues. Tu as le take-off sur petite vague. Tu passes la barre quand c\'est petit ou au bon moment. Tu te places en fonction des autres : le monde te rassure.'},
+ {n:'Débutant',goal:'Te lever, et garder la mousse le plus longtemps possible.',def:'Tu surfes la mousse (ou les reformes). Ton take-off est à travailler ou se fait en plusieurs temps. Tu ne passes pas la barre, ou seulement quand c\'est tout petit. L\'offshore, c\'est du creux : si tu dépasses ta zone de confort, tu risques de planter.'},
+ {n:'Intermédiaire',goal:'Réussir tes take-offs sur la vague.',def:'Tu passes la barre quand c\'est accessible et tu surfes l\'épaule. Tu te lèves souvent sur la vague. Tu te places en fonction des autres : le monde te rassure. Le pic t\'impressionne.'},
  {n:'Confirmé',goal:'Suivre la vague le plus longtemps possible.',def:'Tu es autonome : tu localises une vague même s\'il n\'y a personne. Ton take-off est solide, tu passes la barre sans souci et la rame suit.'},
  {n:'Avancé',goal:'Exprimer tes manœuvres, t\'améliorer, être plus critique.',def:'Tu cherches la taille où tu peux faire de vraies manœuvres et l\'endroit critique de la vague. Tu sais faire des manœuvres d\'expert, mais pas de façon régulière : il te reste une marge de progression avant de les considérer acquises. Tu veux être plus radical, plus engagé.'},
- {n:'Expert',goal:'Perfectionner des manœuvres que tu maîtrises déjà.',def:'Toutes les manœuvres sont acquises : tu les perfectionnes. Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c\'est pourri : tu trouves le bon créneau, les phases plus calmes, une réforme intéressante, et tu tiens le courant à la rame.'}];
+ {n:'Expert',goal:'Perfectionner des manœuvres que tu maîtrises déjà.',def:'Toutes les manœuvres sont acquises : tu les perfectionnes. Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c\'est pourri : tu trouves le bon créneau, les phases plus calmes, une reforme intéressante, et tu tiens le courant à la rame.'}];
 var TK=['En un seul temps, tout le temps','En un seul temps, souvent','Parfois en un seul temps, ou en plusieurs temps'];
 var STEPS=[
  {id:'tol1',q:'Quand les conditions sont moyennes (vent, mer hachée, vague molle)…',o:['J\'y vais quand même, motivé : je reviendrai si ça s\'améliore','J\'y vais si ça reste correct','J\'attends que ce soit bon']},
- {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',o:['J\'y vais, c\'est l\'occasion de progresser','Je regarde d\'abord, j\'y vais si ça me rassure','Je reste au sec']},
+ {id:'tol2',q:'Quand c\'est plus gros que d\'habitude…',o:['J\'y vais, c\'est l\'occasion de progresser','J\'hésite : j\'y vais si c\'est accessible et que je suis en forme','Je reste au sec']},
  {id:'tol3',q:'Ça souffle onshore, ou c\'est dur physiquement…',o:['Je me débrouille, il y a toujours des bouts à prendre','Je tente un peu, puis je vois','Je préfère rester au sec']},
- {id:'what',q:'Tu surfes…',o:['La mousse','La réforme','Le large']},
- {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore','Genoux (environ 0,5 m)','Taille (environ 0,8 m)','Poitrine (environ 1,2 m)','Tête (environ 1,5 m)','Au-dessus de la tête (environ 2 m)'],when:function(a){return a.what===2}},
+ {id:'what',q:'Tu surfes…',o:['La mousse','La reforme','Le large']},
+ {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore la barre','Vagues jusqu\'aux genoux (environ 0,5 m)','Vagues jusqu\'à la taille (environ 0,8 m)','Vagues jusqu\'à la poitrine (environ 1,2 m)','Vagues jusqu\'à la tête (environ 1,5 m)','Vagues plus hautes que la tête (environ 2 m)'],when:function(a){return a.what===2}},
  {id:'tk',q:'Définis ton take-off',o:TK},
  {id:'want',q:'Tu veux passer au large ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what<2}},
  {id:'peak',q:'Où tu te places dans l\'eau ?',o:['J\'ai du mal à localiser le pic, je me fie aux gens','Je repère le pic tout seul, j\'y vais si c\'est accessible','Je sais où est le pic, j\'essaie d\'être le mieux placé'],when:function(a){return a.what===2}},
@@ -210,6 +210,8 @@ var STEPS=[
 ];
 var PP={feel:[1,0.6,0.3,0.5],train:[0,0.5,1],where:[0,0.35,0.7,1]};
 function gmax(a){return Math.max.apply(null,(a.goal||[]).length?a.goal:[-1])}
+var ADV=['Rends ton take-off sûr, en un seul temps, dans la mousse.','Passe de la mousse à la vague : va au large les petits jours, avec du monde autour pour te rassurer.','Rends ton take-off plus régulier sur les petites vagues.','Apprends à te placer : repère le pic tout seul.','Gère tes manœuvres de replacement pour rester en rythme avec la vague. Tu ne cherches plus seulement à la suivre : tu commences à revenir ou à rester dans la zone critique.','Cherche l\'endroit critique de la vague et des manœuvres plus engagées.','Travaille tes manœuvres : le mouvement est là, vise une réception propre.','Replaque tes manœuvres à chaque fois, avec puissance et style.'];
+var BDEF=[['Tu surfes la mousse (ou les reformes). Ton take-off est à travailler ou se fait en plusieurs temps. Tu ne passes pas la barre, ou seulement quand c\'est tout petit.','Te lever, et garder la mousse le plus longtemps possible.'],['Tu surfes la mousse (ou les reformes) et ton take-off est sûr, en un seul temps. Tu as envie d\'aller vers la vague : tu regardes les petits jours, avec du monde autour pour te rassurer.','Passer de la mousse à la vague.'],['Tu passes la barre quand c\'est accessible et tu surfes l\'épaule. Tu te lèves souvent sur la vague. Tu te places en fonction des autres : le monde te rassure. Le pic t\'impressionne.','Réussir tes take-offs sur la vague.'],['Tu surfes l\'épaule avec des take-offs de plus en plus réguliers. Tu commences à te placer tout seul vers le pic, même si tu préfères encore qu\'il y ait du monde.','Te lever à chaque vague, et te placer seul.'],['Tu es autonome : tu localises une vague même s\'il n\'y a personne. Ton take-off est solide, tu passes la barre sans souci et la rame suit.','Suivre la vague le plus longtemps possible.'],['Tu lis la vague avant qu\'elle ne change : tes replacements deviennent naturels et tu surfes de plus en plus près de la partie qui pousse. Tes manœuvres restent simples.','Surfer plus près de la partie qui pousse.'],['Tu cherches la taille où tu peux faire de vraies manœuvres et l\'endroit critique de la vague. Tu sais faire des manœuvres de pro, mais pas de façon régulière : il te reste une marge de progression avant de les considérer acquises.','Exprimer tes manœuvres, t\'améliorer, être plus critique.'],['Ton mouvement est bon sur tes manœuvres de pro ; il te reste quelques détails à régler pour replaquer à chaque fois.','Rendre tes manœuvres régulières, avec puissance et style.'],['Toutes les manœuvres sont acquises : tu les perfectionnes. Pas de limite : le gros, le creux, le tube. Tu surfes aussi quand c\'est pourri : tu trouves le bon créneau et tu tiens le courant à la rame.','Perfectionner des manœuvres que tu maîtrises déjà.']];
 var ans={},cur=0,adj=0,done=false;
 function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
 function liveXp(){var box=document.getElementById('lxp');
@@ -229,7 +231,7 @@ function bandIndex(L,plus){return L===4?8:L*2+(plus?1:0)}
 function compute(){
   var L=[];
   var forcePlus=false;
-  if(ans.what<2){L.push({v:0,t:'tu ne surfes que la mousse ou la réforme'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
+  if(ans.what<2){L.push({v:0,t:'tu ne surfes que la mousse ou la reforme'+(ans.tk!==0?' et ton take-off n\'est pas encore sûr':'')});forcePlus=(ans.tk===0&&ans.want===0)}
   else{
     if(ans.goal&&ans.goal.length)L.push({v:gmax(ans)+1,p:Math.min(4,gmax(ans)+1+0.25*(ans.goal.length-1)),t:'ce que tu cherches'});
     var bar=[0,0,1,2,3,4][ans.barre];
@@ -277,8 +279,8 @@ function drawResult(){
   document.getElementById('rxp').querySelectorAll('b').forEach(function(x){x.remove()});[16,37,58,79].forEach(function(t){var b=document.createElement('b');b.style.left=t+'%';document.getElementById('rxp').appendChild(b)});
   document.getElementById('rxpl').innerHTML='<span>Débutant</span><span>Intermédiaire</span><span>Confirmé</span><span>Avancé</span><span>Expert</span>';
   document.getElementById('rname').textContent=r.band+(adj?' (corrigé)':'');
-  document.getElementById('rdef').textContent=L.def;document.getElementById('rsc').textContent='Ta barre est remplie à '+r.score+' % : elle monte avec tes réponses, à l\'intérieur de ton niveau.';document.getElementById('rnext').innerHTML=r.nxt?'<b>Pour passer à « '+r.nxt+' »</b>, ce qui te retient : '+r.hold.join(' ; ')+'.':'<b>Tu es au sommet de l\'échelle.</b> Tu perfectionnes.';
-  document.getElementById('rgoal').innerHTML='<b>Sur la vague, tu cherches :</b> '+L.goal;
+  document.getElementById('rdef').textContent=BDEF[r.bi][0];document.getElementById('rsc').textContent='Ta barre est remplie à '+r.score+' % : elle monte avec tes réponses, à l\'intérieur de ton niveau.';document.getElementById('rnext').innerHTML=r.nxt?'<b>Pour passer à « '+r.nxt+' »</b><br>'+ADV[r.bi]+(r.plus&&r.hold.length===1?'<br><small style="color:var(--muted)">Aujourd\'hui, ce qui te retient : '+r.hold[0]+'.</small>':''):'<b>Tu es au sommet de l\'échelle.</b> Tu perfectionnes.';
+  document.getElementById('rgoal').innerHTML='<b>Sur la vague, tu cherches :</b> '+BDEF[r.bi][1];
   document.getElementById('rwhy').textContent=r.why.join(' ');
   var rows=active().map(function(st){var v=ans[st.id];var t=st.multi?(v||[]).map(function(i){return st.o[i]}).join(', ')||'—':(v===undefined?'—':st.o[v]);return '<div class="r"><span>'+title(st).replace(/ \?$/,'')+'</span><b>'+t+'</b></div>'}).join('');
   document.getElementById('rec').innerHTML=rows;

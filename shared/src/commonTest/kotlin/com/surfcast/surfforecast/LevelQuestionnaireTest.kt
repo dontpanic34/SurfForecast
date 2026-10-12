@@ -137,4 +137,13 @@ class LevelQuestionnaireTest {
             assertTrue(key.removeSuffix("+") in LEVEL_KEYS)
         }
     }
+
+    @Test
+    fun everyBandHasItsOwnAdviceAndTheTopHasNone() {
+        val advices = (0..8).map { shift -> computeLevel(large(4, 0, 2, listOf(2), man = 2), shift - 6).advice }
+        // Les neuf tranches, de Débutant à Expert : huit conseils différents, aucun au sommet.
+        val first8 = advices.take(8)
+        assertEquals(8, first8.filterNotNull().toSet().size)
+        assertEquals(null, computeLevel(large(5, 0, 2, listOf(3), man = 3)).advice)
+    }
 }

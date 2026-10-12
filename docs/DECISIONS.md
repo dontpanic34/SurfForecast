@@ -90,3 +90,28 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - Score : jamais affiché en clair. Seule la barre d'XP avec le nom du niveau ; le chiffre est dans un « i ». Validé par le propriétaire.
 - Compétitions : retirées (pas un indicateur de condition physique). Valable pour la maquette et pour l'appli.
 - Matériel : page courte, un seul chiffre de volume en gros ; pros, calcul et autres planches seulement derrière « Aller plus loin ». Taille du surfeur retirée. Ne jamais afficher une donnée qu'on ne connaît pas (âge non renseigné = rien d'affiché). Validé par le propriétaire.
+
+## Choix du propriétaire sur les maquettes à choisir (16 octobre 2026)
+- **Encarts de l'écran principal** : on retire les options d'affichage et d'ordre des Réglages. Tous les encarts restent sur la page d'accueil ; chacun peut être **réduit** (par exemple « Heure par heure » et « Vent et mer / clapot »). Par défaut tous sont ouverts.
+- **Réglages** : une seule page, **sans défilement**, mélange du cockpit et de la page unique. Le niveau avec le style de la page unique (barre d'XP plus jolie, volume écrit). La phrase « Pour passer Expert : tes manœuvres » est retirée de cette carte.
+- **Étoiles** : on garde la semaine, proposition C (barre colorée), mais la barre n'est **pas dégradée** : trois segments (matin, midi, après-midi) qui montrent la tendance, colorés selon le niveau.
+- **Encart Maintenant** : tuiles (proposition B) réduites en taille, **sans titres** (« Houle », « Vent », « Marée »), pas de mot « Marée descendante » : pour la marée, une phrase du genre « prochaine marée » avec l'heure et la flèche.
+- **Vent** : proposition A (rafales : zone grise derrière la courbe ; mots et couleurs : offshore, side-off, side, side-on, onshore).
+- **Houle secondaire** : dessous, en plus petit. Orientation écrite en lettres (OSO), les degrés sous la flèche, la puissance en kJ en dessous ; pareil pour la secondaire.
+- **Matériel** : « Quand tu les sors » en grille. Planche du jour : à discuter (ne pas prendre de place à l'écran).
+- **Tolérance aux conditions** : un interrupteur ; où le mettre reste à discuter. Peu d'infos sur l'accueil.
+- **Comparer les niveaux** : l'échelle ; en touchant une marche, ce qui est acquis (plus gros, en gras) et ce qui manque (plus petit).
+- **Badges** : proposition B (« Petit jour » / « Gros jour »).
+
+## Choix du propriétaire, deuxième tour (17 octobre 2026)
+- **Accueil** : proposition A. Réduire un encart existe déjà dans l'appli (bouton de chaque carte) : on le garde ; on retire seulement les options d'affichage et d'ordre des Réglages.
+- **Réglages** : rangées denses. Le thème disparaît (déjà dans la barre du bas). Unité du vent : km/h, nœuds **et Beaufort**. « Graphique de houle » = une page avec les trois curseurs existants (place du graphique semaine, place du graphique jour, hauteur de l'eau) et un **rendu en temps réel**. « Prévisions » : à revoir plus tard (on peut garder un réglage par défaut et l'expliquer).
+- **Semaine** : trois segments seuls, ni initiales ni flèche de tendance (on la prendrait pour le vent).
+- **Maintenant** : encore plus réduit ; le mot « prochaine » est supprimé ; les mots « marée montante / descendante / pleine haute / basse » ne s'affichent plus (flèche + heure seulement).
+- **Houle** : on ne change pas le skin de la carte (ligne hauteur et période à gauche, colonnes par heure). Bloc de direction à droite : « OSO 250° » côte à côte, flèche à la ligne, puissance en kJ à la ligne ; même chose en plus petit pour la secondaire.
+- **Comparer les niveaux** : détail sous l'échelle. Le contenu de chaque marche est à retravailler (« take-offs sûrs en un seul temps » et « tu sais où est le pic » ne conviennent pas pour Avancé).
+- **Planche du jour** : on met les deux emplacements (en-tête de la phrase et ligne Maintenant), avec une option provisoire dans les Réglages pour choisir. Interrupteur de tolérance : trois points ou mot écrit, à choisir.
+- **Tolérance (17 octobre, suite)** : version avec le mot écrit (« Normal », qui passe à Prudent / Motivé au toucher) validée. Effets proposés (à régler sur de vraies journées) : le mode donne la valeur de départ d'après les trois réponses du profil ; il décale seulement les couleurs (tolérance vent et clapot ± 15 %, seuil « challengeant » de la taille ± 8 %, passage orange / jaune / vert ± 8 points), jamais le niveau, les étoiles, la planche du jour ni les volumes.
+- **Maintenant, version C (17 octobre)** : une seule ligne « 1,2 m · 9 s · ESE 13 · **COEF 94** ▼ 13:16 », avec COEF et son chiffre en gras entre le vent et la marée, puis la flèche (▲ monte, ▼ descend) et l'heure de la prochaine marée.
+- **Maintenant (17 octobre)** : version C validée (une ligne avec COEF en gras entre le vent et la marée, puis flèche et heure).
+- **Résultat du questionnaire** : l'encart « Pour passer à… » dit une chose différente pour chacune des huit tranches (de Débutant à Avancé +) ; au sommet (Expert) il n'y en a pas. Pour un « + », on ajoute le seul point qui retient.
