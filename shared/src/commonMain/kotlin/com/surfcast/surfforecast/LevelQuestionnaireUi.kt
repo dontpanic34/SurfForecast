@@ -66,7 +66,7 @@ private val STEPS: List<Step> = listOf(
 private val LEVEL_DEFINITIONS = listOf(
     "Tu surfes la mousse (ou les réformes). Ton take-off est à travailler ou se fait en plusieurs temps. Tu ne passes pas la barre, ou seulement quand c'est tout petit." to
         "Te lever, et garder la mousse le plus longtemps possible.",
-    "Tu commences à surfer la vague, les jours où c'est petit. Tu te lèves souvent, tu passes la barre quand c'est petit ou au bon moment, et tu te places en fonction des autres : le monde te rassure." to
+    "Tu passes la barre quand c'est accessible et tu surfes l'épaule. Tu te lèves souvent sur la vague. Tu te places en fonction des autres : le monde te rassure. Le pic t'impressionne." to
         "Réussir tes take-offs sur la vague.",
     "Tu es autonome : tu localises une vague même s'il n'y a personne. Ton take-off est solide, tu passes la barre sans souci et la rame suit." to
         "Suivre la vague le plus longtemps possible.",

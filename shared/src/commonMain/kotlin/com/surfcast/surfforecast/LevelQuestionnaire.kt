@@ -67,11 +67,11 @@ internal val NEXT_STEP_ADVICE = listOf(
     "Rends ton take-off sûr, en un seul temps, dans la mousse.",
     "Passe de la mousse à la vague : va au large les petits jours, avec du monde autour pour te rassurer.",
     "Rends ton take-off plus régulier sur les petites vagues.",
-    "Apprends à te placer : repère le pic tout seul et passe la barre sur des vagues jusqu'à la poitrine.",
+    "Apprends à te placer : repère le pic tout seul.",
     "Enchaîne : take-off en un seul temps presque à chaque vague, et suis la vague le plus longtemps possible.",
-    "Cherche l'endroit critique de la vague, des manœuvres plus engagées, et passe la barre jusqu'à la tête.",
+    "Cherche l'endroit critique de la vague et des manœuvres plus engagées.",
     "Travaille tes manœuvres : le mouvement est là, vise une réception propre.",
-    "Replaque tes manœuvres à chaque fois, avec puissance et style, et passe la barre jusqu'à 2 m."
+    "Replaque tes manœuvres à chaque fois, avec puissance et style."
 )
 
 internal val LEVEL_KEYS = listOf("beginner", "intermediate", "confirmed", "advanced", "expert")
