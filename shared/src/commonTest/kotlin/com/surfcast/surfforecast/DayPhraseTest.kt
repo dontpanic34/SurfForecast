@@ -31,30 +31,30 @@ class DayPhraseTest {
     @Test
     fun sameHalvesAreSaidOnce() {
         val p = day(hour(9, 1.0, 10, "E"), hour(14, 1.0, 10, "E"))
-        assertEquals("Ça tient, offshore toute la journée", p.title)
+        assertEquals("Offshore toute la journée", p.title)
     }
 
     @Test
     fun windThatTurnsOnshoreSpoilsTheAfternoon() {
         val p = day(hour(9, 1.3, 8, "E"), hour(11, 1.3, 8, "E"), hour(14, 1.3, 20, "O"), hour(17, 1.3, 20, "O"))
-        assertEquals("Ça tient mais ça tourne onshore l'après-midi", p.title)
+        assertEquals("Ça tourne onshore l'après-midi", p.title)
     }
 
     @Test
     fun windThatFallsMakesTheAfternoonBetter() {
         val p = day(hour(9, 1.3, 20, "O"), hour(11, 1.3, 20, "O"), hour(14, 1.3, 8, "E"), hour(17, 1.3, 8, "E"))
-        assertEquals("Ça tient, ça tourne offshore l'après-midi", p.title)
+        assertEquals("Ça tourne offshore l'après-midi", p.title)
     }
 
     @Test
     fun cleanDayIsSaidClean() {
         val p = day(hour(9, 1.0, 6, "E"), hour(14, 1.0, 6, "E")).copy(title = day(hour(9, 1.2, 6, "E"), hour(14, 1.2, 6, "E")).title)
-        assertEquals("Ça tient, glassy, offshore léger", p.title)
+        assertEquals("Glassy, offshore léger", p.title)
     }
 
     @Test
     fun noWindIsSaidSo() {
-        assertEquals("Ça tient, glassy", day(hour(9, 1.3, 1, "E"), hour(14, 1.3, 1, "E")).title)
+        assertEquals("Glassy", day(hour(9, 1.3, 1, "E"), hour(14, 1.3, 1, "E")).title)
     }
 
     @Test
