@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Maquette** `resume-journee.html` : résumé de la journée de l'encart Semaine (matin / après-midi, houle et vent), 3 propositions. En attente de choix, pas de code. Aussi publié : jauge 1 à 5 du déroulé supprimée.
 - **Déroulé de la journée : jauge 1 à 5 supprimée** (état : en ligne dès publication sur `web`). L'en-tête montre l'heure et le libellé, et la phrase (« Taille un peu juste »…) passe sur sa propre ligne dessous.
 - **« Revoir l'introduction » retiré** des Paramètres (Aide et langue) (état : en ligne dès publication sur `web`). L'introduction ne s'affiche plus qu'à la première ouverture.
 - **Échelle de notation** (état : en ligne dès publication sur `web`) : « Parfait » commence à 90 (au lieu de 85). Pour être « Parfait », les 3 heures d'avant doivent avoir eu un vent propre (vent réel, sans mémoire) : sinon la note reste sous 90 et la phrase dit « Mer encore marquée par le vent d'avant ». L'encart « Actuellement » affiche « Nuit » à la place du libellé quand l'heure est hors du jour.
