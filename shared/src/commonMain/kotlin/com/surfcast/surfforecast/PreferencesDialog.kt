@@ -114,7 +114,7 @@ fun SurfPreferencesDialog(
     // Modèle de prévision dont on affiche la fiche (petit « i » à côté de chaque modèle).
     var modelInfo by remember { mutableStateOf<String?>(null) }
     // Page ouverte : null = menu des Paramètres, sinon "display", "forecast", "journal", "app" ou "help".
-    var page by remember { mutableStateOf(startPage) }
+    var page by remember { mutableStateOf(if (startPage == "profileQuiz") "profile" else startPage) }
 
     modelInfo?.let { name ->
         val info = forecastModelInfo(name)
@@ -388,6 +388,7 @@ fun SurfPreferencesDialog(
                             exampleAnswers = exampleAnswers,
                             onExampleAnswersChanged = onExampleAnswersChanged,
                             levelQuiz = levelQuiz,
+                            startQuiz = startPage == "profileQuiz",
                             onFocusMode = { profileFocus = it },
                             onInfo = { showScoreInfo = true }
                         )

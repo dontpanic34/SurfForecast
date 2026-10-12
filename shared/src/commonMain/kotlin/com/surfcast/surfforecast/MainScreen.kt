@@ -364,7 +364,7 @@ fun MainScreen(
                                     // Profil pas encore renseigné : un message cliquable l'invite à le remplir.
                                     if (viewModel.showProfileNudge) {
                                         ProfileNudgeCard(
-                                            onOpen = { preferencesStartPage = "profile"; showPreferencesDialog = true },
+                                            onOpen = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             onLater = { viewModel.hideProfileNudge() },
                                             modifier = Modifier.coachTarget("bestSlot", coachTargets).padding(horizontal = 10.dp, vertical = 2.dp).padding(bottom = 6.dp)
                                         )
@@ -794,9 +794,9 @@ fun MainScreen(
                     ),
                     CoachStep(
                         "settings", "⚙️ Ton profil",
-                        "Il règle les couleurs et le « gros jour ». Une minute suffit.",
+                        "Pour l'instant, les notes sont celles d'un surfeur moyen. Réponds à quelques questions : elles deviennent les tiennes (taille, vent, « gros jour »). Une minute.",
                         actionLabel = "Renseigner mon profil",
-                        onAction = { preferencesStartPage = "profile"; showPreferencesDialog = true }
+                        onAction = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true }
                     ),
                     CoachStep("journal", "📓 Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
                 ),

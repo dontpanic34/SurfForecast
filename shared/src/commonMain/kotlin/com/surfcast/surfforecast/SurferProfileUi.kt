@@ -280,12 +280,14 @@ fun ProfilePage(
     onExampleAnswersChanged: (String) -> Unit,
     onInfo: () -> Unit,
     levelQuiz: LevelQuizHost? = null,
+    // Ouvre directement le questionnaire (depuis « Renseigner mon profil »).
+    startQuiz: Boolean = false,
     // Vrai quand le questionnaire ou l'assistant occupe la page : l'écran parent masque alors le reste (Mon matériel).
     onFocusMode: (Boolean) -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     // « overview », « wizard » ou « advanced ».
-    var mode by remember { mutableStateOf("overview") }
+    var mode by remember { mutableStateOf(if (startQuiz && levelQuiz != null) "quiz" else "overview") }
     val profile = remember(surferLevel) { SurfProfile.fromLevel(surferLevel) }
     LaunchedEffect(mode) { onFocusMode(mode == "quiz" || mode == "wizard") }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -337,9 +339,6 @@ fun ProfilePage(
                 levelQuiz?.result?.takeIf { it.levelKey == surferLevel }?.let { LevelLadder(it) }
                 if (levelQuiz != null) Button(onClick = { mode = "quiz" }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire", fontWeight = FontWeight.Bold)
-                }
-                OutlinedButton(onClick = { mode = "wizard" }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Personnaliser mon profil", fontWeight = FontWeight.Bold)
                 }
                 Text(
                     "Tout voir d'un coup", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary,
