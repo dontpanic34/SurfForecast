@@ -205,7 +205,20 @@ object ToleranceSettings {
     fun next(m: Int = mode) = when (m) { 0 -> 1; 1 -> -1; else -> 0 }
 }
 
+/**
+ * Le profil des étoiles : on lit les conditions (taille, période, vent, direction), comme les sites de prévision, sans
+ * plafond de taille et sans tolérance du surfeur. Un offshore bien formé vaut toujours plus qu'un onshore.
+ */
+private val NEUTRAL_PROFILE = SurfProfile(
+    idealMin = 100.0, idealMax = 570.0, cap = SurfProfile.NO_CAP, minPeriod = 7.0, windTolerance = 25.0, onshoreMax = 12.0,
+    gustThreshold = 25.0, chopThreshold = 0.25, directionMatters = 1.0
+)
+
+/** Niveau « neutre » : la note des étoiles, la même pour tout le monde (ni niveau, ni motivation, ni réglage perso). */
+const val NEUTRAL_LEVEL = "neutral"
+
 private fun profileFor(level: String): SurfProfile {
+    if (level == NEUTRAL_LEVEL) return NEUTRAL_PROFILE
     val base = SurfProfile.fromLevel(level)
     val m = ToleranceSettings.mode
     if (m == 0) return base

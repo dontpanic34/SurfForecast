@@ -497,7 +497,7 @@ fun MainScreen(
                             val night = groupedByDate[date.minus(1, DateTimeUnit.DAY)].orEmpty().filter { it.rawTime.hour >= 21 } +
                                 groupedByDate[date].orEmpty().filter { it.rawTime.hour < 7 }
                             dayQualityScore(
-                                hours, idealSwellDirection, "intermediate", state.dailyTides[date],
+                                hours, idealSwellDirection, NEUTRAL_LEVEL, state.dailyTides[date],
                                 offshoreNight = hasOffshoreNight(night, idealSwellDirection)
                             )?.let { sc -> starsForScore(sc, 0) }
                         }

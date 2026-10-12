@@ -77,7 +77,7 @@ fun WeekCardPreview(surferLevel: String, windUnit: String, windMode: String, den
     val dates = data.dates
     val daylight = dates.map { daylightHoursFor(it, data.grouped, data.sun) }
     val stars = dates.mapIndexed { i, d ->
-        dayQualityScore(daylight[i], facing, "intermediate", data.tides[d])?.let { starsForScore(it, 0) }
+        dayQualityScore(daylight[i], facing, NEUTRAL_LEVEL, data.tides[d])?.let { starsForScore(it, 0) }
     }
     val bands = dates.mapIndexed { i, _ -> dayBandsInTimeOrder(daylight[i], facing, surferLevel, density) }
     Shrunk(scale) {
