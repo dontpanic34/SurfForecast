@@ -123,12 +123,14 @@ fun DailyTimelineCard(
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
+        Box {
+        CollapseChevron(isCollapsed, onToggleCollapse, modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp))
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
             if (selectedIndex in ratings.indices) {
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
                 val level = gaugeLevel(shownRating)
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 30.dp, top = 2.dp, bottom = 2.dp)) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -187,6 +189,7 @@ fun DailyTimelineCard(
                     )
                 }
             }
+        }
         }
     }
 }
