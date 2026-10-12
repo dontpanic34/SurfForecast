@@ -32,7 +32,7 @@ function render(){
  var now=+document.getElementById('h').value;
  document.getElementById('now').textContent='Heure actuelle : '+now+' h';
  var show=now<SHOW_UNTIL||now>=SHOW_FROM;
- document.getElementById('state').textContent=show?(now>=19?'Le soir : la colonne annonce l’aube de demain.':'La colonne est affichée (jusqu’à '+Math.floor(SHOW_UNTIL)+' h).'):'La colonne a disparu : on n’a plus besoin de la nuit d’avant.';
+ document.getElementById('state').textContent=show?(now>=19?'Le soir (2 h après le coucher, ici dès 21 h 24) : la colonne annonce l\u2019aube de demain.':'La colonne est affichée (jusqu’à '+Math.floor(SHOW_UNTIL)+' h).'):'La colonne a disparu : on n’a plus besoin de la nuit d’avant.';
  var n=show?'<div class="n o">➤<br>SO 9<br>↘</div>':'';
  document.getElementById('arr').innerHTML=n+HOURS.map(function(h){var c=W[h];return '<div class="'+col(c)+'">➤<br>'+c[0]+' '+c[1]+'</div>'}).join('');
  document.getElementById('strip').innerHTML=(show?'<div class="col n"><div class="b" style="height:70%"></div><div class="tx">Nuit<br>4–8 h</div></div>':'')+HOURS.map(function(h){return '<div class="col"><div class="b" style="height:'+(42+(h%3)*2)+'%"></div></div>'}).join('');
