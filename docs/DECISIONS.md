@@ -102,3 +102,12 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **Tolérance aux conditions** : un interrupteur ; où le mettre reste à discuter. Peu d'infos sur l'accueil.
 - **Comparer les niveaux** : l'échelle ; en touchant une marche, ce qui est acquis (plus gros, en gras) et ce qui manque (plus petit).
 - **Badges** : proposition B (« Petit jour » / « Gros jour »).
+
+## Choix du propriétaire, deuxième tour (17 octobre 2026)
+- **Accueil** : proposition A. Réduire un encart existe déjà dans l'appli (bouton de chaque carte) : on le garde ; on retire seulement les options d'affichage et d'ordre des Réglages.
+- **Réglages** : rangées denses. Le thème disparaît (déjà dans la barre du bas). Unité du vent : km/h, nœuds **et Beaufort**. « Graphique de houle » = une page avec les trois curseurs existants (place du graphique semaine, place du graphique jour, hauteur de l'eau) et un **rendu en temps réel**. « Prévisions » : à revoir plus tard (on peut garder un réglage par défaut et l'expliquer).
+- **Semaine** : trois segments seuls, ni initiales ni flèche de tendance (on la prendrait pour le vent).
+- **Maintenant** : encore plus réduit ; le mot « prochaine » est supprimé ; les mots « marée montante / descendante / pleine haute / basse » ne s'affichent plus (flèche + heure seulement).
+- **Houle** : on ne change pas le skin de la carte (ligne hauteur et période à gauche, colonnes par heure). Bloc de direction à droite : « OSO 250° » côte à côte, flèche à la ligne, puissance en kJ à la ligne ; même chose en plus petit pour la secondaire.
+- **Comparer les niveaux** : détail sous l'échelle. Le contenu de chaque marche est à retravailler (« take-offs sûrs en un seul temps » et « tu sais où est le pic » ne conviennent pas pour Avancé).
+- **Planche du jour** : on met les deux emplacements (en-tête de la phrase et ligne Maintenant), avec une option provisoire dans les Réglages pour choisir. Interrupteur de tolérance : trois points ou mot écrit, à choisir.
