@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import com.surfcast.surfforecast.ui.theme.AppColors
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -83,15 +85,10 @@ fun NowTideCard(
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            NowTile("Houle", "${formatDecimal(hourlyModel.waveHeight, 1).replace('.', ',')} m", "${hourlyModel.wavePeriod.toInt()} s", Modifier.weight(1f))
-            NowTile("Vent", "$speed $unit", dirFr, Modifier.weight(1f))
+            NowTile("Houle", "${formatDecimal(hourlyModel.waveHeight, 1).replace('.', ',')} m · ${hourlyModel.wavePeriod.toInt()} s", Modifier.weight(1f))
+            NowTile("Vent", "$speed $unit $dirFr", Modifier.weight(1f))
             if (coef != null || next != null) {
-                NowTile(
-                    "Marée",
-                    if (coef != null) "COEF $coef" else "",
-                    if (next != null) (if (next.first) "▲ " else "▼ ") + next.second else "",
-                    Modifier.weight(1f)
-                )
+                NowTile("Marée", (if (next != null) (if (next.first) "▲ " else "▼ ") + next.second.replace(" h ", ":") else ""), Modifier.weight(1f), coef = coef)
             }
         }
     }
@@ -121,16 +118,22 @@ internal fun cardinalWordFr(c: String): String {
     }.let { if (c.length == 2) it.replace("nord-", "nord-").replace("sud-", "sud-") else it }
 }
 
-/** Une tuile de « Maintenant » : un titre discret, la donnée en gros, un détail dessous. */
+/** Une tuile de « Maintenant » : un titre discret et la donnée sur une seule ligne (pour la marée : point de couleur et coefficient, puis la prochaine marée). */
 @Composable
-private fun NowTile(title: String, value: String, detail: String, modifier: Modifier = Modifier) {
+private fun NowTile(title: String, value: String, modifier: Modifier = Modifier, coef: Int? = null) {
     val colors = MaterialTheme.colorScheme
     Column(
-        modifier = modifier.clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(1.dp)
+        modifier = modifier.clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant.copy(alpha = 0.6f)).padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        Text(title, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
-        if (value.isNotEmpty()) Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface, maxLines = 1)
-        if (detail.isNotEmpty()) Text(detail, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface.copy(alpha = 0.8f), maxLines = 1)
+        Text(title, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (coef != null) {
+                val dot = when { coef < 55 -> AppColors.WindLow; coef <= 80 -> AppColors.WindMid; else -> AppColors.WindHigh }
+                Box(modifier = Modifier.size(7.dp).clip(RoundedCornerShape(50)).background(dot))
+                Text(" $coef ", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface, maxLines = 1)
+            }
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface, maxLines = 1)
+        }
     }
 }
+

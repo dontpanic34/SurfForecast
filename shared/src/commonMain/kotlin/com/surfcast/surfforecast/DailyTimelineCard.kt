@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.surfcast.surfforecast.ui.theme.AppColors
 import kotlinx.datetime.LocalDate
 import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -104,6 +105,7 @@ fun DailyTimelineCard(
     val ax0 = sunrise - 0.5f
     val ax1 = sunset + 0.5f
     val dayTides = dailyTides[selectedDate]?.let { tidesForDay(it, sunrise, sunset) } ?: emptyList()
+    val tideCurve = dailyTides[selectedDate]?.let { tideCurveMarks(it) } ?: emptyList()
     val allDay = (groupedByDate[selectedDate] ?: emptyList()).sortedBy { it.rawTime }
     val firstH = ceil(ax0).toInt().coerceAtLeast(0)
     val lastH = floor(ax1).toInt().coerceAtMost(23)
@@ -200,7 +202,7 @@ fun DailyTimelineCard(
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
                         sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
-                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1),
+                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve,
                         beachFacing = idealSwellDirection, surferLevel = surferLevel
                     )
                 }
@@ -238,6 +240,7 @@ private fun DailyTimelineBody(
     isDark: Boolean,
     onSurfaceColor: Color,
     tideMarks: List<TideMark>,
+    tideCurve: List<TideMark> = emptyList(),
     beachFacing: Int?,
     surferLevel: String
 ) {
@@ -366,13 +369,39 @@ private fun DailyTimelineBody(
                     )
                 }
 
-                // --- Les marées, juste au-dessus de la bande des heures : bleu en haut = pleine mer, vert en bas = basse mer ---
-                if (tideMarks.isNotEmpty()) {
-                    Canvas(modifier = Modifier.fillMaxWidth().height(14.dp)) {
+                // --- La marée : une petite courbe entre le graphique et la bande des heures (monte ou descend), triangles et heures dessus ---
+                if (tideCurve.size >= 2) {
+                    val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Canvas(modifier = Modifier.fillMaxWidth().height(SkyGraphSettings.tideDp.dp)) {
+                        val yHigh = size.height * 0.47f
+                        val yLow = size.height * 0.8f
+                        fun yAt(h: Float): Float {
+                            val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
+                            val a = tideCurve[i]; val b = tideCurve[i + 1]
+                            val t = ((h - a.hour) / (b.hour - a.hour)).coerceIn(0f, 1f)
+                            val ya = if (a.high) yHigh else yLow
+                            val yb = if (b.high) yHigh else yLow
+                            return ya + (yb - ya) * (1f - cos(PI * t).toFloat()) / 2f
+                        }
+                        val path = Path()
+                        var first = true
+                        var h = ax0
+                        while (h <= ax1 + 0.01f) {
+                            val p = Offset(xOf(h), yAt(h))
+                            if (first) { path.moveTo(p.x, p.y); first = false } else path.lineTo(p.x, p.y)
+                            h += 0.25f
+                        }
+                        drawPath(path, Color(0xFF3B8BE8), style = Stroke(1.6.dp.toPx()))
                         for (m in tideMarks) {
-                            val c = Offset(xOf(m.hour), size.height / 2f)
-                            drawCircle(Color(0xFF0B121A).copy(alpha = if (isDark) 0.55f else 0.35f), radius = 7.dp.toPx(), center = c)
-                            drawTideTriangle(c, m.high, 7.dp.toPx())
+                            val c = Offset(xOf(m.hour), if (m.high) yHigh else yLow)
+                            drawTideTriangle(c, m.high, 6.dp.toPx())
+                            val txt = (m.hour.toInt()).toString() + ":" + (((m.hour - m.hour.toInt()) * 60).roundToInt().coerceAtMost(59)).toString().padStart(2, '0')
+                            val w = textMeasurer.measure(txt, tideStyle).size.width.toFloat()
+                            if (m.high) drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, Color(0x66FFFFFF), (c.x - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx()), c.y - 7.dp.toPx())
+                            else drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, Color(0x66FFFFFF), c.x + 7.dp.toPx(), c.y + 3.dp.toPx())
+                        }
+                        if (selH != null && selH in ax0..ax1) {
+                            drawCircle(onSurfaceColor, radius = 2.8.dp.toPx(), center = Offset(xOf(selH), yAt(selH)))
                         }
                     }
                 }
@@ -742,13 +771,6 @@ private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Col
                 Text("Coef $coef", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.85f), maxLines = 1)
                 Spacer(modifier = Modifier.width(3.dp))
                 Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = dotColor, radius = size.minDimension / 2f) }
-            }
-        }
-        for (t in tides) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Canvas(modifier = Modifier.size(9.dp)) { drawTideTriangle(Offset(size.width / 2f, size.height / 2f), t.type == "PM", size.minDimension * 0.85f) }
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(t.time, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1)
             }
         }
     }

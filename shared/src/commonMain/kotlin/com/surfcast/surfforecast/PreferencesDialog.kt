@@ -431,6 +431,11 @@ fun SurfPreferencesDialog(
                         graphSlider("Place du graphique, semaine", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
                         graphSlider("Place du graphique, jour", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
                         graphSlider("Hauteur de l'échelle (où arrive 2 m)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Hauteur de la courbe de marée", fontSize = 12.sp, color = colors.onBackground, modifier = Modifier.weight(1f))
+                            Text("${SkyGraphSettings.tideDp} dp", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant)
+                        }
+                        Slider(value = SkyGraphSettings.tideDp.toFloat(), onValueChange = { SkyGraphSettings.setTide(it.toInt()) }, valueRange = 24f..60f)
                         TextButton(onClick = { SkyGraphSettings.reset() }) { Text("Valeurs par défaut", fontSize = 12.sp) }
                     }
 

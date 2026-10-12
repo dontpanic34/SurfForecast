@@ -42,3 +42,19 @@ internal fun tidesForDay(info: DailyTideInfo, sunrise: Float, sunset: Float): Li
 /** Repères de la ligne des heures : seulement les marées qui tombent dans la fenêtre du déroulé. */
 internal fun tideMarks(tides: List<MareeExtremum>, ax0: Float, ax1: Float): List<TideMark> =
     tides.mapNotNull { e -> tideHour(e)?.takeIf { it in ax0..ax1 }?.let { TideMark(it, e.type == "PM") } }
+
+/**
+ * Les marées de la journée pour dessiner la courbe : toutes celles connues (nuit comprise), rangées par heure, avec une
+ * marée virtuelle de l'autre type une demi-période avant la première et après la dernière pour que la courbe couvre toute la journée.
+ */
+internal fun tideCurveMarks(info: DailyTideInfo): List<TideMark> {
+    val real = if (info.extrema.isNotEmpty()) info.extrema.mapNotNull { e -> tideHour(e)?.let { TideMark(it, e.type == "PM") } }
+    else listOfNotNull(
+        info.highTideTime?.let { t -> tideHour(MareeExtremum("PM", t))?.let { TideMark(it, true) } },
+        info.lowTideTime?.let { t -> tideHour(MareeExtremum("BM", t))?.let { TideMark(it, false) } }
+    )
+    val sorted = real.sortedBy { it.hour }
+    if (sorted.isEmpty()) return emptyList()
+    val half = 6.21f
+    return listOf(TideMark(sorted.first().hour - half, !sorted.first().high)) + sorted + TideMark(sorted.last().hour + half, !sorted.last().high)
+}
