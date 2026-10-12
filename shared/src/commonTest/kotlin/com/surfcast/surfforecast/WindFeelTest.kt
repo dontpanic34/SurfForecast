@@ -25,6 +25,10 @@ class WindFeelTest {
         assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 8, "E"), 275, "intermediate"))
         assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 10, "N"), 275, "intermediate"))
         assertEquals(SurfUnitsHelper.WIND_RED, windFeelColor(hour(14, 20, "O"), 275, "intermediate"))
+        // L'onshore dépend de la force : léger jaune, modéré orange, fort rouge ; l'offshore reste jaune même fort.
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 5, "O"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_ORANGE, windFeelColor(hour(14, 12, "O"), 275, "intermediate"))
+        assertEquals(SurfUnitsHelper.WIND_YELLOW, windFeelColor(hour(14, 30, "E"), 275, "intermediate"))
     }
 
     @Test
