@@ -10,11 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Surface
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
@@ -42,7 +42,7 @@ class CardSettingsControl(
 val LocalCardSettings = compositionLocalOf<CardSettingsControl?> { null }
 
 /** Une visite guidée de l'encart : un titre et des étapes courtes, lues dans l'ordre de ce qu'on voit à l'écran. */
-class CardGuide(val title: String, val steps: List<String>)
+class CardGuide(val title: String, val steps: List<String>, val quick: List<String> = emptyList())
 
 /** Les visites guidées, par clé d'encart : « week », « day », « swell », « wind », « weather », « windsea », « hourly ». */
 val CARD_GUIDES: Map<String, CardGuide> = mapOf(
@@ -52,7 +52,7 @@ val CARD_GUIDES: Map<String, CardGuide> = mapOf(
         "La flèche et le mot sous chaque jour : d'où vient le vent. Plus la flèche est grande, plus il souffle.",
         "Le graphique : la houle du jour (taille, période), le ciel, l'énergie en kJ en bas.",
         "Touche un jour pour le détailler."
-    )),
+    ), listOf("La note du jour, puis matin, midi, après-midi.", "Flèche : d’où vient le vent, grande = fort.", "Touche un jour pour le détailler.")),
     "day" to CardGuide("Le déroulé de la journée", listOf(
         "En haut : l'heure choisie, sa note et la raison, par exemple « Un peu d'onshore ».",
         "Motivation : Flemme, Normal ou Motivé. Elle change seulement les couleurs, jamais les étoiles.",
@@ -60,34 +60,33 @@ val CARD_GUIDES: Map<String, CardGuide> = mapOf(
         "Le graphique : la houle (1,5 m, 10 s) sur le ciel et la mer. Glisse ton doigt pour changer d'heure.",
         "La petite courbe bleue : la marée. Ça monte ou ça descend ; les triangles sont les pleines et basses mers.",
         "La bande jaune : les heures de jour. Plus elle est claire, plus le soleil est haut."
-    )),
+    ), listOf("Glisse sur le graphique pour changer d’heure.", "Flèches : le vent, la couleur dit s’il gêne.", "Courbe bleue : la marée. Bande jaune : le jour.")),
     "swell" to CardGuide("La houle", listOf(
         "À gauche, la taille et la période de la houle principale, plus grosses que la secondaire en dessous.",
         "À droite : d'où elle vient, sa flèche et son énergie en kJ.",
         "La flèche est grande si la houle arrive bien face à ta plage, petite si elle arrive de biais.",
         "Les barres : la houle sur la journée. Touche-en une pour changer d'heure."
-    )),
+    ), listOf("Taille et période de la houle, la secondaire dessous.", "Grande flèche : elle arrive bien face à la plage.")),
     "wind" to CardGuide("Le vent", listOf(
         "Le chiffre : le vent ressenti, c'est le vent moyen plus 35 % de l'écart avec les rafales (8 km/h de moyenne et rafales à 22 donnent 13).",
         "La flèche : d'où il vient. Sa taille dit sa force, sa couleur dit s'il gêne : jaune propre, orange gênant, rouge fort.",
         "La zone grise derrière les barres : les rafales.",
         "Change l'unité en bas : kilomètre par heure, nœuds ou Beaufort. Ça change partout dans l'appli."
-    )),
+    ), listOf("Le chiffre est le vent ressenti, rafales comprises.", "Flèche : d’où il vient. Zone grise : les rafales.")),
     "weather" to CardGuide("La météo", listOf(
         "L'icône du ciel et la température ressentie de l'heure ; la pluie s'ajoute à côté quand il pleut.",
-        "La température de l'eau est juste à côté.",
         "À droite, l'indice UV et les nuages ; dessous, lever et coucher du soleil.",
         "« Détail sur la semaine » ouvre la météo des jours à venir."
-    )),
+    ), listOf("Ciel, température ressentie, pluie, eau.", "UV, nuages, lever et coucher à droite.")),
     "windsea" to CardGuide("La mer de vent", listOf(
         "C'est le clapot : les petites vagues que le vent fabrique sur place, par-dessus la houle.",
         "La flèche donne la direction du clapot ; elle est grande s'il arrive bien face à la plage.",
         "Beaucoup de clapot, la vague est moins propre."
-    )),
+    ), listOf("Le clapot : les petites vagues du vent local.", "Beaucoup de clapot, vague moins propre.")),
     "hourly" to CardGuide("Heure par heure", listOf(
         "Une ligne par heure : houle, vent, météo.",
         "Touche une ligne pour la choisir : tous les encarts suivent."
-    ))
+    ), listOf("Une ligne par heure.", "Touches-en une : tous les encarts suivent."))
 )
 
 /** Le petit « i » d'un encart : il ouvre sa visite guidée et les réglages qui le concernent. */
@@ -100,22 +99,25 @@ fun CardInfoButton(guideKey: String) {
         modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { open = true }.padding(horizontal = 8.dp, vertical = 2.dp)
     )
     if (open) {
-        AlertDialog(
-            onDismissRequest = { open = false },
-            title = { Text(guide.title, fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    guide.steps.forEachIndexed { i, s ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("${i + 1}.", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
-                            Text(s, fontSize = 13.sp)
-                        }
-                    }
+        var more by remember { mutableStateOf(false) }
+        Dialog(onDismissRequest = { open = false }) {
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(guide.title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    val lines = if (more || guide.quick.isEmpty()) guide.steps else guide.quick
+                    lines.forEach { Text(it, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)) }
                     CardGuideSettings(guideKey)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        if (!more && guide.quick.isNotEmpty()) {
+                            Text("En savoir plus", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { more = true }.padding(vertical = 4.dp))
+                        } else Box {}
+                        Text("OK", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { open = false }.padding(vertical = 4.dp))
+                    }
                 }
-            },
-            confirmButton = { TextButton(onClick = { open = false }) { Text("Compris") } }
-        )
+            }
+        }
     }
 }
 

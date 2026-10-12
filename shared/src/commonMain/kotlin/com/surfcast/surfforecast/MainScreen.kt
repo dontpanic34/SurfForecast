@@ -120,7 +120,18 @@ fun MainScreen(
 
     // Première ouverture : unité du vent, niveau et origine des prévisions (une fois les données là,
     // pour ne pas masquer l'écran de démarrage).
-    if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
+    if (!viewModel.spotChosen && uiState !is SurfUiState.Loading) {
+        SpotSelectionDialog(
+            currentFavorites = viewModel.favoriteSpots,
+            onDismiss = {},
+            onSpotSelected = {},
+            onAssignToSlot = { _, _ -> },
+            onRemoveFromSlot = {},
+            onOpenLiveCam = {},
+            mandatory = true,
+            onChosen = { viewModel.chooseFirstSpot(it) }
+        )
+    } else if (viewModel.showOnboarding && uiState !is SurfUiState.Loading) {
         OnboardingDialog(
             displaySize = viewModel.displaySize,
             onDisplaySizeChanged = { viewModel.changeDisplaySize(it) },
