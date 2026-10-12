@@ -1,0 +1,58 @@
+<title>Courbe de marée v3b</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;600&display=swap">
+<style>
+/* Mise en page : le déroulé avec la courbe de marée compacte (A + C), puis la tuile Marée de « Maintenant ». */
+:root{--bg:#eef3f6;--fg:#10222e;--mut:#5a6d7a;--card:#fff;--tile:#e3ebf1;--line:#d3dde4;--acc:#0f5f8c;--gold:#e0ac3a;--tide:#3b8be8;--low:#1aa07a;--d:'Bricolage Grotesque',system-ui,sans-serif;--b:'Instrument Sans',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--tile:#1f3441;--line:#243846;--acc:#5fb4e6}}
+:root[data-theme="dark"]{--bg:#0d1a23;--fg:#e6eef3;--mut:#93a7b4;--card:#152631;--tile:#1f3441;--line:#243846;--acc:#5fb4e6;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--b);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:24px}
+main{max-width:760px;margin:0 auto}h1,h2{font-family:var(--d);margin:0;text-wrap:balance}h1{font-size:1.8rem;font-weight:800}h2{font-size:1.15rem;margin-top:2rem}
+p{margin:.4rem 0;max-width:64ch}.mut{color:var(--mut)}
+.note{border-left:3px solid var(--acc);padding:.3rem .9rem;margin:.8rem 0;background:var(--card)}
+.card{background:var(--card);border-radius:12px;padding:10px 12px;max-width:430px;margin-top:.6rem}
+svg{display:block;width:100%;height:auto}text{font-family:var(--b);fill:var(--fg)}
+.top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.top b{font-family:var(--d);font-size:20px}.good{color:#2bd47a;font-weight:800;font-family:var(--d);font-size:20px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e53935}
+.tiles{display:flex;gap:6px;margin-top:8px}.tile{flex:1;background:var(--tile);border-radius:10px;padding:6px 10px;min-width:0}
+.tile .t{font-size:10.5px;font-weight:700;color:var(--mut)}.tile .v{font-family:var(--d);font-weight:800;font-size:16px}.tile .d{font-size:13px;font-weight:600}
+.tile .m{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700}
+</style>
+<main>
+<h1>Courbe de marée compacte et tuile Marée</h1>
+<div class="note"><b>Ce que j'ai fait de tes deux retours.</b> J'ai mélangé A et C : la ligne du haut garde « Coef 94 ● » comme d'habitude, mais les horaires de marée ne sont plus répétés dedans : ils sont écrits à côté de chaque triangle, sur la courbe. La courbe est environ deux fois moins haute : elle sert seulement à voir si ça monte ou si ça descend. Pour la tuile Marée : plus de mot COEF, le point de couleur et le chiffre entre le titre et l'heure.</div>
+
+<h2>Le déroulé, avec la courbe compacte</h2>
+<div class="card">
+ <div class="top"><b>16 h</b><span class="good">Bon</span><span class="mut">Taille un peu juste</span></div>
+ <div style="font-size:12.5px;font-weight:700;margin:4px 0">Coef 94 <span class="dot"></span></div>
+ <svg viewBox="0 0 400 112" role="img" aria-label="Déroulé avec courbe compacte">
+  <rect x="0" y="0" width="400" height="62" rx="6" fill="#18394a"/><text x="8" y="16" font-size="10" style="fill:#fff">graphique de houle</text>
+  <path d="M0 46 L400 40" stroke="#4ad28f" stroke-width="2"/>
+  <g transform="translate(0,66)">
+   <path d="M18 17 C 55 17 70 5 108 5 S 160 17 200 17 S 250 5 295 5 S 360 17 382 17" fill="none" stroke="var(--tide)" stroke-width="1.6"/>
+   <path d="M108 1.5 L104 8 L112 8Z" fill="var(--tide)"/><text x="108" y="-1" font-size="9" text-anchor="middle" font-weight="700">13:16</text>
+   <path d="M18 19.5 L14 13 L22 13Z" fill="var(--low)"/><text x="38" y="20" font-size="9" text-anchor="start" font-weight="700">7:05</text>
+   <path d="M200 19.5 L196 13 L204 13Z" fill="var(--low)"/><text x="212" y="20" font-size="9" font-weight="700">19:30</text>
+   <path d="M295 1.5 L291 8 L299 8Z" fill="var(--tide)"/><text x="295" y="-1" font-size="9" text-anchor="middle" font-weight="700">19:20</text>
+   <circle cx="268" cy="6.5" r="2.6" fill="var(--fg)"/>
+  </g>
+  <g transform="translate(0,92)"><rect x="18" y="2" width="364" height="8" rx="4" fill="#d8c27a"/><rect x="250" y="0" width="36" height="12" rx="6" fill="var(--gold)" stroke="var(--fg)"/>
+   <text x="18" y="24" font-size="9">7 h 55</text><text x="258" y="24" font-size="10" font-weight="700">16:00</text><text x="352" y="24" font-size="9">18 h 55</text></g>
+ </svg>
+ <p class="mut" style="font-size:13px">La courbe fait environ 12 dp de haut au lieu de 28. Les horaires sont écrits une seule fois, à côté des triangles ; en dessous, plus de ligne de marée.</p>
+</div>
+
+<h2>La tuile Marée de « Maintenant »</h2>
+<div class="card">
+ <div style="display:flex;justify-content:space-between;align-items:center"><span class="mut">Maintenant · 13 h</span><span style="background:#2bd47a;color:#061018;font-weight:800;font-size:12px;border-radius:99px;padding:2px 10px">BON À TRÈS BON</span></div>
+ <div class="tiles">
+  <div class="tile"><div class="t">Houle</div><div class="v">1,5 m</div><div class="d">10 s</div></div>
+  <div class="tile"><div class="t">Vent</div><div class="v">15 km/h</div><div class="d">OSO</div></div>
+  <div class="tile"><div class="t">Marée</div><div class="m"><span class="dot"></span>94</div><div class="d">▼ 13 h 16</div></div>
+ </div>
+ <p class="mut" style="font-size:13px">Titre « Marée », puis le point de couleur du coefficient avec son chiffre, puis la flèche et l'heure de la prochaine marée. Le chiffre est plus petit que « 1,5 m » et « 15 km/h », il n'écrase plus la tuile.</p>
+</div>
+
+<h2>À valider</h2>
+<p>1) La ligne du haut garde « Coef 94 ● » mais perd « ▼ 13:16 ▲ 19:20 » : c'est bien ce que tu voulais supprimer sous les barres ? 2) La courbe compacte te va-t-elle, ou encore plus petite ? 3) La tuile Marée, dans cet ordre ?</p>
+</main>
