@@ -337,7 +337,6 @@ fun ProfilePage(
                 if (levelQuiz != null) Button(onClick = { mode = "quiz" }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire", fontWeight = FontWeight.Bold)
                 }
-                ProfileDaysPreview(profile)
                 OutlinedButton(onClick = { mode = "wizard" }, modifier = Modifier.fillMaxWidth()) {
                     Text("Personnaliser mon profil", fontWeight = FontWeight.Bold)
                 }
