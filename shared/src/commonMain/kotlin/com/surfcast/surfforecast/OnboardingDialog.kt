@@ -97,7 +97,7 @@ fun OnboardingDialog(
 
                     OnboardingSection(title = "Ton niveau") {
                         PillChoice(
-                            options = listOf("beginner" to "Débutant", "intermediate" to "Interméd.", "confirmed" to "Confirmé", "expert" to "Expert"),
+                            options = listOf("beginner" to "Débutant", "intermediate" to "Interméd.", "confirmed" to "Confirmé", "advanced" to "Avancé", "expert" to "Expert"),
                             selected = surferLevel,
                             onSelect = onSurferLevelChanged
                         )

@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Refonte du niveau et des réglages</title>
+<style>
+:root{--bg:#EDF1F6;--surface:#FFFFFF;--surface2:#E4EAF2;--ink:#14202B;--muted:#5D6E80;--line:#D5DDE7;--accent:#2F6FE4;--accent-ink:#FFFFFF;
+--good:#1FA463;--ok:#8DB92E;--warn:#E08A00;--bad:#D6403A;--grey:#7C8A99;--frame:#C9D3DF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#243345;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--ok:#B5D84A;--warn:#FFA826;--bad:#F2554F;--grey:#8896A6;--frame:#2A3A4D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B121A;--surface:#141E2A;--surface2:#1C2938;--ink:#E8EEF5;--muted:#8FA0B3;--line:#243345;--accent:#4C8DFF;--accent-ink:#06101F;--good:#2ED47A;--ok:#B5D84A;--warn:#FFA826;--bad:#F2554F;--grey:#8896A6;--frame:#2A3A4D;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;padding:18px 16px 40px;line-height:1.4}
+h1{font-size:21px;margin:0 0 4px;text-wrap:balance}
+.lead{color:var(--muted);font-size:14px;margin:0 0 14px;max-width:62ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.tabs button{all:unset;cursor:pointer;padding:8px 12px;border-radius:10px;font-size:13.5px;font-weight:650;color:var(--muted);background:var(--surface2)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.theme{float:right}
+.theme button{all:unset;cursor:pointer;padding:6px 10px;border-radius:8px;font-size:12.5px;color:var(--muted);background:var(--surface2)}
+.theme button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+section[hidden]{display:none}
+.phone{width:min(100%,392px);margin:0 auto;background:var(--bg);border:1px solid var(--frame);border-radius:30px;padding:14px 12px 20px}
+.top{display:flex;align-items:center;gap:8px;padding:2px 6px 10px}
+.top .back{color:var(--accent);font-size:13px;font-weight:600}
+.top h2{font-size:17px;margin:0;font-weight:800}
+.grp{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:14px 6px 6px}
+.card{background:var(--surface);border-radius:14px;overflow:hidden}
+.blk{padding:12px 14px;border-top:1px solid var(--line)}.blk:first-child{border-top:0}
+.lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:14px;font-weight:650}
+.lab span{font-weight:500;font-size:12.5px;color:var(--muted)}
+.notes{max-width:392px;margin:12px auto 0;color:var(--muted);font-size:13px}
+.notes b{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;padding:8px 12px;border-radius:99px;background:var(--surface2);font-size:13px;font-weight:650}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible,.ans:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{all:unset;cursor:pointer;display:block;text-align:center;padding:11px;border-radius:12px;background:var(--surface2);font-weight:700;font-size:14px}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:2px}
+/* prévisualisation commune */
+.pv{display:grid;gap:0}
+.pv .d{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.pv .d:first-child{border-top:0}
+.pv .d b{font-size:13.5px;font-weight:650;display:block}.pv .d small{color:var(--muted);font-size:12px}
+.badge{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:99px;color:#fff;white-space:nowrap}
+.lvl{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:12px 14px}
+.lvl i{display:block;height:6px;border-radius:3px;background:var(--surface2)}
+.lvl i.on{background:var(--accent)}
+.lvname{padding:0 14px 12px;font-size:14px;font-weight:700}
+.lvname span{color:var(--muted);font-weight:500;font-size:12.5px}
+/* proposition 1 */
+.sit{padding:14px}
+.sit .big{font-size:22px;font-weight:800}
+.sit .meta{color:var(--muted);font-size:13px;margin:2px 0 10px}
+.body{display:flex;align-items:flex-end;gap:2px;height:44px;margin:6px 0 12px}
+.body i{display:block;width:14px;border-radius:3px 3px 0 0;background:var(--surface2)}
+.body i.on{background:var(--accent)}
+.wind{display:inline-flex;gap:6px;align-items:center;background:var(--surface2);border-radius:99px;padding:5px 11px;font-size:13px;font-weight:650}
+.ans{all:unset;cursor:pointer;display:block;text-align:center;padding:10px 6px;border-radius:12px;font-size:13.5px;font-weight:700;background:var(--surface2);margin-top:6px}
+.ans[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.prog{height:4px;border-radius:2px;background:var(--surface2);margin:0 14px 2px}
+.prog i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* proposition 2 */
+.ruler{position:relative;height:70px;margin:6px 4px 0}
+.ruler .bar{position:absolute;left:0;right:0;top:22px;height:10px;border-radius:5px;background:var(--surface2)}
+.ruler .sel{position:absolute;top:22px;height:10px;border-radius:5px;background:var(--good)}
+.ruler .max{position:absolute;top:22px;height:10px;border-radius:0 5px 5px 0;background:var(--warn)}
+.ruler .tick{position:absolute;top:36px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);text-align:center;white-space:nowrap}
+.ruler .tick::before{content:"";display:block;width:1px;height:6px;background:var(--line);margin:-6px auto 2px}
+.dual{position:relative;height:30px;margin:2px 0}
+.dual input{position:absolute;left:0;width:100%;top:4px;pointer-events:none;-webkit-appearance:none;appearance:none;background:none;height:22px}
+.dual input::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:grab}
+.dual input::-moz-range-thumb{pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);cursor:grab}
+.dual input::-webkit-slider-runnable-track{background:none}
+.dual input::-moz-range-track{background:none}
+/* proposition 3 */
+.q{padding:12px 14px;border-top:1px solid var(--line)}.q:first-child{border-top:0}
+.q p{margin:0 0 8px;font-size:14px;font-weight:650}
+/* proposition 4 */
+.ses{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.ses:first-child{border-top:0}
+.ses b{display:block;font-size:13.5px}.ses small{color:var(--muted);font-size:12px}
+.ses .st{color:#F5B50A;font-size:12px;letter-spacing:1px}
+.sw{all:unset;cursor:pointer;width:42px;height:25px;border-radius:99px;background:var(--surface2);position:relative;box-shadow:inset 0 0 0 1px var(--line)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--muted);transition:transform .15s}
+.sw[aria-checked="true"]{background:var(--accent);box-shadow:none}
+.sw[aria-checked="true"]::after{transform:translateX(17px);background:var(--accent-ink)}
+/* structures de la page d'accueil */
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1000px;margin:0 auto}
+.mini{background:var(--bg);border:1px solid var(--frame);border-radius:26px;padding:12px 10px 16px}
+.mini h3{font-size:12px;margin:0 6px 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lrow{display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:1px solid var(--line)}
+.lrow:first-child{border-top:0}
+.lrow .t{flex:1;min-width:0}.lrow b{display:block;font-size:14px}.lrow span{display:block;font-size:11.5px;color:var(--muted)}
+.ico{width:28px;height:28px;border-radius:8px;background:var(--surface2);display:grid;place-items:center;font-size:14px;flex:none}
+.hero{background:var(--surface);border-radius:16px;padding:14px;margin-bottom:10px}
+.hero b{font-size:16px}.hero p{margin:2px 0 8px;color:var(--muted);font-size:12.5px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--surface);border-radius:14px;padding:12px}
+.tile .ico{margin-bottom:8px;width:34px;height:34px;font-size:17px}
+.tile b{display:block;font-size:14px}.tile span{font-size:11.5px;color:var(--muted)}
+.pro{display:block;margin-top:8px;font-size:12.5px;color:var(--muted)}.pro b{color:var(--ink)}
+
+/* poignées sur la barre (proposition 2) */
+.rl{position:relative;height:96px;margin:4px 12px 0;touch-action:none}
+.rl .bar{position:absolute;left:0;right:0;top:40px;height:14px;border-radius:7px;background:var(--surface2)}
+.rl .zg{position:absolute;top:40px;height:14px;background:var(--good)}
+.rl .zo{position:absolute;top:40px;height:14px;background:var(--warn);border-radius:0 7px 7px 0}
+.rl .tk{position:absolute;top:60px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);text-align:center;white-space:nowrap;line-height:1.2}
+.rl .hd{position:absolute;top:30px;width:34px;height:34px;margin-left:-17px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.35);cursor:grab;touch-action:none;border:3px solid var(--surface)}
+.rl .hd:active{cursor:grabbing}
+.rl .hd:focus-visible{outline:3px solid var(--ink)}
+.rl .hd.mx{background:var(--warn);color:#1a1000}
+.rl .lb{position:absolute;top:2px;transform:translateX(-50%);font-size:11.5px;font-weight:700;white-space:nowrap}
+.hint{font-size:12.5px;color:var(--muted);margin:2px 0 0;display:flex;gap:6px;align-items:center}
+.cmp{display:grid;gap:10px;max-width:760px;margin:0 auto}
+.ex{background:var(--surface);border-radius:14px;padding:12px 14px}
+.ex .c{font-size:13.5px;font-weight:700}.ex .c small{color:var(--muted);font-weight:500;font-size:12.5px;display:block}
+.ex p.lv{margin:8px 0 0;font-size:13.5px;color:var(--ink)}
+.ex .row3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:8px}
+.opt{all:unset;cursor:pointer;display:block;border-radius:10px;padding:9px 11px;background:var(--surface2);font-size:13.5px;font-weight:650;box-shadow:inset 0 0 0 2px transparent}
+.opt small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.05em}
+.opt[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent);background:var(--surface)}
+.opt:focus-visible{outline:2px solid var(--accent)}
+.opt.now{opacity:.8;cursor:default}
+</style>
+</head>
+<body>
+<div class="theme" id="theme"><button data-v="auto" aria-pressed="true">Auto</button><button data-v="light" aria-pressed="false">Clair</button><button data-v="dark" aria-pressed="false">Sombre</button></div>
+<h1>Refonte du niveau et des réglages · 2e version</h1>
+<p class="lead">Corrigée d'après tes retours : on dit <b>offshore, side-off, side-on, onshore</b> (le côté est coupé à 90°) et <b>la barre</b> ; la proposition « depuis mon journal » est retirée. Sous chaque écran, « ce que ça donne » montre les notes que le profil produirait sur six journées fictives. Le dernier onglet est fait pour revoir les phrases ensemble, avec des cas concrets.</p>
+
+<div class="tabs" id="tabs" role="tablist">
+  <button role="tab" data-p="p1" aria-selected="true">1 · Par exemples</button>
+  <button role="tab" data-p="p2" aria-selected="false">2 · La règle de la vague</button>
+  <button role="tab" data-p="p3" aria-selected="false">3 · Questions</button>
+  <button role="tab" data-p="p6" aria-selected="false">Les 5 niveaux</button>
+  <button role="tab" data-p="p4" aria-selected="false">Phrases du vent : cas concrets</button>
+  <button role="tab" data-p="p5" aria-selected="false">Page d'accueil des réglages</button>
+</div>
+
+<!-- 1. PAR EXEMPLES -->
+<section data-s="p1">
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Profil</h2></div>
+    <p class="grp">Je pars de</p>
+    <div class="card"><div class="blk"><div class="chips" id="p1start"></div></div></div>
+    <p class="grp" id="p1count">Exemple 1 sur 12</p>
+    <div class="card">
+      <div class="prog"><i id="p1prog" style="width:8%"></i></div>
+      <div class="sit">
+        <div class="big" id="p1size"></div>
+        <div class="meta" id="p1meta"></div>
+        <div class="body" id="p1body"></div>
+        <span class="wind" id="p1wind"></span>
+        <div style="margin-top:12px;font-size:13px;color:var(--muted)">Tu fais quoi, avec ça ?</div>
+        <div id="p1ans"></div>
+        <div style="margin-top:10px;display:flex;justify-content:space-between;font-size:13px;color:var(--accent);font-weight:650"><span id="p1prev">‹ Précédent</span><span id="p1skip">Passer ›</span></div>
+      </div>
+    </div>
+    <p class="grp">Ce que ça donne</p>
+    <div class="card"><div class="lvl" id="p1lvl"></div><div class="lvname" id="p1lvn"></div><div class="pv" id="p1pv"></div></div>
+  </div>
+  <p class="notes"><b>Pas trop lourd :</b> on part d'un niveau, puis 12 exemples (4 tailles x 3 vents), on peut passer ceux qu'on veut. Les vents demandés sont offshore, side-on et onshore : le side-off se comporte comme l'offshore, inutile de le demander.</p>
+</section>
+
+<!-- 2. LA RÈGLE DE LA VAGUE -->
+<section data-s="p2" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Profil</h2></div>
+    <p class="grp">Mes vagues</p>
+    <div class="card">
+      <div class="blk">
+        <div class="lab">La taille où je m'éclate <span id="p2o1"></span></div>
+        <div class="hint">☝ Fais glisser les deux ronds bleus le long de la barre</div>
+        <div class="rl" id="p2rl"></div>
+      </div>
+      <div class="blk">
+        <div class="lab">La plus grosse que je surfe <span id="p2o2"></span></div>
+        <div class="hint">☝ Fais glisser le rond orange</div>
+        <div class="rl" id="p2rm" style="height:84px"></div>
+      </div>
+      <div class="blk">
+        <div class="lab">Vent maximum <span id="p2o3"></span></div>
+        <input type="range" id="p2wind" min="0" max="4" step="1" value="1" aria-label="Vent maximum">
+        <div class="ends"><span>léger</span><span>modéré</span><span>soutenu</span><span>fort</span><span>très fort</span></div>
+        <div id="p2wd" style="margin-top:8px;font-size:13.5px;font-weight:650"></div>
+        <div class="hint" style="margin-top:4px">Au-delà, c'est pourri pour moi.</div>
+      </div>
+    </div>
+    <p class="grp">Ce que ça donne</p>
+    <div class="card"><div class="lvl" id="p2lvl"></div><div class="lvname" id="p2lvn"></div><div class="pv" id="p2pv"></div></div>
+  </div>
+  <p class="notes"><b>Ce qui change :</b> les ronds sont maintenant sur la barre, plus gros, avec une consigne « fais glisser » ; ils se déplacent aussi au clavier (flèches). Le vent n'a plus de mots (sensible, moyen, tolérant) : un seul curseur en km/h, « vent maximum ».</p>
+</section>
+
+<!-- 3. QUESTIONS -->
+<section data-s="p3" hidden>
+  <div class="phone">
+    <div class="top"><span class="back">‹ Réglages</span><h2>Profil</h2></div>
+    <p class="grp" id="p3count">Question 1</p>
+    <div class="card">
+      <div class="prog"><i id="p3prog" style="width:10%"></i></div>
+      <div class="q" style="border-top:0"><p id="p3q" style="font-size:17px;font-weight:800;margin-bottom:4px"></p><p id="p3sub" style="font-weight:500;color:var(--muted);font-size:13px;margin:0 0 10px"></p><div id="p3opts" style="display:grid;gap:6px"></div></div>
+      <div style="padding:0 14px 12px;display:flex;justify-content:space-between;font-size:13px;color:var(--accent);font-weight:650"><span id="p3prev">‹ Précédent</span><span id="p3skip">Passer ›</span></div>
+    </div>
+    <p class="grp">Ton niveau, en direct</p>
+    <div class="card"><div class="lvl" id="p3lvl"></div><div class="lvname" id="p3lvn"></div>
+      <div class="blk" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn" id="p3dn">− Un cran en dessous</button><button class="btn" id="p3up">+ Un cran au-dessus</button></div>
+    </div>
+    <p class="grp">Ce que ça donne</p>
+    <div class="card"><div class="pv" id="p3pv"></div></div>
+  </div>
+  <p class="notes"><b>Le questionnaire d'un prof de surf :</b> une question à la fois, et la suite dépend des réponses. Mousse ou lisse d'abord ; dans la mousse (ou si on veut passer au lisse), on regarde le take-off : parfait, à travailler, en plusieurs temps ? ; dans le lisse, quelles vagues (réformes, épaule, peak, tube) et le take-off aussi ; puis jusqu'à quelle taille on passe la barre, et comment on la passe (prêt à surfer, impressionné, en galère, ou seulement au bon moment) ; enfin la rame, pour voir si le physique suit. Les deux dernières questions donnent la taille où on s'éclate et la plus grosse sans stress.</p>
+</section>
+
+<!-- 6. LES CINQ NIVEAUX -->
+<section data-s="p6" hidden>
+  <div class="cmp">
+    <div class="ex"><div class="c">1 · Débutant<small>Mousse (ou réformes) · take-off à travailler ou en plusieurs temps</small></div>
+      <p class="lv">Ne passe pas la barre, ou seulement quand c'est tout petit. Taille idéale : genoux à taille.<br><b>Vent :</b> il n'a pas besoin d'offshore. Un peu d'onshore ou pas de vent lui convient mieux. <b>L'offshore, c'est du creux</b> : s'il va un peu plus loin que sa zone de confort, il risque de planter, son take-off n'étant pas bon.</p></div>
+    <div class="ex"><div class="c">2 · Intermédiaire<small>Commence à surfer le lisse, sur petites vagues</small></div>
+      <p class="lv">Take-off acquis dans le lisse sur petite vague. Passe la barre quand c'est petit ou au bon moment. Taille idéale : taille à poitrine.<br><b>Il se place en fonction des autres</b> : s'il y a du monde, ça le rassure et il va là où il y a du monde.</p></div>
+    <div class="ex"><div class="c">3 · Confirmé<small>Autonome</small></div>
+      <p class="lv"><b>Il est capable de localiser une vague, même s'il n'y a personne.</b> Take-off solide, passe la barre sans souci, la rame suit. Taille idéale : poitrine à tête.</p></div>
+    <div class="ex"><div class="c">4 · Avancé<small>Cherche à exprimer ses manœuvres</small></div>
+      <p class="lv"><b>Sa taille idéale est celle où il peut faire de vraies manœuvres</b> et chercher l'endroit critique de la vague : environ 1,5 m jusqu'à 2 m, un peu plus. Au-dessus, c'est pour les sensations, pas pour les manœuvres. Il cherche à être plus critique, plus radical, plus engagé. Il n'a pas vraiment besoin de l'appli pour lire les conditions.</p></div>
+    <div class="ex"><div class="c">5 · Expert<small>Pas de limite</small></div>
+      <p class="lv">Surfe le gros, le creux, le tube. <b>Il sait surfer quand c'est pourri</b> : il trouve le créneau de la journée où le vent est moins fort, les phases de vagues lisses, et si c'est démonté au large, il repère une réforme intéressante. Il tient le courant à la rame. Il n'a pas besoin de l'appli pour lire les conditions.</p></div>
+  </div>
+  <p class="notes" style="max-width:760px;margin-top:14px"><b>À valider :</b> ces textes reprennent tes corrections. Pour l'appli, Avancé et Expert se ressemblent beaucoup : l'Expert n'a simplement pas de limite de taille. Les tailles idéales sont des repères pour la maquette.</p>
+</section>
+
+<!-- 4. PHRASES -->
+<section data-s="p4" hidden>
+  <div class="cmp" id="p4cmp"></div>
+  <p class="notes" style="max-width:760px;margin-top:14px"><b>Comment lire :</b> chaque cas est une vraie situation à Montalivet (plage tournée vers l'ouest). « En ligne aujourd'hui » est la phrase actuelle du site (le côté n'y est pas coupé en side-on et side-off). Touche la proposition que tu préfères, ou dis-moi la tienne. Les cas sont décrits par le type de vent (offshore, side-off, side-on, onshore) et sa direction ; les km/h ne sont plus qu'une indication discrète en gris. C'est la phrase qui dit l'effet sur la vague (léger, gêne, fort, très fort) : à force égale, un onshore gêne plus qu'un offshore. Dans l'appli, les phrases ne contiennent déjà aucun chiffre.</p>
+</section>
+
+<!-- 5. PAGE D'ACCUEIL DES RÉGLAGES -->
+<section data-s="p5" hidden>
+  <div class="trio">
+    <div class="mini"><h3>A · Liste de six lignes</h3>
+      <div class="card">
+        <div class="lrow"><div class="ico">🏄</div><div class="t"><b>Profil</b><span>Intermédiaire</span></div>›</div>
+        <div class="lrow"><div class="ico">🧍</div><div class="t"><b>Matériel</b><span>3 planches</span></div>›</div>
+        <div class="lrow"><div class="ico">🎨</div><div class="t"><b>Affichage</b><span>Sombre · Grand · km/h</span></div>›</div>
+        <div class="lrow"><div class="ico">▦</div><div class="t"><b>Écran principal</b><span>6 encarts</span></div>›</div>
+        <div class="lrow"><div class="ico">☁</div><div class="t"><b>Données</b><span>Sources automatiques</span></div>›</div>
+        <div class="lrow"><div class="ico">📲</div><div class="t"><b>Appli</b><span>Installer · aide</span></div>›</div>
+      </div>
+      <span class="pro"><b>Le plus simple.</b> Chaque ligne résume son contenu. Rien de nouveau à apprendre : c'est la maquette validée en principe.</span></div>
+    <div class="mini"><h3>B · Mon profil en haut</h3>
+      <div class="hero"><b>Intermédiaire</b><p>Vagues idéales 0,8 à 1,6 m · vent maximum : modéré</p>
+        <div class="lvl" style="padding:0 0 8px"><i class="on"></i><i class="on"></i><i></i><i></i></div><div class="btn" style="padding:8px">Régler mon profil</div></div>
+      <div class="card">
+        <div class="lrow"><div class="ico">🧍</div><div class="t"><b>Matériel</b><span>3 planches</span></div>›</div>
+        <div class="lrow"><div class="ico">🎨</div><div class="t"><b>Affichage</b><span>Sombre · Grand · km/h</span></div>›</div>
+        <div class="lrow"><div class="ico">▦</div><div class="t"><b>Écran principal</b><span>6 encarts</span></div>›</div>
+        <div class="lrow"><div class="ico">☁</div><div class="t"><b>Données et appli</b><span>Sources · installer · aide</span></div>›</div>
+      </div>
+      <span class="pro"><b>Le profil est le réglage numéro 1</b> : il passe devant, avec son niveau visible. Quatre lignes en dessous au lieu de six.</span></div>
+    <div class="mini"><h3>C · Tuiles</h3>
+      <div class="tiles">
+        <div class="tile"><div class="ico">🏄</div><b>Profil</b><span>Intermédiaire</span></div>
+        <div class="tile"><div class="ico">🧍</div><b>Matériel</b><span>3 planches</span></div>
+        <div class="tile"><div class="ico">🎨</div><b>Affichage</b><span>Sombre · km/h</span></div>
+        <div class="tile"><div class="ico">▦</div><b>Écran principal</b><span>6 encarts</span></div>
+        <div class="tile"><div class="ico">☁</div><b>Données</b><span>Automatique</span></div>
+        <div class="tile"><div class="ico">📲</div><b>Appli</b><span>Installer</span></div>
+      </div>
+      <span class="pro"><b>Plus visuel, moins dense.</b> Six grosses tuiles qu'on touche du pouce.</span></div>
+  </div>
+</section>
+
+<script>
+var NAMES=['Débutant','Intermédiaire','Confirmé','Avancé','Expert'];
+var PRESETS=[{lo:.3,hi:.8,max:1.1,tol:12,beg:true},{lo:.6,hi:1.2,max:1.6,tol:18},{lo:1.0,hi:1.7,max:2.2,tol:25},{lo:1.5,hi:2.1,max:3,tol:32},{lo:1.8,hi:3.5,max:5,tol:40}];
+var DAYS=[
+ {t:'Petit jour propre',h:.7,w:'offshore',k:6},
+ {t:'Belle journée',h:1.2,w:'side-off',k:12},
+ {t:'Belle journée, onshore léger',h:1.2,w:'onshore',k:14},
+ {t:'Gros jour propre',h:1.9,w:'offshore',k:10},
+ {t:'Gros jour, side-on',h:1.9,w:'side-on',k:16},
+ {t:'Très gros jour',h:2.6,w:'offshore',k:12}];
+var FORCE=[['léger','la surface est presque lisse',10],['modéré','la surface ride',18],['soutenu','la surface se froisse',25],['fort','ça hache',32],['très fort','c\'est démonté',40]];
+function forceIdx(k){return k<12?0:k<20?1:k<28?2:k<36?3:4}
+function forceWord(k){return FORCE[forceIdx(k)][0]}
+function fr(x){return (Math.round(x*10)/10).toString().replace('.',',')}
+function rate(d,P){
+  var s;
+  if(d.h<P.lo*.6)s=0; else if(d.h<P.lo)s=2; else if(d.h<=P.hi)s=4; else if(d.h<=P.max)s=3; else s=-1;
+  if(s>=0&&P.beg&&(d.w==='offshore'||d.w==='side-off')&&d.h>P.lo*1.4)s=Math.min(s,3);   // creux : il risque de planter
+  if(s>=0){
+    var m={'offshore':1.6,'side-off':1.3,'side-on':.8,'onshore':.55}[d.w];
+    var lim=P.tol*m;
+    if(d.k>lim*1.5)s=Math.max(0,s-2); else if(d.k>lim)s=Math.max(0,s-1);
+  }
+  return s;
+}
+var LAB={'-1':['Gros jour, à jauger','var(--warn)'],0:['Taille limite','var(--grey)'],1:['Bon','var(--ok)'],2:['Bon','var(--ok)'],3:['Challengeant','var(--warn)'],4:['Parfait','var(--good)']};
+function levelOf(P){return P.hi<.95?0:P.hi<1.45?1:P.hi<1.95?2:P.hi<2.8?3:4}
+function renderPV(el,P){
+  el.innerHTML=DAYS.map(function(d){var r=LAB[rate(d,P)];
+    return '<div class="d"><div><b>'+d.t+'</b><small>'+fr(d.h)+' m · '+d.w+' '+forceWord(d.k)+'</small></div><span class="badge" style="background:'+r[1]+'">'+r[0]+'</span></div>'}).join('');
+}
+function renderLvl(idEl,nameEl,P,hint){
+  var L=levelOf(P);
+  idEl.innerHTML=[0,1,2,3,4].map(function(i){return '<i class="'+(i<=L?'on':'')+'"></i>'}).join('');
+  if(nameEl)nameEl.innerHTML=NAMES[L]+' <span>· vagues idéales '+fr(P.lo)+' à '+fr(P.hi)+' m · vent maximum : '+forceWord(P.tol)+(hint?' · '+hint:'')+'</span>';
+}
+
+/* ---------- 1. Par exemples ---------- */
+(function(){
+  var SIZES=[.7,1.2,1.7,2.3],WINDS=[['offshore',6,'Offshore léger · la surface est lisse'],['side-on',12,'Side-on modéré · la surface ride'],['onshore',16,'Onshore modéré · ça ride et ça hache']];
+  var BODY=['genoux à taille','taille à poitrine','poitrine à tête','tête et plus'];
+  var ANS=['Je reste à terre',"J'y vais quand même",'Parfait','Je me challenge','Trop gros pour moi'];
+  var sits=[];SIZES.forEach(function(s,i){WINDS.forEach(function(w){sits.push({h:s,bi:i,w:w})})});
+  var cur=0,ans={},start=1,P=Object.assign({},PRESETS[1]);
+  var startEl=document.getElementById('p1start');
+  startEl.innerHTML=NAMES.map(function(n,i){return '<button class="chip" aria-pressed="'+(i===1)+'" data-i="'+i+'">'+n+'</button>'}).join('');
+  function derive(){
+    P=Object.assign({},PRESETS[start]);
+    var perf=[],chal=[],tolOn=[];
+    Object.keys(ans).forEach(function(k){var s=sits[k],a=ans[k];
+      if(s.w[0]==='offshore'){ if(a===2)perf.push(s.h); if(a===3)chal.push(s.h); if(a===4){P.max=Math.min(P.max,s.h*.95)} if(a===0&&s.h<1)P.lo=Math.max(P.lo,s.h*1.1)}
+      else { if(a===2||a===1)tolOn.push(1); if(a===0)tolOn.push(-1)}
+    });
+    if(perf.length){P.lo=Math.min.apply(null,perf)*.9;P.hi=Math.max.apply(null,perf)*1.05}
+    if(chal.length)P.max=Math.max(P.max,Math.max.apply(null,chal)*1.1);
+    var t=tolOn.reduce(function(a,b){return a+b},0);P.tol=Math.max(8,Math.min(34,P.tol+t*4));
+    if(P.max<P.hi)P.max=P.hi*1.15;
+  }
+  function draw(){
+    var s=sits[cur];
+    document.getElementById('p1count').textContent='Exemple '+(cur+1)+' sur 12';
+    document.getElementById('p1prog').style.width=((cur+1)/12*100)+'%';
+    document.getElementById('p1size').textContent='Vague de '+fr(s.h)+' m';
+    document.getElementById('p1meta').textContent='À peu près '+BODY[s.bi]+' · période 10 s';
+    document.getElementById('p1body').innerHTML=[0,1,2,3].map(function(i){return '<i style="height:'+(12+i*10)+'px" class="'+(i<=s.bi?'on':'')+'"></i>'}).join('');
+    document.getElementById('p1wind').textContent=s.w[2];
+    function btn(a,i){return '<button class="ans" data-a="'+i+'" aria-pressed="'+(ans[cur]===i)+'">'+a+'</button>'}
+    document.getElementById('p1ans').innerHTML='<div class="two">'+btn(ANS[0],0)+btn(ANS[1],1)+'</div><div class="two">'+btn(ANS[2],2)+btn(ANS[3],3)+'</div>'+btn(ANS[4],4);
+    document.querySelectorAll('#p1ans .ans').forEach(function(b){b.onclick=function(){ans[cur]=+b.dataset.a;derive();if(cur<11)cur++;draw()}});
+    derive();renderLvl(document.getElementById('p1lvl'),document.getElementById('p1lvn'),P,Object.keys(ans).length+' réponse'+(Object.keys(ans).length>1?'s':''));
+    renderPV(document.getElementById('p1pv'),P);
+  }
+  startEl.onclick=function(e){var b=e.target.closest('button');if(!b)return;start=+b.dataset.i;startEl.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});derive();draw()};
+  document.getElementById('p1prev').onclick=function(){if(cur>0)cur--;draw()};
+  document.getElementById('p1skip').onclick=function(){if(cur<11)cur++;draw()};
+  draw();
+})();
+
+/* ---------- 2. La règle de la vague : poignées sur la barre ---------- */
+var SCALE=[[.5,'genoux'],[.9,'taille'],[1.3,'poitrine'],[1.8,'tête'],[2.6,'surcote'],[3.6,'gros']];
+function Ruler(el,handles,opts){
+  var MIN=.2,MAX=4;
+  function pct(m){return (m-MIN)/(MAX-MIN)*100}
+  function build(){
+    var h='<div class="bar"></div>';
+    if(opts.zone)h+='<div class="zg" id="'+el.id+'z"></div>';
+    if(opts.max)h+='<div class="zo" id="'+el.id+'o"></div>';
+    h+=SCALE.map(function(t){return '<div class="tk" style="left:'+pct(t[0])+'%">'+t[1]+'<br>'+fr(t[0])+' m</div>'}).join('');
+    handles.forEach(function(H,i){h+='<div class="lb" id="'+el.id+'l'+i+'"></div><div class="hd '+(H.cls||'')+'" role="slider" tabindex="0" aria-label="'+H.label+'" aria-valuemin="0,2" aria-valuemax="4" id="'+el.id+'h'+i+'">◀▶</div>'});
+    el.innerHTML=h;
+    handles.forEach(function(H,i){
+      var n=document.getElementById(el.id+'h'+i);
+      function set(v){v=Math.max(MIN,Math.min(MAX,Math.round(v*10)/10));H.set(v);opts.onChange();place()}
+      n.addEventListener('pointerdown',function(e){n.setPointerCapture(e.pointerId);n.dataset.drag='1';e.preventDefault()});
+      n.addEventListener('pointermove',function(e){if(n.dataset.drag!=='1')return;var r=el.getBoundingClientRect();set(MIN+(e.clientX-r.left)/r.width*(MAX-MIN))});
+      n.addEventListener('pointerup',function(){n.dataset.drag='0'});
+      n.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key==='ArrowUp'){set(H.get()+.1);e.preventDefault()}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){set(H.get()-.1);e.preventDefault()}});
+    });
+  }
+  function place(){
+    handles.forEach(function(H,i){var v=H.get(),n=document.getElementById(el.id+'h'+i),l=document.getElementById(el.id+'l'+i);
+      n.style.left=pct(v)+'%';n.setAttribute('aria-valuenow',v);l.style.left=pct(v)+'%';l.textContent=fr(v)+' m'});
+    if(opts.zone){var a=handles[0].get(),b=handles[1].get(),z=document.getElementById(el.id+'z');z.style.left=pct(a)+'%';z.style.width=(pct(b)-pct(a))+'%'}
+    if(opts.max){var f=opts.zoneFrom(),c=handles[handles.length-1].get(),o=document.getElementById(el.id+'o');o.style.left=pct(f)+'%';o.style.width=Math.max(0,pct(c)-pct(f))+'%'}
+  }
+  build();place();return place;
+}
+(function(){
+  var S={lo:.8,hi:1.6,max:1.9,tol:18};
+  var wi=document.getElementById('p2wind');
+  function draw(){
+    if(S.max<S.hi)S.max=S.hi;
+    document.getElementById('p2o1').textContent=fr(S.lo)+' à '+fr(S.hi)+' m';
+    document.getElementById('p2o2').textContent=fr(S.max)+' m';
+    var fi=forceIdx(S.tol);document.getElementById('p2o3').textContent=FORCE[fi][0];document.getElementById('p2wd').innerHTML='<b>'+FORCE[fi][0].charAt(0).toUpperCase()+FORCE[fi][0].slice(1)+'</b> : '+FORCE[fi][1]+' <span style="color:var(--muted);font-weight:500;font-size:11.5px">(environ '+FORCE[fi][2]+' km/h)</span>';
+    renderLvl(document.getElementById('p2lvl'),document.getElementById('p2lvn'),S,'');
+    renderPV(document.getElementById('p2pv'),S);
+    pl1();pl2();
+  }
+  var pl1=Ruler(document.getElementById('p2rl'),[
+    {label:'Plus petite vague où je m\'éclate',get:function(){return S.lo},set:function(v){S.lo=Math.min(v,S.hi)}},
+    {label:'Plus grosse vague où je m\'éclate',get:function(){return S.hi},set:function(v){S.hi=Math.max(v,S.lo)}}],{zone:true,onChange:draw});
+  var pl2=Ruler(document.getElementById('p2rm'),[
+    {label:'La plus grosse que je surfe',cls:'mx',get:function(){return S.max},set:function(v){S.max=Math.max(v,S.hi)}}],{max:true,zoneFrom:function(){return S.hi},onChange:draw});
+  wi.oninput=function(){S.tol=FORCE[+wi.value][2];draw()};
+  draw();
+})();
+
+/* ---------- 3. Le questionnaire du prof de surf ---------- */
+(function(){
+  var SZ=[['Genoux',.5],['Taille',.9],['Poitrine',1.3],['Tête',1.8],['Surcote',2.6]];
+  var TAKE=['Parfait, en un seul temps','À travailler','En plusieurs temps'];
+  var STEPS=[
+   {id:'since',q:'Tu surfes depuis…',o:['Moins d\'un an','1 à 3 ans','3 à 8 ans','Plus de 8 ans']},
+   {id:'freq',q:'Tu surfes combien de fois par mois ?',o:['1 à 2 fois','Chaque semaine','Plusieurs fois par semaine']},
+   {id:'what',q:'Tu surfes…',o:['La mousse','Le lisse','Les deux']},
+   {id:'tkFoam',q:'Dans la mousse, ton take-off',sub:'Le lever sur la planche.',o:TAKE,when:function(a){return a.what===0||a.what===2}},
+   {id:'wantSmooth',q:'Tu veux passer au lisse ?',o:['Oui, bientôt','Pas pour l\'instant'],when:function(a){return a.what===0}},
+   {id:'tkSmooth',q:'Dans le lisse, ton take-off',sub:'Le lever sur la planche.',o:TAKE,when:function(a){return a.what===1||a.what===2}},
+   {id:'waves',q:'Quelles vagues tu surfes dans le lisse ?',sub:'Plusieurs choix possibles.',multi:true,o:['Les réformes','L\'épaule','Le peak','Le tube'],when:function(a){return a.what===1||a.what===2}},
+   {id:'barre',q:'Jusqu\'à quelle taille tu passes la barre ?',o:['Je ne passe pas encore'].concat(SZ.map(function(z){return z[0]}))},
+   {id:'feel',q:'À cette taille, une fois la barre passée, tu te sens…',o:['Prêt à surfer','Impressionné : je m\'éloigne du pic, je me repose, j\'analyse','Je passe, mais en galère','Je passe si c\'est le bon moment']},
+   {id:'rame',q:'Ta rame : tu suis physiquement ?',o:['Je rame longtemps sans souci','Ça va, je fatigue au bout d\'un moment','Je fatigue vite']},
+   {id:'ideal',q:'La taille où tu t\'éclates',o:SZ.map(function(z){return z[0]})},
+   {id:'big',q:'La plus grosse que tu surfes sans stress',o:SZ.map(function(z){return z[0]})}];
+  var ans={since:1,freq:1,what:2,tkFoam:0,tkSmooth:1,waves:[1],barre:3,feel:0,rame:0,ideal:2,big:3,wantSmooth:0};
+  var cur=0,adj=0;
+  function active(){return STEPS.filter(function(st){return !st.when||st.when(ans)})}
+  function level(){
+    var top=-1;(ans.waves||[]).forEach(function(w){top=Math.max(top,w)});
+    var smooth=(ans.what===1||ans.what===2);
+    var wv=smooth?[1,1,2,3][Math.max(0,top)]:0;      // réformes 1, épaule 1, peak 2, tube 3
+    var tk=function(v){return v===0?1:v===1?.5:0};
+    var take=ans.what===0?tk(ans.tkFoam)*.5:smooth?tk(ans.tkSmooth):tk(ans.tkFoam);
+    var bar=ans.barre===0?0:Math.min(3,ans.barre-1)/3;
+    var feel=[1,.6,.3,.5][ans.feel];
+    var s=(ans.since/3+ans.freq/2+wv/3+take+bar+feel+(2-ans.rame)/2)/7*4;
+    var L=Math.round(s);
+    if(ans.what===0)L=Math.min(L,take<.5?0:1);       // mousse seule : débutant, ou intermédiaire si le take-off est parfait
+    return Math.max(0,Math.min(4,L+adj));
+  }
+  function profile(){
+    var L=level(),P=Object.assign({},PRESETS[L]);
+    P.lo=Math.max(.3,SZ[ans.ideal][1]*.8);P.hi=Math.max(P.lo+.2,SZ[ans.ideal][1]*1.2);
+    var bigSz=SZ[ans.big][1],barSz=ans.barre===0?.4:SZ[ans.barre-1][1];
+    P.max=Math.max(P.hi,Math.min(bigSz,barSz*1.15)*1.1);
+    return P;
+  }
+  function draw(){
+    var list=active();cur=Math.min(cur,list.length-1);var st=list[cur];
+    document.getElementById('p3count').textContent='Question '+(cur+1)+' sur '+list.length;
+    document.getElementById('p3prog').style.width=((cur+1)/list.length*100)+'%';
+    document.getElementById('p3q').textContent=st.q;
+    document.getElementById('p3sub').textContent=st.sub||'';
+    var box=document.getElementById('p3opts');
+    box.innerHTML=st.o.map(function(t,i){var on=st.multi?(ans[st.id]||[]).indexOf(i)>=0:ans[st.id]===i;return '<button class="ans" data-i="'+i+'" aria-pressed="'+on+'" style="margin-top:0;text-align:left;padding:11px 12px">'+t+'</button>'}).join('');
+    box.querySelectorAll('.ans').forEach(function(b){b.onclick=function(){var i=+b.dataset.i;adj=0;
+      if(st.multi){var v=ans[st.id]||[],k=v.indexOf(i);if(k>=0)v.splice(k,1);else v.push(i);ans[st.id]=v;draw()}
+      else{ans[st.id]=i;var l2=active();if(cur<l2.length-1)cur=l2.indexOf(st)+1;draw()}}});
+    var L=level(),P=profile();
+    renderLvl(document.getElementById('p3lvl'),null,P,'');
+    document.getElementById('p3lvn').innerHTML=NAMES[L]+' <span>· vagues idéales '+fr(P.lo)+' à '+fr(P.hi)+' m · la plus grosse '+fr(P.max)+' m'+(adj?' · corrigé':'')+'</span>';
+    renderPV(document.getElementById('p3pv'),P);
+  }
+  document.getElementById('p3prev').onclick=function(){if(cur>0)cur--;draw()};
+  document.getElementById('p3skip').onclick=function(){if(cur<active().length-1)cur++;draw()};
+  document.getElementById('p3up').onclick=function(){if(level()<4){adj++;draw()}};
+  document.getElementById('p3dn').onclick=function(){if(level()>0){adj--;draw()}};
+  draw();
+})();
+
+/* ---------- 4. Phrases : cas concrets ---------- */
+(function(){
+  var FACING=275;
+  var CARD={N:0,NNE:22.5,NE:45,ENE:67.5,E:90,ESE:112.5,SE:135,SSE:157.5,S:180,SSO:202.5,SO:225,OSO:247.5,O:270,ONO:292.5,NO:315,NNO:337.5};
+  function cat(dir){var d=Math.abs(CARD[dir]-FACING);d=Math.min(d,360-d);return d<=45?'onshore':d<90?'side-on':d<135?'side-off':'offshore'}
+  var CURVES={offshore:[[0,1],[15,1],[25,.75],[35,.45],[45,.25],[55,.15]],cross:[[0,1],[12,1],[18,.88],[24,.65],[32,.4],[45,.15]],onshore:[[0,1],[6,.95],[10,.82],[14,.62],[20,.4],[30,.15],[40,0]]};
+  function interp(x,pts){if(x<=pts[0][0])return pts[0][1];for(var i=1;i<pts.length;i++){if(x<=pts[i][0]){var a=pts[i-1],b=pts[i];return a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0])}}return pts[pts.length-1][1]}
+  function factor(c,k){var cv=c==='offshore'||c==='side-off'?CURVES.offshore:c==='onshore'?CURVES.onshore:CURVES.cross; if(c==='side-on')cv=CURVES.cross; return interp(k,cv)}
+  function level(f){return f>=.9?-1:f>=.75?0:f>=.6?1:f>=.3?2:3}
+  var OLD={offshore:['Offshore soutenu','Offshore un peu fort','Offshore fort','Offshore très fort'],cross:['Un peu de sideshore','Sideshore dégrade la vague','Sideshore fort, ça sectionne','Sideshore très fort, c\'est démonté'],onshore:['Un peu d\'onshore','Onshore dégrade la vague','Onshore fort, ça sectionne','Onshore très fort, c\'est démonté']};
+  var A={offshore:['Offshore soutenu','Offshore un peu fort','Offshore fort','Offshore très fort'],'side-off':['Side-off soutenu','Side-off un peu fort','Side-off fort','Side-off très fort'],'side-on':['Un peu de side-on','Side-on dégrade la vague','Side-on fort, ça sectionne','Side-on très fort, c\'est démonté'],onshore:OLD.onshore};
+  var B={offshore:['Offshore, la vague se tient','Offshore, ça retient la vague','Offshore fort, ça ferme','Offshore très fort, ça arrache'],'side-off':['Side-off, la vague se tient','Side-off, ça retient la vague','Side-off fort, ça ferme','Side-off très fort, ça arrache'],'side-on':['Side-on, ça gratte','Side-on, la vague se froisse','Side-on fort, ça ferme','Side-on très fort, c\'est pourri'],onshore:['Onshore, ça gratte','Onshore, la vague se froisse','Onshore fort, ça ferme','Onshore très fort, c\'est pourri']};
+  var CASES=[['O',14],['NO',25],['SO',18],['SO',30],['NE',31],['NNE',22],['E',12],['ENE',28]];
+  var DIRFR={N:'nord',NNE:'nord-nord-est',NE:'nord-est',ENE:'est-nord-est',E:'est',ESE:'est-sud-est',SE:'sud-est',SSE:'sud-sud-est',S:'sud',SSO:'sud-sud-ouest',SO:'sud-ouest',OSO:'ouest-sud-ouest',O:'ouest',ONO:'ouest-nord-ouest',NO:'nord-ouest',NNO:'nord-nord-ouest'};
+  var el=document.getElementById('p4cmp');
+  el.innerHTML=CASES.map(function(c,i){var dir=c[0],k=c[1],ct=cat(dir),f=factor(ct,k),lv=level(f);
+    var oldKey=ct==='offshore'||ct==='side-off'?(ct==='offshore'?'offshore':'cross'):ct==='side-on'?'cross':'onshore';
+    var fo=ct==='side-off'?factor('side-off',k):f;
+    var olvl=level(interp(k,CURVES[oldKey==='cross'?'cross':oldKey]));
+    var tag=ct==='side-off'?'Side-off':ct==='side-on'?'Side-on':ct==='offshore'?'Offshore':'Onshore';
+    function ph(S){return lv<0?'(pas de phrase : vent propre)':S[ct][lv]}
+    var oldTxt=olvl<0?'(pas de phrase : vent propre)':OLD[oldKey][olvl];
+    return '<div class="ex"><div class="c">'+tag+' · vent de '+DIRFR[dir]+'<small>À Montalivet · <span style="opacity:.65">'+k+' km/h</span></small></div><div class="row3"><div class="opt now"><small>En ligne aujourd\'hui</small>'+oldTxt+'</div><button class="opt" data-g="'+i+'" aria-pressed="false"><small>Proposition A · sobre</small>'+ph(A)+'</button><button class="opt" data-g="'+i+'" aria-pressed="false"><small>Proposition B · imagée</small>'+ph(B)+'</button></div></div>'}).join('');
+  el.onclick=function(e){var b=e.target.closest('button.opt');if(!b)return;el.querySelectorAll('button.opt[data-g="'+b.dataset.g+'"]').forEach(function(x){x.setAttribute('aria-pressed',x===b)})};
+})();
+
+document.getElementById('tabs').onclick=function(e){var b=e.target.closest('button');if(!b)return;
+  this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-selected',x===b)});
+  document.querySelectorAll('section[data-s]').forEach(function(s){s.hidden=s.dataset.s!==b.dataset.p})};
+document.getElementById('theme').onclick=function(e){var b=e.target.closest('button');if(!b)return;
+  this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});
+  var v=b.dataset.v;if(v==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',v)};
+</script>
+</body>
+</html>

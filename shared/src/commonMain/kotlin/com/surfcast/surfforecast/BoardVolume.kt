@@ -57,34 +57,11 @@ fun estimateVolumeL(
 fun volumeRatio(volumeL: Double?, weightKg: Int): Double? =
     if (volumeL == null || volumeL <= 0.0 || weightKg <= 0) null else volumeL / weightKg
 
-/** Fourchette de ratio L/kg par profil (repères de boutiques, adulte en forme) : [min, max]. */
-fun ratioRangeFor(level: String): ClosedFloatingPointRange<Double> = when (level) {
-    "beginner" -> 0.58..0.80
-    "intermediate" -> 0.45..0.58
-    "confirmed" -> 0.37..0.45
-    else -> 0.30..0.37
-}
-
-/** Volume (L) correspondant à un profil pour ce poids : fourchette min-max. */
-fun volumeRangeFor(level: String, weightKg: Int): ClosedFloatingPointRange<Double> {
-    val r = ratioRangeFor(level)
-    return (r.start * weightKg)..(r.endInclusive * weightKg)
-}
-
-/** Profil que suggère un ratio L/kg (repère indicatif, pas un jugement de niveau). */
-fun levelForRatio(ratio: Double): String = when {
-    ratio >= 0.58 -> "beginner"
-    ratio >= 0.45 -> "intermediate"
-    ratio >= 0.37 -> "confirmed"
-    else -> "expert"
-}
-
-fun levelLabel(level: String): String = when (level) {
-    "beginner" -> "Débutant"
-    "intermediate" -> "Intermédiaire"
-    "confirmed" -> "Confirmé"
-    "expert" -> "Expert"
-    else -> "Personnalisé"
+/** Libellé du niveau de l'appli : « beginner » → « Débutant », « advanced+ » → « Avancé + » ; autre texte → « Personnalisé ». */
+fun levelLabel(level: String): String {
+    val i = LEVEL_KEYS.indexOf(level.removeSuffix(SurfProfile.PLUS_SUFFIX))
+    if (i < 0) return "Personnalisé"
+    return LEVEL_NAMES[i] + if (level.endsWith(SurfProfile.PLUS_SUFFIX) && i < LEVEL_KEYS.lastIndex) " +" else ""
 }
 
 /** Nombre à la française : 31,1 (une décimale par défaut). */
@@ -105,7 +82,7 @@ fun boardVolumeSummary(board: QuiverBoard, weightKg: Int): String? {
     return approx + formatFr(v) + " L" + (ratio?.let { " · " + formatFr(it, 2) + " L/kg" } ?: "")
 }
 
-// --- Coefficient selon le type de planche, volume recommandé, curseurs de cotes ---
+// --- Volume recommandé (recommandation, pas une vérité : seul le shaper connaît le bon volume) ---
 
 /** Coefficient de remplissage selon la famille : une planche plus « pleine » (fish, mid-length, longboard) a un coefficient plus haut. */
 fun fillFactorFor(family: String): Double = when (family) {
@@ -116,33 +93,18 @@ fun fillFactorFor(family: String): Double = when (family) {
     else -> VOLUME_FILL_FACTOR
 }
 
-/**
- * Multiplicateur du volume recommandé selon le type de planche, par rapport à un shortboard (repères indicatifs) :
- * une mid-length ou un longboard se surfent avec beaucoup plus de litres, quel que soit le niveau.
- */
-fun familyVolumeFactor(family: String): Double = when (family) {
-    "fish", "twin", "groveler" -> 1.15
-    "mid-length" -> 1.6
-    "longboard", "mousse" -> 2.1
-    else -> 1.0
-}
-
 /** Types proposés pour le volume recommandé : (famille, libellé). */
-val RECOMMENDATION_FAMILIES = listOf("shortboard" to "Shortboard", "fish" to "Fish / Twin", "mid-length" to "Mid-length", "longboard" to "Longboard")
+val RECOMMENDATION_FAMILIES = listOf("shortboard" to "Shortboard", "fish" to "Fish, twin, groveler", "mid-length" to "Mid-length", "longboard" to "Longboard", "mousse" to "Mousse")
 
-/** Planche « longue » : le volume recommandé est plus élevé que pour une planche courte. */
+/** Planche « longue » : le volume ne dépend plus du niveau mais de la longueur de la planche. */
 fun isLongFamily(family: String): Boolean = family == "longboard" || family == "mousse" || family == "mid-length"
 
-/** Profils du calcul de volume : libellé et litres par kilo (adulte de 60 kg et plus, en forme). */
-val VOLUME_LEVELS: List<Pair<String, Double>> = listOf(
-    "Débutant" to 0.68,
-    "Débutant / Interm." to 0.54,
-    "Intermédiaire" to 0.42,
-    "Interm. / Confirmé" to 0.405,
-    "Confirmé" to 0.38,
-    // Repères de pros en shortboard : Slater 72 kg ≈ 24-25 L, Medina 80 kg = 29 L, Wright 86 kg = 31,5 L (≈ 0,34 à 0,37 L/kg).
-    "Expert" to 0.35
-)
+/**
+ * Litres par kilo d'un shortboard selon le niveau (débutant, intermédiaire, confirmé, avancé, expert). Débutant à
+ * confirmé : calculateurs publics ; expert : planches de pilotes pros (JS Industries, Fanning, Smith, Slater : de 0,34
+ * à 0,42 L/kg selon le poids, voir docs/JOURNAL.md).
+ */
+val VOLUME_RATIOS: List<Double> = listOf(0.66, 0.48, 0.41, 0.37, 0.35)
 
 /** Forme physique : libellé et coefficient (moins en forme = plus de volume). */
 val FITNESS_LEVELS: List<Pair<String, Double>> = listOf(
@@ -152,53 +114,89 @@ val FITNESS_LEVELS: List<Pair<String, Double>> = listOf(
     "Faible" to 1.18
 )
 
+/** Âge : aucune majoration jusqu'à 35 ans (0 = non renseigné), puis un peu plus. Mesuré sur des pros en forme : environ +3 % à 50 ans. */
 fun ageFactor(ageYears: Int): Double = when {
-    ageYears <= 30 -> 1.0
-    ageYears <= 50 -> 1.08
-    else -> 1.15
+    ageYears <= 35 -> 1.0
+    ageYears <= 50 -> 1.03
+    ageYears <= 60 -> 1.07
+    else -> 1.10
 }
 
-/** Les surfeurs légers ont besoin de plus de litres par kilo : +20 % à 35 kg, rien à partir de 60 kg. */
-fun weightFactor(weightKg: Double): Double = 1.0 + 0.2 * ((60.0 - weightKg) / 25.0).coerceIn(0.0, 1.0)
+/** Les surfeurs légers ont besoin de plus de litres par kilo : +20 % à 55 kg, dégressif jusqu'à 85 kg (pilotes JS : 0,42 L/kg à 59 kg, 0,35 à 80 kg). */
+fun weightFactor(weightKg: Double): Double = 1.0 + 0.2 * ((85.0 - weightKg) / 30.0).coerceIn(0.0, 1.0)
 
-/** Profil du calcul de volume proposé par défaut pour un niveau de l'appli. */
-fun defaultVolumeLevel(surferLevel: String): Int = when (surferLevel) {
-    "beginner" -> 0
-    "confirmed" -> 4
-    "expert" -> 5
-    else -> 2
-}
+/** Rang du niveau de l'appli (« beginner »… « expert », « confirmed+ »…) dans [VOLUME_RATIOS] ; un profil perso compte comme intermédiaire. */
+fun volumeLevelIndex(surferLevel: String): Int =
+    LEVEL_KEYS.indexOf(surferLevel.removeSuffix(SurfProfile.PLUS_SUFFIX)).let { if (it < 0) 1 else it }
 
-/** Informations du surfeur (facultatives sauf pour le volume recommandé) ; 0 = non renseigné, [volumeLevel] -1 = déduit du niveau. */
+/** Informations du surfeur (facultatives sauf le poids) ; 0 = non renseigné. [fitness] = rang dans [FITNESS_LEVELS]. */
 data class BodyState(
     val ageYears: Int = 0,
-    val heightCm: Int = 0,
     val weightKg: Int = 0,
-    val fitness: Int = 0,
-    val volumeLevel: Int = -1
-) {
-    fun levelIndex(surferLevel: String): Int =
-        if (volumeLevel in VOLUME_LEVELS.indices) volumeLevel else defaultVolumeLevel(surferLevel)
+    val fitness: Int = 1
+)
+
+/** Forme physique déduite de la réponse « Tu t'entraînes en dehors du surf ? » du profil (0 non, 1 de temps en temps, 2 régulièrement ; null = inconnu). */
+fun fitnessFromTraining(training: Int?): Int = when (training) {
+    0 -> 2
+    2 -> 0
+    else -> 1
 }
 
-/** Volume recommandé (L) : poids x litres par kilo du profil x âge x forme x (type de planche), ou null sans poids. */
-fun recommendedVolumeL(body: BodyState, levelIndex: Int, family: String = "shortboard"): Double? {
+/**
+ * Fourchette recommandée (L) pour une famille de planche, ou null sans poids (et pour la mousse). Shortboard : poids x
+ * ratio du niveau x poids léger x âge x forme, à ± 5 %. Fish, twin, groveler : le shortboard + 1 à 2 L (≈ +3 % chez les
+ * pilotes JS). Mid-length : 0,55 à 0,80 L/kg et longboard : 55 à 80 L et plus, sans tenir compte du niveau.
+ */
+fun recommendedVolumeRange(body: BodyState, levelIndex: Int, family: String = "shortboard"): ClosedFloatingPointRange<Double>? {
     if (body.weightKg <= 0) return null
-    val ratio = VOLUME_LEVELS[levelIndex.coerceIn(0, VOLUME_LEVELS.lastIndex)].second
-    val fitness = FITNESS_LEVELS[body.fitness.coerceIn(0, FITNESS_LEVELS.lastIndex)].second
-    return body.weightKg * ratio * weightFactor(body.weightKg.toDouble()) * ageFactor(body.ageYears) * fitness *
-        familyVolumeFactor(family)
+    val w = body.weightKg.toDouble()
+    return when (family) {
+        "mousse" -> null
+        "mid-length" -> (w * 0.55)..(w * 0.80)
+        "longboard" -> 55.0..80.0
+        else -> {
+            val ratio = VOLUME_RATIOS[levelIndex.coerceIn(0, VOLUME_RATIOS.lastIndex)]
+            val fitness = FITNESS_LEVELS[body.fitness.coerceIn(0, FITNESS_LEVELS.lastIndex)].second
+            val base = w * ratio * weightFactor(w) * ageFactor(body.ageYears) * fitness
+            val extra = if (family == "fish" || family == "twin" || family == "groveler") 1.0 to 2.0 else 0.0 to 0.0
+            (base * 0.95 + extra.first)..(base * 1.05 + extra.second)
+        }
+    }
 }
 
-/** Plage recommandée : ± 2,5 % autour du volume recommandé. */
-fun recommendedRange(volumeL: Double): ClosedFloatingPointRange<Double> = (volumeL * 0.975)..(volumeL * 1.025)
+/** Un pilote pro et sa planche, d'après les fiches « team rider reference » de JS Industries (poids en kg, volume en litres). */
+class ProReference(val name: String, val weightKg: Int, val volumeL: Double, val family: String)
+
+val PRO_REFERENCES: List<ProReference> = listOf(
+    ProReference("Aelan Vaast", 59, 24.5, "fish"), ProReference("Pete Devries", 67, 26.0, "fish"),
+    ProReference("Ace", 73, 27.5, "fish"), ProReference("Conner Coffin", 75, 27.5, "fish"),
+    ProReference("Julian Wilson", 84, 29.0, "fish"), ProReference("Parko", 87, 32.0, "fish"), ProReference("Luke", 90, 33.5, "fish"),
+    ProReference("Hiroto Ohhara", 64, 24.6, "shortboard"), ProReference("Kai Hing", 68, 26.4, "shortboard"),
+    ProReference("Jeremy Flores", 70, 25.6, "shortboard"), ProReference("Conner Coffin", 75, 27.0, "shortboard"),
+    ProReference("Mikey Wright", 75, 27.0, "shortboard"), ProReference("Adrian Buchan", 76, 26.3, "shortboard"),
+    ProReference("Julian Wilson", 80, 28.6, "shortboard"), ProReference("Joel Parkinson", 83, 28.3, "shortboard"),
+    ProReference("Jason Stevenson", 88, 32.7, "shortboard"), ProReference("Mark Occhilupo", 95, 35.6, "shortboard"),
+    ProReference("Harrison Roach (7'6)", 72, 50.0, "mid-length"), ProReference("Luke Egan (7'0)", 90, 48.7, "mid-length"),
+    ProReference("Joel Parkinson (6'8)", 87, 38.4, "mid-length")
+)
+
+/** Les [count] pros de la famille dont le poids est le plus proche de [weightKg] ; vide pour le longboard et la mousse. */
+fun nearestPros(family: String, weightKg: Int, count: Int = 3): List<ProReference> {
+    val key = when (family) { "twin", "groveler", "fish" -> "fish"; "mid-length" -> "mid-length"; "shortboard" -> "shortboard"; else -> return emptyList() }
+    return PRO_REFERENCES.filter { it.family == key }.sortedBy { kotlin.math.abs(it.weightKg - weightKg) }.take(count)
+}
+
+/** Volume central de la fourchette recommandée, ou null. */
+fun recommendedVolumeL(body: BodyState, levelIndex: Int, family: String = "shortboard"): Double? =
+    recommendedVolumeRange(body, levelIndex, family)?.let { (it.start + it.endInclusive) / 2.0 }
 
 /** Écart en % d'un volume par rapport au recommandé. */
 fun percentFromRecommended(volumeL: Double, recommendedL: Double): Double = (volumeL / recommendedL - 1.0) * 100.0
 
-/** Volume du tableau niveau x poids : adulte de moins de 30 ans en excellente forme, planche courte. */
-fun volumeTableValue(levelIndex: Int, weightKg: Int): Double =
-    weightKg * VOLUME_LEVELS[levelIndex].second * weightFactor(weightKg.toDouble())
+/** « 31 à 34 L » : fourchette en litres entiers ; le longboard s'écrit « 55 à 80 L et plus ». */
+fun volumeRangeLabel(range: ClosedFloatingPointRange<Double>, family: String = "shortboard"): String =
+    "${range.start.roundToInt()} à ${range.endInclusive.roundToInt()} L" + if (family == "longboard") " et plus" else ""
 
 private fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 

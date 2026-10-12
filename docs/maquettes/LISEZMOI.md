@@ -7,3 +7,6 @@ Fichiers autonomes, à ouvrir dans un navigateur.
 - `brief-retravail.md` : brief de tâches et catalogue des phrases du déroulé (état du 10 octobre, avant les phrases sans « pour toi »).
 
 Les maquettes « couvertures nuageuses » et « écran clair » ne sont pas dans le dépôt : leurs liens privés sont dans `docs/JOURNAL.md`.
+- `profil-questions.html` : le questionnaire du profil (questions seules, cinq niveaux), 12 octobre 2026.
+- `niveau.html` : propositions et essais pour le niveau, les phrases du vent et la page d'accueil des réglages (12 octobre 2026).
+- `organigramme.html` : les cheminements du questionnaire vers les cinq niveaux, en diapos (12 octobre 2026).

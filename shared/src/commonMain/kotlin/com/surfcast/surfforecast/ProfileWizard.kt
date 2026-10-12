@@ -361,7 +361,7 @@ internal fun WaveRangeEditor(base: SurfProfile, presetKey: String, onChange: (Su
 
 private val WIZARD_TITLES = listOf("Ton niveau", "Tes vagues", "Le vent", "La qualité de la mer", "Tes notes", "Résumé")
 private val ONSHORE_STEP_CHOICES = listOf(10.0 to "Strict · 10 km/h", 12.0 to "Sensible · 12 km/h", 14.0 to "Normal · 14 km/h", 20.0 to "Tolérant · 20 km/h")
-private val WIZARD_LEVELS = listOf("beginner", "intermediate", "confirmed", "expert")
+private val WIZARD_LEVELS = listOf("beginner", "intermediate", "confirmed", "advanced", "expert")
 
 /**
  * Assistant en étapes. [level] est le niveau enregistré (préréglage ou « custom:… »), [answers] les réponses de l'étape 5.

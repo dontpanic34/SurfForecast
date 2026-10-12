@@ -1,10 +1,32 @@
 # À faire
 
+## Tâche ajoutée le 12 octobre : encart « Maintenant », la marée avec flèche et heure de la prochaine
+- **Aujourd'hui** (`NowTideCard.kt`, `tideStateWord` dans `HourlyForecastRow.kt`) : un mot, « Marée descendante », sans flèche ni heure.
+- **Demandé** : « Marée descendante » avec une **flèche vers le bas** ▼ et **l'heure de la prochaine marée basse** ; « Marée montante » avec une flèche vers le haut ▲ et l'heure de la prochaine marée haute. Les mots « pleine haute » / « pleine basse » gardent leur flèche (▲ / ▼) et leur heure.
+- **Cas à prévoir** : après la dernière marée du jour, la prochaine est le lendemain (il faut les marées du jour suivant, dans `dailyTides`) ; sans horaires de marée, ne rien afficher.
+- **Rafales (précisé le 12 octobre)** : on ne les affiche **nulle part** sauf dans la carte Vent (avec le petit graphique gris). Concrètement : retirer « · rafales 16 » de l'encart « Maintenant » (`NowTideCard.kt`, ligne du vent : ne garder que « Vent SE 13 km/h »). Le déroulé n'a déjà plus la ligne « vent moyen · rafales ». Restent la carte Vent (`WindCardComponent.kt`, « Rafales … », à garder) et le texte du « i » du vent (`Ressenti.kt`, qui explique le calcul avec un exemple de rafales : à garder, il est dans l'explication du vent).
+
+## Plus tard : la condition physique dans « Mon matériel » (12 octobre)
+- « Ta rame pour passer la barre » (sans souci / je fatigue au bout d'un moment / je fatigue vite / je n'avance pas aussi vite que je devrais) sort du questionnaire du niveau : c'est de la condition physique. À reprendre avec le volume de planche dans « Mon matériel » (déjà « Forme physique : excellente, bonne, moyenne, faible » aujourd'hui) : probablement la fusionner avec cette « forme physique ».
+
+## Plus tard : le volume de planche et la fréquence (12 octobre)
+- Conserver dans le profil la fréquence (quelques fois par an… plusieurs fois par semaine) et la saison (toute l'année / surtout l'été). Au moment de reprendre le volume recommandé (`BoardVolume.kt`, « Mon matériel »), en tenir compte : plus de volume pour quelqu'un qui surfe peu ou seulement l'été. Sujet compliqué, à traiter à part ; rien dans le niveau en attendant.
+
+## Tâche ajoutée le 12 octobre : toutes les marées de la journée d'ensoleillement dans le déroulé
+- **Aujourd'hui** (`DaylightTides.kt`, `daylightTides`) : on n'affiche que **deux** marées (`take(2)`), les plus proches du milieu de la journée dans la fenêtre « une demi-heure avant le lever à une demi-heure après le coucher ».
+- **Demandé** : afficher **autant de marées que possible** dans la journée d'ensoleillement. Exemple du propriétaire : pleine mer vers 8 h et lever du soleil vers 8 h, on la garde ; la suivante, 6 h plus tard (vers 14 h) ; puis la troisième si elle tombe dans la fenêtre. Deux pleines mers dans la même journée de soleil, c'est normal et il y a la place.
+- **Où** : les triangles dans l'eau sur la courbe (`tideMarks`) et la ligne sous la jauge (`TideLine`, qui montre déjà le triangle et l'heure précise de chaque marée). Le propriétaire veut aussi **l'heure précise** à côté des repères : à maquetter (il y a trois marées au plus dans la fenêtre : coefficient + trois heures tiennent sur la ligne).
+- **Changement minimal** : garder toutes les marées de la fenêtre (au lieu de deux), et ne compléter avec les plus proches hors fenêtre que s'il y en a moins de deux (comportement actuel conservé dans ce cas). Des tests existent (`DaylightTidesTest.kt`) et attendent deux marées : à adapter (certains cas passeront à trois), et à compléter : lever 8 h / pleine mer 8 h gardée ; fenêtre longue à trois marées ; jour sans marée dans la fenêtre.
+
+## À coder après validation (12 octobre) : side-off / side-on
+- Couper le vent « côté » à 90° dans `windCategoryFromDegrees` (side-off = famille offshore, side-on = famille onshore) : touche les couleurs des flèches, les notes (`windFactorOf`, `windCurves`) et les phrases (`windPhrase`, qui dit encore « sideshore »). Les mots des phrases restent à choisir avec le propriétaire (onglet « Phrases du vent » de `docs/maquettes/niveau.html`). Cas qui l'a révélé : NE 31 km/h à Montalivet (130° de la mer) classé « côté ».
+
 ## Retours du propriétaire à traiter (soir du 11 octobre)
 - **Nuages : transitions entre deux couvertures trop brutales** (on dirait des segments séparés) et couvertures peu jolies. Causes probables : lissage de la couverture trop court (quelques dizaines de pixels) alors que la prévision saute d'une heure à l'autre, mélange de sprites très différents, aplats. Pistes : fondu long (2 à 3 h dans le déroulé, un jour dans la semaine) avec courbe en S, limiter la vitesse de changement de couverture, fond du ciel stable, voile de couvert plus progressif.
 - **Pluie** : le propriétaire la trouve très bien (12 octobre), ne rien changer.
 - **Semaine : phrase du jour et température** : maquette avec rendu réel envoyée (https://claude.ai/artifact/Y5cp87SPMmrriFWJhvcYgu). Phrase en 3 lignes (choisi le 12 octobre) : maquette mise à jour dans `docs/maquettes/ecran-semaine.html`, deux versions de lignes à départager. Option A, offshore/onshore, déroulé sans 3e ligne, températures discrètes dans le ciel et l'eau (2e maquette du 12 octobre, à valider). Règle : aucun mot « ressenti » à l'écran, sauf dans le « i » (à retirer de `NowTideCard.kt` et `WeatherDetailScreen.kt`).
-- **Réglages en 5 pages** : maquette validée en principe (https://claude.ai/artifact/6X9Pg1aQLgtDyXbRMw8EtX), à coder une page à la fois ; retirer l'orientation de la plage des réglages.
+- **Refonte du niveau (priorité du propriétaire) et des réglages** : maquette `docs/maquettes/niveau.html` envoyée, à choisir (4 façons de dire son niveau, 3 structures d'accueil). Ensuite coder une page à la fois.
+- **Réglages en 5 pages** (ancienne maquette) : maquette validée en principe (https://claude.ai/artifact/6X9Pg1aQLgtDyXbRMw8EtX), à coder une page à la fois ; retirer l'orientation de la plage des réglages.
 - Rappel : ne pousser sur `unified` et `web` qu'avec le « go » du propriétaire.
 
 ## Semaine : codée sur la branche, à relancer en intégration continue puis à publier avec ton « go »
@@ -43,6 +65,7 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 6. **Hauteur du soleil selon la saison**, vérifier le libellé « 1,0 m 10 s » de la semaine.
 
 ## Idées à garder
+- **Comparer les niveaux dans l'appli** (idée du propriétaire, 12 octobre) : on choisit son niveau et on regarde ceux d'après (« Mon niveau, et le suivant »), ou deux niveaux au choix, avec les réponses qui permettent chacun et les lignes où ils se séparent. Maquette dans `docs/maquettes/organigramme.html` (section « Comparer deux niveaux »). Servirait à comprendre ce qu'il faut pour passer au niveau suivant.
 - Contour de la flèche de vent de la semaine si elle est peu visible sur ciel clair.
 
 ## Le ressenti pour tout (règle du 11 octobre 2026, à cadrer par maquette)
@@ -52,3 +75,42 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Température : température ressentie (vent, humidité, soleil) plutôt que la température de l'air ; eau et combinaison à voir.
 - Houle : **pas de ressenti**, on garde la donnée brute (décision du propriétaire).
 - Semaine : phrase du jour choisi à la place du titre + un seul chiffre par jour (ressenti moyen des heures de jour, ni mini ni maxi) : maquette `semaine_phrase.html` envoyée, en attente de validation.
+
+## Houle secondaire (demandé, à maquetter avant de coder)
+- Dans la carte Houle, sous l'existant, afficher la houle secondaire en plus petit (pour montrer qu'elle est secondaire) : hauteur, période, orientation et énergie.
+- Faisabilité : Open-Meteo marine fournit `secondary_swell_wave_height/period/direction` (à vérifier dans le code actuel). L'énergie se calcule comme pour la houle principale (hauteur² × période).
+- Maquette d'abord, validation du propriétaire, puis code.
+
+## Sideshore : seulement si vraiment de côté (demandé)
+- On n'écrit « sideshore » que si le vent est pile de côté (pour Montalivet : nord ou sud).
+- Un vent de nord-est est « side-off », un vent de sud-ouest est « side-on » (la plage regarde l'ouest). Même règle pour les autres plages, selon leur orientation.
+- À intégrer avec le codage des catégories side-off / side-on déjà listé plus haut (couleurs, notes, phrases).
+
+## Matériel : ancienneté, fréquence, saison (demandé)
+- Déplacer « Tu surfes depuis », la fréquence (avec « plusieurs fois par jour ») et la saison (« toute l'année » / « quand l'eau est bonne ») dans Matériel, avec la condition physique. À traiter quand on s'occupe de Matériel.
+- Matériel : ajouter la question « Tu surfes sur quoi ? » en choix multiple (mousse, longboard, mid-length, fish, shortboard).
+- À trancher (propriétaire) : « Jusqu'à quelle taille tu passes la barre » reste dans le niveau ; « Quand tu passes la barre, tu te sens… » est plus proche de la condition physique.
+
+## Volume : incohérences trouvées dans le code (BoardVolume.kt), à corriger après validation
+- Le volume des longboards et mid-lengths est multiplié par 2,1 et 1,6 sur le ratio du niveau : un longboard « Confirmé » de 70 kg tombe à environ 56 L, un « Débutant » à 100 L. Les sources publient plutôt un ajout en litres (hybride +3 à 5, funboard +8 à 12, longboard +15 à 25), et le niveau ne doit pas définir le volume d'une planche longue. Proposition : volume conseillé seulement pour shortboard, fish, twin (fish +3 à 5 L), repère large pour mid-length, rien pour longboard et mousse.
+- Les ratios L/kg du code (Intermédiaire 0,42, Confirmé 0,38) sont plus bas que les repères publiés (≈ 0,5 pour un intermédiaire) : à recaler.
+- Deux échelles coexistent : 6 profils de volume (VOLUME_LEVELS) et 4 niveaux (ratioRangeFor, levelForRatio) : à aligner sur les 5 niveaux.
+- Le niveau « pour le volume » est un réglage séparé dans Matériel : il doit venir du profil.
+- Volume mid-length et longboard dans le code : remplacer les multiplicateurs ×1,6 et ×2,1 par des fourchettes selon le poids seul (mid-length 0,65 à 0,85 L/kg, longboard 55 à 80 L et plus), sans niveau. À faire après validation de la maquette Matériel.
+- Facteur poids léger du volume (validé par le propriétaire le 15 octobre) : +20 % progressif de 85 kg à 55 kg (au lieu de 25 kg d écart à partir de 60 kg), à coder dans `weightFactor`. Les fiches JS montrent 0,42 L/kg à 59 kg, 0,39 vers 67 kg, 0,34 à 0,37 de 75 à 95 kg.
+- Facteur âge du volume à rediscuter : chez les pros en forme, Slater passe de 0,34 à 0,36 L/kg entre ≈ 43 et ≈ 51 ans (+3 %), Occhilupo (50 ans et plus, 95 kg) est à 0,37 (+7 % sur le ratio expert de 0,35). Le calcul ajoute +8 % de 31 à 50 ans et +15 % au-delà : plus que ce qu'on observe, la forme physique étant comptée à part.
+- Courbe d'âge du volume : un cas réel (34 ans, avancé +) valide la proposition (×1 jusqu'à 35 ans) contre le calcul actuel (×1,08 dès 31 ans). À coder avec le reste du volume après validation de Matériel.
+- Taille du surfeur : décision du propriétaire, on la retire (champ `heightCm` dans QuiverUi, SurfController et BoardVolume, jamais utilisé dans le calcul). Déjà retirée de la maquette.
+
+## Étoiles communes à tous, encarts colorés selon le niveau (demandé)
+- Les étoiles doivent dire la même chose à tous les surfeurs, quel que soit leur niveau : « demain, il y a 4 étoiles », comme une note de la journée dont on parle entre surfeurs.
+- Ce qui est en dessous (les encarts vert, jaune, rouge) reste personnel : il dépend du niveau et des réglages.
+- À vérifier dans le code : `starsForScore` (Stars.kt) convertit un score en étoiles, et ce score doit être calculé avec un profil neutre, le même pour tout le monde. Aujourd'hui il dépend sans doute du niveau choisi.
+- Le réglage « sévérité des étoiles » (`StarsSettings.offset`) contredit cette règle : il décale les étoiles d'un surfeur à l'autre. À supprimer ou à déplacer vers les couleurs.
+- Maquette d'abord (étoiles identiques pour un débutant et un expert sur la même journée, couleurs différentes), puis code après validation.
+
+## Reste à faire après le code du profil et de Matériel
+- Brancher : « Quand tu les sors » et « Ma pratique » (depuis, fréquence, saison) dans Matériel ; la planche du jour (note par planche du quiver) ; la tolérance aux conditions dans les couleurs ; la forme dans les recommandations.
+- Valider le profil « Avancé » du moteur (plafond 1700 kJ, vent 22 km/h, onshore 11 km/h).
+- Aligner l'organigramme sur la planche en choix multiple retirée du questionnaire.
+- Retirer les anciens réglages devenus inutiles (`volume_level_idx`, `body_height_cm`, `body_fitness`) : lues nulle part, elles restent dans les préférences des utilisateurs sans effet.

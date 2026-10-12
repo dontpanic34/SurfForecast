@@ -205,6 +205,7 @@ fun MainScreen(
             onCustomProfileSaved = { viewModel.saveCustomProfile(it) },
             exampleAnswers = viewModel.exampleAnswers,
             onExampleAnswersChanged = { viewModel.changeExampleAnswers(it) },
+            levelQuiz = LevelQuizHost(viewModel.levelAnswers, viewModel.levelShift, viewModel.tolerance, viewModel.levelResult) { a, shift, tol -> viewModel.saveLevelQuestionnaire(a, shift, tol) },
             engineConfig = viewModel.engineConfig,
             onEngineConfigChanged = { viewModel.updateEngineConfig(it) },
             onViewLogs = {
@@ -753,7 +754,7 @@ fun MainScreen(
                         "Renseigner ton profil est LE réglage à faire en premier.\n" +
                             "• Sans profil : les notes sont celles d'un surfeur moyen, et un message t'invite à remplir ton profil.\n" +
                             "• Avec ton profil : les scores, les couleurs et la limite orange « trop gros » sont calculés pour toi.\n" +
-                            "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Expert) ou ton réglage personnalisé (taille de vague, tolérance au vent, aux rafales, au clapot).\n" +
+                            "• Ce qu'il prend en compte : ton niveau (Débutant, Intermédiaire, Confirmé, Avancé, Expert) ou ton réglage personnalisé (taille de vague, tolérance au vent, aux rafales, au clapot).\n" +
                             "• Tes planches : ajoute-les avec leur volume, tu les retrouveras dans le journal.\n" +
                             "Une minute suffit, et les scores, les étoiles et le « trop gros » deviennent les tiens.",
                         actionLabel = "Renseigner mon profil maintenant",

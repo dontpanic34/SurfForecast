@@ -555,26 +555,21 @@ class SurfController(
         prefs.putBoolean("profile_reviewed_v1", true)
     }
 
-    // Mon matériel : âge, taille (cm), poids (kg), forme physique et niveau du calcul de volume (0 = non renseigné).
-    // Restent sur l'appareil.
+    // Mon matériel : âge (facultatif) et poids (kg), 0 = non renseigné. Restent sur l'appareil. La forme physique vient de
+    // la réponse « Tu t'entraînes en dehors du surf ? » du questionnaire de niveau.
     var body by mutableStateOf(
         BodyState(
             ageYears = prefs.getInt("body_age", 0),
-            heightCm = prefs.getInt("body_height_cm", 0),
             weightKg = prefs.getInt("body_weight_kg", 0),
-            fitness = prefs.getInt("body_fitness", 0),
-            volumeLevel = prefs.getInt("volume_level_idx", -1)
+            fitness = fitnessFromTraining(parseLevelAnswers(prefs.getString("level_answers_v1", "") ?: "")?.training)
         )
     )
         private set
 
     fun changeBody(newBody: BodyState) {
-        body = newBody
+        body = newBody.copy(fitness = body.fitness)
         prefs.putInt("body_age", newBody.ageYears)
-        prefs.putInt("body_height_cm", newBody.heightCm)
         prefs.putInt("body_weight_kg", newBody.weightKg)
-        prefs.putInt("body_fitness", newBody.fitness)
-        prefs.putInt("volume_level_idx", newBody.volumeLevel)
     }
 
     // Tant que le profil n'est pas renseigné, un message cliquable remplace le « Meilleur créneau » de l'écran
@@ -610,6 +605,31 @@ class SurfController(
     fun changeSurferLevel(level: String) {
         surferLevel = level
         prefs.putString("surfer_level", level)
+    }
+
+    // Questionnaire de niveau (voir LevelQuestionnaire.kt) : les réponses, le décalage choisi par le surfeur
+    // (une marche en dessous / au-dessus) et les trois réponses de tolérance, qui ne changent pas le niveau.
+    var levelAnswers by mutableStateOf(parseLevelAnswers(prefs.getString("level_answers_v1", "") ?: ""))
+        private set
+    var levelShift by mutableStateOf(prefs.getInt("level_shift_v1", 0))
+        private set
+    var tolerance by mutableStateOf((prefs.getString("tolerance_v1", "") ?: "").split(",").mapNotNull { it.toIntOrNull() })
+        private set
+
+    /** Le résultat du questionnaire (null tant qu'il n'a pas été fait). */
+    val levelResult: LevelResult? get() = levelAnswers?.let { computeLevel(it, levelShift) }
+
+    /** Enregistre le questionnaire : le niveau du moteur devient celui du résultat. */
+    fun saveLevelQuestionnaire(answers: LevelAnswers, shift: Int, tol: List<Int>) {
+        levelAnswers = answers
+        levelShift = shift
+        tolerance = tol
+        prefs.putString("level_answers_v1", answers.serialize())
+        prefs.putInt("level_shift_v1", shift)
+        prefs.putString("tolerance_v1", tol.joinToString(","))
+        body = body.copy(fitness = fitnessFromTraining(answers.training))
+        changeSurferLevel(computeLevel(answers, shift).levelKey)
+        markProfileReviewed()
     }
 
     fun toggleSurfCard(show: Boolean) {
