@@ -101,3 +101,10 @@ Pistes à vérifier : (1) les rafales comptent à moitié dans le vent de la not
 - Facteur âge du volume à rediscuter : chez les pros en forme, Slater passe de 0,34 à 0,36 L/kg entre ≈ 43 et ≈ 51 ans (+3 %), Occhilupo (50 ans et plus, 95 kg) est à 0,37 (+7 % sur le ratio expert de 0,35). Le calcul ajoute +8 % de 31 à 50 ans et +15 % au-delà : plus que ce qu'on observe, la forme physique étant comptée à part.
 - Courbe d'âge du volume : un cas réel (34 ans, avancé +) valide la proposition (×1 jusqu'à 35 ans) contre le calcul actuel (×1,08 dès 31 ans). À coder avec le reste du volume après validation de Matériel.
 - Taille du surfeur : décision du propriétaire, on la retire (champ `heightCm` dans QuiverUi, SurfController et BoardVolume, jamais utilisé dans le calcul). Déjà retirée de la maquette.
+
+## Étoiles communes à tous, encarts colorés selon le niveau (demandé)
+- Les étoiles doivent dire la même chose à tous les surfeurs, quel que soit leur niveau : « demain, il y a 4 étoiles », comme une note de la journée dont on parle entre surfeurs.
+- Ce qui est en dessous (les encarts vert, jaune, rouge) reste personnel : il dépend du niveau et des réglages.
+- À vérifier dans le code : `starsForScore` (Stars.kt) convertit un score en étoiles, et ce score doit être calculé avec un profil neutre, le même pour tout le monde. Aujourd'hui il dépend sans doute du niveau choisi.
+- Le réglage « sévérité des étoiles » (`StarsSettings.offset`) contredit cette règle : il décale les étoiles d'un surfeur à l'autre. À supprimer ou à déplacer vers les couleurs.
+- Maquette d'abord (étoiles identiques pour un débutant et un expert sur la même journée, couleurs différentes), puis code après validation.
