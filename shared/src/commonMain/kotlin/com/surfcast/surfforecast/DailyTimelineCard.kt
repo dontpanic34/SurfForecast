@@ -691,8 +691,8 @@ internal fun hourIndexAt(x: Float, width: Float, count: Int): Int {
  * se resserre : de 2 à 6 m, moitié moins de hauteur par mètre ; au-delà de 6 m, un quart. Renvoie la position de [v] mètres
  * entre 0 (bas du graphique) et 1 (haut).
  */
-internal fun swellAxisFraction(v: Double): Float {
-    val a = SkyGraphSettings.waterFraction / 2.0
+internal fun swellAxisFraction(v: Double, fraction: Float = SkyGraphSettings.waterFraction): Float {
+    val a = fraction / 2.0
     val f = when {
         v <= 2.0 -> a * v
         v <= 6.0 -> a * 2.0 + a * 0.5 * (v - 2.0)

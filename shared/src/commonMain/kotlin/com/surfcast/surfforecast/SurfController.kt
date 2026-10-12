@@ -193,7 +193,7 @@ class SurfController(
     // Place des graphiques de houle (semaine, jour, eau), modifiable dans Affichage.
     @Suppress("unused")
     private val skyGraphInit = run {
-        SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER))
+        SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER), prefs.getInt("graph_water_week_pct", prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER)))
         SkyGraphSettings.loadTideAll(prefs.getInt("graph_tide_all", 0) == 1)
         SkyGraphSettings.loadTide(prefs.getInt("graph_tide_dp", SkyGraphSettings.DEFAULT_TIDE))
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }

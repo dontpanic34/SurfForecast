@@ -480,7 +480,7 @@ fun SurfPreferencesDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf("AROME", "ARPEGE", "ECMWF").forEach { model ->
+                                    listOf("AROME", "ARPEGE", "ECMWF", "GFS").forEach { model ->
                                         val isSelected = shortTermWind == model
                                         Surface(
                                             modifier = Modifier
@@ -556,7 +556,7 @@ fun SurfPreferencesDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    listOf("ECMWF", "ARPEGE").forEach { model ->
+                                    listOf("ECMWF", "ARPEGE", "GFS").forEach { model ->
                                         val isSelected = longTermWind == model
                                         Surface(
                                             modifier = Modifier
@@ -834,11 +834,13 @@ private fun weatherModelLabel(model: WeatherModel): String = when (model) {
     WeatherModel.AROME -> "AROME"
     WeatherModel.ARPEGE -> "ARPEGE"
     WeatherModel.ECMWF_IFS -> "ECMWF"
+    WeatherModel.GFS -> "GFS"
 }
 
 private fun weatherModelFromLabel(label: String): WeatherModel = when (label) {
     "ARPEGE" -> WeatherModel.ARPEGE
     "ECMWF" -> WeatherModel.ECMWF_IFS
+    "GFS" -> WeatherModel.GFS
     else -> WeatherModel.AROME
 }
 
@@ -900,6 +902,9 @@ private fun forecastModelInfo(model: String): Pair<String, String> = when (model
     "ECMWF" -> "ECMWF IFS (centre européen)" to
         "Le modèle du Centre européen de prévision à moyen terme (9 km), l'un des meilleurs au monde. Très stable, il prévoit jusqu'à 10 jours. " +
         "Moins fin que AROME sur les brises locales."
+    "GFS" -> "GFS (NOAA)" to
+        "Le modèle américain (13 km), qui voit loin (plus d'une semaine). En mode Auto, le vent est la moyenne de ECMWF et de GFS : " +
+        "deux modèles indépendants qui se corrigent l'un l'autre."
     "MF-WAM" -> "MF-WAM (Météo-France)" to
         "Modèle de vagues de Météo-France (8 km). Bon sur les côtes françaises : il tient compte des fonds et des effets côtiers, " +
         "donc de la houle telle qu'elle arrive près du rivage."

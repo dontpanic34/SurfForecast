@@ -168,21 +168,20 @@ private fun CardGuideSettings(key: String) {
                 Chips(listOf("1" to "1", "2" to "2", "3" to "3"), c.weeklyDensity.toString()) { c.onWeeklyDensity(it.toInt()) }
             }
             Pct("Hauteur de l'encart (graphique)", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
-            Pct("Échelle de la mer (commune à la semaine et au jour)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
+            Pct("Échelle de la mer", SkyGraphSettings.waterWeekPct, 20..60) { SkyGraphSettings.setWaterWeek(it) }
         }
         "day" -> {
             Pct("Hauteur de l'encart (graphique)", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
-            Pct("Échelle de la mer (commune à la semaine et au jour)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
+            Pct("Échelle de la mer", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
             Pct("Hauteur de la courbe de marée", SkyGraphSettings.tideDp, 24..60) { SkyGraphSettings.setTide(it) }
             Label("Marées affichées")
             Chips(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
         }
-        "swell" -> Pct("Échelle de la mer (commune à la semaine et au jour)", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
     }
-    if (key == "week" || key == "day" || key == "swell") {
+    if (key == "week" || key == "day") {
         Text(
             "Valeurs par défaut", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary,
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { SkyGraphSettings.reset() }.padding(vertical = 2.dp)
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { if (key == "week") SkyGraphSettings.resetWeek() else SkyGraphSettings.resetDay() }.padding(vertical = 2.dp)
         )
     }
 }

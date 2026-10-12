@@ -78,6 +78,12 @@ enum class WeatherModel(
         resolution = "9 km",
         description = "Vue d'ensemble globale européenne, très stable à moyen terme (J2-J6)."
     ),
+    GFS(
+        apiParam = "gfs_seamless",
+        displayName = "NOAA GFS",
+        resolution = "13 km",
+        description = "Modèle américain, utilisé avec ECMWF pour la moyenne du vent."
+    ),
     ARPEGE(
         apiParam = "meteofrance_arpege_europe",
         displayName = "Météo-France ARPEGE",

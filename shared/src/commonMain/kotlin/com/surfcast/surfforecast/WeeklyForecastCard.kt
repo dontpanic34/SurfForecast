@@ -398,7 +398,7 @@ internal fun WeekAxisCanvas(allHourlyData: List<HourlyUiModel>, modifier: Modifi
         val usableH = size.height - padTop - 16.dp.toPx()
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
         swellAxisGrid(rawMax).forEach { value ->
-            val y = padTop + usableH * (1f - swellAxisFraction(value))
+            val y = padTop + usableH * (1f - swellAxisFraction(value, SkyGraphSettings.waterWeekFraction))
             // Graduations DANS la courbe, collées à gauche : mêmes marges à gauche et à droite, comme le déroulé.
             drawHaloTextAtBaseline(textMeasurer, formatAxisHeight(value), axisLabelStyle, axisHalo, 4.dp.toPx(), y - 3.dp.toPx())
         }
@@ -454,7 +454,7 @@ fun ContinuousWaveCanvas(
         val rawMax = (allHourlyData.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
         val gridValues = swellAxisGrid(rawMax)
         gridValues.forEach { value ->
-            val y = padTop + usableH * (1f - swellAxisFraction(value))
+            val y = padTop + usableH * (1f - swellAxisFraction(value, SkyGraphSettings.waterWeekFraction))
             // Pointillés au-dessus de 2 m, là où l'échelle est resserrée.
             val dash = if (value > SWELL_AXIS_BREAK) PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())) else null
             drawLine(
@@ -478,7 +478,7 @@ fun ContinuousWaveCanvas(
 
         val stepX = plotW / (allHourlyData.size - 1).coerceAtLeast(1).toFloat()
         val points = allHourlyData.mapIndexed { index, item ->
-            Offset(plotLeft + index * stepX, padTop + usableH * (1f - swellAxisFraction(item.waveHeight)))
+            Offset(plotLeft + index * stepX, padTop + usableH * (1f - swellAxisFraction(item.waveHeight, SkyGraphSettings.waterWeekFraction)))
         }
 
         val fillPath = Path().apply {
@@ -861,7 +861,7 @@ internal fun weekSkyScene(
     val padTop = 16f * density
     val usableH = size.height - 32f * density
     val weekMaxWave = dates.flatMap { daylightHoursFor(it, groupedByDate, sunInfo) }.maxOfOrNull { it.waveHeight } ?: 1.0
-    val waterline = padTop + usableH * (1f - swellAxisFraction(weekMaxWave.coerceAtLeast(0.3)))
+    val waterline = padTop + usableH * (1f - swellAxisFraction(weekMaxWave.coerceAtLeast(0.3), SkyGraphSettings.waterWeekFraction))
     return SkyScene(
         left = 0f, right = size.width, top = top, bottom = bottom,
         cover = SkyCurve(xs.toFloatArray(), cover.toFloatArray(), coverSmooth),

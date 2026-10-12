@@ -48,15 +48,17 @@ fun conditionBand(rating: SlotRating): ScoreBand = when (rating.kind) {
 }
 
 private val GREEN = Color(0xFF2BD47A)
-private val GREEN_DEEP = Color(0xFF12A06F)
+private val GREEN_DEEP = Color(0xFF0F8A52)
+private val TEAL = Color(0xFF1A9C82)
 private val YELLOW = Color(0xFFFFD21F)
 private val ORANGE = Color(0xFFFF9A1F)
 private val RED = Color(0xFFE53935)
 private val BORDEAUX = Color(0xFF9B1C31)
 
 fun ScoreBand.color(): Color = when (this) {
-    ScoreBand.EXCELLENT, ScoreBand.VERY_GOOD -> GREEN
-    ScoreBand.GOOD -> GREEN_DEEP
+    ScoreBand.VERY_GOOD -> GREEN
+    ScoreBand.EXCELLENT -> GREEN_DEEP
+    ScoreBand.GOOD -> TEAL
     ScoreBand.FAIR -> YELLOW
     ScoreBand.CHALLENGING, ScoreBand.TOO_SMALL, ScoreBand.TOO_BIG -> ORANGE
     ScoreBand.POOR, ScoreBand.TOO_WINDY -> RED
@@ -65,7 +67,8 @@ fun ScoreBand.color(): Color = when (this) {
 
 /** Couleur du libellé sur le fond sombre des cartes : le vert sombre, le rouge et le bordeaux y sont éclaircis. */
 fun ScoreBand.textColor(): Color = when (this) {
-    ScoreBand.GOOD -> Color(0xFF3CCF9D)
+    ScoreBand.GOOD -> Color(0xFF3FD0B0)
+    ScoreBand.EXCELLENT -> Color(0xFF1FAA68)
     ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color(0xFFFF5A55)
     ScoreBand.AVOID -> Color(0xFFFF6F86)
     else -> color()
@@ -82,7 +85,7 @@ fun gaugeLevel(rating: SlotRating): Int = when (conditionBand(rating)) {
 
 /** Couleur de texte lisible sur [color] de cette nuance. */
 fun ScoreBand.onColor(): Color = when (this) {
-    ScoreBand.GOOD, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color.White
+    ScoreBand.GOOD, ScoreBand.EXCELLENT, ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.TOO_WINDY -> Color.White
     else -> Color(0xFF061018)
 }
 
@@ -125,7 +128,7 @@ fun trendOnColor(bands: List<ScoreBand>): Color {
 }
 
 private val STOPS = listOf(
-    10 to 0xFF9B1C31, 30 to 0xFFE53935, 47 to 0xFFFFD21F, 62 to 0xFF12A06F, 77 to 0xFF2BD47A, 92 to 0xFF2BD47A
+    10 to 0xFF9B1C31, 30 to 0xFFE53935, 47 to 0xFFFFD21F, 62 to 0xFF1A9C82, 77 to 0xFF2BD47A, 88 to 0xFF2BD47A, 92 to 0xFF0F8A52
 )
 
 /** Couleur d'une note sur le dégradé continu (bordeaux -> rouge -> jaune -> vert sombre -> vert vif). */
