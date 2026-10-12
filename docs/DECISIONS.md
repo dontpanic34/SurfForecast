@@ -89,3 +89,4 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - Condition physique (ressenti à la barre, entraînement hors surf, compétitions) : points qui font évoluer la note dans le niveau, sans changer le niveau. Taille de la barre : reste dans le niveau. Validé par le propriétaire.
 - Score : jamais affiché en clair. Seule la barre d'XP avec le nom du niveau ; le chiffre est dans un « i ». Validé par le propriétaire.
 - Compétitions : retirées (pas un indicateur de condition physique). Valable pour la maquette et pour l'appli.
+- Matériel : page courte, un seul chiffre de volume en gros ; pros, calcul et autres planches seulement derrière « Aller plus loin ». Taille du surfeur retirée. Ne jamais afficher une donnée qu'on ne connaît pas (âge non renseigné = rien d'affiché). Validé par le propriétaire.
