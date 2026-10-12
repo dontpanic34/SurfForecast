@@ -387,15 +387,16 @@ fun windFeelFactor(hour: HourlyUiModel, beachFacing: Int?, surferLevel: String):
 /** Le chiffre de vent affiché : le vent ressenti, arrondi. */
 fun windFeelKmh(hour: HourlyUiModel): Int = effectiveWindKmh(hour).roundToInt()
 
-/** Couleur du vent d'une heure : jaune (propre), orange (gêne) ou rouge (fort), par la même règle que la phrase et la note. */
-fun windFeelColor(hour: HourlyUiModel, beachFacing: Int?, surferLevel: String): androidx.compose.ui.graphics.Color {
-    val f = windFeelFactor(hour, beachFacing, surferLevel)
-    return when {
-        f >= WIND_CLEAN -> SurfUnitsHelper.WIND_YELLOW
-        f >= WIND_STRONG -> SurfUnitsHelper.WIND_ORANGE
+/**
+ * Couleur du vent d'une heure, par sa direction seulement : jaune jusqu'à 45° de l'offshore, orange jusqu'à 100°, rouge au-delà.
+ * La force ne compte plus (elle est dans le chiffre et la taille de la flèche).
+ */
+fun windFeelColor(hour: HourlyUiModel, beachFacing: Int?, surferLevel: String): androidx.compose.ui.graphics.Color =
+    when (windDirectionClass(hour.windDirectionStr, beachFacing)) {
+        0 -> SurfUnitsHelper.WIND_YELLOW
+        1 -> SurfUnitsHelper.WIND_ORANGE
         else -> SurfUnitsHelper.WIND_RED
     }
-}
 
 /** Diviseur du vent selon la hauteur : 1 sous 1 m, jusqu'à 1,6 pour les grosses vagues. */
 private fun windSizeDivisor(heightM: Double): Double = heightM.pow(0.9).coerceIn(0.8, 1.6)

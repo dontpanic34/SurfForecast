@@ -326,7 +326,7 @@ private fun DayPhraseHeader(phrase: DayPhrase, toleranceLabel: String? = null, o
             CardInfoButton("week")
             CollapseChevron(isCollapsed, onToggleCollapse)
         }
-        Text(phrase.line, fontSize = 13.sp, color = onSurface, maxLines = 2)
+        if (phrase.line.isNotBlank()) Text(phrase.line, fontSize = 13.sp, color = onSurface, maxLines = 2)
         if (boardOfDay != null) Text("Planche du jour : $boardOfDay", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
     }
 }

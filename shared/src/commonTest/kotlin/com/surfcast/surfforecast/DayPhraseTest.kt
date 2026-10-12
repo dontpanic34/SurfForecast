@@ -24,37 +24,37 @@ class DayPhraseTest {
 
     @Test
     fun lineSaysSwellThenWindMorningThenAfternoon() {
-        val p = day(hour(9, 0.7, 10, "SO"), hour(11, 0.7, 10, "SO"), hour(14, 1.3, 20, "O"), hour(17, 1.3, 20, "O"))
-        assertEquals("0,7 m à 1,3 m · side-on modéré à onshore soutenu", p.line)
+        val p = day(hour(9, 0.7, 10, "E"), hour(11, 0.7, 10, "E"), hour(14, 1.3, 20, "O"), hour(17, 1.3, 20, "O"))
+        assertEquals("Ça grossit mais ça tourne onshore l'après-midi", p.title)
     }
 
     @Test
     fun sameHalvesAreSaidOnce() {
         val p = day(hour(9, 1.0, 10, "E"), hour(14, 1.0, 10, "E"))
-        assertEquals("1,0 m · offshore modéré", p.line)
+        assertEquals("Ça tient, offshore toute la journée", p.title)
     }
 
     @Test
     fun windThatTurnsOnshoreSpoilsTheAfternoon() {
         val p = day(hour(9, 1.3, 8, "E"), hour(11, 1.3, 8, "E"), hour(14, 1.3, 20, "O"), hour(17, 1.3, 20, "O"))
-        assertEquals("Le vent gâte l'après-midi", p.title)
+        assertEquals("Ça tient mais ça tourne onshore l'après-midi", p.title)
     }
 
     @Test
     fun windThatFallsMakesTheAfternoonBetter() {
         val p = day(hour(9, 1.3, 20, "O"), hour(11, 1.3, 20, "O"), hour(14, 1.3, 8, "E"), hour(17, 1.3, 8, "E"))
-        assertEquals("Mieux l'après-midi", p.title)
+        assertEquals("Ça tient, ça tourne offshore l'après-midi", p.title)
     }
 
     @Test
     fun cleanDayIsSaidClean() {
         val p = day(hour(9, 1.0, 6, "E"), hour(14, 1.0, 6, "E")).copy(title = day(hour(9, 1.2, 6, "E"), hour(14, 1.2, 6, "E")).title)
-        assertEquals("Journée propre", p.title)
+        assertEquals("Ça tient, glassy, offshore léger", p.title)
     }
 
     @Test
     fun noWindIsSaidSo() {
-        assertEquals("1,3 m · pas de vent", day(hour(9, 1.3, 1, "E"), hour(14, 1.3, 1, "E")).line)
+        assertEquals("Ça tient, glassy", day(hour(9, 1.3, 1, "E"), hour(14, 1.3, 1, "E")).title)
     }
 
     @Test
