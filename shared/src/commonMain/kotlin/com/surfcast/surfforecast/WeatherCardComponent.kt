@@ -198,15 +198,16 @@ private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color,
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(h), 22.dp)
                 Text("${h.feelsLike}°C", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = onSurface)
+                // Quand il pleut : l'icône de pluie et les millimètres de l'heure, juste à côté de la température.
+                if (h.precipitationMm >= 0.05) {
+                    Text("🌧️ ${formatDecimal(h.precipitationMm, 1).replace('.', ',')} mm", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+                }
                 h.seaTemperature?.let {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("🌊 ${it.roundToInt()}°", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    WaterTempIcon(18.dp, onSurface)
+                    Text("${it.roundToInt()}°", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
                 }
             }
-            Text(
-                "🌧️ " + (if (h.precipitationMm < 0.05) "0 mm" else formatDecimal(h.precipitationMm, 1).replace('.', ',') + " mm"),
-                fontSize = 12.5.sp, color = onSurface
-            )
             if (sun != null) Text("🌅 ${hm(sun.sunrise)}   🌇 ${hm(sun.sunset)}", fontSize = 12.5.sp, color = onSurface, maxLines = 1)
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -219,5 +220,31 @@ private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color,
             "Détail sur la semaine ›", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 4.dp).clickable(onClick = onOpenDetail)
         )
+    }
+}
+
+/** Température de l'eau : un thermomètre plein, rempli de bleu, posé sur deux petites vagues (même style que la flèche). */
+@Composable
+private fun WaterTempIcon(size: androidx.compose.ui.unit.Dp, tint: Color) {
+    Canvas(modifier = Modifier.size(size)) {
+        val w = this.size.width
+        val h = this.size.height
+        val blue = Color(0xFF29B6F6)
+        // Tige et bulbe
+        drawRoundRect(tint.copy(alpha = 0.85f), Offset(w * 0.36f, h * 0.02f), Size(w * 0.2f, h * 0.55f), CornerRadius(w * 0.1f, w * 0.1f))
+        drawCircle(tint.copy(alpha = 0.85f), radius = w * 0.2f, center = Offset(w * 0.46f, h * 0.6f))
+        drawRoundRect(blue, Offset(w * 0.41f, h * 0.22f), Size(w * 0.1f, h * 0.4f), CornerRadius(w * 0.05f, w * 0.05f))
+        drawCircle(blue, radius = w * 0.13f, center = Offset(w * 0.46f, h * 0.6f))
+        // Deux vagues
+        for (i in 0..1) {
+            val y = h * (0.84f + 0.13f * i)
+            val path = androidx.compose.ui.graphics.Path().apply {
+                moveTo(w * 0.05f, y)
+                quadraticTo(w * 0.2f, y - h * 0.07f, w * 0.35f, y)
+                quadraticTo(w * 0.5f, y + h * 0.07f, w * 0.65f, y)
+                quadraticTo(w * 0.8f, y - h * 0.07f, w * 0.95f, y)
+            }
+            drawPath(path, blue, style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.07f, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        }
     }
 }

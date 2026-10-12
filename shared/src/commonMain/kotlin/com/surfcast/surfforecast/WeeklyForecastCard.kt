@@ -790,7 +790,7 @@ fun MiniWindSlot(slot: HourlyUiModel, windUnit: String, windMode: String = "both
     ) {
         if (showArrow) {
         // Même flèche que dans le déroulé de la journée, un peu plus grande qu'avant.
-        WindArrow(arrowColor, rotationAngle, 16.dp)
+        NavArrow(arrowColor, rotationAngle, (16 * windArrowScale(windFeelKmh(slot))).dp)
         }
 
         if (showText) {

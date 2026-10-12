@@ -34,7 +34,9 @@ fun SurfCardComponent(
     isCollapsed: Boolean = false,
     onToggleCollapse: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Orientation de la plage : la taille de la flèche de houle dit si la houle est bien orientée.
+    beachFacing: Int? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -82,14 +84,14 @@ fun SurfCardComponent(
             Spacer(modifier = Modifier.height(2.dp))
             SwellLine(
                 height = selectedHour.waveHeight, period = selectedHour.wavePeriod, energyKj = selectedHour.energyKj,
-                direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false
+                direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false, beachFacing = beachFacing
             )
             if (selectedHour.secondaryHeight >= 0.2 && selectedHour.secondaryPeriod >= 7.0) {
                 Spacer(modifier = Modifier.height(2.dp))
                 SwellLine(
                     height = selectedHour.secondaryHeight, period = selectedHour.secondaryPeriod,
                     energyKj = calculateWaveEnergyReal(selectedHour.secondaryHeight, selectedHour.secondaryPeriod),
-                    direction = selectedHour.secondaryDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = true
+                    direction = selectedHour.secondaryDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = true, beachFacing = beachFacing
                 )
             }
 
@@ -189,7 +191,7 @@ fun SurfCardComponent(
 @Composable
 private fun SwellLine(
     height: Double, period: Double, energyKj: Int, direction: Float,
-    onSurfaceColor: Color, primaryColor: Color, secondary: Boolean
+    onSurfaceColor: Color, primaryColor: Color, secondary: Boolean, beachFacing: Int?
 ) {
     val fade = if (secondary) 0.6f else 1f
     val big = if (secondary) 14.sp else 18.sp
@@ -205,24 +207,7 @@ private fun SwellLine(
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Text("$cardinal $deg°", fontSize = small, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
-            Canvas(modifier = Modifier.size(if (secondary) 11.dp else 13.dp)) {
-                val w = size.width
-                val h = size.height
-                rotate(rotation, pivot = Offset(w / 2f, h / 2f)) {
-                    val path = Path().apply {
-                        moveTo(w * 0.5f, 0.5.dp.toPx())
-                        lineTo(w * 0.95f, h * 0.48f)
-                        lineTo(w * 0.68f, h * 0.48f)
-                        lineTo(w * 0.68f, h * 0.98f)
-                        lineTo(w * 0.32f, h * 0.98f)
-                        lineTo(w * 0.32f, h * 0.48f)
-                        lineTo(w * 0.05f, h * 0.48f)
-                        close()
-                    }
-                    drawPath(path = path, color = Color(0xFF29B6F6).copy(alpha = fade))
-                    drawPath(path = path, color = onSurfaceColor.copy(alpha = 0.5f * fade), style = Stroke(width = 0.8.dp.toPx()))
-                }
-            }
+            NavArrow(Color(0xFF29B6F6).copy(alpha = fade), rotation, ((if (secondary) 11f else 13f) * swellArrowScale(direction, beachFacing)).dp)
             Text("$energyKj kJ", fontSize = small, fontWeight = FontWeight.Bold, color = Color(0xFF8F6300).copy(alpha = fade))
         }
     }

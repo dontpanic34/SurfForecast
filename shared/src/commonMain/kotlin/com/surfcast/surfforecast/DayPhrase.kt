@@ -17,7 +17,7 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
     val high = hours.maxOf { it.waveHeight }
     val lowText = formatDecimal(low, 1).replace('.', ',')
     val highText = formatDecimal(high, 1).replace('.', ',')
-    val sizeText = if (lowText == highText) "Houle de $highText m" else "Houle de $lowText m à $highText m"
+    val sizeText = if (lowText == highText) "$highText m" else "$lowText m à $highText m"
     // La période n'est dite en fourchette que si elle change vraiment dans la journée (2 s ou plus) ; sinon une seule valeur.
     val pLow = hours.minOf { it.wavePeriod }.roundToInt()
     val pHigh = hours.maxOf { it.wavePeriod }.roundToInt()
@@ -52,7 +52,7 @@ private fun windLine(hours: List<HourlyUiModel>, beachFacing: Int?): String {
     val afternoonMax = afternoon.maxOf { windFeelKmh(it) }
 
     if (catMorning != null && catAfternoon != null && catMorning != catAfternoon) {
-        return "Vent ${categoryWord(catMorning)} ${strengthWord(morningMax)} le matin, ${categoryWord(catAfternoon)} ${strengthWord(afternoonMax)} l'après-midi."
+        return "${categoryWord(catMorning).replaceFirstChar { it.uppercase() }} ${strengthWord(morningMax)} le matin, ${categoryWord(catAfternoon)} ${strengthWord(afternoonMax)} l'après-midi."
     }
     val cat = categoryWord(catAfternoon ?: catMorning ?: "side")
     val light = " " + strengthWord(strongest)
@@ -61,7 +61,7 @@ private fun windLine(hours: List<HourlyUiModel>, beachFacing: Int?): String {
         morningMax >= afternoonMax + 6 -> ", qui faiblit l'après-midi"
         else -> ""
     }
-    return "Vent $cat$light toute la journée$trend."
+    return "${cat.replaceFirstChar { it.uppercase() }}$light toute la journée$trend."
 }
 
 /** La force du vent ressenti en un mot : léger, modéré, soutenu, fort. */

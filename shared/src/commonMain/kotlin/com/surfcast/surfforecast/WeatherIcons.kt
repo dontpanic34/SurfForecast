@@ -72,6 +72,8 @@ fun WeatherIcon(emoji: String, size: Dp, modifier: Modifier = Modifier) {
             emoji.startsWith("🌙") -> moon(Offset(s * 0.5f, s * 0.5f), s * 0.3f)
             emoji.startsWith("🌤") -> { sun(Offset(s * 0.34f, s * 0.36f), s * 0.17f); cloud(s * 0.18f, s * 0.36f, s * 0.8f, CloudGrey) }
             emoji.startsWith("🌦") -> { sun(Offset(s * 0.34f, s * 0.28f), s * 0.14f); cloud(s * 0.18f, s * 0.26f, s * 0.8f, CloudGrey); drops(s * 0.18f, s * 0.72f, s * 0.8f, 3) }
+            // Forte pluie : deux nuages sombres l'un derrière l'autre et beaucoup de gouttes.
+            emoji.startsWith("☔") -> { cloud(s * 0.28f, s * 0.06f, s * 0.66f, CloudDark); cloud(s * 0.05f, s * 0.2f, s * 0.8f, CloudDark); drops(s * 0.08f, s * 0.68f, s * 0.84f, 5) }
             emoji.startsWith("🌧") -> { cloud(s * 0.1f, s * 0.18f, s * 0.8f, CloudDark); drops(s * 0.1f, s * 0.68f, s * 0.8f, 3) }
             emoji.startsWith("⛈") -> {
                 cloud(s * 0.1f, s * 0.15f, s * 0.8f, CloudDark)
