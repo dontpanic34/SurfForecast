@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Météo : Météo-France** (état : en ligne dès publication sur `web`) : ciel, température, pluie et nuages viennent d'AROME (aujourd'hui, demain) puis d'ARPEGE (jusqu'à environ 4 jours, les heures qu'il connaît), et d'ECMWF seulement au-delà. L'indice UV reprend ECMWF quand Météo-France n'en donne pas. Le vent reste la moyenne ECMWF + GFS (AROME HD en comparaison).
 - **Semaine : la pluie se lit heure par heure** (état : en ligne dès publication sur `web`) : dans l'encart Semaine, la pluie et la neige suivaient des créneaux de 4 h lissés, ce qui donnait l'impression de pluie toute la journée ; elles suivent maintenant chaque heure, comme dans le déroulé de la journée (lissage d'un peu plus d'une heure).
 - **« Houle constante »** : quand la houle ne bouge pas dans la journée, le verdict le dit (« Houle constante, offshore toute la journée »). Go du propriétaire : tous les lots en attente publiés sur `web`.
 - **Planche du jour : toujours une proposition, à partir de deux planches** (état : en ligne dès publication sur `web`) : avec une seule planche, ni planche conseillée ni réglage « Planche du jour » ; avec deux planches ou plus, il y en a toujours une (la grille « Je la sors quand… » d'abord, sinon le type de planche).
