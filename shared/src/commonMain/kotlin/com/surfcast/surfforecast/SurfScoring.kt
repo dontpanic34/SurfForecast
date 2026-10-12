@@ -44,8 +44,8 @@ private val windCurves: Map<String, List<Pair<Double, Double>>> = mapOf(
     "offshore" to listOf(0.0 to 1.0, 15.0 to 1.0, 25.0 to 0.75, 35.0 to 0.45, 45.0 to 0.25, 55.0 to 0.15),
     // Vent de côté : propre jusqu'à environ 12 km/h ressentis, il gêne ensuite (18 km/h : 0,88 ; 24 km/h : 0,65).
     "cross" to listOf(0.0 to 1.0, 12.0 to 1.0, 18.0 to 0.88, 24.0 to 0.65, 32.0 to 0.4, 45.0 to 0.15),
-    // Onshore : propre sans vent, il abîme la vague dès 10 km/h (14 km/h : 0,62 ; 20 km/h : 0,4 ; 30 km/h : 0,15).
-    "onshore" to listOf(0.0 to 1.0, 6.0 to 0.95, 10.0 to 0.82, 14.0 to 0.62, 20.0 to 0.4, 30.0 to 0.15, 40.0 to 0.0)
+    // Onshore : propre sans vent, il abîme la vague dès 6 km/h (10 km/h : 0,65 ; 14 km/h : 0,45 ; 20 km/h : 0,25 ; 30 km/h : 0,1).
+    "onshore" to listOf(0.0 to 1.0, 6.0 to 0.85, 10.0 to 0.65, 14.0 to 0.45, 20.0 to 0.25, 30.0 to 0.1, 40.0 to 0.0)
 )
 
 internal fun interpolate(x: Double, points: List<Pair<Double, Double>>): Double {
@@ -300,6 +300,8 @@ fun calculateSlotRating(
     // Vent « ressenti » sur l'eau (voir [windFactorOf]).
     val windFactor = windFactorOf(hourlyModel, h, profile, windCategory)
     score *= windFactor
+    // Un offshore fort freine une petite houle : elle s'aplatit.
+    score *= flattenFactor(h, effectiveWindKmh(hourlyModel), windCategory)
     // Rafales fortes : mauvaises pour tout le monde, quelle que soit la direction.
     val gust = hourlyModel.windGustKmh
     val gustF = if (profile.countGusts && gust > profile.gustThreshold) (1.0 - (gust - profile.gustThreshold) / 30.0).coerceAtLeast(0.3) else 1.0
@@ -334,6 +336,16 @@ fun calculateSlotRating(
     val windMemory = displayedWind != null && windFactor < WIND_CLEAN &&
         windFactorOf(displayedWind, h, profile, windCategoryFor(displayedWind.windDirectionStr, idealSwellDirection)) >= WIND_CLEAN
     return SlotRating(final, false, kind, whyFor(kind, windCategory, limits, windMemory))
+}
+
+/**
+ * Un offshore fort freine une petite houle (20 km/h sur 0,4 m : presque plat ; la même force sur 1,2 m ne change rien).
+ * 1 = pas d'effet, jusqu'à 0,15 ; moitié moins d'effet pour un side-off.
+ */
+internal fun flattenFactor(heightM: Double, windKmh: Double, windCategory: String): Double {
+    if (windCategory != "offshore" && windCategory != "side-off") return 1.0
+    val k = ((windKmh - 8.0) / 14.0).coerceIn(0.0, 1.0) * ((1.2 - heightM) / 0.8).coerceIn(0.0, 1.0) * (if (windCategory == "side-off") 0.5 else 1.0)
+    return maxOf(0.15, 1.0 - k)
 }
 
 /** Vent ressenti : le vent moyen plus cette part de l'écart avec les rafales (35 % : 8 km/h moyen et 22 km/h de rafales donnent 13 km/h). */
@@ -549,7 +561,10 @@ fun dayQualityScore(
         if (hasMorning) add(halves[0] ?: 0)
         if (hasAfternoon) add(halves[1] ?: 0)
     }
-    var day = if (parts.isEmpty()) 0.0 else parts.average()
+    val bestWindows = if (parts.isEmpty()) 0.0 else parts.average()
+    // Le jour : 60 % le meilleur créneau, 40 % la moyenne de toutes les heures de jour (une journée onshore ne se rattrape pas sur deux bonnes heures).
+    val dayMean = ratings.filter { !it.tooBig }.map { it.score }.average().takeIf { !it.isNaN() } ?: bestWindows
+    var day = 0.6 * bestWindows + 0.4 * dayMean
     if (offshoreNight && day > 0) day += 5.0
     return day.roundToInt().coerceIn(0, 100)
 }

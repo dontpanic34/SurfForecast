@@ -51,9 +51,9 @@ class ProfileWizardTest {
     fun theAppAnswersDependOnTheLevel() {
         // 0 = J'y vais pas, 1 = Pas mal, 2 = Parfait, 3 = Challengeant, 4 = Trop gros.
         assertEquals(listOf(2, 1, 3, 1, 3, 3, 4, 4, 4, 4), autoAnswers("beginner"))
-        assertEquals(listOf(0, 0, 2, 0, 3, 2, 3, 3, 4, 4), autoAnswers("intermediate"))
+        assertEquals(listOf(0, 0, 2, 0, 3, 1, 3, 3, 4, 4), autoAnswers("intermediate"))
         assertEquals(listOf(0, 0, 2, 0, 2, 1, 3, 3, 3, 3), autoAnswers("confirmed"))
-        assertEquals(listOf(0, 0, 2, 0, 2, 1, 2, 2, 3, 2), autoAnswers("expert"))
+        assertEquals(listOf(0, 0, 2, 0, 2, 0, 2, 1, 3, 1), autoAnswers("expert"))
     }
 
     @Test
@@ -192,7 +192,7 @@ class ProfileWizardTest {
         // Un peu petite : la note part de 60 au minimum.
         assertEquals("Taille un peu juste", calculateSlotRating(hour(10, height = 0.8, period = 9.0), 270, "intermediate").why)
         // Vent de mer modéré sur une vague moyenne.
-        assertEquals("Onshore dégrade la vague", calculateSlotRating(hour(10, height = 1.2, period = 10.0, windKmh = 16, windDir = "O"), 270, "confirmed").why)
+        assertEquals("Onshore fort, ça sectionne", calculateSlotRating(hour(10, height = 1.2, period = 10.0, windKmh = 16, windDir = "O"), 270, "confirmed").why)
         // Rafales fortes : c'est elles qui gâchent la surface.
         val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12).copy(windGustKmh = 40)
         assertEquals("Rafales fortes", calculateSlotRating(gusty, 275, "confirmed").why)
