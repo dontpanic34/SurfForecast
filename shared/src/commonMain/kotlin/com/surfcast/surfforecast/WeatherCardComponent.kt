@@ -83,26 +83,6 @@ fun WeatherCardComponent(
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(selectedHour), 22.dp)
-                    Text(
-                        text = "${selectedHour.feelsLike}°C",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = onSurfaceColor
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
             WeatherFacts(selectedHour, sun, onSurfaceColor, onOpenDetail)
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -207,24 +187,32 @@ private fun uvWord(uv: Double): String = when {
 
 private fun hm(t: kotlinx.datetime.LocalTime): String = "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
 
-/** Les chiffres de la météo de l'heure : ressenti, UV, pluie, nuages, eau, lever et coucher du soleil. */
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * L'en-tête de la météo de l'heure. À gauche : l'icône du ciel et le ressenti en gros, la température de l'eau à côté, la pluie,
+ * puis lever et coucher du soleil sur une même ligne. À droite, l'un au-dessus de l'autre : l'indice UV et les nuages.
+ */
 @Composable
 private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color, onOpenDetail: (() -> Unit)?) {
-    fun fact(label: String, value: String) = buildAnnotatedString {
-        append(label); append(" ")
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(value) }
-    }
-    FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        val facts = buildList {
-            add(fact("🌡️", "${h.feelsLike}°"))
-            add(fact("☀️ UV", "${h.uvIndex.roundToInt()}"))
-            add(fact("🌧️", if (h.precipitationMm < 0.05) "0 mm" else formatDecimal(h.precipitationMm, 1).replace('.', ',') + " mm"))
-            add(fact("☁️", "${h.cloudCover} %"))
-            h.seaTemperature?.let { add(fact("🌊", "${it.roundToInt()}°")) }
-            if (sun != null) { add(fact("🌅", hm(sun.sunrise))); add(fact("🌇", hm(sun.sunset))) }
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(h), 22.dp)
+                Text("${h.feelsLike}°C", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = onSurface)
+                h.seaTemperature?.let {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("🌊 ${it.roundToInt()}°", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+                }
+            }
+            Text(
+                "🌧️ " + (if (h.precipitationMm < 0.05) "0 mm" else formatDecimal(h.precipitationMm, 1).replace('.', ',') + " mm"),
+                fontSize = 12.5.sp, color = onSurface
+            )
+            if (sun != null) Text("🌅 ${hm(sun.sunrise)}   🌇 ${hm(sun.sunset)}", fontSize = 12.5.sp, color = onSurface, maxLines = 1)
         }
-        facts.forEach { Text(it, fontSize = 12.5.sp, color = onSurface) }
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text("☀️ UV ${h.uvIndex.roundToInt()}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+            Text("☁️ ${h.cloudCover} %", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+        }
     }
     if (onOpenDetail != null) {
         Text(

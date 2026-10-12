@@ -198,12 +198,12 @@ private fun SwellLine(
     val deg = direction.roundToInt()
     val rotation = (direction + 180f) % 360f
     val cardinal = SurfUnitsHelper.formatCardinalFr(getCardinalDirection(deg.toDouble()))
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("${formatDecimal(height, 1)}m", fontSize = big, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
             Text("${period.roundToInt()}s", fontSize = mid, fontWeight = FontWeight.SemiBold, color = primaryColor.copy(alpha = fade))
         }
-        Column(horizontalAlignment = Alignment.End) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Text("$cardinal $deg°", fontSize = small, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
             Canvas(modifier = Modifier.size(if (secondary) 11.dp else 13.dp)) {
                 val w = size.width

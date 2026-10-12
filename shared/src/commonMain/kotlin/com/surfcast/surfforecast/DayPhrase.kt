@@ -1,5 +1,7 @@
 package com.surfcast.surfforecast
 
+import kotlin.math.roundToInt
+
 /** La phrase du jour choisi, en trois lignes : un titre, la houle, le vent. */
 data class DayPhrase(val title: String, val swell: String, val wind: String)
 
@@ -15,7 +17,12 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
     val high = hours.maxOf { it.waveHeight }
     val lowText = formatDecimal(low, 1).replace('.', ',')
     val highText = formatDecimal(high, 1).replace('.', ',')
-    val swell = if (lowText == highText) "Houle de $highText m." else "Houle de $lowText m à $highText m."
+    val sizeText = if (lowText == highText) "Houle de $highText m" else "Houle de $lowText m à $highText m"
+    // La période n'est dite en fourchette que si elle change vraiment dans la journée (2 s ou plus) ; sinon une seule valeur.
+    val pLow = hours.minOf { it.wavePeriod }.roundToInt()
+    val pHigh = hours.maxOf { it.wavePeriod }.roundToInt()
+    val periodText = if (pHigh - pLow >= 2) ", période de $pLow à $pHigh s" else ", $pLow s"
+    val swell = "$sizeText$periodText."
 
     return DayPhrase(title, swell, windLine(hours, beachFacing))
 }
@@ -45,14 +52,22 @@ private fun windLine(hours: List<HourlyUiModel>, beachFacing: Int?): String {
     val afternoonMax = afternoon.maxOf { windFeelKmh(it) }
 
     if (catMorning != null && catAfternoon != null && catMorning != catAfternoon) {
-        return "Vent ${categoryWord(catMorning)} le matin, ${categoryWord(catAfternoon)} l'après-midi."
+        return "Vent ${categoryWord(catMorning)} ${strengthWord(morningMax)} le matin, ${categoryWord(catAfternoon)} ${strengthWord(afternoonMax)} l'après-midi."
     }
     val cat = categoryWord(catAfternoon ?: catMorning ?: "side")
-    val light = if (strongest < 10) " léger" else ""
+    val light = " " + strengthWord(strongest)
     val trend = when {
         afternoonMax >= morningMax + 6 -> ", plus fort l'après-midi"
         morningMax >= afternoonMax + 6 -> ", qui faiblit l'après-midi"
         else -> ""
     }
     return "Vent $cat$light toute la journée$trend."
+}
+
+/** La force du vent ressenti en un mot : léger, modéré, soutenu, fort. */
+private fun strengthWord(kmh: Int): String = when {
+    kmh < 10 -> "léger"
+    kmh < 18 -> "modéré"
+    kmh < 26 -> "soutenu"
+    else -> "fort"
 }
