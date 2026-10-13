@@ -142,6 +142,8 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Recommandé" to t("Recommended", "Empfohlen", "Aanbevolen", "Recomendado"),
     "Auto" to t("Auto", "Auto", "Auto", "Auto"),
     "Manuel" to t("Manual", "Manuell", "Handmatig", "Manual"),
+    "montante" to t("rising", "steigend", "opkomend", "subiendo"),
+    "descendante" to t("falling", "fallend", "afgaand", "bajando"),
     // Divers
     "Aujourd'hui" to t("Today", "Heute", "Vandaag", "Hoy"),
     "Demain" to t("Tomorrow", "Morgen", "Morgen", "Mañana"),
