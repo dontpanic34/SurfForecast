@@ -291,44 +291,36 @@ private fun DailyTimelineBody(
                 .pointerInput(hours, ax0, ax1) { detectHorizontalDragGestures { change, _ -> pickHour(change.position.x) } }
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // --- Vent ---
-                val windMinGap = windFont * 2.1f
-                val windHours: List<Int> = run {
-                    val cand = ArrayList<Pair<Int, Int>>() // heure, priorité
-                    sunnyHours.forEach { cand.add(it to 1) }
-                    if (selHour != null && selHour in sunnyHours) cand.add(selHour to 0)
-                    val kept = ArrayList<Int>()
-                    cand.sortedBy { it.second }.forEach { (h, _) ->
-                        if (kept.none { k -> k == h || abs(xHr(k.toFloat()) - xHr(h.toFloat())) < with(density) { windMinGap.dp.toPx() } }) kept.add(h)
-                    }
-                    kept.sorted()
-                }
+                // --- Vent : une flèche par case de la ligne de temps (heure du jour ou bloc de nuit), comme la barre d'Actuellement ---
                 Box(modifier = Modifier.fillMaxWidth().height(WIND_ROW_H.dp)) {
-                    for (h in windHours) {
-                        val hourly = hours.firstOrNull { it.rawTime.hour == h } ?: continue
-                        key(h) {
-                        val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
-                        val color = windFeelColor(hourly, beachFacing, surferLevel)
-                        val textColor = SurfUnitsHelper.windTextColor(color, isDark)
-                        val rotation = (SurfUnitsHelper.cardinalToDegrees(dirFr) + 180f) % 360f
-                        val itemW = 34.dp
-                        // La colonne de l'heure choisie descend un peu, avec une petite animation : c'est celle à lire.
-                        val drop by animateDpAsState(if (h == selHour) SELECTED_WIND_DROP.dp else 0.dp, label = "windDrop")
-                        Column(
-                            modifier = Modifier.offset { IntOffset((xHr(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            NavArrow(color, rotation, (windFont * 1.5f * windArrowScale(windFeelKmh(hourly))).dp)
-                            Text(dirFr, fontSize = windFont.sp, fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp)
-                            Text(
-                                SurfUnitsHelper.formatWindValue(windFeelKmh(hourly), windUnit), fontSize = windFont.sp,
-                                fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (windFont + 2f).sp
-                            )
-                            // Soulignement de la colonne de l'heure choisie, de la couleur de son vent.
-                            if (h == selHour) {
-                                Box(modifier = Modifier.padding(top = 2.dp).width(16.dp).height(2.dp).background(textColor, RoundedCornerShape(1.dp)))
+                    val inner = wPx - 2 * pad
+                    val cellW = if (cells.isEmpty()) 0f else inner / cells.size
+                    for ((k, cell) in cells.withIndex()) {
+                        val idx = cell.representativeIndex()
+                        val hourly = hours.getOrNull(idx) ?: continue
+                        val isSel = selectedIndex in cell.first..cell.last
+                        key(k) {
+                            val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
+                            val color = windFeelColor(hourly, beachFacing, surferLevel)
+                            val textColor = SurfUnitsHelper.windTextColor(color, isDark)
+                            val rotation = (SurfUnitsHelper.cardinalToDegrees(dirFr) + 180f) % 360f
+                            // L'heure choisie : colonne plus large (direction et vitesse), un peu plus bas, soulignée ; les autres : flèche et vitesse.
+                            val itemW = if (isSel) 36.dp else with(density) { cellW.toDp() }
+                            val fs = if (isSel) windFont else 8.5f
+                            val drop by animateDpAsState(if (isSel) SELECTED_WIND_DROP.dp else 0.dp, label = "windDrop")
+                            val cx = pad + cellW * (k + 0.5f)
+                            Column(
+                                modifier = Modifier.offset { IntOffset((cx - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                NavArrow(color, rotation, (fs * 1.5f * windArrowScale(windFeelKmh(hourly))).dp)
+                                if (isSel) Text(dirFr, fontSize = fs.sp, fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, lineHeight = (fs + 2f).sp)
+                                Text(
+                                    SurfUnitsHelper.formatWindValue(windFeelKmh(hourly), windUnit), fontSize = fs.sp,
+                                    fontWeight = FontWeight.ExtraBold, color = textColor, maxLines = 1, softWrap = false, lineHeight = (fs + 2f).sp
+                                )
+                                if (isSel) Box(modifier = Modifier.padding(top = 2.dp).width(16.dp).height(2.dp).background(textColor, RoundedCornerShape(1.dp)))
                             }
-                        }
                         }
                     }
                 }
