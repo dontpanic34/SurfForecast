@@ -338,14 +338,18 @@ fun calculateSlotRating(
         else -> ConditionKind.NORMAL
     }
     val limits = ScoreLimits(fit, windFactor, gustF, chopF, periodF, directionF)
-    // La note et sa phrase doivent s'accorder : quand la phrase dit « dégrade » ou « ça sectionne » (vent sous 0,75, ou clapot, rafales, période sous 0,55), la note ne dépasse pas « Bon ».
-    if (kind == ConditionKind.NORMAL && (windFactor < WIND_MILD || chopF < STRONG_LIMIT || gustF < STRONG_LIMIT || periodF < STRONG_LIMIT)) {
-        final = minOf(final, VERY_GOOD_MIN - 1 - ToleranceSettings.mode * 8)
+    // La note et sa phrase s'accordent : le titre donne le ton, la phrase n'a que les mots de ce ton.
+    // « Ça sectionne » ou « Beaucoup de clapot » (vent sous 0,6, ou clapot, rafales, période sous 0,55) : la note ne dépasse pas « Correct ».
+    // « Dégrade » ou « gêne » (vent sous 0,75) : pas plus que « Bon ».
+    if (kind == ConditionKind.NORMAL) {
+        val strongLimit = windFactor < WIND_STRONG || chopF < STRONG_LIMIT || gustF < STRONG_LIMIT || periodF < STRONG_LIMIT
+        if (strongLimit) final = minOf(final, GOOD_MIN - 1 - ToleranceSettings.mode * 8)
+        else if (windFactor < WIND_MILD) final = minOf(final, VERY_GOOD_MIN - 1 - ToleranceSettings.mode * 8)
     }
     // La note a retenu un vent qui gêne alors que le vent réel affiché est propre : c'est la mémoire du vent qui parle.
     val windMemory = displayedWind != null && windFactor < WIND_CLEAN &&
         windFactorOf(displayedWind, h, profile, windCategoryFor(displayedWind.windDirectionStr, idealSwellDirection)) >= WIND_CLEAN
-    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits, windMemory))
+    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits, windMemory, scoreBand(final)))
 }
 
 /**
@@ -427,12 +431,17 @@ private const val STRONG_LIMIT = 0.55
  * La phrase du vent, avec sa force : quatre niveaux d'après le facteur de vent (léger de 0,9 à 0,75, gêne jusqu'à 0,6,
  * fort jusqu'à 0,3, très fort en dessous), les mêmes mots pour l'onshore et le sideshore.
  */
-internal fun windPhrase(windCategory: String, windFactor: Double): String {
+internal fun windPhrase(windCategory: String, windFactor: Double, softened: Boolean = false): String {
     val level = when {
         windFactor >= WIND_MILD -> 0
         windFactor >= WIND_STRONG -> 1
         windFactor >= 0.3 -> 2
         else -> 3
+    }
+    // Titre Bon ou mieux : « gêne un peu » plutôt que « dégrade la vague » (les mots forts sont pour Correct et en dessous).
+    if (softened && level == 1) {
+        val name = when (windCategory) { "onshore" -> "Onshore"; "side-off" -> "Side-off"; "side-on" -> "Side-on"; "side" -> "Side"; else -> null }
+        if (name != null) return "$name gêne un peu"
     }
     return when (windCategory) {
         "onshore" -> listOf("Un peu d'onshore", "Onshore dégrade la vague", "Onshore fort, ça sectionne", "Onshore très fort, c'est démonté")[level]
@@ -447,7 +456,7 @@ internal fun windPhrase(windCategory: String, windFactor: Double): String {
  * Phrase courte qui dit pourquoi la note est ce qu'elle est (voir les maquettes du profil) : ce qui pèse vraiment
  * (taille, vent, rafales, clapot, période, direction de la houle), ou « Bonne taille, vent propre » quand rien ne pèse.
  */
-private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, windMemory: Boolean = false): String = when (kind) {
+private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, windMemory: Boolean = false, band: ScoreBand = ScoreBand.GOOD): String = when (kind) {
     ConditionKind.TOO_SMALL -> WHY_TOO_SMALL
     ConditionKind.TOO_WINDY -> windPhrase(windCategory, l.wind)
     ConditionKind.TOO_BIG -> WHY_TOO_BIG
@@ -471,7 +480,7 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, wi
             val strong = worst.value < worst.strong
             when (worst.name) {
                 "size" -> if (strong) "Taille limite" else "Taille un peu juste"
-                "wind" -> if (windMemory) WHY_WIND_MEMORY else windPhrase(windCategory, l.wind)
+                "wind" -> if (windMemory) WHY_WIND_MEMORY else windPhrase(windCategory, l.wind, softened = band == ScoreBand.GOOD || band == ScoreBand.VERY_GOOD || band == ScoreBand.EXCELLENT)
                 "gusts" -> if (strong) "Rafales fortes" else "Des rafales gênent"
                 "chop" -> if (strong) "Beaucoup de clapot" else "Un peu de clapot"
                 "period" -> if (strong) "Houle trop courte" else "Houle un peu courte"

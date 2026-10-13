@@ -19,6 +19,9 @@ enum class ScoreBand(val label: String) {
     TOO_WINDY("Trop de vent")
 }
 
+/** Note à partir de laquelle une heure est « Bon ». */
+const val GOOD_MIN = 55
+
 /** Note à partir de laquelle une heure est « Très bon ». */
 const val VERY_GOOD_MIN = 70
 
@@ -34,7 +37,7 @@ private fun scoreBandShifted(rawScore: Int, tooBig: Boolean, shift: Int): ScoreB
     tooBig || score < 0 -> ScoreBand.TOO_BIG
     score < 20 -> ScoreBand.AVOID
     score < 40 -> ScoreBand.POOR
-    score < 55 -> ScoreBand.FAIR
+    score < GOOD_MIN -> ScoreBand.FAIR
     score < VERY_GOOD_MIN -> ScoreBand.GOOD
     score < PERFECT_MIN -> ScoreBand.VERY_GOOD
     else -> ScoreBand.EXCELLENT
@@ -95,7 +98,7 @@ fun ScoreBand.onColor(): Color = when (this) {
 private val BAND_ORDER = listOf(
     ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.FAIR, ScoreBand.GOOD, ScoreBand.VERY_GOOD, ScoreBand.EXCELLENT
 )
-private val BOUNDS = listOf(20, 40, 55, VERY_GOOD_MIN, PERFECT_MIN)
+private val BOUNDS = listOf(20, 40, GOOD_MIN, VERY_GOOD_MIN, PERFECT_MIN)
 
 /**
  * Libellé avec tendance, comme « Fair to Good » chez Surfline : quand la note est tout près d'une limite (à 4 points

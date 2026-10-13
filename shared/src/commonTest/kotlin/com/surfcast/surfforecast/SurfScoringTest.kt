@@ -464,12 +464,15 @@ class SurfScoringTest {
     }
 
     @Test
-    fun aDegradingPhraseNeverSitsNextToVeryGood() {
-        // Pour plusieurs vents onshore et forces, une phrase qui dit « dégrade » ou « sectionne » ne va jamais avec Très bon ou Parfait.
-        for (kmh in listOf(8, 12, 16, 20, 25)) for (dir in listOf("O", "NO", "SO")) {
+    fun titleAndPhraseShareTheSameTone() {
+        // Le titre donne le ton : « dégrade » ou « gêne » jamais avec Très bon ; « sectionne » jamais avec Bon ; « dégrade » jamais dans un titre Bon.
+        for (kmh in listOf(8, 12, 16, 20, 25, 30)) for (dir in listOf("O", "NO", "SO")) {
             val r = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = kmh, windDir = dir), 275, "confirmed")
-            val bad = r.why.contains("dégrade") || r.why.contains("sectionne") || r.why.contains("démonté")
-            if (bad) assertTrue(r.score < VERY_GOOD_MIN, "$dir $kmh km/h : « ${r.why} » avec la note ${r.score}")
+            val band = conditionBand(r)
+            val msg = "$dir $kmh km/h : « ${r.why} » avec ${band.label} (${r.score})"
+            if (r.why.contains("sectionne") || r.why.contains("démonté")) assertTrue(r.score < GOOD_MIN || r.kind != ConditionKind.NORMAL, msg)
+            if (r.why.contains("dégrade")) assertTrue(r.score < GOOD_MIN || r.kind != ConditionKind.NORMAL, msg)
+            if (r.why.contains("gêne un peu")) assertTrue(r.score < VERY_GOOD_MIN, msg)
         }
     }
 
