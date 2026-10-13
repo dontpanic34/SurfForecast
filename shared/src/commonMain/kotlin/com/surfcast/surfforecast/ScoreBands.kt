@@ -19,14 +19,21 @@ enum class ScoreBand(val label: String) {
     TOO_WINDY("Trop de vent")
 }
 
+/** Échelle des notes (choisie par le propriétaire le 13 octobre 2026) : Mauvais sous 25, Médiocre jusqu'à 45, Correct jusqu'à 62, Bon jusqu'à 80, Très bon jusqu'à 94, Parfait au-delà. */
+const val POOR_MIN = 25
+const val FAIR_MIN = 45
+
 /** Note à partir de laquelle une heure est « Bon ». */
-const val GOOD_MIN = 55
+const val GOOD_MIN = 62
 
 /** Note à partir de laquelle une heure est « Très bon ». */
-const val VERY_GOOD_MIN = 70
+const val VERY_GOOD_MIN = 80
 
 /** Note à partir de laquelle une heure est « Parfait ». */
-const val PERFECT_MIN = 90
+const val PERFECT_MIN = 94
+
+/** Zone de tendance : à cette distance d'une limite, le libellé dit « Correct à Bon ». */
+const val TREND_ZONE = 3
 
 /** [score] négatif ou [tooBig] = trop gros pour ce niveau. */
 fun scoreBand(rawScore: Int, tooBig: Boolean = false): ScoreBand = scoreBandShifted(rawScore, tooBig, ToleranceSettings.mode * 8)
@@ -35,8 +42,8 @@ private fun scoreBandShifted(rawScore: Int, tooBig: Boolean, shift: Int): ScoreB
     val score = if (rawScore < 0) rawScore else rawScore + shift
     return when {
     tooBig || score < 0 -> ScoreBand.TOO_BIG
-    score < 20 -> ScoreBand.AVOID
-    score < 40 -> ScoreBand.POOR
+    score < POOR_MIN -> ScoreBand.AVOID
+    score < FAIR_MIN -> ScoreBand.POOR
     score < GOOD_MIN -> ScoreBand.FAIR
     score < VERY_GOOD_MIN -> ScoreBand.GOOD
     score < PERFECT_MIN -> ScoreBand.VERY_GOOD
@@ -98,10 +105,10 @@ fun ScoreBand.onColor(): Color = when (this) {
 private val BAND_ORDER = listOf(
     ScoreBand.AVOID, ScoreBand.POOR, ScoreBand.FAIR, ScoreBand.GOOD, ScoreBand.VERY_GOOD, ScoreBand.EXCELLENT
 )
-private val BOUNDS = listOf(20, 40, GOOD_MIN, VERY_GOOD_MIN, PERFECT_MIN)
+private val BOUNDS = listOf(POOR_MIN, FAIR_MIN, GOOD_MIN, VERY_GOOD_MIN, PERFECT_MIN)
 
 /**
- * Libellé avec tendance, comme « Fair to Good » chez Surfline : quand la note est tout près d'une limite (à 4 points
+ * Libellé avec tendance, comme « Fair to Good » chez Surfline : quand la note est tout près d'une limite (à 3 points
  * près), il dit d'où l'on vient et où l'on va, selon l'heure d'avant (« Correct à Bon » si ça monte, « Bon à Correct » si ça baisse). Sinon le niveau seul. Les cas à part (trop gros, challengeant...)
  * n'ont pas de tendance.
  */
@@ -109,7 +116,7 @@ fun bandLabelWithTrend(rating: SlotRating, previous: SlotRating? = null): String
     val band = conditionBand(rating)
     if (band !in BAND_ORDER) return band.label
     for ((i, bound) in BOUNDS.withIndex()) {
-        if (kotlin.math.abs(rating.score - bound) <= 4) {
+        if (kotlin.math.abs(rating.score - bound) <= TREND_ZONE) {
             // Le libellé va de l'heure d'avant vers celle-ci : si ça baisse, « Bon à Correct » ; sinon « Correct à Bon ».
             val falling = previous != null && previous.score > rating.score
             return if (falling) BAND_ORDER[i + 1].label + " à " + BAND_ORDER[i].label else BAND_ORDER[i].label + " à " + BAND_ORDER[i + 1].label
@@ -126,7 +133,7 @@ fun trendBands(rating: SlotRating): List<ScoreBand> {
     val band = conditionBand(rating)
     if (band !in BAND_ORDER) return listOf(band)
     for ((i, bound) in BOUNDS.withIndex()) {
-        if (kotlin.math.abs(rating.score - bound) <= 4) return listOf(BAND_ORDER[i], BAND_ORDER[i + 1])
+        if (kotlin.math.abs(rating.score - bound) <= TREND_ZONE) return listOf(BAND_ORDER[i], BAND_ORDER[i + 1])
     }
     return listOf(band)
 }
@@ -138,7 +145,7 @@ fun trendOnColor(bands: List<ScoreBand>): Color {
 }
 
 private val STOPS = listOf(
-    10 to 0xFF9B1C31, 30 to 0xFFE53935, 47 to 0xFFFFD21F, 62 to 0xFF1A9C82, 77 to 0xFF2BD47A, 88 to 0xFF2BD47A, 92 to 0xFF0F8A52
+    12 to 0xFF9B1C31, 35 to 0xFFE53935, 53 to 0xFFFFD21F, 71 to 0xFF1A9C82, 85 to 0xFF2BD47A, 92 to 0xFF2BD47A, 97 to 0xFF0F8A52
 )
 
 /** Couleur d'une note sur le dégradé continu (bordeaux -> rouge -> jaune -> vert sombre -> vert vif). */

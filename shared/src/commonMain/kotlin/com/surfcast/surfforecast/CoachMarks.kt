@@ -142,7 +142,7 @@ fun JournalTipsCard(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("📓 Comment ça marche", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text("Comment ça marche", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             val tip = TextStyle12
             Text("1. Choisis le jour (aujourd'hui, hier ou avant-hier) et tes heures dans l'eau.", style = tip)
             Text("2. Choisis le sous-spot et ta planche. Touche « Fiche du banc » pour noter quand il marche (marée, houle).", style = tip)

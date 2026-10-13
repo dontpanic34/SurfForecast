@@ -43,5 +43,6 @@ fun loadEngineConfigFromPrefs(prefs: KeyValueStore): ForecastEngineConfig = Fore
     shortTermWeather = safeEnumValueOf(prefs.getString("short_weather", null), WeatherModel.AROME),
     shortTermWave = safeEnumValueOf(prefs.getString("short_wave", null), WaveModel.MFWAM),
     longTermWeather = safeEnumValueOf(prefs.getString("long_weather", null), WeatherModel.ECMWF_IFS),
-    longTermWave = safeEnumValueOf(prefs.getString("long_wave", null), WaveModel.MFWAM)
+    longTermWave = safeEnumValueOf(prefs.getString("long_wave", null), WaveModel.ECMWF_WAM),
+    consensus = prefs.getBoolean("wave_consensus", true)
 )
