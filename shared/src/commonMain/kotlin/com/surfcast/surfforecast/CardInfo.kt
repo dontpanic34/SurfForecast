@@ -126,6 +126,10 @@ fun CardSettingsPanel(key: String) {
             }
         }
         Text(
+            "Comprendre en détail ›", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.primary,
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { ComprendreState.open(ComprendreState.lessonForCard(key)) }.padding(vertical = 4.dp, horizontal = 2.dp)
+        )
+        Text(
             "Fermer", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.primary,
             modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { CardGear.open = null }.padding(vertical = 4.dp, horizontal = 2.dp)
         )

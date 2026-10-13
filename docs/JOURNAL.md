@@ -261,3 +261,6 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Consensus des modèles de vagues codé (`buildConsensusMarine`, poids `waveConsensusWeights`) : hauteur et période du même calcul, GFS Wave écarté à court terme, houle secondaire dans l'énergie de la note, désaccord des modèles gardé par heure (`modelSpread`). Réglage manuel inchangé. Correction au passage : le modèle de vagues long terme par défaut était MF-WAM au lieu d'ECMWF. Tests ajoutés. Pas encore en ligne.
 
 - Signal de confiance codé : étoiles « ~ » plus pâles à partir de J+4, et « Modèles partagés » (orange) dans la carte du jour quand les modèles de vagues divergent de plus de 40 % en moyenne. Textes d'aide mis à jour. Pas encore en ligne.
+
+- Bouée de référence codée : `BuoyCatalog` (19 bouées, Royan et Le Havre exclues, 120 km maximum), mesure lue via `surflog.fr/api/bouee/…`, ligne « Bouée Cap Ferret, à 43 km : 1,7 m · 10 s · mesuré à 09 h 30 » sous la houle. Rien n'est affiché sans bouée proche. Tests ajoutés.
+- Section « Comprendre » codée (`ComprendreScreen.kt`) : 3 chapitres, 11 leçons, 3 outils (énergie, arrivée de la houle, profondeur de déferlement). Entrées : carte sous la semaine, « Comprendre en détail › » dans le ⚙ de chaque encart, Réglages > Aide. Pas encore en ligne.

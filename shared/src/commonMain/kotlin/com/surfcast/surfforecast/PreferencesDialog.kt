@@ -635,7 +635,8 @@ fun SurfPreferencesDialog(
                             Text("Langue", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
                             LanguageFlags(language = language, onChange = onLanguageChanged)
                         }
-                        PrefMenuRow("📘", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
+                        PrefMenuRow("📘", "Comprendre la houle", "11 leçons courtes : période, séries, modèles, bouées") { ComprendreState.open() }
+                        PrefMenuRow("📗", "Comprendre les prévisions", "Houle, période, vent, marée, score") { page = "guide" }
                         if (onShowTour != null) {
                             PrefMenuRow("🧭", "Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", onClick = onShowTour)
                         }

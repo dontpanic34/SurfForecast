@@ -178,6 +178,9 @@ fun MainScreen(
         )
     }
 
+    // La section « Comprendre » s'ouvre de partout (accueil, ⚙ des encarts, Réglages) par ComprendreState.open.
+    ComprendreState.request?.let { start -> ComprendreDialog(startLesson = start, onDismiss = { ComprendreState.close() }) }
+
     if (showPreferencesDialog) {
         SurfPreferencesDialog(
             appVersion = appVersion,
@@ -1250,6 +1253,25 @@ fun DynamicCardsSection(
                             onLater = { viewModel.hideProfileNudge() },
                             modifier = (if (coachTargets != null) Modifier.coachTarget("bestSlot", coachTargets) else Modifier).padding(horizontal = 6.dp, vertical = 6.dp)
                         )
+                    }
+                    // Une porte discrète vers les leçons, sous la semaine.
+                    if (cardKey == "weekly") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp).clickable { ComprendreState.open() },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Comprendre la houle", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Période, séries, modèles, bouées : 11 leçons courtes", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("›", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                     if (cardKey == afterKey) afterTimeline()
                 }
