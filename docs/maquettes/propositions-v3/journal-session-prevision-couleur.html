@@ -1,0 +1,35 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La prévision était… en couleur</title><style>
+:root{--bg:#0d1b24;--card:#142832;--fg:#e8eef2;--mut:#8da2ad;--acc:#7cc0e8;--line:#27414f;--tile:#1a313d;--segbg:#101f28;--segon:#2b6d8f;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#cfdbe6;--card:#dce6ee;--fg:#10222e;--mut:#5a6f7b;--acc:#124e6e;--line:#b9c9d4;--tile:#c5d3de;--segbg:#c3d1dc;--segon:#124e6e;color-scheme:light}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding:16px}
+main{max-width:1000px;margin:auto}h1{font-size:20px;margin:0 0 4px}p{color:var(--mut);font-size:13px;margin:3px 0 8px}
+.grid{display:flex;flex-wrap:wrap;gap:14px}.col{width:300px}.app{background:var(--card);border-radius:14px;padding:10px 12px}
+.hd{display:flex;justify-content:space-between;font-size:14.5px}.hd span{color:var(--mut)}
+.win{margin:6px 0 2px;font-size:12.5px;color:var(--mut);background:var(--tile);border-radius:9px;padding:6px 9px}
+.lab{font-size:11px;font-weight:700;color:var(--mut);margin:10px 0 4px;display:flex;justify-content:space-between;align-items:baseline}.lab em{font-style:normal;font-weight:600;font-size:12px;color:var(--mut)}
+.lab strong{font-weight:800;color:var(--d)}@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .lab strong{color:var(--l)}}
+.accb{background:var(--tile);border-radius:10px;padding:6px 10px;font-size:12.5px;color:var(--mut);margin-bottom:6px}.accb div{display:flex;justify-content:space-between;padding:2px 0}.accb b{color:var(--fg);font-weight:700}
+.bands{display:flex;flex-wrap:wrap;gap:5px}.bands span{padding:5px 10px;border-radius:50px;font-size:12.5px;font-weight:700;background:var(--tile);color:var(--mut)}
+</style><main>
+<h1>« La prévision était : … » en couleur, et moyennée sur ton créneau</h1>
+<p>Oui, on est d’accord : le résumé suit la tranche horaire que tu as choisie. Il écrit la <b>moyenne</b> de la houle (hauteur et période) et du vent (vitesse et direction, avec « offshore » ou « de mer ») sur ton créneau, pas sur la journée. La marée dit où elle en était (montante, descendante, haute) et le coefficient. Le mot après « La prévision était » prend la couleur de la note de l’appli : c’est la note moyenne des heures du créneau. Quatre exemples, quatre créneaux, quatre couleurs :</p>
+<div class="grid"><div class="col"><div class="app"><div class="hd"><b>Session · Montalivet</b><span>✕</span></div>
+<div class="win">6 h 40 → 8 h 20 (1 h 40)</div>
+<div class="lab"><span>COMMENT C’ÉTAIT ?</span><em>La prévision était : <strong style="--d:#FF5A55;--l:#C62828">Médiocre</strong> ▾</em></div>
+<div class="accb"><div>Houle <b>0,9 m · 8 s · moyenne</b></div><div>Vent <b>14 km/h · ONO · de mer</b></div><div>Marée <b>descendante · coef 88</b></div></div>
+<div class="bands"><span>Mauvais</span><span>Médiocre</span><span>Correct</span><span>Bon</span><span>Très bon</span><span>Parfait</span><span>Challengeant</span></div></div></div><div class="col"><div class="app"><div class="hd"><b>Session · Montalivet</b><span>✕</span></div>
+<div class="win">8 h 00 → 9 h 40 (1 h 40)</div>
+<div class="lab"><span>COMMENT C’ÉTAIT ?</span><em>La prévision était : <strong style="--d:#3FD0B0;--l:#12806C">Bon</strong> ▾</em></div>
+<div class="accb"><div>Houle <b>1,3 m · 10 s · moyenne</b></div><div>Vent <b>10 km/h · E · offshore</b></div><div>Marée <b>montante · coef 88</b></div></div>
+<div class="bands"><span>Mauvais</span><span>Médiocre</span><span>Correct</span><span>Bon</span><span>Très bon</span><span>Parfait</span><span>Challengeant</span></div></div></div><div class="col"><div class="app"><div class="hd"><b>Session · Montalivet</b><span>✕</span></div>
+<div class="win">12 h 00 → 14 h 00 (2 h)</div>
+<div class="lab"><span>COMMENT C’ÉTAIT ?</span><em>La prévision était : <strong style="--d:#FFD21F;--l:#B58900">Correct</strong> ▾</em></div>
+<div class="accb"><div>Houle <b>1,5 m · 10 s · moyenne</b></div><div>Vent <b>17 km/h · O · de mer</b></div><div>Marée <b>haute à 13 h 20 · coef 88</b></div></div>
+<div class="bands"><span>Mauvais</span><span>Médiocre</span><span>Correct</span><span>Bon</span><span>Très bon</span><span>Parfait</span><span>Challengeant</span></div></div></div><div class="col"><div class="app"><div class="hd"><b>Session · Montalivet</b><span>✕</span></div>
+<div class="win">17 h 20 → 19 h 00 (1 h 40)</div>
+<div class="lab"><span>COMMENT C’ÉTAIT ?</span><em>La prévision était : <strong style="--d:#1FAA68;--l:#0B6E3F">Parfait</strong> ▾</em></div>
+<div class="accb"><div>Houle <b>1,6 m · 12 s · moyenne</b></div><div>Vent <b>8 km/h · E · offshore</b></div><div>Marée <b>descendante · coef 88</b></div></div>
+<div class="bands"><span>Mauvais</span><span>Médiocre</span><span>Correct</span><span>Bon</span><span>Très bon</span><span>Parfait</span><span>Challengeant</span></div></div></div></div>
+<p style="margin-top:14px">Détails : si le créneau est à cheval sur deux notes (par exemple Correct puis Bon), le mot s’écrit « Correct à Bon » comme dans les prévisions. Les lignes sont des moyennes pondérées par le temps passé dans chaque heure.</p>
+</main></html>
