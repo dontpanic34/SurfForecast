@@ -1,0 +1,68 @@
+<title>Encart Météo en bandes</title>
+<style>
+/* Mise en page : cinq encarts Météo différents avec les mêmes informations, chacun avec une bande lumineuse du jour ; glisser le doigt sur n'importe quelle bande déplace l'heure dans les cinq (comme la houle et le vent dans l'appli). */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--line:#2a4552;--link:#4fb3e8;--sun:#f2b84b;--dusk:#e8844a;--rain:#5aa9e6;--ok:#34c98a;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--tile:#e3ebf1;--fg:#10222e;--mut:#566b76;--line:#c5d4dc;--link:#1b88c4;--sun:#b57a00;--dusk:#c4561f;--rain:#1f78c1;--ok:#13875a;color-scheme:light}}
+:root[data-theme="light"]{--bg:#e9eff2;--card:#fff;--tile:#e3ebf1;--fg:#10222e;--mut:#566b76;--line:#c5d4dc;--link:#1b88c4;--sun:#b57a00;--dusk:#c4561f;--rain:#1f78c1;--ok:#13875a;color-scheme:light}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding-inline:16px;padding-block:18px}
+main{max-width:440px;margin:0 auto;display:grid;gap:12px}h1{font-size:1.2rem;margin:0}h2{font-size:1rem;margin:12px 0 0;color:#7fc3e6}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12.5px}
+.card{background:var(--card);border-radius:12px;padding:12px 14px;display:grid;gap:8px;touch-action:pan-y}
+.hd{display:flex;justify-content:space-between;color:var(--mut);font-size:14px}
+.big{font-size:22px;font-weight:700}.lnk{color:var(--link);font-weight:700;font-size:13px}
+.band{position:relative;height:34px;border-radius:8px;cursor:ew-resize;touch-action:none;overflow:hidden;user-select:none}
+.band.thin{height:16px}.band.tall{height:48px}
+.cur{position:absolute;top:0;bottom:0;width:3px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.45),0 0 10px rgba(255,255,255,.8);border-radius:2px;pointer-events:none}
+.mk{position:absolute;top:0;bottom:0;width:2px;pointer-events:none}
+.lab{position:relative;height:16px;font-size:12px;font-weight:700}.lab span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.tk{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.tile{background:var(--tile);border-radius:8px;padding:6px 4px;text-align:center;font-size:12px;color:var(--mut)}.tile b{display:block;font-size:15px;color:var(--fg)}
+.strip{display:grid;grid-template-columns:62px 1fr 46px;align-items:center;gap:8px;font-size:12px;color:var(--mut)}.strip b{color:var(--fg);text-align:right;font-size:13px}
+svg{display:block;width:100%}
+.hour{font-weight:700;color:var(--link);font-size:13px}
+</style>
+<main>
+<h1>Encart Météo en bandes</h1>
+<p class="mut sm">Cinq dispositions pour les mêmes informations : ciel et ressenti, eau, UV, nuages, pluie, lever et coucher du soleil, détail de la semaine. Glisse le doigt sur n'importe quelle bande : l'heure change dans les cinq encarts, comme elle changera avec la houle et le vent. Exemple : 13 octobre, lever 8 h 17, coucher 19 h 22.</p>
+<div id="out"></div>
+</main>
+<script>
+var SR=8+17/60,SS=19+22/60,H=14,sel=14;
+var D=[];for(var i=0;i<24;i++){var day=i>=8&&i<=19;D.push({t:Math.round(13+7*Math.sin((i-9)/24*2*Math.PI)+(day?1:0)),cl:Math.round(100-(i%5)*3),uv:day?Math.max(0,Math.round(3*Math.sin((i-8)/11*Math.PI))):0,r:(i>=16&&i<=18)?[0.3,0.6,0.2][i-16]:0})}
+function skyColor(h){ // ciel selon l'heure
+ var m=[[0,'#0f1a3a'],[SR-1.2,'#1c2a57'],[SR-.3,'#c9694a'],[SR+.7,'#6fa3d6'],[13,'#7db6e8'],[SS-1,'#7aa9d6'],[SS-.2,'#e8844a'],[SS+.8,'#2c2f66'],[SS+2,'#13204a'],[24,'#0f1a3a']];
+ for(var k=1;k<m.length;k++){if(h<=m[k][0]){var a=m[k-1],b=m[k],f=(h-a[0])/(b[0]-a[0]||1);return mix(a[1],b[1],f)}}return m[m.length-1][1]}
+function mix(a,b,f){var p=function(c){return[1,3,5].map(function(i){return parseInt(c.substr(i,2),16)})},x=p(a),y=p(b);return 'rgb('+x.map(function(v,i){return Math.round(v+(y[i]-v)*f)}).join(',')+')'}
+function skyGrad(){var s=[];for(var h=0;h<=24;h+=.5)s.push(skyColor(h)+' '+(h/24*100).toFixed(1)+'%');return 'linear-gradient(90deg,'+s.join(',')+')'}
+function cloudGrad(){var s=[];for(var i=0;i<24;i++){var a=(D[i].cl/100*.75).toFixed(2);s.push('rgba(200,210,220,'+a+') '+(i/24*100).toFixed(1)+'%','rgba(200,210,220,'+a+') '+((i+1)/24*100).toFixed(1)+'%')}return 'linear-gradient(90deg,'+s.join(',')+')'}
+function rainMarks(){var h='';D.forEach(function(d,i){if(d.r>0)h+='<i style="position:absolute;bottom:0;left:'+(i/24*100)+'%;width:'+(100/24)+'%;height:'+(30+d.r*80)+'%;background:var(--rain);opacity:.9;border-radius:2px 2px 0 0"></i>'});return h}
+function pct(x){return x/24*100}
+function fmt(h){var m=Math.round((h%1)*60);return Math.floor(h)+' h '+('0'+m).slice(-2)}
+function sunMk(tall){return '<i class="mk" style="left:'+pct(SR)+'%;background:var(--sun)"></i><i class="mk" style="left:'+pct(SS)+'%;background:var(--dusk)"></i>'}
+function sunLab(){return '<div class="lab"><span style="left:'+pct(SR)+'%;color:var(--sun)">▲ '+fmt(SR)+'</span><span style="left:'+pct(SS)+'%;color:var(--dusk)">'+fmt(SS)+' ▼</span></div>'}
+function ticks(){return '<div class="tk"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div>'}
+function band(kind,extra){return '<div class="band '+(kind||'')+'" data-b style="background:'+cloudGrad()+','+skyGrad()+'">'+(extra||'')+sunMk()+'<i class="cur" style="left:calc('+pct(sel+.5)+'% - 1px)"></i></div>'}
+function emoji(i){var d=D[i];return d.r>0?'🌧':d.cl>85?'☁️':d.cl>40?'⛅':'☀️'}
+function render(){var d=D[sel],o='';
+ // A
+ o+='<h2>A · La bande ciel</h2><p class="sm mut">Une grande bande qui montre le ciel de la journée : couleur de nuit, d\'aube et de jour, nuages en voile blanc, pluie en barres bleues. Les valeurs de l\'heure sont au-dessus.</p><div class="card"><div class="hd"><span>Météo</span><span>⚙ ▾</span></div><div class="row"><div class="big">'+emoji(sel)+' '+d.t+'°C <span style="font-size:15px;color:var(--mut);font-weight:600">· eau 19°</span></div><span class="hour">'+sel+':00</span></div><div class="row sm"><span>☀ UV '+d.uv+'</span><span>☁ '+d.cl+' %</span><span>🌧 '+(d.r?d.r+' mm':'sec')+'</span></div>'+band('tall',rainMarks())+sunLab()+ticks()+'<span class="lnk">Détail sur la semaine ›</span></div>';
+ // B arc
+ var ang=Math.PI*(1-Math.min(Math.max((sel+.5-SR)/(SS-SR),0),1)),sx=100+90*Math.cos(ang),sy=100-70*Math.sin(ang),day=(sel+.5>=SR&&sel+.5<=SS);
+ o+='<h2>B · L\'arc du soleil</h2><p class="sm mut">Le trajet du soleil en arc, lever à gauche et coucher à droite avec leurs heures. Le soleil (ou la lune) se place à l\'heure choisie. Une fine bande lumineuse dessous sert à glisser.</p><div class="card"><div class="hd"><span>Météo</span><span>⚙ ▾</span></div><div class="row"><div><div class="big">'+emoji(sel)+' '+d.t+'°C</div><div class="sm mut">eau 19° · UV '+d.uv+' · ☁ '+d.cl+' % · '+(d.r?'🌧 '+d.r+' mm':'sec')+'</div></div><span class="hour">'+sel+':00</span></div><svg viewBox="0 0 200 118"><path d="M10 100 A90 70 0 0 1 190 100" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="3 4"/><line x1="4" y1="100" x2="196" y2="100" stroke="var(--line)"/><circle cx="'+sx.toFixed(1)+'" cy="'+(day?sy.toFixed(1):100)+'" r="8" fill="'+(day?'#f2b84b':'#9fb2d9')+'"/><text x="10" y="114" fill="var(--sun)" font-size="10" font-weight="700" text-anchor="start">▲ '+fmt(SR)+'</text><text x="190" y="114" fill="var(--dusk)" font-size="10" font-weight="700" text-anchor="end">'+fmt(SS)+' ▼</text></svg>'+band('thin')+'<span class="lnk">Détail sur la semaine ›</span></div>';
+ // C tiles
+ o+='<h2>C · Bande et quatre tuiles</h2><p class="sm mut">La bande en haut, puis quatre tuiles qui se mettent à jour : UV, nuages, pluie, eau. Lever et coucher écrits sur la bande.</p><div class="card"><div class="hd"><span>Météo</span><span>⚙ ▾</span></div><div class="row"><div class="big">'+emoji(sel)+' '+d.t+'°C</div><span class="hour">'+sel+':00</span></div>'+band()+sunLab()+'<div class="tiles"><div class="tile">UV<b>'+d.uv+'</b></div><div class="tile">Nuages<b>'+d.cl+' %</b></div><div class="tile">Pluie<b>'+(d.r?d.r+' mm':'0')+'</b></div><div class="tile">Eau<b>19°</b></div></div><span class="lnk">Détail sur la semaine ›</span></div>';
+ // D trois bandes
+ var uvg=[],clg=[];for(var i=0;i<24;i++){uvg.push('rgba(242,184,75,'+(D[i].uv/3).toFixed(2)+') '+pct(i)+'%','rgba(242,184,75,'+(D[i].uv/3).toFixed(2)+') '+pct(i+1)+'%')}
+ var cg=cloudGrad().replace(/rgba\(200,210,220/g,'rgba(144,164,174');
+ o+='<h2>D · Trois fines bandes</h2><p class="sm mut">Une bande par information : le ciel avec le soleil, les nuages (plus c\'est blanc, plus c\'est couvert), l\'UV (plus c\'est doré, plus il est fort). Le trait de l\'heure traverse les trois. Chiffres de l\'heure à droite.</p><div class="card"><div class="hd"><span>Météo</span><span>⚙ ▾</span></div><div class="row"><div class="big">'+emoji(sel)+' '+d.t+'°C</div><span class="hour">'+sel+':00 · eau 19°</span></div><div style="position:relative;display:grid;gap:6px"><div class="strip"><span>Ciel</span><div class="band thin" data-b style="background:'+skyGrad()+'">'+sunMk()+'</div><b>'+(d.r?d.r+' mm':'sec')+'</b></div><div class="strip"><span>Nuages</span><div class="band thin" data-b style="background:var(--tile)"><div style="position:absolute;inset:0;background:'+cg+'"></div></div><b>'+d.cl+' %</b></div><div class="strip"><span>UV</span><div class="band thin" data-b style="background:var(--tile)"><div style="position:absolute;inset:0;background:linear-gradient(90deg,'+uvg.join(',')+')"></div></div><b>'+d.uv+'</b></div><i class="cur" style="left:calc(62px + 8px + (100% - 62px - 46px - 16px) * '+((sel+.5)/24)+' - 1px);top:-3px;bottom:-3px"></i></div>'+'<div class="row sm"><span style="color:var(--sun);font-weight:700">▲ '+fmt(SR)+'</span><span class="mut">'+Math.floor(SS-SR)+' h '+('0'+Math.round(((SS-SR)%1)*60)).slice(-2)+' de jour</span><span style="color:var(--dusk);font-weight:700">'+fmt(SS)+' ▼</span></div><span class="lnk">Détail sur la semaine ›</span></div>';
+ // E phrase
+ var ph=(d.r?'Pluie faible, ':'Sec, ')+(d.cl>85?'ciel couvert':d.cl>40?'éclaircies':'grand soleil')+', '+d.t+'° ressentis';
+ o+='<h2>E · Une phrase et une bande</h2><p class="sm mut">Une phrase résume l\'heure choisie, la bande dit le reste. Les détails (UV, nuages, eau) sont sur une seule ligne discrète, lever et coucher en pied avec la durée du jour.</p><div class="card"><div class="hd"><span>Météo</span><span>⚙ ▾</span></div><div class="row"><div class="big" style="font-size:18px">'+emoji(sel)+' '+ph+'</div><span class="hour">'+sel+':00</span></div>'+band('thin')+'<div class="sm mut">UV '+d.uv+' · nuages '+d.cl+' % · pluie '+(d.r?d.r+' mm':'0')+' · eau 19°</div><div class="row sm"><span style="color:var(--sun);font-weight:700">☀ '+fmt(SR)+' → '+fmt(SS)+'</span><span class="lnk">Détail semaine ›</span></div></div>';
+ document.getElementById('out').innerHTML=o}
+function hourAt(el,x){var r=el.getBoundingClientRect();return Math.max(0,Math.min(23,Math.floor((x-r.left)/r.width*24)))}
+var drag=false;
+document.addEventListener('pointerdown',function(e){var b=e.target.closest('[data-b]');if(!b)return;drag=true;sel=hourAt(b,e.clientX);render()});
+document.addEventListener('pointermove',function(e){if(!drag)return;var b=document.querySelector('[data-b]');var els=document.elementsFromPoint(e.clientX,e.clientY).filter(function(n){return n.matches&&n.matches('[data-b]')});if(els[0]){sel=hourAt(els[0],e.clientX);render()}});
+document.addEventListener('pointerup',function(){drag=false});
+render();
+</script>
