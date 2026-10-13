@@ -5,8 +5,8 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
@@ -287,8 +288,28 @@ private fun DailyTimelineBody(
 
         Box(
             modifier = Modifier.fillMaxWidth()
-                .pointerInput(hours, ax0, ax1) { detectTapGestures { pickHour(it.x) } }
-                .pointerInput(hours, ax0, ax1) { detectHorizontalDragGestures { change, _ -> pickHour(change.position.x) } }
+                // Le doigt se promène sur le graphique et l'heure le suit : dès que le geste est plutôt horizontal on le garde (la page ne
+                // défile plus) ; un geste plutôt vertical est laissé à la liste sans changer l'heure ; un simple toucher choisit l'heure.
+                .pointerInput(hours, cells) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var locked = false
+                        var vertical = false
+                        var total = androidx.compose.ui.geometry.Offset.Zero
+                        val slop = viewConfiguration.touchSlop
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val ch = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!ch.pressed) break
+                            total += ch.positionChange()
+                            if (!locked && total.getDistance() > slop) {
+                                if (kotlin.math.abs(total.x) > kotlin.math.abs(total.y)) locked = true else { vertical = true; break }
+                            }
+                            if (locked) { pickHour(ch.position.x); ch.consume() }
+                        }
+                        if (!locked && !vertical) pickHour(down.position.x)
+                    }
+                }
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // --- Vent : une flèche par case de la ligne de temps (heure du jour ou bloc de nuit), comme la barre d'Actuellement ---

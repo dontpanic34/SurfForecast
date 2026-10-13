@@ -196,10 +196,6 @@ private fun CardGuideSettings(key: String) {
                 GearSlider("Hauteur de l'encart", "${SkyGraphSettings.dayPct} %", SkyGraphSettings.dayPct.toFloat(), 25f..70f) { SkyGraphSettings.setDay(it.toInt()) }
                 SettingsDivider()
                 GearSlider("Échelle de la mer", "${SkyGraphSettings.waterPct} %", SkyGraphSettings.waterPct.toFloat(), 20f..60f) { SkyGraphSettings.setWater(it.toInt()) }
-                SettingsDivider()
-                GearLine("Marées affichées") {
-                    SettingsSegments(listOf("sun" to "De jour", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
-                }
                 SettingsRow("Valeurs par défaut", icon = SettingsIcons.Tune, chevron = false) { SkyGraphSettings.resetDay() }
             }
         }
