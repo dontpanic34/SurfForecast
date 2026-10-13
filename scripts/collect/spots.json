@@ -1,0 +1,17 @@
+{
+  "spots": [
+    {"id": "lacanau", "name": "Lacanau", "lat": 45.00, "lon": -1.20, "buoy": "03302"},
+    {"id": "montalivet", "name": "Montalivet", "lat": 45.38, "lon": -1.17, "buoy": "03302"},
+    {"id": "biscarrosse", "name": "Biscarrosse", "lat": 44.45, "lon": -1.25, "buoy": "03302"},
+    {"id": "hossegor", "name": "Hossegor", "lat": 43.67, "lon": -1.44, "buoy": "06403"},
+    {"id": "biarritz", "name": "Biarritz", "lat": 43.48, "lon": -1.56, "buoy": "06403"},
+    {"id": "crozon", "name": "Crozon (Lostmarc'h)", "lat": 48.22, "lon": -4.62, "buoy": "02911"}
+  ],
+  "buoys": {
+    "03302": {"name": "Cap Ferret", "lat": 44.6525, "lon": -1.4467},
+    "06403": {"name": "Saint-Jean-de-Luz", "lat": 43.4083, "lon": -1.6817},
+    "02911": {"name": "Les Pierres Noires", "lat": 48.2903, "lon": -4.9683}
+  },
+  "wave_models": {"MF-WAM": "meteofrance_wave", "ECMWF": "ecmwf_wam", "GFS": "ncep_gfswave016"},
+  "wx_models": {"AROME_HD": "meteofrance_arome_france_hd", "AROME": "meteofrance_arome_france", "ARPEGE": "meteofrance_arpege_europe", "ECMWF": "ecmwf_ifs025", "GFS": "gfs_seamless"}
+}

@@ -247,3 +247,6 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Consensus des modèles de vagues : principe validé par le propriétaire. Test contre la bouée de Cap Ferret (48 h) noté dans `A_FAIRE.md`. Rien n'est codé.
 
 - Liste des bouées Candhis temps réel avec positions (`docs/BOUEES_CANDHIS.md`) et principe « une bouée de référence choisie par spot ». Rien n'est codé.
+
+- Maquette `reglages-pro` : refonte des réglages (accueil, sources et modèles, affichage, profil, ⚙ d'un encart) : listes groupées, icônes au trait de même épaisseur, aperçu en direct sous chaque réglage, lien « Comprendre ». En attente de validation ; pas de code.
+- Relais des bouées : `functions/api/bouee/[[path]].js` (Cloudflare Pages Function, cache 15 min, 21 bouées autorisées), testé sur une page Candhis enregistrée ; il sera mis en ligne à la prochaine publication du site. Collecte des prévisions et des bouées : `scripts/collect/` (script Python, spots et bouées de départ dans `spots.json`) ; la tâche planifiée n'est pas encore en place.
