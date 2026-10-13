@@ -1,0 +1,76 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marée réglable sous le graphique</title>
+<style>
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--up:#4a9bf0;--down:#38c976;--ctl:#1b3340;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--ctl:#e3ebf0;color-scheme:light}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding:16px}
+main{max-width:440px;margin:auto}h1{font-size:19px;margin:0 0 4px}p{color:var(--mut);font-size:13.5px;margin:4px 0 10px}
+.card{background:var(--card);border-radius:12px;padding:10px 10px 6px}svg{width:100%;height:auto;display:block}
+.ctl{background:var(--ctl);border-radius:12px;padding:12px;margin-top:14px;display:grid;gap:10px}
+.row{display:grid;grid-template-columns:128px 1fr 44px;align-items:center;gap:8px;font-size:13.5px}
+.row input[type=range]{width:100%}.row b{text-align:right;font-variant-numeric:tabular-nums}
+.shapes{display:flex;gap:6px;flex-wrap:wrap}.shapes button{border:1px solid var(--mut);background:transparent;color:var(--fg);border-radius:8px;padding:5px 10px;font:inherit;cursor:pointer}
+.shapes button.on{background:var(--up);border-color:var(--up);color:#fff}
+pre{background:var(--ctl);border-radius:10px;padding:10px;font-size:12.5px;white-space:pre-wrap;margin:10px 0 0}
+.t{font:700 10.5px system-ui;fill:var(--fg)}.wd{font-weight:800;font-family:system-ui}
+</style><main>
+<h1>Marée sous le graphique, réglable</h1>
+<p>Reprend le bas de l'encart du déroulé de la journée : le graphique de houle, puis un <b>trait épais</b> bleu (montante) / vert (descendante), le <b>mot juste dessous</b>, un <b>point de couleur sur le trait</b> à chaque marée et l'<b>horaire dessous</b>. Plus de ligne d'heures. Règle avec les curseurs, puis recopie les valeurs en bas.</p>
+<div class="card"><svg id="s" viewBox="0 0 400 200"></svg></div>
+<div class="ctl">
+ <div class="row"><span>Épaisseur du trait</span><input id="th" type="range" min="2" max="12" step="0.5" value="6"><b id="thv"></b></div>
+ <div class="row"><span>Mot : hauteur</span><input id="wy" type="range" min="0" max="30" step="1" value="12"><b id="wyv"></b></div>
+ <div class="row"><span>Mot : gauche/droite</span><input id="wx" type="range" min="-60" max="60" step="1" value="0"><b id="wxv"></b></div>
+ <div class="row"><span>Mot : taille</span><input id="ws" type="range" min="9" max="16" step="0.5" value="12"><b id="wsv"></b></div>
+ <div class="row"><span>Point : taille</span><input id="ds" type="range" min="3" max="14" step="0.5" value="7"><b id="dsv"></b></div>
+ <div class="row"><span>Heure : hauteur</span><input id="hy" type="range" min="14" max="50" step="1" value="30"><b id="hyv"></b></div>
+ <div class="row"><span>Point : forme</span><div class="shapes" id="shapes"></div><span></span></div>
+ <div class="row"><span>Mot : style</span><div class="shapes" id="wstyle"></div><span></span></div>
+</div>
+<pre id="out"></pre>
+<p>Valeurs en pixels d'écran d'un téléphone (le dessin est à l'échelle d'un écran de 400 px de large). Les horaires de la maquette sont ceux du 13 octobre à Montalivet.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let shape='rond',wstyle='Montante';
+const shapes=['rond','triangle','losange','flèche','anneau'];
+const wstyles=['Montante','MONTANTE','↗ Montante','Marée montante'];
+function mk(box,list,get,set){box.innerHTML='';list.forEach(n=>{const b=document.createElement('button');b.textContent=n;if(get()===n)b.className='on';b.onclick=()=>{set(n);draw();mk(box,list,get,set)};box.appendChild(b)})}
+function pt(shape,x,y,r,col,up){
+ if(shape==='rond')return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" stroke="#fff" stroke-width="1.4"/>`;
+ if(shape==='anneau')return `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--card)" stroke="${col}" stroke-width="${Math.max(2,r*.4)}"/>`;
+ if(shape==='losange')return `<path d="M${x} ${y-r*1.2} L${x+r*1.2} ${y} L${x} ${y+r*1.2} L${x-r*1.2} ${y} Z" fill="${col}" stroke="#fff" stroke-width="1.2"/>`;
+ const d=up?-1:1; // pointe vers le haut quand ça monte après une basse
+ if(shape==='triangle')return `<path d="M${x-r} ${y-d*0} L${x+r} ${y} L${x} ${y+d*r*1.6} Z" fill="${col}" stroke="#fff" stroke-width="1.2" transform="translate(0,${-d*r*0.8})"/>`;
+ return `<path d="M${x} ${y-d*r*1.6} L${x+r*1.1} ${y+d*r*.2} L${x+r*.35} ${y+d*r*.2} L${x+r*.35} ${y+d*r*1.5} L${x-r*.35} ${y+d*r*1.5} L${x-r*.35} ${y+d*r*.2} L${x-r*1.1} ${y+d*r*.2} Z" fill="${col}" stroke="#fff" stroke-width="1"/>`;
+}
+function word(up){const m=wstyle;const base=up?'montante':'descendante';
+ if(m==='MONTANTE')return base.toUpperCase();
+ if(m==='↗ Montante')return (up?'↗ ':'↘ ')+cap(base);
+ if(m==='Marée montante')return 'Marée '+base;
+ return cap(base)}
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+function draw(){
+ const th=+$('th').value,wy=+$('wy').value,wx=+$('wx').value,ws=+$('ws').value,ds=+$('ds').value,hy=+$('hy').value;
+ $('thv').textContent=th;$('wyv').textContent=wy;$('wxv').textContent=wx;$('wsv').textContent=ws;$('dsv').textContent=ds;$('hyv').textContent=hy;
+ const Y=112; // ligne
+ const segs=[[0,70,0],[70,205,1],[205,335,0],[335,400,1]]; // 1 = monte
+ let s=`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb8d6" stop-opacity=".95"/><stop offset="1" stop-color="#0e5a76"/></linearGradient><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6c7b92"/><stop offset="1" stop-color="#8d9bb0"/></linearGradient></defs>
+ <rect x="8" y="6" width="384" height="72" rx="4" fill="url(#k)"/>
+ <path d="M8 58 C60 56 110 62 160 66 S270 70 330 62 S380 52 392 50 L392 78 L8 78 Z" fill="url(#g)"/>
+ <text class="t" x="12" y="30" style="fill:#fff;opacity:.8">1,5</text><text class="t" x="338" y="56" style="fill:#fff">1,1 m · 10 s</text>
+ <text class="t" x="14" y="92" style="fill:#f5a623">661kJ</text><text class="t" x="190" y="92" style="fill:#2fc9a8">183kJ</text><text class="t" x="340" y="92" style="fill:#f5a623">471kJ</text>`;
+ const col=u=>u?'var(--up)':'var(--down)';
+ segs.forEach(([a,b,u])=>{s+=`<line x1="${a}" y1="${Y}" x2="${b}" y2="${Y}" stroke="${col(u)}" stroke-width="${th}" stroke-linecap="butt"/>`});
+ // mots (tronçons assez longs)
+ segs.filter(([a,b])=>b-a>100).forEach(([a,b,u])=>{const cx=(a+b)/2+wx;s+=`<text class="wd" x="${cx}" y="${Y+th/2+wy}" text-anchor="middle" font-size="${ws}" fill="${col(u)}">${word(u)}</text>`});
+ // points + horaires
+ [[70,'≈7:11',1],[205,'≈13:18 · 88',0],[335,'≈19:28',1]].forEach(([x,t,u])=>{
+   // après une basse ça monte (point bleu) ; après une haute ça descend (point vert)
+   s+=pt(shape,x,Y,ds,col(u),u)+`<text class="t" x="${x}" y="${Y+th/2+hy}" text-anchor="middle">${t}</text>`});
+ $('s').innerHTML=s;
+ $('out').textContent=`Trait : ${th} · Mot : hauteur ${wy}, gauche/droite ${wx}, taille ${ws}, style « ${wstyle} » · Point : ${shape}, taille ${ds} · Heure : hauteur ${hy}`;
+}
+['th','wy','wx','ws','ds','hy'].forEach(i=>$(i).oninput=draw);
+mk($('shapes'),shapes,()=>shape,v=>shape=v);mk($('wstyle'),wstyles,()=>wstyle,v=>wstyle=v);draw();
+</script></html>

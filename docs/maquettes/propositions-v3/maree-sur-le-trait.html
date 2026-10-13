@@ -1,0 +1,21 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Montante / Descendante sur le trait</title>
+<style>
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--up:#4a9bf0;--down:#38c976;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;color-scheme:light}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding:18px 16px}
+main{max-width:440px;margin:auto}h1{font-size:19px}h2{font-size:15px;margin:22px 0 4px}p{color:var(--mut);margin:4px 0 8px;font-size:13.5px}
+.card{background:var(--card);border-radius:12px;padding:10px}svg{width:100%;height:auto;display:block}
+.h{font:700 10.5px system-ui;fill:var(--fg)}.s{font:800 11.5px system-ui}.s.up{fill:var(--up)}.s.down{fill:var(--down)}.c{font:800 11.5px system-ui;fill:var(--fg)}
+</style><main>
+<h1>Le mot écrit sur le trait</h1>
+<p>Plus de point blanc, et le mot ne suit plus l'heure : il est écrit dans le trait lui-même, sur chaque tronçon (le trait s'interrompt pour lui). <b>Montante</b> sur le tronçon bleu, <b>Descendante</b> sur le vert, avec un point de la couleur du tronçon. Les horaires sont au bout des triangles (au-dessus de la pointe pour une basse mer, sous la pointe pour une pleine mer). Pas de ligne d'heures.</p>
+<h2>A · Mot seul, coefficient avec la pleine mer</h2>
+<p>Le coefficient reste où il est aujourd'hui, à côté de l'horaire de la pleine mer.</p>
+<div class="card"><svg viewBox="0 0 400 90"><line x1="0" y1="50" x2="70" y2="50" stroke="var(--down)" stroke-width="2.6"/><line x1="70" y1="50" x2="205" y2="50" stroke="var(--up)" stroke-width="2.6"/><line x1="205" y1="50" x2="335" y2="50" stroke="var(--down)" stroke-width="2.6"/><line x1="335" y1="50" x2="400" y2="50" stroke="var(--up)" stroke-width="2.6"/><path d="M64 50 L76 50 L70 41 Z" fill="var(--up)"/><path d="M199 50 L211 50 L205 59 Z" fill="var(--down)"/><path d="M329 50 L341 50 L335 41 Z" fill="var(--up)"/><rect x="100.1" y="43" width="74.8" height="14" fill="var(--card)"/><circle cx="108.1" cy="50" r="3.4" fill="var(--up)"/><text class="s up" x="115.1" y="54">Montante</text><rect x="222.7" y="43" width="94.6" height="14" fill="var(--card)"/><circle cx="230.7" cy="50" r="3.4" fill="var(--down)"/><text class="s down" x="237.7" y="54">Descendante</text><text class="h" x="70" y="32" text-anchor="middle">≈7:11</text><text class="h" x="205" y="76" text-anchor="middle">≈13:18 · 88</text><text class="h" x="335" y="32" text-anchor="middle">≈19:28</text></svg></div>
+<h2>B · Mot et coefficient ensemble</h2>
+<p>« ● Montante · 88 » : le coefficient est répété sur chaque tronçon assez long.</p>
+<div class="card"><svg viewBox="0 0 400 90"><line x1="0" y1="50" x2="70" y2="50" stroke="var(--down)" stroke-width="2.6"/><line x1="70" y1="50" x2="205" y2="50" stroke="var(--up)" stroke-width="2.6"/><line x1="205" y1="50" x2="335" y2="50" stroke="var(--down)" stroke-width="2.6"/><line x1="335" y1="50" x2="400" y2="50" stroke="var(--up)" stroke-width="2.6"/><path d="M64 50 L76 50 L70 41 Z" fill="var(--up)"/><path d="M199 50 L211 50 L205 59 Z" fill="var(--down)"/><path d="M329 50 L341 50 L335 41 Z" fill="var(--up)"/><rect x="89.1" y="43" width="96.8" height="14" fill="var(--card)"/><circle cx="97.1" cy="50" r="3.4" fill="var(--up)"/><text class="s up" x="104.1" y="54">Montante</text><text class="c" x="160.89999999999998" y="54">· 88</text><rect x="211.7" y="43" width="116.6" height="14" fill="var(--card)"/><circle cx="219.7" cy="50" r="3.4" fill="var(--down)"/><text class="s down" x="226.7" y="54">Descendante</text><text class="c" x="303.29999999999995" y="54">· 88</text><text class="h" x="70" y="32" text-anchor="middle">≈7:11</text><text class="h" x="205" y="76" text-anchor="middle">≈13:18</text><text class="h" x="335" y="32" text-anchor="middle">≈19:28</text></svg></div>
+<h2>À savoir</h2>
+<p>Un tronçon trop court pour le mot (début ou fin de journée) reste sans mot : la couleur et le triangle suffisent. Traduit : Montante / Descendante, Rising / Falling, Steigend / Fallend, Opkomend / Afgaand, Subiendo / Bajando.</p>
+</main></html>

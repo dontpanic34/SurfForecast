@@ -384,8 +384,10 @@ private fun DailyTimelineBody(
                 if (tideCurve.size >= 2) {
                     val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
-                    Canvas(modifier = Modifier.fillMaxWidth().height(maxOf(SkyGraphSettings.tideDp, 44).dp)) {
-                        val yLine = maxOf(size.height * 0.34f, 18.dp.toPx())
+                    Canvas(modifier = Modifier.fillMaxWidth().offset(y = (-7).dp).height(44.dp)) {
+                        // Le trait épais est collé au bas du graphique ; le mot juste dessous, puis les horaires.
+                        val lineW = 3.dp.toPx()
+                        val yLine = 3.dp.toPx() + lineW / 2f
                         val rising = Color(0xFF4A9BF0)
                         val falling = Color(0xFF38C976)
                         // Le trait est vert quand la marée descend, bleu quand elle monte (la prochaine marée est haute = elle monte).
@@ -397,7 +399,7 @@ private fun DailyTimelineBody(
                         var h = ax0
                         while (h < ax1) {
                             val h2 = minOf(h + step, ax1)
-                            drawLine(if (risingAt((h + h2) / 2f)) rising else falling, Offset(xOf(h), yLine), Offset(xOf(h2), yLine), strokeWidth = 2.dp.toPx())
+                            drawLine(if (risingAt((h + h2) / 2f)) rising else falling, Offset(xOf(h), yLine), Offset(xOf(h2), yLine), strokeWidth = lineW)
                             h = h2
                         }
                         // Un gros point à chaque marée : de la couleur de ce qui suit (basse : ça monte, haute : ça descend).
@@ -406,28 +408,37 @@ private fun DailyTimelineBody(
                             val cx = xOf(m.hour)
                             // Une flèche posée sur le trait : vers le haut, au-dessus, si la marée monte (après une basse) ; vers le bas, en dessous, si elle descend (après une haute).
                             val up = !m.high
+                            val r = 5.dp.toPx()
+                            val dir = if (up) -1f else 1f // pointe vers le haut après une basse (ça monte), vers le bas après une haute
                             val arrow = Path().apply {
-                                val half = 4.5.dp.toPx(); val tip = 8.dp.toPx()
-                                moveTo(cx - half, yLine)
-                                lineTo(cx + half, yLine)
-                                lineTo(cx, if (up) yLine - tip else yLine + tip)
+                                moveTo(cx, yLine + dir * r * 1.6f)
+                                lineTo(cx + r * 1.1f, yLine - dir * r * 0.2f)
+                                lineTo(cx + r * 0.35f, yLine - dir * r * 0.2f)
+                                lineTo(cx + r * 0.35f, yLine - dir * r * 1.5f)
+                                lineTo(cx - r * 0.35f, yLine - dir * r * 1.5f)
+                                lineTo(cx - r * 0.35f, yLine - dir * r * 0.2f)
+                                lineTo(cx - r * 1.1f, yLine - dir * r * 0.2f)
                                 close()
                             }
                             drawPath(arrow, if (up) rising else falling)
+                            drawPath(arrow, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
                             val hh = m.hour.toInt()
                             val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
                             val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · " + (if (tidesEstimated) "≈" else "") + it } ?: "")
                             labels += cx to txt
                         }
-                        if (selH != null && selH in ax0..ax1) {
-                            drawCircle(onSurfaceColor, radius = 3.dp.toPx(), center = Offset(xOf(selH), yLine))
-                            // Le mot « montante » ou « descendante » juste au-dessus du point de l'heure choisie, de la couleur du trait.
-                            val rises = risingAt(selH)
-                            val word = tr(if (rises) "montante" else "descendante")
-                            val wordStyle = TextStyle(color = if (rises) rising else falling, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
-                            val ww = textMeasurer.measure(word, wordStyle).size.width.toFloat()
-                            val wx = (xOf(selH) - ww / 2f).coerceIn(2.dp.toPx(), maxOf(2.dp.toPx(), size.width - ww - 2.dp.toPx()))
-                            drawHaloTextAtBaseline(textMeasurer, word, wordStyle, tideHalo, wx, yLine - 7.dp.toPx())
+                        // Le mot « Montante » ou « Descendante » écrit juste sous le trait, au milieu de chaque tronçon assez long.
+                        val wordStyleUp = TextStyle(color = rising, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                        val wordStyleDown = TextStyle(color = falling, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                        val bounds = listOf(ax0) + tideCurve.map { it.hour }.filter { it > ax0 && it < ax1 } + listOf(ax1)
+                        for (k in 0 until bounds.size - 1) {
+                            val mid = (bounds[k] + bounds[k + 1]) / 2f
+                            val rises = risingAt(mid)
+                            val word = tr(if (rises) "Montante" else "Descendante")
+                            val style = if (rises) wordStyleUp else wordStyleDown
+                            val ww = textMeasurer.measure(word, style).size.width.toFloat()
+                            if (xOf(bounds[k + 1]) - xOf(bounds[k]) < ww + 24.dp.toPx()) continue
+                            drawHaloTextAtBaseline(textMeasurer, word, style, tideHalo, xOf(mid) - ww / 2f, yLine + lineW / 2f + 13.dp.toPx())
                         }
                         // Les heures sont écrites sous le trait, centrées sur leur point ; si deux se touchent, la seconde glisse à droite.
                         val gap = 6.dp.toPx()
@@ -444,7 +455,7 @@ private fun DailyTimelineBody(
                             if (i > 0 && lefts[i - 1] + widths[i - 1] + gap > lefts[i]) lefts[i - 1] = lefts[i] - widths[i - 1] - gap
                         }
                         for (i in labels.indices) {
-                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + 22.dp.toPx())
+                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + lineW / 2f + 27.dp.toPx())
                         }
                     }
                 }
