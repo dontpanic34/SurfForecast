@@ -13,7 +13,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
-- **Loupe de spot dans l'en-tête** (maquette `loupe-spot.html` envoyée, à valider) : loupe à gauche du nom, ouvre le choix du spot avec recherche active, pastilles 1 2 3 par spot pour choisir la place de favori.
+- **Loupe de spot dans l'en-tête** (maquette `entete-spot-favoris.html` : 5 en-têtes et 5 façons de placer les favoris, à valider ; la première maquette `loupe-spot.html` est abandonnée : « 1 2 3 » pas compris) : loupe à gauche du nom, ouvre le choix du spot avec recherche active, pastilles 1 2 3 par spot pour choisir la place de favori.
 - **Planche du jour, suite** : tenir compte de la marée, proposer une planche par heure choisie (l'en-tête utilise l'heure proche de 13 h), ajouter une phrase d'explication sous la planche (maquette d'abord).
 - **Vérifier sur téléphone** le trait de marée (collé au graphique, mot Montante/Descendante dessous, flèches, horaires).
 - **Relecture des traductions (EN, DE, NL, ES)** : tout est traduit et relu une fois par l'assistant, pas par un humain ; certains textes composés (phrases du jour) peuvent sonner bizarre, et quelques libellés sont longs en néerlandais (ex. « Gemotiveerd » coupé). À relire par un locuteur ; tout texte français ajouté doit recevoir sa traduction.
