@@ -352,6 +352,18 @@ fun MainScreen(
 
                 val currentTideInfo = state.dailyTides[today] ?: state.dailyTides.values.firstOrNull()
 
+                // L'heure choisie (houle, vent, météo et la ligne de temps de l'encart Actuellement s'accordent dessus) : remontée ici
+                // pour que la ligne de temps du bas puisse la changer. Elle repart de l'heure actuelle (ou de 14 h un autre jour) quand
+                // le jour, l'heure ou les prévisions changent.
+                val shownHours = selectedDate?.let { groupedByDate[it] }.orEmpty()
+                val shownIsToday = selectedDate == today
+                val pickedHourState = remember(shownHours, shownIsToday, clock.hour) {
+                    mutableStateOf<HourlyUiModel?>(
+                        if (shownIsToday) shownHours.minByOrNull { abs(it.rawTime.hour - clock.hour) } ?: shownHours.firstOrNull()
+                        else shownHours.minByOrNull { abs(it.rawTime.hour - 14) } ?: shownHours.firstOrNull()
+                    )
+                }
+
                 // Point 3 : angle de houle ideal du spot actif (peut etre null si pas encore renseigne)
                 // et meilleur creneau du jour selectionne, pour le bandeau "Statut Flash".
                 val idealSwellDirection = viewModel.facingFor(state.spotName)
@@ -706,6 +718,7 @@ fun MainScreen(
                                         ) {
                                         DynamicCardsSection(
                                             listState = mainListState,
+                                            selectedHourState = pickedHourState,
                                             onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
@@ -770,6 +783,10 @@ fun MainScreen(
                                         ),
                                         buoy = viewModel.buoyReading,
                                         observed = viewModel.observedNow,
+                                        timeHours = shownHours,
+                                        timeSun = shownHours.firstOrNull()?.let { state.dailySunInfo[it.rawTime.date] },
+                                        pickedHour = pickedHourState.value,
+                                        onPickHour = { pickedHourState.value = it },
                                         dawnText = if (isDawnWindow(clock, state.dailySunInfo[today]) && !isNowNight(clock, state.dailySunInfo[today]))
                                             nightPhrase(nightHours(state.hourlyForecast, state.dailySunInfo, clock), idealSwellDirection) else null,
                                         onRefresh = { viewModel.refreshActiveSpot() },
@@ -984,21 +1001,11 @@ fun DynamicCardsSection(
     currentHour: Int = nowLocalDateTime().hour,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
     onOpenWeatherDetail: (() -> Unit)? = null,
-    listState: androidx.compose.foundation.lazy.LazyListState? = null
+    listState: androidx.compose.foundation.lazy.LazyListState? = null,
+    selectedHourState: androidx.compose.runtime.MutableState<HourlyUiModel?>
 ) {
     val boardsForBar by viewModel.quiverBoards.collectAsState()
-    // currentHour en clé : à chaque changement d'heure (ou rechargement), la sélection
-    // revient sur l'heure actuelle au lieu de rester figée sur celle du chargement.
-    val initialSelectedHour = remember(hoursForSelectedDay, isToday, currentHour) {
-        if (isToday) {
-            hoursForSelectedDay.minByOrNull { abs(it.rawTime.hour - currentHour) } ?: hoursForSelectedDay.firstOrNull()
-        } else {
-            // Un autre jour : une heure de la journée (autour de 14 h), pas le petit matin.
-            hoursForSelectedDay.minByOrNull { abs(it.rawTime.hour - 14) } ?: hoursForSelectedDay.firstOrNull()
-        }
-    }
-
-    var selectedHourlyItem by remember(hoursForSelectedDay, isToday, currentHour) { mutableStateOf(initialSelectedHour) }
+    var selectedHourlyItem by selectedHourState
 
     var draggedKey by remember { mutableStateOf<String?>(null) }
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
@@ -1185,6 +1192,7 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = Modifier,
+                                    sun = dailySunInfo[hourly.rawTime.date],
                                     modifier = Modifier.fillMaxWidth(),
                                     beachFacing = idealSwellDirection
                                 )
@@ -1201,6 +1209,7 @@ fun DynamicCardsSection(
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = Modifier,
+                                    sun = dailySunInfo[hourly.rawTime.date],
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }

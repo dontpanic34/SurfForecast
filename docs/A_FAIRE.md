@@ -14,10 +14,9 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est publié su
 
 ## À faire
 - **Ligne « Mesuré » dans Actuellement** (à reprendre quand le propriétaire sera concentré dessus) : tout est codé sur la branche (relais `functions/api/obs`, `ObservedNow`, ligne sous la bouée) mais **pas publié**. Pour la mettre en ligne : ajouter la variable secrète `METEOFRANCE_API_KEY` dans le projet Cloudflare Pages (Settings, Variables and Secrets), puis le « go ».
-- **Blocs de nuit** : le jour reste heure par heure (de lever − 2 h à coucher + 2 h), la nuit par blocs de 3 h, dans la houle, le vent et la météo ; maquette `houle-vent-meteo-blocs.html` (5 propositions) en attente de choix, puis codage.
 - **Corriger le prévu avec le réel** (idée du 13 octobre) : décaler les 3 à 6 prochaines heures vers la mesure de la station ; à maquetter avant de coder.
 - **Vent mesuré** (collecte en place depuis le 13 octobre) : après 3 à 4 semaines de relevés (`data/obs` sur la branche `data`), comparer chaque modèle de vent à la station la plus proche de chaque spot, choisir les poids du vent, puis afficher « mesuré » dans l'encart Actuellement. Lacanau n'a pas de station qui mesure le vent : choisir une station voisine.
-- **Encart Météo en bandes** : codé le 13 octobre mais pas vu à l'écran (quota Open-Meteo du poste de développement dépassé) : à vérifier sur le site, bandes Ciel et Soleil, point par bande, ligne d'heures.
+- **Cheminées basses et ligne de temps** : codées le 13 octobre, vérifiées avec de fausses données ; à juger sur le téléphone (hauteur 32 dp, blocs de nuit, ligne de temps dans Actuellement, ligne d'infos de la météo).
 - **Option « Bulletin marine »** de Météo-France (rubrique Prévisions du portail) : à regarder.
 - **Vigilance Météo-France** (vent violent, vagues-submersion) : idée, pas de maquette.
 - **`unified` (appli Android)** : en retard depuis `d2f3cff`. À publier seulement sur demande.
