@@ -18,7 +18,8 @@ private val LANG_INDEX = mapOf("en" to 0, "de" to 1, "nl" to 2, "es" to 3)
 
 fun tr(fr: String): String {
     val i = LANG_INDEX[I18n.language] ?: return fr
-    TRANSLATIONS[fr]?.getOrNull(i)?.takeIf { it.isNotEmpty() }?.let { return it }
+    // Traduction absente pour cette langue : l'anglais à la place du français.
+    TRANSLATIONS[fr]?.let { v -> (v.getOrNull(i)?.takeIf { it.isNotBlank() } ?: v.getOrNull(0)?.takeIf { it.isNotBlank() })?.let { return it } }
     return translateByFragments(fr, I18n.language, i)
 }
 
@@ -41,7 +42,7 @@ private fun translateByFragments(text: String, lang: String, i: Int): String {
             val end = at + f.fr.length
             val okBefore = !f.fr.first().isLetter() || at == 0 || !out[at - 1].isLetter()
             val okAfter = !f.fr.last().isLetter() || end >= out.length || !out[end].isLetter()
-            val rep = f.tr.getOrNull(i)
+            val rep = f.tr.getOrNull(i)?.takeIf { it.isNotBlank() } ?: f.tr.getOrNull(0)
             if (okBefore && okAfter && !rep.isNullOrEmpty()) {
                 out = out.substring(0, at) + rep + out.substring(end)
                 from = at + rep.length
