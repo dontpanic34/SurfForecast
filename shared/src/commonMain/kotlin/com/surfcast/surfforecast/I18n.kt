@@ -154,6 +154,8 @@ private val CORE: Map<String, List<String>> = mapOf(
     "place libre" to t("free slot", "freier Platz", "vrije plek", "lugar libre"),
     "Choisir un spot" to t("Choose a spot", "Spot wählen", "Kies een spot", "Elegir un spot"),
     "Les leçons pour lire les prévisions" to t("Lessons to read the forecast", "Lektionen zum Lesen der Vorhersage", "Lessen om de voorspelling te lezen", "Lecciones para leer la previsión"),
+    "Mixte" to t("Both", "Beides", "Beide", "Ambos"),
+    "De jour" to t("Daytime", "Tagsüber", "Overdag", "De día"),
     // Divers
     "Aujourd'hui" to t("Today", "Heute", "Vandaag", "Hoy"),
     "Demain" to t("Tomorrow", "Morgen", "Morgen", "Mañana"),
