@@ -43,7 +43,15 @@ class DayPhraseTest {
     @Test
     fun windThatFallsMakesTheAfternoonBetter() {
         val p = day(hour(9, 1.3, 20, "O"), hour(11, 1.3, 20, "O"), hour(14, 1.3, 8, "E"), hour(17, 1.3, 8, "E"))
-        assertEquals("Houle constante, ça tourne offshore l'après-midi", p.title)
+        assertEquals("Houle constante, ça va se caler", p.title)
+        assertEquals("ça tourne offshore l'après-midi", p.line)
+    }
+
+    @Test
+    fun sideWindThatDropsAlsoSettles() {
+        val p = day(hour(9, 1.3, 22, "N"), hour(11, 1.3, 22, "N"), hour(14, 1.3, 8, "N"), hour(17, 1.3, 8, "N"))
+        assertEquals("Houle constante, ça va se caler", p.title)
+        assertEquals("le vent tombe l'après-midi", p.line)
     }
 
     @Test

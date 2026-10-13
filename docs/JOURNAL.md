@@ -225,3 +225,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Maquette `modeles-prevision` refaite en version légère (sans graphique : une ligne par modèle, chiffres côte à côte, phrase de ce que ça change). En attente de validation ; pas de code.
 - Encart « Actuellement » : le résumé de la nuit reste jusqu'à 2 h après le lever, au-dessus des tuiles. Codé, testé, pas encore en ligne.
 - Échelle des notes (maquette validée en cours) : limites 25 / 45 / 62 / 80 / 94, zone de tendance ± 3. Pas encore codée (en attente du « go »).
+
+- Titre de la semaine : « ça va se caler » quand la journée s'améliore (le vent tourne offshore ou tombe l'après-midi, ou la note de l'après-midi dépasse celle du matin d'au moins 10 points). Le détail (« ça tourne offshore l'après-midi ») passe en deuxième ligne. Codé, testé, pas encore en ligne.

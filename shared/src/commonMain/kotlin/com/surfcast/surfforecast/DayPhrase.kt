@@ -87,6 +87,19 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
         else -> "offshore" + (if (strongest >= 18) " soutenu" else "") + " toute la journée"
     }
     val bad = wind == "c'est venté" || wind == "onshore modéré" || wind == "léger onshore" || wind == "ça tourne onshore l'après-midi"
+    // « Ça va se caler » : la journée s'améliore. Le vent tourne offshore ou tombe, ou la note de l'après-midi dépasse nettement celle du matin.
+    val windFalls = !calm && am.maxOf { windFeelKmh(it) } >= pm.maxOf { windFeelKmh(it) } + 8
+    val scoreRise = run {
+        val level = surferLevel
+        fun avg(hs: List<HourlyUiModel>) = hs.map { calculateSlotRating(it, beachFacing, level).score }.average()
+        avg(pm) - avg(am) >= 10.0
+    }
+    val improving = !bad && !onshorePm && (onshoreAm || windFalls || scoreRise)
+    if (improving) {
+        val lead = if (maxH < SMALL_BELOW) "Petit, mais" else if (swell == "ça tombe") "Ça tombe, mais" else swell.replaceFirstChar { it.uppercase() } + ","
+        val detail = if (onshoreAm && !onshorePm) "ça tourne offshore l'après-midi" else if (windFalls) "le vent tombe l'après-midi" else ""
+        return DayPhrase("$lead ça va se caler", detail)
+    }
     val title = if (maxH < SMALL_BELOW) {
         if (bad) "Petit et venté" else "Petit mais propre, " + wind.removeSuffix(" toute la journée")
     } else {
