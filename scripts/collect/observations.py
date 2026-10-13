@@ -15,11 +15,12 @@ MAX_KM = 35        # on garde les stations à moins de 35 km du spot
 PER_SPOT = 3       # au plus trois stations par spot
 KEY = os.environ.get("METEOFRANCE_API_KEY", "").strip()
 AUTH = []          # en-tête qui marche, trouvé au premier appel
+VERSION = [""]     # préfixe de version qui marche ("", "/v1" ou "/v2")
 
 
 def call(path, params, accept="application/json"):
     """Renvoie (statut, texte). Essaie l'en-tête « apikey » puis « Authorization: Bearer »."""
-    url = f"{BASE}{path}?{urllib.parse.urlencode(params)}"
+    url = f"{BASE}{VERSION[0]}{path}?{urllib.parse.urlencode(params)}"
     variants = AUTH or [{"apikey": KEY}, {"Authorization": f"Bearer {KEY}"}]
     status, text = 0, ""
     for hdr in variants:
@@ -49,9 +50,11 @@ def km(a, b, c, d):
 
 
 def stations():
-    for fmt in ("csv", "json"):
+    for version in ("", "/v1", "/v2"):
+      VERSION[0] = version
+      for fmt in ("csv", "json"):
         st, text = call("/liste-stations", {"format": fmt}, "text/csv" if fmt == "csv" else "application/json")
-        print("liste-stations", fmt, st, len(text))
+        print("liste-stations", version or "(sans version)", fmt, st, len(text), "" if st == 200 else text[:160].replace(chr(10), " "))
         if st != 200:
             continue
         rows = []
