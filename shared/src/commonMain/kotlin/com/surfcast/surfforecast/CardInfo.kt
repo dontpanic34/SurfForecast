@@ -136,7 +136,6 @@ fun CardSettingsPanel(key: String) {
                 }
             }
         }
-        SettingsHelpLink("Comprendre en détail") { ComprendreState.open(ComprendreState.lessonForCard(key)) }
     }
 }
 

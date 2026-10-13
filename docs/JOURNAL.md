@@ -272,3 +272,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - **EN LIGNE (13 octobre, 10 h 35 UTC)** : site `web` (commit `58fbc62`, construction n°325 verte) et appli `unified` (commit `26c84b8`, construction n°326 verte). Contenu : échelle des notes 25 / 45 / 62 / 80 / 94, consensus des modèles de vagues, signal de confiance (tendance dès J+4, modèles partagés), bouée de référence, section Comprendre, réglages refaits (accueil, sources et modèles avec aperçu des valeurs de chaque modèle, Profil, questionnaire, Matériel, ⚙ des encarts).
 
 - Marée du déroulé : flèches posées sur le trait (haut et bleue quand ça monte, bas et verte quand ça descend) à la place des gros points ; curseur renommé « Hauteur de la marée », aide mise à jour. Codé et vérifié à l'écran avec les vraies données. Pas encore en ligne.
+
+- « Comprendre » : onglet dans la barre du bas (Prévisions, Webcam, Journal, Comprendre, Réglages) ; la carte du milieu de l'écran et les liens « Comprendre en détail » des ⚙ sont retirés. Test ajouté : la houle secondaire du modèle fin passe bien dans le consensus. Pas encore en ligne (avec les flèches de marée).
