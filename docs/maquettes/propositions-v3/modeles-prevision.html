@@ -1,82 +1,58 @@
 <title>Modèles de prévision</title>
 <style>
-/* Mise en page : le réglage des sources de prévision refait. Court terme et long terme, vagues et vent : on touche un modèle et l'aperçu juste dessous change tout de suite, avec les vraies prévisions d'aujourd'hui pour Montalivet. Fond sombre de l'appli. */
+/* Mise en page : réglage des sources, version légère, sans graphique. Une ligne par modèle avec trois ou quatre valeurs (matin, midi, soir, ou un jour par colonne) ; on touche une ligne pour la choisir, une phrase dit ce que ça change. Vraies prévisions d'aujourd'hui pour Montalivet. Fond sombre de l'appli. */
 :root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;--sel:#2c5a70;--y:#ffd21f;--o:#ff9a1f;--r:#ff5a55;color-scheme:dark}
 *{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;font-size:14px;line-height:1.4;padding:20px 16px}
 main{max-width:470px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
 h1{font-size:1.25rem;margin:0}h2{font-size:1rem;margin:0;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
-.card{background:var(--card);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--card);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .seg{display:flex;background:var(--tile);border-radius:99px;padding:3px}.seg button{flex:1}
 button{border:0;background:none;color:var(--mut);border-radius:99px;padding:7px 10px;font:inherit;font-weight:700;cursor:pointer}
-button.on{background:var(--sel);color:#e6f3f9}button:focus-visible{outline:2px solid var(--link)}
-.pills{display:flex;flex-wrap:wrap;gap:6px}.pills button{background:var(--tile);padding:6px 12px;font-size:13px}.pills button.on{background:var(--sel)}
-.pv{background:#0f1d24;border-radius:10px;padding:8px}svg{width:100%;height:auto;display:block}
-.arr{display:flex;gap:2px}.arr div{flex:1;min-width:0;text-align:center;font-size:11px;line-height:1.15}.arr i{display:block;font-style:normal;font-size:17px}
-.y{color:var(--y)}.o{color:var(--o)}.r{color:var(--r)}
-.leg{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:11px;color:var(--mut)}.leg span::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle;background:var(--c)}
-.note{font-size:12px;color:var(--mut)}
+button.on{background:var(--sel);color:#e6f3f9}button:focus-visible,.row:focus-visible{outline:2px solid var(--link)}
+.head,.row{display:grid;grid-template-columns:92px repeat(var(--n),1fr);align-items:center;gap:4px}
+.head{font-size:11px;color:var(--mut);text-align:center;padding:0 8px}.head span:first-child{text-align:left}
+.row{width:100%;background:var(--tile);border-radius:10px;padding:8px;text-align:center;border:2px solid transparent;cursor:pointer;color:var(--fg);font:inherit}
+.row.on{border-color:#5aa6cc;background:var(--sel)}.row .nm{text-align:left;font-weight:700;font-size:13px}.row .nm small{display:block;font-weight:400;color:var(--mut);font-size:10.5px}
+.v{font-weight:700;font-size:14px}.v i{font-style:normal;display:inline-block;margin-right:2px}
+.y{color:var(--y)}.o{color:var(--o)}.r{color:var(--r)}.na{color:var(--mut);font-weight:400}
+.sum{background:#0f1d24;border-radius:10px;padding:8px 10px;font-size:13px}
 </style>
 <main>
 <h1>Modèles de prévision</h1>
-<p class="mut sm">Choisis un modèle : l'aperçu juste dessous change tout de suite. Les courbes sont les vraies prévisions d'aujourd'hui pour Montalivet. Le trait épais est le modèle choisi, les traits fins sont les autres, pour comparer.</p>
+<p class="mut sm">Version légère : pas de courbe, juste les chiffres de chaque modèle, côte à côte. Touche une ligne pour choisir ce modèle ; la phrase en dessous dit ce que ça change pour toi. Ce sont les vraies prévisions d'aujourd'hui pour Montalivet.</p>
 <div class="seg" id="term"><button data-t="s" class="on">Court terme · J+0 et J+1</button><button data-t="l">Long terme · J+2 à J+7</button></div>
-<div class="card"><h2>Vagues</h2><div class="pills" id="wp"></div><div class="pv"><svg id="wc" viewBox="0 0 440 150"></svg><div class="leg" id="wl"></div></div><p class="note" id="wn"></p></div>
-<div class="card"><h2>Vent</h2><div class="pills" id="vp"></div><div class="pv"><div class="arr" id="va"></div><svg id="vc" viewBox="0 0 440 130"></svg><div class="leg" id="vl"></div></div><p class="note" id="vn"></p></div>
-<div class="card"><h2>Ce qui change pour toi</h2><p class="sm" id="sum"></p></div>
+<div class="card"><h2>Vagues</h2><div class="head" id="wh"></div><div id="wr" style="display:grid;gap:6px"></div><div class="sum" id="ws"></div></div>
+<div class="card"><h2>Vent</h2><div class="head" id="vh"></div><div id="vr" style="display:grid;gap:6px"></div><div class="sum" id="vs"></div></div>
 </main>
 <script>
 var D={"wave":{"MF-WAM":[1.68,1.66,1.64,1.62,1.6,1.58,1.56,1.52,1.5,1.46,1.42,1.38,1.34,1.32,1.28,1.24,1.22,1.18,1.18,1.16,1.16,1.18,1.18,1.2,1.22,1.24,1.26,1.26,1.28,1.28,1.26,1.24,1.22,1.2,1.18,1.16,1.14,1.14,1.12,1.12,1.14,1.14,1.16,1.16,1.18,1.2,1.24,1.26,1.28,1.3,1.32,1.34,1.34,1.36,1.38,1.38,1.4,1.4,1.42,1.42,1.42,1.42,1.42,1.42,1.44,1.44,1.44,1.46,1.46,1.48,1.52,1.54,1.56,1.58,1.6,1.62,1.66,1.68,1.7,1.72,1.74,1.74,1.76,1.76,1.74,1.74,1.72,1.7,1.7,1.68,1.7,1.72,1.74,1.8,1.86,1.92,1.96,1.98,2.02,2.0,1.98,1.96,1.92,1.86,1.82,1.78,1.72,1.68,1.66,1.64,1.62,1.6,1.6,1.58,1.56,1.56,1.54,1.52,1.5,1.48,1.46,1.44,1.42,1.38,1.36,1.32,1.28,1.26,1.22,1.2,1.18,1.16,1.14,1.12,1.1,1.08,1.06,1.04,1.02,1.0,0.98,0.98,0.96,0.96,0.94,0.92,0.9,0.88,0.88,0.86,0.84,0.82,0.8,0.78,0.78,0.76,0.74,0.74,0.72,0.7,0.68,0.66,0.66,0.64,0.64,0.64,0.62,0.62],"ECMWF Wave":[2.02,1.98,1.94,1.9,1.86,1.84,1.8,1.78,1.74,1.7,1.66,1.62,1.58,1.54,1.5,1.46,1.42,1.4,1.36,1.34,1.34,1.34,1.36,1.38,1.4,1.42,1.44,1.46,1.46,1.46,1.44,1.42,1.38,1.36,1.32,1.3,1.28,1.26,1.24,1.24,1.24,1.24,1.24,1.26,1.26,1.3,1.32,1.34,1.36,1.38,1.42,1.44,1.48,1.5,1.54,1.56,1.58,1.58,1.6,1.6,1.58,1.58,1.56,1.56,1.56,1.58,1.6,1.64,1.66,1.7,1.72,1.76,1.76,1.78,1.8,1.8,1.82,1.84,1.88,1.88,1.9,1.9,1.9,1.9,1.9,1.9,1.9,1.88,1.86,1.84,1.82,1.78,1.74,1.74,1.72,1.72,1.76,1.82,1.86,1.88,1.9,1.92,1.9,1.9,1.88,1.86,1.82,1.8,1.76,1.72,1.68,1.66,1.64,1.62,1.64,1.64,1.66,1.62,1.6,1.56,1.54,1.54,1.52,1.5,1.46,1.44,1.42,1.38,1.36,1.34,1.3,1.28,1.24,1.22,1.18,1.18,1.18,1.18,1.16,1.16,1.14,1.12,1.12,1.1,1.08,1.06,1.04,1.0,0.96,0.92,0.9,0.86,0.82,0.8,0.78,0.78,0.76,0.74,0.72,0.72,0.72,0.74,0.74,0.74,0.74,0.78,0.82,0.86],"GFS Wave":[1.44,1.42,1.38,1.36,1.32,1.3,1.26,1.24,1.22,1.18,1.16,1.14,1.12,1.1,1.08,1.04,1.04,1.02,1.0,0.98,0.96,0.94,0.94,0.94,0.96,0.98,1.0,1.02,1.04,1.04,1.04,1.02,1.02,1.0,0.98,0.96,0.92,0.9,0.88,0.88,0.86,0.84,0.84,0.84,0.86,0.86,0.88,0.88,0.9,0.9,0.92,0.94,0.96,0.98,0.98,1.0,1.02,1.02,1.02,1.04,1.04,1.04,1.06,1.08,1.12,1.16,1.2,1.24,1.28,1.32,1.34,1.38,1.4,1.42,1.42,1.44,1.44,1.44,1.42,1.42,1.42,1.42,1.42,1.4,1.4,1.4,1.38,1.38,1.38,1.38,1.36,1.34,1.34,1.34,1.32,1.28,1.28,1.26,1.24,1.24,1.24,1.24,1.22,1.22,1.22,1.22,1.2,1.2,1.16,1.16,1.14,1.14,1.1,1.08,1.04,1.04,1.04,1.04,1.04,1.08,1.1,1.1,1.12,1.1,1.1,1.08,1.08,1.08,1.08,1.08,1.08,1.08,1.06,1.02,1.0,0.98,0.96,0.94,0.94,0.94,0.94,0.92,0.88,0.86,0.84,0.84,0.82,0.8,0.78,0.76,0.76,0.74,0.74,0.74,0.74,0.74,0.72,0.68,0.66,0.64,0.64,0.62,0.64,0.66,0.68,0.7,0.74,0.76]},"ws":{"AROME":[9,10,10,12,13,11,12,9,7,10,11,13,14,13,11,3,1,6,3,3,2,3,3,4,8,5,6,8,12,10,8,9,8,8,9,13,12,11,8,11,13,13,11,8,9,10,11,10,13,14,13,13,13,12,12,12,11,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"ECMWF":[7,7,8,8,8,8,9,9,8,6,7,10,11,11,11,11,11,10,8,6,4,4,5,5,4,4,4,5,6,6,5,6,7,8,8,8,8,8,8,9,10,10,8,6,5,5,6,7,8,9,10,10,10,11,10,10,10,11,12,12,11,10,9,7,5,3,2,2,2,4,6,6,6,6,8,7,6,5,6,6,6,7,8,8,9,10,10,10,9,8,8,7,7,7,9,10,11,12,14,15,16,16,15,15,14,15,16,17,18,19,20,21,21,20,18,14,12,12,12,13,13,13,13,13,13,12,12,12,12,12,12,13,13,13,14,14,14,13,11,8,6,4,2,2,1,1,3,3,4,4,5,5,6,7,9,11,12,14,15,14,14,13,12,12,11,11,11,11],"ARPEGE":[8,7,7,7,8,8,9,10,10,10,8,6,4,4,9,8,8,7,5,3,3,2,3,2,2,2,2,3,4,6,6,6,6,6,6,7,6,7,7,9,11,10,8,7,7,10,10,10,10,10,10,8,8,7,8,9,10,11,12,13,12,10,8,7,6,8,8,6,3,1,2,2,0,2,7,11,11,9,8,6,6,7,7,5,4,5,9,11,11,12,10,9,9,8,10,11,14,16,16,15,16,16,18,19,20,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"GFS":[9,9,10,10,10,10,10,10,9,9,9,9,10,10,11,14,13,12,11,9,7,6,6,5,6,6,7,8,8,9,8,8,7,8,8,8,9,8,8,7,5,7,8,9,10,10,9,10,10,10,9,10,11,10,10,10,12,12,15,16,15,13,11,6,6,9,10,8,6,4,3,4,5,7,7,6,7,7,8,9,9,8,10,10,12,13,15,18,18,19,18,16,17,19,17,19,20,22,20,21,22,21,23,24,25,24,25,26,28,29,29,28,28,27,26,26,26,26,28,30,31,32,32,32,31,31,31,31,32,32,32,32,32,32,31,31,31,30,30,29,28,26,25,24,24,24,24,23,22,22,22,22,22,22,23,23,22,22,21,21,20,19,18,15,14,13,13,12]},"wd":{"AROME":[185,184,197,194,195,195,202,203,194,197,200,200,198,213,239,201,214,255,320,302,329,344,304,346,3,65,60,34,27,54,80,90,107,92,81,105,113,114,110,102,97,97,96,88,76,79,90,92,98,104,109,110,109,107,99,100,103,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"ECMWF":[205,203,202,204,209,214,213,212,218,243,288,307,307,300,297,304,314,319,319,310,299,299,306,315,333,11,35,36,32,35,53,79,93,93,87,85,93,101,108,107,103,100,102,107,108,99,86,84,90,99,107,115,121,125,124,120,117,118,122,124,126,126,130,133,141,150,149,143,141,151,157,164,187,223,245,258,274,290,297,300,301,306,311,315,317,319,318,314,307,299,287,273,270,284,302,318,335,350,360,3,4,5,7,9,10,14,18,21,23,26,27,27,27,25,21,15,7,5,7,8,9,11,13,13,13,14,14,14,14,18,21,22,21,19,17,17,15,16,21,32,43,41,9,315,270,180,164,162,165,166,163,160,155,147,140,135,130,127,123,118,113,108,100,94,86,83,81,81],"ARPEGE":[191,189,189,194,193,201,212,226,245,253,262,281,261,275,304,298,305,297,283,264,254,261,236,243,342,27,90,76,63,50,80,87,90,93,79,90,96,105,99,83,80,79,62,43,39,59,75,77,84,94,99,100,101,99,103,111,117,116,123,130,134,139,144,155,191,231,238,252,252,270,281,315,135,180,264,291,303,317,315,317,320,321,338,360,354,323,313,307,311,314,318,317,315,319,333,347,15,29,38,34,34,36,37,36,39,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"GFS":[212,212,219,218,221,222,226,232,238,241,251,270,297,315,306,312,318,320,323,326,319,320,324,333,346,6,21,34,36,35,58,95,81,72,78,80,83,83,88,81,62,43,32,9,16,25,68,96,102,106,99,108,116,115,113,113,116,117,126,131,139,143,150,180,239,270,282,277,267,259,214,204,219,252,264,281,302,321,329,337,346,350,350,348,339,334,326,324,327,329,333,337,333,359,13,17,23,31,33,34,38,37,37,39,39,41,43,48,47,50,50,51,51,50,51,48,50,51,48,47,48,48,47,48,48,48,48,48,48,48,48,49,49,50,50,50,49,48,49,50,50,47,42,38,38,40,40,39,38,37,37,37,38,39,41,42,40,36,33,33,33,34,37,39,43,45,46,51]},"t0":"2026-10-13T00:00"};
 var term='s',selW={s:'MF-WAM',l:'ECMWF Wave'},selV={s:'AROME',l:'Moyenne ECMWF + GFS'};
-var WC={'MF-WAM':'#4fc3f7','ECMWF Wave':'#ffb74d','GFS Wave':'#ba68c8'};
-var VC={'AROME':'#4fc3f7','ARPEGE':'#81c784','ECMWF':'#ffb74d','GFS':'#ba68c8','Moyenne ECMWF + GFS':'#ffffff'};
-function rng(){return term==='s'?[0,48]:[48,168]}
-function windSeries(name){
- if(name.indexOf('Moyenne')===0){return D.ws.ECMWF.map(function(a,i){var b=D.ws.GFS[i];return a==null||b==null?null:Math.round((a+b)/2)})}
- return D.ws[name]}
-function dirSeries(name){return name.indexOf('Moyenne')===0?D.wd.ECMWF:D.wd[name]}
-function path(arr,r,x0,x1,y0,y1,vmax,vmin){var d='',pen=false,n=r[1]-r[0];
- for(var i=r[0];i<r[1];i++){var v=arr[i];if(v==null){pen=false;continue}
-  var x=x0+(i-r[0])/(n-1)*(x1-x0),y=y1-(v-vmin)/(vmax-vmin)*(y1-y0);d+=(pen?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';pen=true}
- return d}
-function axes(r,x0,x1,y0,y1,vmax,vmin,unit,h){
- var s='';for(var k=0;k<=2;k++){var v=vmin+(vmax-vmin)*k/2,y=y1-(v-vmin)/(vmax-vmin)*(y1-y0);s+='<line x1="'+x0+'" x2="'+x1+'" y1="'+y+'" y2="'+y+'" stroke="#2a4350" stroke-width="1"/><text x="2" y="'+(y-3)+'" fill="#90a4ae" font-size="10">'+(Math.round(v*10)/10)+unit+'</text>'}
- var days=['Auj.','Dem.','J+2','J+3','J+4','J+5','J+6'],step=term==='s'?24:24;
- for(var i=r[0];i<r[1];i+=24){var x=x0+(i-r[0])/(r[1]-r[0]-1)*(x1-x0);s+='<line x1="'+x+'" x2="'+x+'" y1="'+y0+'" y2="'+y1+'" stroke="#2a4350"/><text x="'+(x+3)+'" y="'+(h-4)+'" fill="#90a4ae" font-size="10">'+days[i/24]+'</text>'}
- return s}
-function cls(dir,f){var a=Math.abs(((dir-90)%360+540)%360-180);return a<=45?'y':a<=100?'o':'r'}
+var SLOTS={s:[['Auj. matin',0,9],['Auj. soir',0,17],['Dem. matin',1,9],['Dem. soir',1,17]],l:[['J+2',2,13],['J+3',3,13],['J+4',4,13],['J+5',5,13]]};
+var WSUB={'MF-WAM':'Météo-France','ECMWF Wave':'Europe','GFS Wave':'États-Unis'};
+var VSUB={'AROME':'Météo-France, 1,3 km','ARPEGE':'Météo-France','ECMWF':'Europe','GFS':'États-Unis','Moyenne ECMWF + GFS':'Auto (conseillé)'};
+function idx(d,h){return d*24+h}
+function wv(n,i){return D.wave[n][i]}
+function vs(n){return n.indexOf('Moyenne')===0?D.ws.ECMWF.map(function(a,i){var b=D.ws.GFS[i];return a==null||b==null?null:Math.round((a+b)/2)}):D.ws[n]}
+function vd(n){return n.indexOf('Moyenne')===0?D.wd.ECMWF:D.wd[n]}
+var CARD=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+function cname(d){return CARD[Math.round(d/22.5)%16]}
+function cls(d){var a=Math.abs(((d-90)%360+540)%360-180);return a<=45?'y':a<=100?'o':'r'}
+var fmt=function(x){return x.toFixed(1).replace('.',',')};
 function render(){
- var r=rng();
+ var S=SLOTS[term];
  document.querySelectorAll('#term button').forEach(function(b){b.classList.toggle('on',b.dataset.t===term)});
+ var cols='<span>Modèle</span>'+S.map(function(s){return '<span>'+s[0]+'</span>'}).join('');
+ ['wh','vh'].forEach(function(id){var e=document.getElementById(id);e.style.setProperty('--n',S.length);e.innerHTML=cols});
  var wn=Object.keys(D.wave),vn=Object.keys(D.ws).concat(['Moyenne ECMWF + GFS']);
- document.getElementById('wp').innerHTML=wn.map(function(n){return '<button data-w="'+n+'" class="'+(selW[term]===n?'on':'')+'">'+n+'</button>'}).join('');
- document.getElementById('vp').innerHTML=vn.map(function(n){return '<button data-v="'+n+'" class="'+(selV[term]===n?'on':'')+'">'+n+'</button>'}).join('');
- // vagues
- var mx=0;wn.forEach(function(n){D.wave[n].slice(r[0],r[1]).forEach(function(v){if(v!=null&&v>mx)mx=v})});mx=Math.ceil((mx+0.1)*2)/2;
- var s=axes(r,36,436,8,126,mx,0,' m',150);
- wn.filter(function(n){return n!==selW[term]}).forEach(function(n){s+='<path d="'+path(D.wave[n],r,36,436,8,126,mx,0)+'" fill="none" stroke="'+WC[n]+'" stroke-opacity=".45" stroke-width="1.3"/>'});
- s+='<path d="'+path(D.wave[selW[term]],r,36,436,8,126,mx,0)+'" fill="none" stroke="'+WC[selW[term]]+'" stroke-width="3" stroke-linecap="round"/>';
- document.getElementById('wc').innerHTML=s;
- document.getElementById('wl').innerHTML=wn.map(function(n){return '<span style="--c:'+WC[n]+'">'+n+(n===selW[term]?' (choisi)':'')+'</span>'}).join('');
- // vent
- var ws=windSeries(selV[term]),ds=dirSeries(selV[term]);
- var vm=0;vn.forEach(function(n){windSeries(n).slice(r[0],r[1]).forEach(function(v){if(v!=null&&v>vm)vm=v})});vm=Math.ceil((vm+2)/10)*10;
- var a='',cnt=term==='s'?12:10,st=Math.floor((r[1]-r[0])/cnt);
- for(var k=0;k<cnt;k++){var i=r[0]+k*st+Math.floor(st/2);var v=ws[i],dd=ds[i];
-  a+=v==null?'<div class="mut">—</div>':'<div class="'+cls(dd)+'"><i style="transform:rotate('+(dd+180)+'deg)">➤</i>'+v+'</div>'}
- document.getElementById('va').innerHTML=a;
- var t=axes(r,36,436,6,100,vm,0,' km/h',130);
- vn.filter(function(n){return n!==selV[term]}).forEach(function(n){t+='<path d="'+path(windSeries(n),r,36,436,6,100,vm,0)+'" fill="none" stroke="'+VC[n]+'" stroke-opacity=".4" stroke-width="1.2"/>'});
- t+='<path d="'+path(ws,r,36,436,6,100,vm,0)+'" fill="none" stroke="'+VC[selV[term]]+'" stroke-width="3" stroke-linecap="round"/>';
- document.getElementById('vc').innerHTML=t;
- document.getElementById('vl').innerHTML=vn.map(function(n){return '<span style="--c:'+VC[n]+'">'+n+(n===selV[term]?' (choisi)':'')+'</span>'}).join('');
- var firstNull=ws.slice(r[0],r[1]).findIndex(function(v){return v==null});
- document.getElementById('vn').textContent=firstNull>=0?'Ce modèle s\u2019arrête à environ '+Math.round((r[0]+firstNull)/24*10)/10+' jour : au-delà, l\u2019appli passe au modèle suivant.':'Ce modèle couvre toute cette période.';
- var wnull=D.wave[selW[term]].slice(r[0],r[1]).some(function(v){return v==null});
- document.getElementById('wn').textContent=wnull?'Ce modèle de vagues a des trous sur cette période.':'Ce modèle couvre toute cette période.';
- var mean=function(arr){var v=arr.slice(r[0],r[1]).filter(function(x){return x!=null});return v.reduce(function(a,b){return a+b},0)/v.length};
- document.getElementById('sum').textContent=(term==='s'?'Court terme':'Long terme')+' : vagues '+selW[term]+' (moyenne '+mean(D.wave[selW[term]]).toFixed(1).replace('.',',')+' m), vent '+selV[term]+' (moyenne '+Math.round(mean(ws))+' km/h). Les étoiles, le titre de la journée et les flèches utilisent exactement ces valeurs.';
+ document.getElementById('wr').innerHTML=wn.map(function(n){return '<button class="row'+(n===selW[term]?' on':'')+'" style="--n:'+S.length+'" data-w="'+n+'"><span class="nm">'+n+'<small>'+WSUB[n]+'</small></span>'+S.map(function(s){var v=wv(n,idx(s[1],s[2]));return v==null?'<span class="v na">—</span>':'<span class="v">'+fmt(v)+' m</span>'}).join('')+'</button>'}).join('');
+ document.getElementById('vr').innerHTML=vn.map(function(n){var sp=vs(n),dr=vd(n);return '<button class="row'+(n===selV[term]?' on':'')+'" style="--n:'+S.length+'" data-v="'+n+'"><span class="nm">'+n.replace('Moyenne ECMWF + GFS','Moyenne')+'<small>'+VSUB[n]+'</small></span>'+S.map(function(s){var i=idx(s[1],s[2]),v=sp[i];return v==null?'<span class="v na">—</span>':'<span class="v '+cls(dr[i])+'"><i style="display:inline-block;transform:rotate('+(dr[i]+180)+'deg)">➤</i>'+v+'</span>'}).join('')+'</button>'}).join('');
+ var ref=S[term==='s'?2:0],ri=idx(ref[1],ref[2]);
+ var cur=wv(selW[term],ri),others=wn.filter(function(n){return n!==selW[term]}).map(function(n){return wv(n,ri)}).filter(function(x){return x!=null}),om=others.reduce(function(a,b){return a+b},0)/others.length,dw=cur-om;
+ document.getElementById('ws').textContent=selW[term]+' : '+ref[0].toLowerCase()+', '+fmt(cur)+' m'+(Math.abs(dw)<0.1?', comme les autres modèles.':', soit '+fmt(Math.abs(dw))+' m de '+(dw>0?'plus':'moins')+' que les autres.')+' Les étoiles et le titre de la journée suivent ce choix.';
+ var sp=vs(selV[term]),dr=vd(selV[term]),cv=sp[ri];
+ var vo=vn.filter(function(n){return n!==selV[term]}).map(function(n){return vs(n)[ri]}).filter(function(x){return x!=null}),vm=vo.reduce(function(a,b){return a+b},0)/vo.length;
+ document.getElementById('vs').textContent=cv==null?selV[term]+' ne couvre pas cette période : l\u2019appli prend le modèle suivant.':selV[term]+' : '+ref[0].toLowerCase()+', '+cname(dr[ri])+' '+cv+' km/h'+(Math.abs(cv-vm)<2?', comme les autres.':', soit '+Math.round(Math.abs(cv-vm))+' km/h de '+(cv>vm?'plus':'moins')+' que les autres.')+' Les flèches colorées suivent ce choix.';
 }
-document.getElementById('term').addEventListener('click',function(e){var b=e.target.closest('button');if(b){term=b.dataset.t;render()}});
-document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.w){selW[term]=b.dataset.w;render()}if(b.dataset.v){selV[term]=b.dataset.v;render()}});
+document.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.t){term=b.dataset.t}if(b.dataset.w)selW[term]=b.dataset.w;if(b.dataset.v)selV[term]=b.dataset.v;render()});
 render();
 </script>

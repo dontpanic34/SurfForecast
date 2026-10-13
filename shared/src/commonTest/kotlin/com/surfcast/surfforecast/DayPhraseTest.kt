@@ -147,4 +147,20 @@ class NeutralStarsTest {
         assertEquals(10, nowCardHourOf(LocalDateTime(2026, 10, 13, 10, 5), sun))
         assertEquals(date, date)
     }
+
+    @Test
+    fun nightSummaryStaysTwoHoursAfterSunrise() {
+        val sun = DailySunInfo(sunrise = LocalTime(8, 17), sunset = LocalTime(19, 40))
+        val date = kotlinx.datetime.LocalDate(2026, 10, 13)
+        val hours = (0..12).map { h ->
+            HourlyUiModel(
+                timeFormatted = "$h h", rawTime = LocalDateTime(2026, 10, 13, h, 0), waveHeight = 1.4, wavePeriod = 11.0, waveDirection = 280f,
+                energyKj = 300, windSpeedKmh = 8, windDirectionStr = "E", weatherCode = 0, temperature = 12, windWaveHeight = 0.0
+            )
+        }
+        assertEquals(true, isDawnWindow(LocalDateTime(2026, 10, 13, 10, 0), sun))
+        assertEquals(false, isDawnWindow(LocalDateTime(2026, 10, 13, 10, 20), sun))
+        assertEquals(true, nightHours(hours, mapOf(date to sun), LocalDateTime(2026, 10, 13, 10, 0)).isNotEmpty())
+        assertEquals(true, nightHours(hours, mapOf(date to sun), LocalDateTime(2026, 10, 13, 9, 0)).all { it.rawTime.hour < 8 })
+    }
 }

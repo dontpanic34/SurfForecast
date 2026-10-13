@@ -49,6 +49,8 @@ fun NowTideCard(
     isNight: Boolean = false,
     // La nuit en une phrase (houle, vent, ce qu'on trouvera au lever) ; null = on garde les tuiles.
     nightText: String? = null,
+    // Le jour s'est levé depuis moins de 2 h : la nuit en une phrase reste affichée au-dessus des tuiles.
+    dawnText: String? = null,
     onRefresh: (() -> Unit)? = null,
     boardOfDay: String? = null,
     // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
@@ -101,6 +103,7 @@ fun NowTideCard(
             Text(nightText, fontSize = 13.sp, color = colors.onSurface, modifier = Modifier.padding(top = 2.dp, bottom = 2.dp))
             return@Column
         }
+        if (dawnText != null) Text(dawnText, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp))
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

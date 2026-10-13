@@ -221,3 +221,7 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Libellé de tendance (« Correct à Bon ») : il suit maintenant l'heure d'avant (« Bon à Correct » si ça baisse). Codé, pas encore en ligne.
 
 - Maquette `modeles-prevision` : réglage des sources refait (court et long terme, vagues et vent, aperçu en direct sous les boutons avec les vraies prévisions). En attente de validation ; pas de code.
+
+- Maquette `modeles-prevision` refaite en version légère (sans graphique : une ligne par modèle, chiffres côte à côte, phrase de ce que ça change). En attente de validation ; pas de code.
+- Encart « Actuellement » : le résumé de la nuit reste jusqu'à 2 h après le lever, au-dessus des tuiles. Codé, testé, pas encore en ligne.
+- Échelle des notes (maquette validée en cours) : limites 25 / 45 / 62 / 80 / 94, zone de tendance ± 3. Pas encore codée (en attente du « go »).

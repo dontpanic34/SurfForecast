@@ -763,6 +763,8 @@ fun MainScreen(
                                             nightHours(state.hourlyForecast, state.dailySunInfo, clock),
                                             idealSwellDirection
                                         ),
+                                        dawnText = if (isDawnWindow(clock, state.dailySunInfo[today]) && !isNowNight(clock, state.dailySunInfo[today]))
+                                            nightPhrase(nightHours(state.hourlyForecast, state.dailySunInfo, clock), idealSwellDirection) else null,
                                         onRefresh = { viewModel.refreshActiveSpot() },
                                         onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")

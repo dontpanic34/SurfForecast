@@ -120,8 +120,11 @@ private fun strengthWord(kmh: Int): String = when {
     else -> "fort"
 }
 
+/** Le résumé de la nuit reste dans l'encart « Actuellement » jusqu'à 2 h après le lever. */
+private const val DAWN_TAIL_MINUTES = 120
+
 /**
- * Les heures de la nuit autour de [now] : de la tombée de la nuit jusqu'à 1 h avant le lever du soleil.
+ * Les heures de la nuit autour de [now] : de la tombée de la nuit jusqu'à 1 h avant le lever du soleil (et la nuit passée jusqu'à 2 h après le lever).
  * Vide quand les horaires du soleil manquent.
  */
 fun nightHours(all: List<HourlyUiModel>, sun: Map<LocalDate, DailySunInfo>, now: LocalDateTime): List<HourlyUiModel> {
@@ -131,7 +134,7 @@ fun nightHours(all: List<HourlyUiModel>, sun: Map<LocalDate, DailySunInfo>, now:
     val fromHour: Int
     val toDate: LocalDate
     val toHour: Int
-    if (now.time < todaySun.sunrise) {
+    if (now.time.toSecondOfDay() < todaySun.sunrise.toSecondOfDay() + DAWN_TAIL_MINUTES * 60) {
         val yesterday = today.minus(1, DateTimeUnit.DAY)
         // Les horaires de la veille manquent après minuit (les prévisions commencent aujourd'hui) : le coucher d'hier vaut celui d'aujourd'hui, à une minute près.
         val ySun = sun[yesterday] ?: todaySun
@@ -225,4 +228,12 @@ fun nowCardHourOf(now: LocalDateTime, sun: DailySunInfo?): Int {
     val minutes = now.time.hour * 60 + now.time.minute
     val sunriseMin = sun.sunrise.hour * 60 + sun.sunrise.minute
     return if (minutes in (sunriseMin - DAWN_LEAD_MINUTES) until sunriseMin) sun.sunrise.hour else now.time.hour
+}
+
+/** Vrai de l'heure qui précède le lever jusqu'à 2 h après : l'encart montre alors le résumé de la nuit en plus des tuiles. */
+fun isDawnWindow(now: LocalDateTime, sun: DailySunInfo?): Boolean {
+    sun ?: return false
+    val minutes = now.time.hour * 60 + now.time.minute
+    val sunriseMin = sun.sunrise.hour * 60 + sun.sunrise.minute
+    return minutes >= sunriseMin - DAWN_LEAD_MINUTES && minutes < sunriseMin + DAWN_TAIL_MINUTES
 }
