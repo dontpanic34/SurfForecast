@@ -250,3 +250,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 
 - Maquette `reglages-pro` : refonte des réglages (accueil, sources et modèles, affichage, profil, ⚙ d'un encart) : listes groupées, icônes au trait de même épaisseur, aperçu en direct sous chaque réglage, lien « Comprendre ». En attente de validation ; pas de code.
 - Relais des bouées : `functions/api/bouee/[[path]].js` (Cloudflare Pages Function, cache 15 min, 21 bouées autorisées), testé sur une page Candhis enregistrée ; il sera mis en ligne à la prochaine publication du site. Collecte des prévisions et des bouées : `scripts/collect/` (script Python, spots et bouées de départ dans `spots.json`) ; la tâche planifiée n'est pas encore en place.
+
+- Correctif : les étoiles ne bougent plus avec la motivation (les plafonds de note « Parfait », « Très bon », « Correct » suivent la tolérance pour les nuances, mais pas pour les étoiles du jour). Test `starsDoNotMoveWithMotivation` de nouveau vert.

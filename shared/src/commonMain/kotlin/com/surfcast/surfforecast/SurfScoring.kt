@@ -236,8 +236,9 @@ fun calculateSlotScore(
     surferLevel: String,
     isHighTide: Boolean,
     tidePreference: String = "any",
-    tide: DailyTideInfo? = null
-): Int = calculateSlotRating(hourlyModel, idealSwellDirection, surferLevel, isHighTide, tidePreference, tide).score
+    tide: DailyTideInfo? = null,
+    bandShift: Int = ToleranceSettings.mode * 8
+): Int = calculateSlotRating(hourlyModel, idealSwellDirection, surferLevel, isHighTide, tidePreference, tide, bandShift = bandShift).score
 
 /** Sous cette force (km/h), le plan d'eau est lisse quelle que soit la direction : le vent ne bloque pas « Parfait ». */
 const val PERFECT_CALM_KMH = 5.0
@@ -257,7 +258,9 @@ fun calculateSlotRating(
     tidePreference: String = "any",
     tide: DailyTideInfo? = null,
     // L'heure telle qu'elle est affichée (vent réel) quand [hourlyModel] porte la mémoire du vent : sert à le dire dans la phrase.
-    displayedWind: HourlyUiModel? = null
+    displayedWind: HourlyUiModel? = null,
+    // Décalage des nuances par la tolérance (Flemme, Normal, Motivé) : les plafonds de note le suivent. Les étoiles passent 0 : elles ne bougent pas avec la motivation.
+    bandShift: Int = ToleranceSettings.mode * 8
 ): SlotRating {
     val h = hourlyModel.waveHeight
     val t = hourlyModel.wavePeriod
@@ -327,10 +330,10 @@ fun calculateSlotRating(
         windFactorOf(hourlyModel.copy(windSpeedKmh = p.speedKmh, windGustKmh = p.gustKmh, windDirectionStr = p.direction), h, profile,
             windCategoryFor(p.direction, idealSwellDirection)) < WIND_CLEAN
     }
-    if (pastDirty) final = minOf(final, PERFECT_MIN - 1 - ToleranceSettings.mode * 8)
+    if (pastDirty) final = minOf(final, PERFECT_MIN - 1 - bandShift)
     // « Parfait » demande aussi un vent propre maintenant : glassy (moins de 5 km/h) ou offshore. Un vent de côté ou onshore, même léger, plafonne la note.
     val windNowClean = effectiveWindKmh(hourlyModel) < PERFECT_CALM_KMH || windDirectionClass(hourlyModel.windDirectionStr, idealSwellDirection) == 0
-    if (!windNowClean) final = minOf(final, PERFECT_MIN - 1 - ToleranceSettings.mode * 8)
+    if (!windNowClean) final = minOf(final, PERFECT_MIN - 1 - bandShift)
     val kind = when {
         energyKj < profile.idealMin * TOO_SMALL_RATIO -> ConditionKind.TOO_SMALL
         windFactor < TOO_WINDY_FACTOR -> ConditionKind.TOO_WINDY
@@ -343,8 +346,8 @@ fun calculateSlotRating(
     // « Dégrade » ou « gêne » (vent sous 0,75) : pas plus que « Bon ».
     if (kind == ConditionKind.NORMAL) {
         val strongLimit = windFactor < WIND_STRONG || chopF < STRONG_LIMIT || gustF < STRONG_LIMIT || periodF < STRONG_LIMIT
-        if (strongLimit) final = minOf(final, GOOD_MIN - 1 - ToleranceSettings.mode * 8)
-        else if (windFactor < WIND_MILD) final = minOf(final, VERY_GOOD_MIN - 1 - ToleranceSettings.mode * 8)
+        if (strongLimit) final = minOf(final, GOOD_MIN - 1 - bandShift)
+        else if (windFactor < WIND_MILD) final = minOf(final, VERY_GOOD_MIN - 1 - bandShift)
     }
     // La note a retenu un vent qui gêne alors que le vent réel affiché est propre : c'est la mémoire du vent qui parle.
     val windMemory = displayedWind != null && windFactor < WIND_CLEAN &&
@@ -575,10 +578,10 @@ fun dayQualityScore(
 ): Int? {
     if (daylightHours.isEmpty()) return null
     val ratings = daylightHours.map {
-        calculateSlotRating(it, idealSwellDirection, surferLevel, isNearHighTide(it, dailyTide), tidePreference, dailyTide)
+        calculateSlotRating(it, idealSwellDirection, surferLevel, isNearHighTide(it, dailyTide), tidePreference, dailyTide, bandShift = 0)
     }
     if (ratings.all { it.tooBig }) return null
-    val slots = findBestSlotsOfDay(daylightHours, idealSwellDirection, surferLevel, dailyTide, tidePreference)
+    val slots = findBestSlotsOfDay(daylightHours, idealSwellDirection, surferLevel, dailyTide, tidePreference, bandShift = 0)
     val halves = listOf(slots.morning, slots.afternoon).map { it?.averageScore }
     // Une moitié sans créneau jouable compte 0 ; si une moitié n'a pas de données (jour en cours), on ne la compte pas.
     val hasMorning = daylightHours.any { it.rawTime.hour < 13 }
@@ -625,13 +628,14 @@ fun findBestSlot(
     idealSwellDirection: Int?,
     surferLevel: String,
     dailyTide: DailyTideInfo?,
-    tidePreference: String = "any"
+    tidePreference: String = "any",
+    bandShift: Int = ToleranceSettings.mode * 8
 ): BestSlotResult? {
     if (dailyHours.size < 2) return null
 
     val sorted = dailyHours.sortedBy { it.rawTime }
     val scores = sorted.map { hourly ->
-        calculateSlotScore(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, dailyTide), tidePreference, dailyTide)
+        calculateSlotScore(hourly, idealSwellDirection, surferLevel, isNearHighTide(hourly, dailyTide), tidePreference, dailyTide, bandShift)
     }
 
     var best: BestSlotResult? = null
@@ -667,10 +671,11 @@ fun findBestSlotsOfDay(
     idealSwellDirection: Int?,
     surferLevel: String,
     dailyTide: DailyTideInfo?,
-    tidePreference: String = "any"
+    tidePreference: String = "any",
+    bandShift: Int = ToleranceSettings.mode * 8
 ): BestSlotsOfDay = BestSlotsOfDay(
-    morning = findBestSlot(dailyHours.filter { it.rawTime.hour < 13 }, idealSwellDirection, surferLevel, dailyTide, tidePreference),
-    afternoon = findBestSlot(dailyHours.filter { it.rawTime.hour >= 13 }, idealSwellDirection, surferLevel, dailyTide, tidePreference)
+    morning = findBestSlot(dailyHours.filter { it.rawTime.hour < 13 }, idealSwellDirection, surferLevel, dailyTide, tidePreference, bandShift),
+    afternoon = findBestSlot(dailyHours.filter { it.rawTime.hour >= 13 }, idealSwellDirection, surferLevel, dailyTide, tidePreference, bandShift)
 )
 
 fun angularDifference(a: Double, b: Double): Double {
