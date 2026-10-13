@@ -28,6 +28,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onSizeChanged
+import kotlinx.coroutines.launch
 
 /** Les réglages qu'on peut changer depuis le ⚙ d'un encart (le contrôleur les branche). */
 class CardSettingsControl(
@@ -44,16 +55,36 @@ val LocalCardSettings = compositionLocalOf<CardSettingsControl?> { null }
 /** L'engrenage ouvert (un seul à la fois) : son panneau s'affiche sous le titre de l'encart. */
 object CardGear {
     var open by mutableStateOf<String?>(null)
+    // La liste principale et la position de son haut à l'écran : pour amener l'encart en haut quand ses réglages s'ouvrent.
+    var listState: androidx.compose.foundation.lazy.LazyListState? = null
+    var listTopY: Float = 0f
+    // Hauteur du tiroir de réglages (dp) : la liste s'allonge d'autant pour que l'encart puisse monter au-dessus.
+    var sheetHeightDp by mutableStateOf(0f)
 }
 
-/** L'engrenage d'un encart : il ouvre ou ferme ses réglages, juste sous le titre, l'encart reste visible et bouge en direct. */
+/**
+ * L'engrenage d'un encart : il ouvre ou ferme ses réglages dans un tiroir en bas de l'écran ([CardSettingsSheet]) ;
+ * l'encart monte en haut, entier et visible, et bouge en direct quand on règle.
+ */
 @Composable
 fun CardInfoButton(guideKey: String) {
     val on = CardGear.open == guideKey
     val colors = MaterialTheme.colorScheme
+    val scope = rememberCoroutineScope()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    var y by remember { mutableStateOf(0f) }
     Box(
         modifier = Modifier.clip(CircleShape).background(if (on) colors.primaryContainer else Color.Transparent)
-            .clickable { CardGear.open = if (on) null else guideKey }.padding(horizontal = 7.dp, vertical = 4.dp)
+            .onGloballyPositioned { y = it.positionInRoot().y }
+            .clickable {
+                CardGear.open = if (on) null else guideKey
+                if (!on) scope.launch {
+                    // Deux images plus tard, la liste a pris sa marge du bas : on amène le titre de l'encart juste sous l'en-tête.
+                    withFrameNanos { }
+                    withFrameNanos { }
+                    CardGear.listState?.animateScrollBy(y - CardGear.listTopY - with(density) { 70.dp.toPx() })
+                }
+            }.padding(horizontal = 7.dp, vertical = 4.dp)
     ) {
         SettingsIcon(SettingsIcons.Gear, if (on) colors.onPrimaryContainer else colors.onSurface.copy(alpha = 0.55f), 20.dp)
     }
@@ -64,22 +95,38 @@ private val CARD_TITLES = mapOf(
     "weather" to "de la météo", "hourly" to "de l'heure par heure"
 )
 
-/** Le panneau de réglages de l'encart, à placer sous son titre. N'affiche rien si l'engrenage n'est pas ouvert. */
+/** Gardé pour les encarts qui l'appellent : les réglages s'affichent maintenant dans le tiroir du bas ([CardSettingsSheet]). */
 @Composable
-fun CardSettingsPanel(key: String) {
-    if (CardGear.open != key) return
+fun CardSettingsPanel(key: String) {}
+
+/** Le tiroir de réglages de l'encart dont l'engrenage est ouvert, collé en bas de la liste ; rien si aucun n'est ouvert. */
+@Composable
+fun CardSettingsSheet(modifier: Modifier = Modifier) {
+    val key = CardGear.open
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    if (key == null) {
+        CardGear.sheetHeightDp = 0f
+        return
+    }
     val colors = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    Surface(
+        modifier = modifier.fillMaxWidth().heightIn(max = 250.dp).onSizeChanged { CardGear.sheetHeightDp = with(density) { it.height.toDp().value } },
+        color = colors.surfaceVariant,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
+        shadowElevation = 12.dp
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Réglages " + (CARD_TITLES[key] ?: "de l'encart"), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
-            Box(modifier = Modifier.size(36.dp).clickable { CardGear.open = null }, contentAlignment = Alignment.Center) {
-                SettingsIcon(SettingsIcons.Close, colors.onSurfaceVariant, 20.dp)
+        Column(
+            modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(tr("Réglages ") + tr(CARD_TITLES[key] ?: "de l'encart"), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                Box(modifier = Modifier.size(36.dp).clickable { CardGear.open = null }, contentAlignment = Alignment.Center) {
+                    SettingsIcon(SettingsIcons.Close, colors.onSurfaceVariant, 20.dp)
+                }
             }
+            CardGuideSettings(key)
         }
-        CardGuideSettings(key)
     }
 }
 
