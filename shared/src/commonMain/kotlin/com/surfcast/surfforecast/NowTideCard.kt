@@ -53,6 +53,13 @@ fun NowTideCard(
     dawnText: String? = null,
     // Dernière mesure de la bouée de référence : une ligne sous les tuiles, pour comparer la prévision à ce qu'on mesure en ce moment.
     buoy: BuoyReading? = null,
+    // Dernière mesure d'une station Météo-France proche : le vent et la pluie réels, sous la ligne de la bouée.
+    observed: ObservedNow? = null,
+    // La ligne de temps du jour affiché : elle choisit l'heure des cartes Houle, Vent et Météo (vide = pas de ligne).
+    timeHours: List<HourlyUiModel> = emptyList(),
+    timeSun: DailySunInfo? = null,
+    pickedHour: HourlyUiModel? = null,
+    onPickHour: ((HourlyUiModel) -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
     boardOfDay: String? = null,
     // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
@@ -64,8 +71,7 @@ fun NowTideCard(
     val speed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyModel), windUnit)
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val title = buildString {
-        append("Actuellement")
-        append(" · ").append(hourlyModel.rawTime.hour).append(" h")
+        append("Actuellement ").append(hourlyModel.rawTime.hour).append(" h")
     }
 
     Column(
@@ -76,9 +82,20 @@ fun NowTideCard(
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        if (timeHours.isNotEmpty() && pickedHour != null && onPickHour != null) {
+            TimeRuler(hours = timeHours, sun = timeSun, selected = pickedHour, onHourSelected = onPickHour)
+        }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f), maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f), maxLines = 1)
+                    // L'état de l'heure juste après le titre, sans fond : le mot, dans la couleur de la note.
+                    if (isNight) {
+                        Text(" · Nuit", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
+                    } else if (rating != null) {
+                        Text(" · " + bandLabelWithTrend(rating, previousRating), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = conditionBand(rating).textColor(), maxLines = 1)
+                    }
+                }
                 if (updatedText.isNotEmpty()) {
                     Text(
                         "mis à jour $updatedText ↻", fontSize = 10.sp, color = colors.onSurface.copy(alpha = 0.45f), maxLines = 1,
@@ -92,13 +109,6 @@ fun NowTideCard(
                     modifier = Modifier.padding(end = 6.dp).clip(RoundedCornerShape(50)).background(colors.primary.copy(alpha = 0.15f))
                         .clickable(onClick = onAddSession).padding(horizontal = 9.dp, vertical = 2.dp)
                 )
-            }
-            if (isNight) {
-                Text("Nuit", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
-            } else if (rating != null) {
-                val band = conditionBand(rating)
-                // Le libellé de la note, sans fond : juste le mot, dans la couleur de la note (comme dans le déroulé).
-                Text(bandLabelWithTrend(rating, previousRating), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = band.textColor(), maxLines = 1)
             }
         }
         if (isNight && nightText != null) {
@@ -117,6 +127,9 @@ fun NowTideCard(
         }
         buoy?.let { b ->
             Text(buoyLine(b), fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 2, modifier = Modifier.padding(top = 6.dp))
+        }
+        observed?.let { o ->
+            Text(observedLine(o, windUnit), fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 2, modifier = Modifier.padding(top = if (buoy != null) 2.dp else 6.dp))
         }
     }
 }

@@ -34,7 +34,8 @@ fun WindCardComponent(
     isCollapsed: Boolean = false,
     onToggleCollapse: () -> Unit = {},
     dragHandleModifier: Modifier = Modifier,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sun: DailySunInfo? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -58,22 +59,7 @@ fun WindCardComponent(
 
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .pointerInput(allHoursOfDay) {
-                detectHorizontalDragGestures { change, _ ->
-                    val x = change.position.x.coerceIn(0f, size.width.toFloat())
-                    val widthPerItem = size.width / allHoursOfDay.size.toFloat()
-                    val index = (x / widthPerItem).toInt().coerceIn(0, allHoursOfDay.size - 1)
-                    onHourSelected(allHoursOfDay[index])
-                }
-            }
-            .pointerInput(allHoursOfDay) {
-                detectTapGestures { offset ->
-                    val widthPerItem = size.width / allHoursOfDay.size.toFloat()
-                    val index = (offset.x / widthPerItem).toInt().coerceIn(0, allHoursOfDay.size - 1)
-                    onHourSelected(allHoursOfDay[index])
-                }
-            },
+            .fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = surfaceColor),
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -135,114 +121,19 @@ fun WindCardComponent(
             }
             Spacer(modifier = Modifier.height(4.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                val currentHourNow = nowLocalDateTime().hour
-                val isToday = allHoursOfDay.firstOrNull()?.rawTime?.date == nowLocalDateTime().date
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    verticalAlignment = Alignment.Bottom,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    allHoursOfDay.forEach { hourly ->
-                        val isSelected = hourly.rawTime == selectedHour.rawTime
-                        val isCurrentHour = isToday && hourly.rawTime.hour == currentHourNow
-                        val heightRatio = (effectiveWindKmh(hourly) / maxWind).toFloat().coerceIn(0.15f, 1f)
-                        val barHourlyDirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
-                        val barColor = SurfUnitsHelper.getSurfWindColor(barHourlyDirFr, windFeelKmh(hourly))
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            contentAlignment = Alignment.BottomCenter
-                        ) {
-                            // Rafale : barre grise derrière celle du vent, plus haute quand la rafale dépasse le vent moyen.
-                            if (hourly.windGustKmh > hourly.windSpeedKmh) {
-                                val gustRatio = (hourly.windGustKmh / maxWind).toFloat().coerceIn(heightRatio, 1f)
-                                Canvas(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .fillMaxHeight(gustRatio)
-                                ) {
-                                    drawRoundRect(
-                                        color = onSurfaceColor.copy(alpha = if (isSelected) 0.32f else 0.16f),
-                                        topLeft = Offset.Zero,
-                                        size = Size(size.width, size.height),
-                                        cornerRadius = CornerRadius(3f, 3f)
-                                    )
-                                }
-                            }
-                            Canvas(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(heightRatio)
-                            ) {
-                                val brush = Brush.verticalGradient(
-                                    colors = if (isSelected) {
-                                        listOf(barColor, barColor.copy(alpha = 0.85f))
-                                    } else {
-                                        listOf(barColor.copy(alpha = 0.55f), barColor.copy(alpha = 0.25f))
-                                    }
-                                )
-                                drawRoundRect(
-                                    brush = brush,
-                                    topLeft = Offset.Zero,
-                                    size = Size(size.width, size.height),
-                                    cornerRadius = CornerRadius(3f, 3f)
-                                )
-
-                                if (isCurrentHour) {
-                                    drawRoundRect(
-                                        color = onSurfaceColor.copy(alpha = 0.85f),
-                                        topLeft = Offset.Zero,
-                                        size = Size(size.width, size.height),
-                                        cornerRadius = CornerRadius(3f, 3f),
-                                        style = Stroke(width = 1.2.dp.toPx())
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val selectedIndex = allHoursOfDay.indexOfFirst { it.rawTime == selectedHour.rawTime }
-                if (selectedIndex != -1) {
-                    val fraction = selectedIndex.toFloat() / (allHoursOfDay.size - 1).coerceAtLeast(1)
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val indicatorX = size.width * fraction
-
-                        drawLine(
-                            color = onSurfaceColor.copy(alpha = 0.75f),
-                            start = Offset(indicatorX, 0f),
-                            end = Offset(indicatorX, size.height),
-                            strokeWidth = 1.8f
-                        )
-
-                        val currentBarHeight = size.height * (1f - (effectiveWindKmh(selectedHour) / maxWind).toFloat().coerceIn(0.15f, 1f))
-                        drawCircle(
-                            color = onSurfaceColor,
-                            radius = 3.2f,
-                            center = Offset(indicatorX, currentBarHeight)
-                        )
-                        if (selectedHour.windGustKmh > selectedHour.windSpeedKmh) {
-                            val gustY = size.height * (1f - (selectedHour.windGustKmh / maxWind).toFloat().coerceIn(0.15f, 1f))
-                            drawCircle(color = onSurfaceColor.copy(alpha = 0.55f), radius = 2.6f, center = Offset(indicatorX, gustY))
-                        }
-
-                        val timeStr = selectedHour.rawTime.formatHHmm()
-                        val timeStrLayout = textMeasurer.measure(timeStr, timeTextPaint)
-                        val textWidth = timeStrLayout.size.width.toFloat()
-                        val adjustedX = indicatorX.coerceIn(textWidth / 2f, size.width - textWidth / 2f)
-
-                        drawText(timeStrLayout, topLeft = Offset(adjustedX - textWidth / 2f, 4.dp.toPx() - timeStrLayout.firstBaseline))
-                    }
-                }
-            }
+            CellBars(
+                hours = allHoursOfDay, sun = sun, selected = selectedHour, onHourSelected = onHourSelected,
+                maxValue = maxWind,
+                valueOf = { g -> g.maxOf { effectiveWindKmh(it).toDouble() } },
+                colorOf = { g, sel ->
+                    // Le vent du moment le plus fort de la case, dans la couleur de sa direction et de sa force.
+                    val h = g.maxByOrNull { effectiveWindKmh(it) } ?: g.first()
+                    val c = SurfUnitsHelper.getSurfWindColor(SurfUnitsHelper.formatCardinalFr(h.windDirectionStr), windFeelKmh(h))
+                    if (sel) c else c.copy(alpha = 0.85f)
+                },
+                // Les rafales : une barre grise derrière celle du vent.
+                backValueOf = { g -> g.maxOf { it.windGustKmh.toDouble() } }
+            )
             }
         }
     }

@@ -1,0 +1,113 @@
+<title>Houle, vent et météo en blocs de nuit</title>
+<style>
+/* Mise en page : cinq façons de montrer ensemble les cartes Houle, Vent et Météo avec la nuit regroupée en blocs de 3 heures ; une même heure choisie pour les trois, qu'on déplace en glissant sur n'importe quelle bande. */
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--cell:#0f1822;--night:#1b2540;--link:#4fb3e8;--sun:#f6c453;--dusk:#e8844a;--rain:#5aa9e6;--cloud:#9fb2bd;--sea:#4a9cc4;--sel:#7fc3e6;--w1:#f2c94c;--w2:#f2994a;--w3:#eb5757;--nacre:#e6f1ff;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--night:#b9c2dc;--link:#1b88c4;--sun:#e2a025;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--sea:#2a86b0;--sel:#1b88c4;--w1:#d9a800;--w2:#d9731b;--w3:#c4372f;--nacre:#10222e;color-scheme:light}}
+:root[data-theme="light"]{--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--night:#b9c2dc;--link:#1b88c4;--sun:#e2a025;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--sea:#2a86b0;--sel:#1b88c4;--w1:#d9a800;--w2:#d9731b;--w3:#c4372f;--nacre:#10222e;color-scheme:light}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding-inline:16px;padding-block:18px}
+main{max-width:440px;margin:0 auto;display:grid;gap:12px}h1{font-size:1.2rem;margin:0}h2{font-size:1rem;margin:16px 0 0;color:#7fc3e6}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12.5px}
+.card{background:var(--card);border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.hd{display:flex;justify-content:space-between;color:var(--mut);font-size:13px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.big{font-size:19px;font-weight:700}.per{color:var(--link);font-weight:600;margin-left:6px}
+.bars{position:relative;display:flex;gap:2px;align-items:flex-end;height:54px;cursor:ew-resize;touch-action:none;user-select:none}
+.bars i{flex:1 1 0;border-radius:2px 2px 0 0;position:relative}
+.bars i.blk{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 3px,transparent 3px 6px)}
+.bars i.on{outline:1.5px solid var(--nacre)}
+.lbl{position:absolute;top:-2px;text-shadow:0 0 3px var(--card),0 0 3px var(--card);font-size:11.5px;font-weight:800;color:var(--nacre);transform:translateX(-50%);white-space:nowrap;pointer-events:none}
+.cells{display:flex;gap:2px;height:14px;position:relative;cursor:ew-resize;touch-action:none;user-select:none}
+.cells i{flex:1 1 0;border-radius:3px;background:var(--cell);position:relative;overflow:hidden}.cells i u{position:absolute;inset:0;border-radius:3px}
+.cells i.blk{background:var(--night)}
+.cells i.on{outline:1.5px solid var(--nacre)}
+.dot{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#fff;border:2px solid #0b1519;pointer-events:none}
+.g{display:grid;grid-template-columns:54px 1fr 52px;column-gap:8px;row-gap:6px;align-items:center;font-size:12px;color:var(--mut)}.g b{text-align:right;color:var(--fg);font-size:13px}
+.hrs{position:relative;height:16px}.hrs span{position:absolute;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;font-weight:800}
+svg{display:block;width:100%;height:54px}
+.tog{display:flex;gap:6px;flex-wrap:wrap}.tog button{border:1px solid var(--mut);background:none;color:var(--mut);border-radius:99px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.tog button.on{background:var(--link);border-color:var(--link);color:#fff}
+</style>
+<main>
+<h1>Houle, vent et météo en blocs de nuit</h1>
+<p class="mut sm">Cinq façons de montrer les trois cartes ensemble. Le jour reste heure par heure ; la nuit est regroupée en blocs de 3 heures (hachurés). Les heures rondes ne s'écrivent plus : seule l'heure choisie s'écrit, avec le lever et le coucher. Glisse sur n'importe quelle bande : l'heure change dans les trois cartes et dans les cinq propositions. Exemple : 13 octobre, lever 8 h 17, coucher 19 h 22.</p>
+<div id="out"></div>
+</main>
+<script>
+var SR=8+17/60,SS=19+22/60,sel=14;
+// Heures du jour (index 0 à 23) et leurs valeurs d'exemple.
+var W=[],V=[],D=[];
+for(var h=0;h<24;h++){W.push(+(1.0+0.9*Math.exp(-Math.pow((h-3)/9,2))+0.15*Math.sin(h/2)).toFixed(2));
+ V.push(Math.max(2,Math.round(4+10*Math.max(0,Math.sin((h-6)/14*Math.PI))+(h===13?3:0))));
+ D.push({cl:Math.round(100-(h%5)*3),r:(h>=16&&h<=18)?[0.3,0.6,0.2][h-16]:0,uv:(h>=8&&h<=19)?Math.max(0,Math.round(3*Math.sin((h-8)/11*Math.PI))):0})}
+var dirs=['OSO','O','ONO','ONO','NO'];
+// Cellules : heure par heure de (lever − 2 h) à (coucher + 2 h) ; le reste par blocs de 3 heures.
+function cells(){var a=Math.max(0,Math.floor(SR)-2),b=Math.min(23,Math.ceil(SS)+2),out=[];
+ for(var h=0;h<a;){var e=Math.min(h+3,a);out.push({a:h,b:e-1,blk:true});h=e}
+ for(var h=a;h<=b;h++)out.push({a:h,b:h,blk:false});
+ for(var h=b+1;h<24;){var e=Math.min(h+3,24);out.push({a:h,b:e-1,blk:true});h=e}
+ return out}
+var C=cells();
+function ci(h){for(var i=0;i<C.length;i++)if(h>=C[i].a&&h<=C[i].b)return i;return 0}
+function mid(c){return c.blk?Math.round((c.a+c.b)/2):c.a}
+function avg(f,c){var s=0,n=0;for(var h=c.a;h<=c.b;h++){s+=f(h);n++}return s/n}
+function mx(f,c){var m=-1e9;for(var h=c.a;h<=c.b;h++)m=Math.max(m,f(h));return m}
+function fmtH(h){return Math.floor(h)+' h '+('0'+Math.round((h%1)*60)).slice(-2)}
+function posOf(t){var i=Math.floor(t),k=ci(Math.min(23,i)),c=C[k];var frac=c.blk?(t-c.a)/(c.b-c.a+1):(t-i);return (k+Math.max(0,Math.min(1,frac)))/C.length*100}
+function wave(c){return c.blk?avg(function(h){return W[h]},c):W[c.a]}
+function wind(c){return c.blk?mx(function(h){return V[h]},c):V[c.a]}
+function wcol(v){return v<10?'var(--w1)':v<16?'var(--w2)':'var(--w3)'}
+function selLabel(k){return '<span class="lbl" style="left:'+((k+.5)/C.length*100)+'%">'+sel+':00</span>'}
+// Barres (cheminées) : hauteur = valeur.
+function bars(fn,max,col,k,lbl,dotTop){var h='';C.forEach(function(c,i){var v=fn(c);h+='<i class="'+(c.blk?'blk ':'')+(i===k?'on':'')+'" style="height:'+Math.max(10,Math.round(v/max*100))+'%;background-color:'+col(v,c,i===k)+'"></i>'});var dt=dotTop?'<div class="dot" style="left:'+((k+.5)/C.length*100)+'%;top:'+(100-Math.max(10,Math.round(fn(C[k])/max*100)))+'%"></div>':'';return '<div class="bars" data-b>'+h+dt+(lbl?selLabel(k):'')+'</div>'}
+function seaCol(v,c,on){return c.blk?'var(--night)':(on?'var(--sel)':'var(--sea)')}
+function windCol(v,c,on){return c.blk?'var(--night)':wcol(v)}
+// Courbe lissée : aire sous une courbe, une valeur par cellule.
+function curve(fn,max,col,k,lbl){var n=C.length,pts=C.map(function(c,i){return [(i+.5)/n*240,54-Math.max(4,fn(c)/max*46)]});
+ var d='M0 54 L'+pts[0][0]+' '+pts[0][1];for(var i=1;i<n;i++){var p=pts[i-1],q=pts[i],m=(p[0]+q[0])/2;d+=' C'+m+' '+p[1]+' '+m+' '+q[1]+' '+q[0]+' '+q[1]}
+ d+=' L240 54 Z';var x=pts[k][0],y=pts[k][1];
+ var shade='';C.forEach(function(c,i){if(c.blk)shade+='<rect x="'+(i/n*240)+'" y="0" width="'+(240/n)+'" height="54" fill="rgba(110,125,170,.22)"/>'});
+ return '<div class="bars" data-b style="display:block"><svg viewBox="0 0 240 54" preserveAspectRatio="none"><path d="'+d+'" fill="'+col+'" opacity=".85"/>'+shade+'<line x1="'+x+'" x2="'+x+'" y1="0" y2="54" stroke="var(--nacre)" stroke-width="1.2" vector-effect="non-scaling-stroke"/></svg><div class="dot" style="left:'+(x/240*100)+'%;top:'+(y/54*100)+'%"></div>'+(lbl?selLabel(k):'')+'</div>'}
+// Bande de cellules (ciel, soleil).
+function band(kind,k){var h='';C.forEach(function(c,i){var inner='';
+  if(kind==='ciel'){var rn=c.blk?mx(function(x){return D[x].r},c):D[c.a].r,cl=c.blk?avg(function(x){return D[x].cl},c):D[c.a].cl;
+    inner=rn>0?'<u style="background:var(--rain);opacity:'+(0.45+Math.min(rn,1)*.55)+'"></u>':'<u style="background:var(--cloud);opacity:'+(cl/100*.85).toFixed(2)+'"></u>'}
+  else{var t=c.a;var up=t+.5>SR&&t-.5<SS&&!c.blk;if(up){var m=Math.sin(Math.PI*Math.min(Math.max((t-SR)/(SS-SR),0),1));inner='<u style="background:var(--sun);opacity:'+(0.4+0.6*m).toFixed(2)+'"></u>'}}
+  h+='<i class="'+(c.blk?'blk ':'')+(i===k?'on':'')+'">'+inner+'</i>'});
+ return '<div class="cells" data-b>'+h+'<div class="dot" style="left:'+((k+.5)/C.length*100)+'%"></div></div>'}
+function hours(k){ // lever, coucher et heure choisie seulement
+ var it=[{p:(k+.5)/C.length*100,t:sel+':00',c:'var(--nacre)',w:17,pr:0,f:12.5},{p:posOf(SR),t:fmtH(SR),c:'var(--sun)',w:15,pr:1,f:10.5},{p:posOf(SS),t:fmtH(SS),c:'var(--dusk)',w:15,pr:1,f:10.5}];
+ it.sort(function(a,b){return a.pr-b.pr});var kept=[],s='';
+ it.forEach(function(x){if(kept.every(function(q){return Math.abs(q.p-x.p)>=(q.w+x.w)/2+1})){kept.push(x);s+='<span style="left:'+x.p+'%;color:'+x.c+';font-size:'+x.f+'px">'+x.t+'</span>'}});
+ return '<div class="hrs">'+s+'</div>'}
+function head(t,right){return '<div class="hd"><span>'+t+'</span><span>'+(right||'⚙ ▾')+'</span></div>'}
+function cur(){return C[ci(sel)]}
+function vals(){var c=cur();return {w:wave(c),v:wind(c),d:c.blk?{cl:Math.round(avg(function(x){return D[x].cl},c)),r:mx(function(x){return D[x].r},c),uv:mx(function(x){return D[x].uv},c)}:D[c.a]}}
+function houleHead(){var x=vals();return head('Houle')+'<div class="row"><div><span class="big">'+x.w.toFixed(1).replace('.',',')+'m</span><span class="per">10s</span></div><div class="sm"><b>O 280°</b> <span style="color:var(--sea)">➤</span> <span style="color:#d9a03a;font-weight:700">'+Math.round(x.w*x.w*100*1.2)+' kJ</span></div></div>'}
+function ventHead(){var x=vals();return head('Vent')+'<div class="row"><div><span class="big">'+x.v+' km/h</span> <span class="sm mut">Rafales '+(x.v+5)+'</span></div><div class="sm"><b>'+dirs[Math.min(4,Math.floor(sel/5))]+'</b></div></div>'}
+function metHead(){var x=vals();return head('Météo','Semaine › &nbsp; ⚙ ▾')+'<div class="row"><div class="big">☁️ 21°C <span style="font-size:14px;color:var(--mut);font-weight:600">· eau 19°</span></div><span class="sm mut" style="text-align:right;line-height:1.2">☀ 11 h 05<br>de jour</span></div>'}
+function metBody(k,withHours){var x=vals();
+ return '<div class="g"><span>Ciel</span>'+band('ciel',k)+'<b>'+(x.d.r>0?x.d.r.toFixed(1).replace('.',',')+' mm':x.d.cl+' %')+'</b><span>Soleil</span>'+band('soleil',k)+'<b>UV '+x.d.uv+'</b>'+(withHours?'<span></span>'+hours(k)+'<span></span>':'')+'</div>'}
+function section(title,desc,body){return '<h2>'+title+'</h2><p class="sm mut">'+desc+'</p>'+body}
+function render(){var k=ci(sel),o='';
+ // 1 : cheminées, comme aujourd'hui
+ o+=section('1 · Cheminées comme aujourd\'hui','Les barres de houle et de vent gardent leur hauteur ; la nuit tient en quatre blocs hachurés, plus larges que les anciennes cellules. La météo reprend les deux bandes.',
+  '<div class="card">'+houleHead()+bars(wave,2.2,seaCol,k,true)+'</div><div class="card">'+ventHead()+bars(wind,18,windCol,k,true)+'</div><div class="card">'+metHead()+metBody(k,true)+'</div>');
+ // 2 : courbes lissées
+ o+=section('2 · Deux courbes','La houle et le vent sont des aires lissées qui dessinent le relief de la journée (c\'est l\'idée des cheminées, en plus doux). La nuit est teintée. Le point suit la courbe.',
+  '<div class="card">'+houleHead()+curve(wave,2.2,'var(--sea)',k,true)+'</div><div class="card">'+ventHead()+curve(wind,18,'var(--w2)',k,true)+'</div><div class="card">'+metHead()+metBody(k,true)+'</div>');
+ // 3 : barres fines + point
+ o+=section('3 · Barres avec un point','Mêmes barres, avec un point blanc au sommet de la barre choisie sur chaque carte, comme le point des bandes de la météo.',
+  '<div class="card">'+houleHead()+bars(wave,2.2,seaCol,k,true,true)+'</div><div class="card">'+ventHead()+bars(wind,18,windCol,k,true,true)+'</div><div class="card">'+metHead()+metBody(k,true)+'</div>');
+ // 4 : houle et vent dans une seule carte
+ o+=section('4 · Houle et vent côte à côte','Une seule carte pour la mer et le vent : deux courbes l\'une sous l\'autre sur le même temps, les chiffres de l\'heure en haut. La météo reste à part. Moins de place, une lecture « ça monte quand le vent tombe ».',
+  '<div class="card">'+head('Houle · Vent')+'<div class="row"><div><span class="big">'+vals().w.toFixed(1).replace('.',',')+'m</span><span class="per">10s</span></div><div><span class="big">'+vals().v+' km/h</span> <span class="sm"><b>'+dirs[Math.min(4,Math.floor(sel/5))]+'</b></span></div></div>'+curve(wave,2.2,'var(--sea)',k,true)+curve(wind,18,'var(--w2)',k,false)+'</div><div class="card">'+metHead()+metBody(k,true)+'</div>');
+ // 5 : une seule bande de temps partagée
+ o+=section('5 · Une ligne de temps partagée','Les trois cartes ne portent plus de ligne d\'heures : une seule, en bas du groupe, avec l\'heure choisie, le lever et le coucher. Houle et vent en barres, météo en bandes ; le groupe se lit comme un seul graphique.',
+  '<div class="card">'+houleHead()+bars(wave,2.2,seaCol,k,false)+'</div><div class="card">'+ventHead()+bars(wind,18,windCol,k,false)+'</div><div class="card">'+metHead()+metBody(k,false)+hoursRow(k)+'</div>');
+ document.getElementById('out').innerHTML=o}
+function dotRow(k){return ''}
+function hoursRow(k){return hours(k)}
+function at(el,x){var r=el.getBoundingClientRect();var f=(x-r.left)/r.width;var i=Math.max(0,Math.min(C.length-1,Math.floor(f*C.length)));return mid(C[i])}
+var drag=false;
+document.addEventListener('pointerdown',function(e){var b=e.target.closest('[data-b]');if(!b)return;drag=true;sel=at(b,e.clientX);render()});
+document.addEventListener('pointermove',function(e){if(!drag)return;var b=document.querySelector('[data-b]');sel=at(b,e.clientX);render()});
+document.addEventListener('pointerup',function(){drag=false});
+render();
+</script>
