@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Maquette** `meteo-variantes-D.html` : 5 variantes de la solution D (une fine bande par information) pour l'encart Météo : D1 quatre bandes, D2 pleine largeur, D3 bandeau rayé, D4 courbe du ressenti sur le ciel, D5 bandes utiles seulement. En attente de choix, pas de code.
 - **Maquette** `meteo-5-propositions.html` : nouvel encart Météo en 5 dispositions (A bande ciel, B arc du soleil, C bande et tuiles, D trois fines bandes, E phrase et bande), mêmes informations, heure synchronisée par glissement avec la houle et le vent. En attente de choix, pas de code.
 - **Fenêtres Réglages et Comprendre à la hauteur de leur contenu** (état : branche, publication en attente de « go ») : plus de fenêtre haute en permanence ; elle épouse son contenu (jusqu'à 90 % de l'écran, puis défile), dans toutes les pages et sous-pages. Vérifié à l'écran pour Comprendre ; Réglages utilise le même principe.
 - **Maquette** `soleil-barre.html` (refaite sur l encart Météo existant) : barres de nuit en bleu nuit, traits de lever et de coucher avec l heure écrite sous la bande, ligne de l en-tête supprimée. En attente de choix, pas de code. Demandes en attente de « go » : déplacer un encart par appui long avec défilement automatique ; langue du téléphone par défaut (l'appli n'est traduite qu'en français pour l'instant).
