@@ -163,12 +163,12 @@ class SurfScoringTest {
 
     @Test
     fun scoreBandsHaveSixShadesPlusTooBig() {
-        assertEquals(ScoreBand.AVOID, scoreBand(19))
-        assertEquals(ScoreBand.POOR, scoreBand(20))
-        assertEquals(ScoreBand.FAIR, scoreBand(40))
-        assertEquals(ScoreBand.GOOD, scoreBand(55))
-        assertEquals(ScoreBand.VERY_GOOD, scoreBand(70))
-        assertEquals(ScoreBand.EXCELLENT, scoreBand(90))
+        assertEquals(ScoreBand.AVOID, scoreBand(24))
+        assertEquals(ScoreBand.POOR, scoreBand(25))
+        assertEquals(ScoreBand.FAIR, scoreBand(45))
+        assertEquals(ScoreBand.GOOD, scoreBand(62))
+        assertEquals(ScoreBand.VERY_GOOD, scoreBand(80))
+        assertEquals(ScoreBand.EXCELLENT, scoreBand(94))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(-1))
         assertEquals(ScoreBand.TOO_BIG, scoreBand(50, tooBig = true))
         assertEquals("Parfait", ScoreBand.EXCELLENT.label)
@@ -181,20 +181,20 @@ class SurfScoringTest {
         assertEquals(ScoreBand.TOO_WINDY, conditionBand(SlotRating(10, false, ConditionKind.TOO_WINDY)))
         assertEquals(ScoreBand.CHALLENGING, conditionBand(SlotRating(90, false, ConditionKind.CHALLENGING)))
         assertEquals(ScoreBand.TOO_BIG, conditionBand(SlotRating(0, true)))
-        assertEquals(ScoreBand.GOOD, conditionBand(SlotRating(60, false)))
+        assertEquals(ScoreBand.GOOD, conditionBand(SlotRating(70, false)))
     }
 
     @Test
     fun labelsSayWhereTheScoreIsHeadedNearALimit() {
-        assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(53, false)))
-        assertEquals("Bon à Très bon", bandLabelWithTrend(SlotRating(71, false)))
-        assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(88, false)))
-        assertEquals("Médiocre à Correct", bandLabelWithTrend(SlotRating(38, false)))
+        assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(60, false)))
+        assertEquals("Bon à Très bon", bandLabelWithTrend(SlotRating(79, false)))
+        assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(92, false)))
+        assertEquals("Médiocre à Correct", bandLabelWithTrend(SlotRating(43, false)))
         // Le libellé suit l'heure d'avant : si ça baisse, on le dit dans ce sens.
-        assertEquals("Bon à Correct", bandLabelWithTrend(SlotRating(53, false), SlotRating(66, false)))
-        assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(53, false), SlotRating(40, false)))
+        assertEquals("Bon à Correct", bandLabelWithTrend(SlotRating(60, false), SlotRating(70, false)))
+        assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(60, false), SlotRating(50, false)))
         // Loin d'une limite : le niveau seul. Les cas à part n'ont pas de tendance.
-        assertEquals("Bon", bandLabelWithTrend(SlotRating(62, false)))
+        assertEquals("Bon", bandLabelWithTrend(SlotRating(71, false)))
         assertEquals("Challengeant", bandLabelWithTrend(SlotRating(54, false, ConditionKind.CHALLENGING)))
     }
 

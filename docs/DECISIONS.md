@@ -137,3 +137,5 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 ## 13 octobre 2026 (soir)
 - **Section « Comprendre » validée** (maquette `comprendre-houle`) : 3 chapitres, 11 leçons, 3 outils à manipuler, 3 portes d'entrée (accueil, ⚙ de chaque encart, Réglages). Contenu dans `docs/COMPRENDRE_HOULE.md`. Le chapitre « météo » viendra plus tard.
 - **Principe pour la houle, le vent et la période** : l'appli doit être accessible à tous et fiable, sans qu'on aille comparer avec un autre site. Les modèles se comparent en coulisses ; à l'écran, un chiffre par donnée, et seul le détail technique est dans les réglages. On répond aux erreurs du compte-rendu (`docs/COMPTE_RENDU_APPLI.md`) avec ses suggestions. Les choix précis sont à trancher avant de coder.
+- **Échelle des notes (13 octobre)** : Mauvais sous 25, Médiocre 25 à 44, Correct 45 à 61, Bon 62 à 79, Très bon 80 à 93, Parfait à partir de 94. Zone de tendance (« Correct à Bon ») : 3 points de part et d'autre d'une limite. Remplace 20 / 40 / 55 / 70 / 90 et ± 4.
+- **Libellé de la tolérance** : Flemme, Normal, Motivé (jamais « Prudent »).

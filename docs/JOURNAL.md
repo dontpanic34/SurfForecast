@@ -255,3 +255,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 
 - **EN LIGNE (13 octobre, 08 h 41 UTC)** : site `web` (commit `14f3da2`, construction n°323 verte, surflog.fr sert la version 1.0.323) et appli `unified` (commit `a5ccc0d`, construction n°324 verte). Contenu : marée en trait fin avec heure et coef, titres liés aux phrases, « Parfait » exigeant, « ça va se caler », correctif ECMWF Wave, relais des bouées (`/api/bouee/03302` répond), résumé de nuit jusqu'à 2 h après le lever. Les constructions n°321 et 322 ont échoué (régression des étoiles, corrigée dans la n°323).
 - **Collecte des prévisions en place** : tâche planifiée `collect-forecasts.yml` sur `main` (4 relevés par jour), premier relevé réussi, branche `data` créée (6 spots, 3 bouées de référence). Début de la phase de test.
+
+- Échelle des notes codée : 25 / 45 / 62 / 80 / 94, zone de tendance ± 3 ; dégradé de couleurs recalé. Tests mis à jour. Pas encore en ligne.
