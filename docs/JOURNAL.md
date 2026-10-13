@@ -257,3 +257,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - **Collecte des prévisions en place** : tâche planifiée `collect-forecasts.yml` sur `main` (4 relevés par jour), premier relevé réussi, branche `data` créée (6 spots, 3 bouées de référence). Début de la phase de test.
 
 - Échelle des notes codée : 25 / 45 / 62 / 80 / 94, zone de tendance ± 3 ; dégradé de couleurs recalé. Tests mis à jour. Pas encore en ligne.
+
+- Consensus des modèles de vagues codé (`buildConsensusMarine`, poids `waveConsensusWeights`) : hauteur et période du même calcul, GFS Wave écarté à court terme, houle secondaire dans l'énergie de la note, désaccord des modèles gardé par heure (`modelSpread`). Réglage manuel inchangé. Correction au passage : le modèle de vagues long terme par défaut était MF-WAM au lieu d'ECMWF. Tests ajoutés. Pas encore en ligne.

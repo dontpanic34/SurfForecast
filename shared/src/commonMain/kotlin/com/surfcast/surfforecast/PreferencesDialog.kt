@@ -775,7 +775,8 @@ fun SurfPreferencesDialog(
                             shortTermWeather = weatherModelFromLabel(shortTermWind),
                             shortTermWave = waveModelFromLabel(shortTermWave),
                             longTermWeather = weatherModelFromLabel(longTermWind),
-                            longTermWave = waveModelFromLabel(longTermWave)
+                            longTermWave = waveModelFromLabel(longTermWave),
+                            consensus = false
                         )
                         // updateEngineConfig recharge les prévisions : seulement si ça a changé.
                         if (newConfig != engineConfig) onEngineConfigChanged(newConfig)
@@ -843,10 +844,11 @@ private fun weatherModelFromLabel(label: String): WeatherModel = when (label) {
 private fun waveModelLabel(model: WaveModel): String = when (model) {
     WaveModel.MFWAM -> "MF-WAM"
     WaveModel.ECMWF_WAM -> "ECMWF Wave"
+    WaveModel.GFS_WAVE -> "GFS Wave"
 }
 
 private fun waveModelFromLabel(label: String): WaveModel =
-    if (label == "ECMWF Wave") WaveModel.ECMWF_WAM else WaveModel.MFWAM
+    when (label) { "ECMWF Wave" -> WaveModel.ECMWF_WAM; "GFS Wave" -> WaveModel.GFS_WAVE; else -> WaveModel.MFWAM }
 
 
 @Composable

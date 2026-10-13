@@ -39,7 +39,9 @@ data class HourlyUiModel(
     // Le vent réel des trois heures d'avant (pour la note : « Parfait » demande une mer que le vent n'a pas touchée).
     val pastWind: List<WindSample> = emptyList(),
     // Température de surface de la mer (°C, Open-Meteo Marine) : null = non fournie pour ce point.
-    val seaTemperature: Double? = null
+    val seaTemperature: Double? = null,
+    // Désaccord des modèles de vagues pour cette heure : (plus grande - plus petite hauteur) / moyenne. 0 = un seul modèle ou d'accord.
+    val modelSpread: Double = 0.0
 )
 
 data class DailyTideInfo(
@@ -109,6 +111,12 @@ enum class WaveModel(
         displayName = "ECMWF WAM Europe",
         resolution = "14 km",
         description = "Traqueur de grand large, référence sur la houle longue et l'énergie océanique."
+    ),
+    GFS_WAVE(
+        apiParam = "ncep_gfswave016",
+        displayName = "NOAA GFS Wave (WaveWatch III)",
+        resolution = "16 km",
+        description = "Le modèle de vagues américain, celui de Windguru : il voit loin, mais surestime souvent la période près de nos côtes."
     )
 }
 
@@ -116,8 +124,20 @@ data class ForecastEngineConfig(
     val shortTermWeather: WeatherModel = WeatherModel.AROME,
     val shortTermWave: WaveModel = WaveModel.MFWAM,
     val longTermWeather: WeatherModel = WeatherModel.ECMWF_IFS,
-    val longTermWave: WaveModel = WaveModel.ECMWF_WAM
+    val longTermWave: WaveModel = WaveModel.ECMWF_WAM,
+    // Consensus des trois modèles de vagues (Auto) : hauteur et période d'un même calcul, au lieu d'un modèle choisi.
+    val consensus: Boolean = true
 )
 
 /** Un vent passé : vitesse et rafales (km/h) et direction. */
 data class WindSample(val speedKmh: Int, val gustKmh: Int, val direction: String)
+
+/**
+ * Poids des trois modèles de vagues (MF-WAM, ECMWF Wave, GFS Wave) dans le consensus, selon l'échéance en heures depuis
+ * le début du jour : jusqu'à 36 h, MF-WAM et ECMWF à parts égales et GFS Wave à zéro ; dès 60 h, trois parts égales ; fondu entre les deux.
+ */
+internal fun waveConsensusWeights(leadHours: Double): DoubleArray {
+    val fade = ((leadHours - 36.0) / 24.0).coerceIn(0.0, 1.0)
+    val fine = 0.5 * (1 - fade) + fade / 3.0
+    return doubleArrayOf(fine, fine, fade / 3.0)
+}

@@ -417,6 +417,7 @@ class SurfController(
         prefs.putString("short_wave", newConfig.shortTermWave.name)
         prefs.putString("long_weather", newConfig.longTermWeather.name)
         prefs.putString("long_wave", newConfig.longTermWave.name)
+        prefs.putBoolean("wave_consensus", newConfig.consensus)
         loadActiveSpot(initialLoad = false)
     }
 

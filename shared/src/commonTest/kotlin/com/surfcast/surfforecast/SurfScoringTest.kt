@@ -485,6 +485,24 @@ class SurfScoringTest {
         assertTrue(calmSideOn >= sideOn, "sans vent, la note n'est pas plafonnée")
         assertTrue(offshore >= sideOn)
     }
+
+    @Test
+    fun consensusWeightsFadeFromFineModelsToAllThree() {
+        val near = waveConsensusWeights(12.0)
+        assertEquals(0.5, near[0], 1e-9); assertEquals(0.5, near[1], 1e-9); assertEquals(0.0, near[2], 1e-9)
+        val far = waveConsensusWeights(80.0)
+        far.forEach { assertEquals(1.0 / 3.0, it, 1e-9) }
+        val mid = waveConsensusWeights(48.0)
+        assertEquals(1.0, mid.sum(), 1e-9)
+        assertTrue(mid[2] > 0.0 && mid[2] < 1.0 / 3.0)
+    }
+
+    @Test
+    fun aSecondarySwellAddsEnergy() {
+        val alone = calculateSlotRating(hour(10, height = 1.0, period = 10.0, waveDir = 275f, windKmh = 4, windDir = "E"), 275, "confirmed").score
+        val withSecond = calculateSlotRating(hour(10, height = 1.0, period = 10.0, waveDir = 275f, windKmh = 4, windDir = "E").copy(secondaryHeight = 0.8, secondaryPeriod = 12.0, secondaryDirection = 275f), 275, "confirmed").score
+        assertTrue(withSecond >= alone, "la houle secondaire ne baisse pas la note ($alone -> $withSecond)")
+    }
 }
 
 class StarsTest {

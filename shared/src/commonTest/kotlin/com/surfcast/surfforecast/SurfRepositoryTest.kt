@@ -77,6 +77,31 @@ class SurfRepositoryTest {
     }
 
     @Test
+    fun consensusTakesHeightAndPeriodFromTheSameModelsAndIgnoresGfsWaveInShortTerm() = runTest {
+        fun marine(h: Double, p: Double) =
+            """{"hourly":{"time":["2026-01-01T10:00"],"wave_height":[$h],"wave_period":[$p],"wave_direction":[270.0],"swell_wave_height":[$h],"swell_wave_period":[$p],"swell_wave_peak_period":[$p]}}"""
+        val engine = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            if (model == "meteofrance_arome_france_hd") return@MockEngine respondError(HttpStatusCode.InternalServerError)
+            val body = when {
+                request.url.host == "marine-api.open-meteo.com" -> when (model) {
+                    "meteofrance_wave" -> marine(2.0, 10.0)
+                    "ecmwf_wam" -> marine(1.0, 8.0)
+                    "ncep_gfswave016" -> marine(3.0, 14.0)
+                    else -> marine(1.0, 9.0)
+                }
+                model == "meteofrance_arome_france" -> shortWeather
+                else -> longWeather
+            }
+            respondJson(body)
+        }
+        val h = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        assertEquals(1.5, h.waveHeight, 1e-6)
+        assertEquals(9.0, h.wavePeriod, 1e-6)
+        assertTrue(h.modelSpread > 0.5, "les trois modèles se contredisent : ${h.modelSpread}")
+    }
+
+    @Test
     fun aromeHdWindWinsInShortTermAndMissingHoursFallBack() = runTest {
         // HD : vent seulement, valeur nulle pour l'unique heure -> repli sur AROME standard
         // pour cette heure ; puis un second cas où HD a une valeur et passe devant.
@@ -92,13 +117,13 @@ class SurfRepositoryTest {
             }
             respondJson(body)
         }
-        val withHd = repository(engine("3.2")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        val withHd = repository(engine("3.2")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today).hourly[0]
         // Le vent affiché est celui des modèles globaux (ECMWF ici, GFS indisponible) ; l'AROME HD n'est qu'une note.
         assertEquals(14, withHd.windSpeedKmh)
         assertEquals("O", withHd.windDirectionStr)
         assertEquals("ECMWF+GFS · AROME HD 3", withHd.windSource)
 
-        val hdNull = repository(engine("null")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        val hdNull = repository(engine("null")).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today).hourly[0]
         assertEquals(14, hdNull.windSpeedKmh)
         assertEquals("ECMWF+GFS", hdNull.windSource)
     }
@@ -117,7 +142,7 @@ class SurfRepositoryTest {
             }
             respondJson(body)
         }
-        val h = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        val h = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today).hourly[0]
         // ECMWF 14 km/h et GFS 20 km/h : 17 km/h.
         assertEquals(17, h.windSpeedKmh)
         assertEquals("ECMWF+GFS", h.windSource)
@@ -125,7 +150,7 @@ class SurfRepositoryTest {
 
     @Test
     fun shortTermUsesAromeMfwamAndLongTermUsesEcmwf() = runTest {
-        val result = repository(openMeteoEngine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today)
+        val result = repository(openMeteoEngine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today)
 
         assertEquals(2, result.hourly.size)
 
@@ -177,7 +202,7 @@ class SurfRepositoryTest {
             }
             respondJson(body)
         }
-        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today).hourly
         assertEquals(11.0, hourly.last().wavePeriod)
     }
 
@@ -197,7 +222,7 @@ class SurfRepositoryTest {
             }
             respondJson(body)
         }
-        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today).hourly
         // La période de GFS Wave l'emporte sur celle du modèle de la façade (12 s pour MFWAM, 11 s pour GFS).
         assertEquals(11.0, hourly[0].wavePeriod, 1e-9)
         assertEquals(13.0, hourly[1].wavePeriod, 1e-9)
@@ -214,7 +239,7 @@ class SurfRepositoryTest {
             )
         }
         val error = assertFailsWith<IllegalStateException> {
-            repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today)
+            repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today)
         }
         assertEquals("API Open-Meteo (503): The service is overloaded", error.message)
     }
@@ -329,11 +354,11 @@ class SurfRepositoryTest {
             }
             respondJson(body)
         }
-        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        val hourly = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today).hourly
         assertEquals(14.4, hourly[0].seaTemperature)
         assertEquals(null, hourly[1].seaTemperature)
         // Sans réponse exploitable, la température reste inconnue (jamais inventée).
-        val plain = repository(openMeteoEngine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly
+        val plain = repository(openMeteoEngine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(consensus = false), today).hourly
         assertTrue(plain.all { it.seaTemperature == null })
     }
 }
