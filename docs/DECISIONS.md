@@ -133,3 +133,7 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **Flèches** (13 octobre, soir) : modèle 3 « pointe de navigation » validé pour toute l'appli (vent, houle, clapot), trois tailles (vent : moins de 10, 10 à 20, plus de 20 km/h ; houle : taille selon l'orientation par rapport à la plage). À coder.
 - **Icône de l'eau** : le thermomètre dans l'eau est la bonne idée, mais le dessin proposé est trop laid à côté de la flèche : à redessiner dans le même style (formes pleines, simples).
 - **Vent** : le propriétaire pense qu'AROME HD n'est pas bon (relevé du 12 octobre à 14 h : 7,9 km/h contre 15 à 19 ailleurs) et propose la moyenne de deux modèles globaux (ECMWF et GFS). En attente de son accord sur le calcul exact.
+
+## 13 octobre 2026 (soir)
+- **Section « Comprendre » validée** (maquette `comprendre-houle`) : 3 chapitres, 11 leçons, 3 outils à manipuler, 3 portes d'entrée (accueil, ⚙ de chaque encart, Réglages). Contenu dans `docs/COMPRENDRE_HOULE.md`. Le chapitre « météo » viendra plus tard.
+- **Principe pour la houle, le vent et la période** : l'appli doit être accessible à tous et fiable, sans qu'on aille comparer avec un autre site. Les modèles se comparent en coulisses ; à l'écran, un chiffre par donnée, et seul le détail technique est dans les réglages. On répond aux erreurs du compte-rendu (`docs/COMPTE_RENDU_APPLI.md`) avec ses suggestions. Les choix précis sont à trancher avant de coder.
