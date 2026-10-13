@@ -296,6 +296,53 @@ class SurfRepository(
     }
 
     /**
+     * Les valeurs de chaque modèle pour un même moment (14 h aujourd'hui, demain et J+3), pour les montrer sous le choix
+     * manuel des sources : on voit ce que chaque modèle annonce avant de le choisir. Un modèle qui échoue ou qui ne
+     * couvre pas l'échéance est simplement absent.
+     */
+    suspend fun fetchModelPreview(latitude: Double, longitude: Double, today: LocalDate): ModelPreview = coroutineScope {
+        val waveJobs = listOf("MF-WAM" to WaveModel.MFWAM, "ECMWF Wave" to WaveModel.ECMWF_WAM, "GFS Wave" to WaveModel.GFS_WAVE).map { (label, m) ->
+            async { label to runCatching { fetchMarineBlock(latitude, longitude, m, 4) }.getOrNull() }
+        }
+        val windJobs = listOf("AROME" to WeatherModel.AROME, "ARPEGE" to WeatherModel.ARPEGE, "ECMWF" to WeatherModel.ECMWF_IFS, "GFS" to WeatherModel.GFS).map { (label, m) ->
+            async { label to runCatching { fetchWeatherBlock(latitude, longitude, m, 4) }.getOrNull() }
+        }
+        val waves = HashMap<String, Map<Int, PreviewWave>>()
+        waveJobs.forEach { j ->
+            val (label, b) = j.await()
+            if (b != null) {
+                val byDay = HashMap<Int, PreviewWave>()
+                for (d in 0..3) {
+                    val i = b.times.indexOfFirst { it.date == today.plus(d, DateTimeUnit.DAY) && it.hour == 14 }
+                    val h = b.waveHeights.getOrNull(i)
+                    if (i >= 0 && h != null && h > 0.0) byDay[d] = PreviewWave(h, b.wavePeriods.getOrNull(i) ?: 0.0)
+                }
+                if (byDay.isNotEmpty()) waves[label] = byDay
+            }
+        }
+        val winds = HashMap<String, Map<Int, PreviewWind>>()
+        windJobs.forEach { j ->
+            val (label, b) = j.await()
+            if (b != null) {
+                val byDay = HashMap<Int, PreviewWind>()
+                for (d in 0..3) {
+                    val i = b.times.indexOfFirst { it.date == today.plus(d, DateTimeUnit.DAY) && it.hour == 14 }
+                    val v = b.windSpeeds.getOrNull(i)
+                    if (i >= 0 && v != null && !v.isNaN()) {
+                        byDay[d] = PreviewWind(
+                            speedKmh = v.roundToInt(), directionDeg = (b.windDirections.getOrNull(i) ?: Double.NaN).takeIf { !it.isNaN() }?.roundToInt(),
+                            temperature = b.temperatures.getOrNull(i)?.takeIf { !it.isNaN() }?.roundToInt(),
+                            cloudCover = b.cloudCovers.getOrNull(i), rainMm = b.precipitations.getOrNull(i)?.takeIf { !it.isNaN() }
+                        )
+                    }
+                }
+                if (byDay.isNotEmpty()) winds[label] = byDay
+            }
+        }
+        ModelPreview(waves, winds)
+    }
+
+    /**
      * Dernière mesure de la bouée de référence du point, lue par le relais surflog.fr/api/bouee (cache de 15 minutes).
      * Null sans bouée proche, sans réseau ou sans mesure : la carte n'affiche alors rien.
      */

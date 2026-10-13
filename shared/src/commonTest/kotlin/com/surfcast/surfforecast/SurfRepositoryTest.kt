@@ -77,6 +77,25 @@ class SurfRepositoryTest {
     }
 
     @Test
+    fun modelPreviewGivesEachModelsAnnouncementAtTwoPmTomorrow() = runTest {
+        val engine = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            val h = when (model) { "meteofrance_wave" -> 1.3; "ecmwf_wam" -> 1.5; else -> 1.1 }
+            val body = if (request.url.host == "marine-api.open-meteo.com")
+                """{"hourly":{"time":["2026-01-02T14:00"],"wave_height":[$h],"wave_period":[9.0],"wave_direction":[270.0],"swell_wave_height":[$h],"swell_wave_period":[9.0],"swell_wave_peak_period":[9.0]}}"""
+            else
+                """{"hourly":{"time":["2026-01-02T14:00"],"temperature_2m":[12.0],"weather_code":[3],"wind_speed_10m":[${if (model == "meteofrance_arome_france") 13.0 else 18.0}],"wind_direction_10m":[300.0],"cloudcover":[90],"apparent_temperature":[10.0]},"daily":{"time":["2026-01-02"],"sunrise":["2026-01-02T08:40"],"sunset":["2026-01-02T17:25"]}}"""
+            respondJson(body)
+        }
+        val p = repository(engine).fetchModelPreview(45.38, -1.16, today)
+        assertEquals(1.3, p.waves["MF-WAM"]!![1]!!.height, 1e-9)
+        assertEquals(1.5, p.waves["ECMWF Wave"]!![1]!!.height, 1e-9)
+        assertEquals(13, p.winds["AROME"]!![1]!!.speedKmh)
+        assertEquals(18, p.winds["GFS"]!![1]!!.speedKmh)
+        assertEquals(null, p.waves["MF-WAM"]!![3])
+    }
+
+    @Test
     fun buoyReadingComesFromTheRelayAndTheNearestReferenceBuoy() = runTest {
         val engine = MockEngine { request ->
             assertEquals("surflog.fr", request.url.host)

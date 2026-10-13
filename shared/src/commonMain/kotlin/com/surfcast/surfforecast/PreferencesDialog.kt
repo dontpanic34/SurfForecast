@@ -94,7 +94,10 @@ fun SurfPreferencesDialog(
     onDeleteBoard: (QuiverBoard) -> Unit = {},
     // Page à ouvrir directement (« profile » depuis la visite guidée) et état du badge « Recommandé ».
     startPage: String? = null,
-    profileReviewed: Boolean = true
+    profileReviewed: Boolean = true,
+    // Les annonces de chaque modèle (page des sources) et la demande de les charger.
+    modelPreview: ModelPreview? = null,
+    onNeedModelPreview: () -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     val pillShape = RoundedCornerShape(50)
@@ -396,7 +399,8 @@ fun SurfPreferencesDialog(
                         shortWave = shortTermWave, onShortWave = { shortTermWave = it },
                         longWave = longTermWave, onLongWave = { longTermWave = it },
                         shortWind = shortTermWind, onShortWind = { shortTermWind = it },
-                        longWind = longTermWind, onLongWind = { longTermWind = it }
+                        longWind = longTermWind, onLongWind = { longTermWind = it },
+                        preview = modelPreview, onNeedPreview = onNeedModelPreview
                     )
                     if (page == "help") {
                         SettingsSection("Langue") {

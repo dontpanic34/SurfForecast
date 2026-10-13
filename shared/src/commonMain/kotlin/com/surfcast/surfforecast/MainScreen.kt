@@ -183,6 +183,8 @@ fun MainScreen(
 
     if (showPreferencesDialog) {
         SurfPreferencesDialog(
+            modelPreview = viewModel.modelPreview,
+            onNeedModelPreview = { viewModel.loadModelPreview() },
             appVersion = appVersion,
             windUnit = viewModel.windUnit,
             onWindUnitSelected = { newUnit -> viewModel.changeWindUnit(newUnit) },

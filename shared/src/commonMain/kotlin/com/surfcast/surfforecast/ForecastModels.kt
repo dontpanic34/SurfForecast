@@ -141,3 +141,12 @@ internal fun waveConsensusWeights(leadHours: Double): DoubleArray {
     val fine = 0.5 * (1 - fade) + fade / 3.0
     return doubleArrayOf(fine, fine, fade / 3.0)
 }
+
+/** Ce qu'un modèle de vagues annonce pour un moment : hauteur (m) et période (s). */
+data class PreviewWave(val height: Double, val period: Double)
+
+/** Ce qu'un modèle de vent et de météo annonce pour un moment. */
+data class PreviewWind(val speedKmh: Int, val directionDeg: Int?, val temperature: Int?, val cloudCover: Int?, val rainMm: Double?)
+
+/** Les annonces de chaque modèle (par nom, puis par jour : 0 aujourd'hui, 1 demain, 3 dans trois jours) à 14 h. */
+data class ModelPreview(val waves: Map<String, Map<Int, PreviewWave>>, val winds: Map<String, Map<Int, PreviewWind>>)
