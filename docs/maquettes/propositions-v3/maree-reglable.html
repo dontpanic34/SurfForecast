@@ -16,7 +16,7 @@ pre{background:var(--ctl);border-radius:10px;padding:10px;font-size:12.5px;white
 </style><main>
 <h1>Marée sous le graphique, réglable</h1>
 <p>Reprend le bas de l'encart du déroulé de la journée : le graphique de houle, puis un <b>trait épais</b> bleu (montante) / vert (descendante), le <b>mot juste dessous</b>, un <b>point de couleur sur le trait</b> à chaque marée et l'<b>horaire dessous</b>. Plus de ligne d'heures. Règle avec les curseurs, puis recopie les valeurs en bas.</p>
-<div class="card"><svg id="s" viewBox="0 0 400 190"></svg></div>
+<div class="card"><svg id="s" viewBox="0 0 400 200"></svg></div>
 <div class="ctl">
  <div class="row"><span>Épaisseur du trait</span><input id="th" type="range" min="2" max="12" step="0.5" value="6"><b id="thv"></b></div>
  <div class="row"><span>Mot : hauteur</span><input id="wy" type="range" min="0" max="30" step="1" value="12"><b id="wyv"></b></div>
@@ -53,7 +53,7 @@ const cap=s=>s[0].toUpperCase()+s.slice(1);
 function draw(){
  const th=+$('th').value,wy=+$('wy').value,wx=+$('wx').value,ws=+$('ws').value,ds=+$('ds').value,hy=+$('hy').value;
  $('thv').textContent=th;$('wyv').textContent=wy;$('wxv').textContent=wx;$('wsv').textContent=ws;$('dsv').textContent=ds;$('hyv').textContent=hy;
- const Y=100; // ligne
+ const Y=112; // ligne
  const segs=[[0,70,0],[70,205,1],[205,335,0],[335,400,1]]; // 1 = monte
  let s=`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fb8d6" stop-opacity=".95"/><stop offset="1" stop-color="#0e5a76"/></linearGradient><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6c7b92"/><stop offset="1" stop-color="#8d9bb0"/></linearGradient></defs>
  <rect x="8" y="6" width="384" height="72" rx="4" fill="url(#k)"/>
