@@ -2,7 +2,7 @@ package com.surfcast.surfforecast
 
 // Fichier généré (traductions de l'interface) ; voir I18n.kt.
 internal val TR_PART_3: Map<String, List<String>> = mapOf(
-    "Reprend un fichier sauvegardé" to listOf("Imports a saved file", "Übernimmt eine gespeicherte Datei", "Importeert een opgeslagen bestand", "Importa un archivo guardado"),
+    "Reprend un fichier sauvegardé" to listOf("Imports a saved file", "Lädt eine gespeicherte Datei", "Importeert een opgeslagen bestand", "Importa un archivo guardado"),
     "Ajouter le raccourci du site" to listOf("Add the site shortcut", "Website-Verknüpfung hinzufügen", "Snelkoppeling van de site toevoegen", "Añadir el acceso directo del sitio"),
     "Visa, Mastercard, Apple Pay" to listOf("Visa, Mastercard, Apple Pay", "Visa, Mastercard, Apple Pay", "Visa, Mastercard, Apple Pay", "Visa, Mastercard, Apple Pay"),
     "manœuvres de pro régulières" to listOf("regular pro-level maneuvers", "regelmäßig Profi-Manöver", "regelmatig manoeuvres op profniveau", "maniobras de pro con regularidad"),
@@ -10,7 +10,7 @@ internal val TR_PART_3: Map<String, List<String>> = mapOf(
     "J'attends que ce soit bon" to listOf("I wait for it to be good", "Ich warte, bis es gut ist", "Ik wacht tot het goed is", "Espero a que esté bien"),
     "Saint-Gilles-Croix-de-Vie" to listOf("Saint-Gilles-Croix-de-Vie", "Saint-Gilles-Croix-de-Vie", "Saint-Gilles-Croix-de-Vie", "Saint-Gilles-Croix-de-Vie"),
     "surf,wind,weather,hourly" to listOf("surf,wind,weather,hourly", "surf,wind,weather,hourly", "surf,wind,weather,hourly", "surf,wind,weather,hourly"),
-    "Side fort, ça sectionne" to listOf("Strong side-on, it sections", "Starker Side-on, es sektioniert", "Sterke side-on, het sectioneert", "Side-on fuerte, secciona"),
+    "Side fort, ça sectionne" to listOf("Strong side-on, it sections", "Starker Side-on, die Welle bricht in Sektionen", "Sterke side-on, het sectioneert", "Side-on fuerte, secciona"),
     "Renseigner mon profil ›" to listOf("Fill in my profile ›", "Mein Profil ausfüllen ›", "Mijn profiel invullen ›", "Rellenar mi perfil ›"),
     "Tes notes, à ta mesure" to listOf("Your ratings, tailored to you", "Deine Bewertungen, auf dich zugeschnitten", "Jouw scores, op jouw maat", "Tus notas, a tu medida"),
     "glassy, offshore léger" to listOf("glassy, light offshore", "glassy, leichter Offshore", "glassy, lichte offshore", "glassy, offshore ligero"),
@@ -35,7 +35,7 @@ internal val TR_PART_3: Map<String, List<String>> = mapOf(
     "Façade Atlantique" to listOf("Atlantic coast", "Atlantikküste", "Atlantische kust", "Costa atlántica"),
     "ECMWF WAM Europe" to listOf("ECMWF WAM Europe", "ECMWF WAM Europe", "ECMWF WAM Europe", "ECMWF WAM Europe"),
     "Viana do Castelo" to listOf("Viana do Castelo", "Viana do Castelo", "Viana do Castelo", "Viana do Castelo"),
-    "Un peu de clapot" to listOf("A bit of chop", "Etwas Kabbelwasser", "Een beetje klotsende zee", "Un poco de chop"),
+    "Un peu de clapot" to listOf("A bit of chop", "Leichte Windwellen", "Wat korte golven", "Un poco de mar de viento"),
     "Modèles partagés" to listOf("Models disagree", "Modelle uneinig", "Modellen verschillen", "Modelos discrepan"),
     "Offshore soutenu" to listOf("Steady offshore", "Stetiger Offshore", "Aanhoudende offshore", "Offshore sostenido"),
     "À travailler : " to listOf("To work on: ", "Zum Üben: ", "Om aan te werken: ", "A trabajar: "),
@@ -48,7 +48,7 @@ internal val TR_PART_3: Map<String, List<String>> = mapOf(
     "Tous les spots" to listOf("All spots", "Alle Spots", "Alle spots", "Todos los spots"),
     "Jeremy Flores" to listOf("Jeremy Flores", "Jeremy Flores", "Jeremy Flores", "Jeremy Flores"),
     "Vent et météo" to listOf("Wind and weather", "Wind und Wetter", "Wind en weer", "Viento y tiempo"),
-    "1 media joint" to listOf("1 media attached", "1 Medium angehängt", "1 media bijgevoegd", "1 archivo adjunto"),
+    "1 media joint" to listOf("1 media attached", "1 Mediendatei angehängt", "1 media bijgevoegd", "1 archivo adjunto"),
     "Baie de Somme" to listOf("Bay of the Somme", "Somme-Bucht", "Baai van de Somme", "Bahía del Somme"),
     "Le Cap Ferret" to listOf("Le Cap Ferret", "Le Cap Ferret", "Le Cap Ferret", "Le Cap Ferret"),
     "Prêt à surfer" to listOf("Ready to surf", "Bereit zum Surfen", "Klaar om te surfen", "Listo para surfear"),

@@ -10,7 +10,7 @@ internal val TR_PART_9: Map<String, List<String>> = mapOf(
     "J'y vais pas" to listOf("I'm not going", "Ich gehe nicht", "Ik ga niet", "No voy"),
     "− Une marche" to listOf("− One step", "− Eine Stufe", "− Eén stap", "− Un escalón"),
     "Jard-sur-Mer" to listOf("Jard-sur-Mer", "Jard-sur-Mer", "Jard-sur-Mer", "Jard-sur-Mer"),
-    "pleine haute" to listOf("full high", "volle Flut", "vol hoogwater", "pleamar plena"),
+    "pleine haute" to listOf("high tide", "volle Flut", "vol hoogwater", "pleamar"),
     "Europe/Paris" to listOf("Europe/Paris", "Europe/Paris", "Europe/Paris", "Europe/Paris"),
     "de l'encart" to listOf("of the box", "des Kastens", "van het kader", "del recuadro"),
     "La Centrale" to listOf("La Centrale", "La Centrale", "La Centrale", "La Centrale"),

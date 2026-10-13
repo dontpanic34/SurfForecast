@@ -13,7 +13,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
-- **Relecture des traductions (EN, DE, NL, ES)** : tout est traduit mais sans relecture humaine ; certains textes composés (phrases du jour) peuvent sonner bizarre, et quelques libellés sont longs en néerlandais (ex. « Gemotiveerd » coupé). À relire par un locuteur ; tout texte français ajouté doit recevoir sa traduction.
+- **Relecture des traductions (EN, DE, NL, ES)** : tout est traduit et relu une fois par l'assistant, pas par un humain ; certains textes composés (phrases du jour) peuvent sonner bizarre, et quelques libellés sont longs en néerlandais (ex. « Gemotiveerd » coupé). À relire par un locuteur ; tout texte français ajouté doit recevoir sa traduction.
 - **Coefficient estimé** : comparer, quand api-maree.fr revient, le coefficient calculé (marnage de Brest d'Open-Meteo ÷ 6,1 m) aux vrais coefficients sur une quinzaine de jours, et ajouter un facteur de correction si l'écart est systématique. Prévoir de garder une copie quotidienne des marées dans la branche `data` pour ne plus dépendre du service.
 - **Ligne « Mesuré » dans Actuellement** (à reprendre quand le propriétaire sera concentré dessus) : tout est codé sur la branche (relais `functions/api/obs`, `ObservedNow`, ligne sous la bouée) mais **pas publié**. Pour la mettre en ligne : ajouter la variable secrète `METEOFRANCE_API_KEY` dans le projet Cloudflare Pages (Settings, Variables and Secrets), puis le « go ».
 - **Corriger le prévu avec le réel** (idée du 13 octobre) : décaler les 3 à 6 prochaines heures vers la mesure de la station ; à maquetter avant de coder.
@@ -47,3 +47,5 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Recaler les seuils d'énergie des profils** après le passage au consensus (les kJ sont plus bas) : à faire avec les premiers relevés contre la bouée.
 - **Bouées hors de France** (Espagne, Portugal, Royaume-Uni) pour les spots sans bouée proche.
 - **Bilan de la phase de test** (relevés des prévisions et des bouées) : à faire dans 3 à 4 semaines.
+
+- **Marée : mot sur la barre** (proposition à valider, maquette à faire) : écrire « Marée » en petit sur la courbe de marée du déroulé, placé dynamiquement dans le plus grand vide entre les horaires.
