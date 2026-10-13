@@ -1,0 +1,81 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Journal de session : nouvelle saisie</title>
+<style>
+:root{--bg:#0e1a22;--card:#14262f;--fg:#ecf0f1;--mut:#8ea3ae;--acc:#4a9bf0;--line:#2a4655;--sheet:#1c3441;--ok:#38c976;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#dfe8ee;--card:#f4f8fa;--fg:#10222e;--mut:#566b76;--line:#c3d1da;--sheet:#e4edf2;color-scheme:light}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding:16px}
+main{max-width:1000px;margin:auto}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:0 0 3px}h3{font-size:16px;margin:24px 0 6px}p{color:var(--mut);font-size:13px;margin:3px 0 8px}
+.grid{display:flex;flex-wrap:wrap;gap:14px}.col{width:300px}
+.phone{background:var(--bg);border:1.5px solid var(--line);border-radius:18px;padding:12px 10px}
+.t{font-weight:800;font-size:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.t small{font-weight:500;color:var(--mut);font-size:12px}
+.lab{font-size:11.5px;font-weight:700;color:var(--mut);margin:12px 0 5px;letter-spacing:.3px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:6px 12px;border-radius:50px;background:var(--sheet);color:var(--mut);font-size:13px}.chip.on{background:var(--acc);color:#fff;font-weight:700}.chip.add{border:1.5px dashed var(--acc);background:transparent;color:var(--acc);font-weight:700}
+.bar{display:flex;gap:3px;margin:4px 0}.bar i{flex:1;height:30px;border-radius:5px;background:#3a5566;display:block}.bar i.n{background:repeating-linear-gradient(45deg,#2a4050,#2a4050 3px,#33505f 3px,#33505f 6px)}.bar i.d{background:#c9a24d}.bar i.s{background:var(--acc);outline:2px solid #fff}
+.bl{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+.big{font-size:22px;font-weight:800;text-align:center}.row2{display:flex;gap:8px;align-items:center;justify-content:center}
+.st{width:34px;height:34px;border-radius:50%;background:var(--sheet);display:grid;place-items:center;font-size:18px}
+.drum{display:flex;gap:10px;justify-content:center;background:var(--sheet);border-radius:12px;padding:6px 0;margin:4px 0}.drum div{width:56px;text-align:center;line-height:30px;font-size:15px;color:var(--mut)}.drum .c{color:var(--fg);font-weight:800;font-size:20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.field{background:var(--sheet);border-radius:10px;padding:9px 11px;color:var(--mut);font-size:14px}
+.btn{background:var(--acc);color:#fff;border-radius:12px;text-align:center;padding:11px;font-weight:800;margin-top:12px}
+.stars{font-size:24px;color:#e9b44c;letter-spacing:3px}
+.sw{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);margin-top:6px}.sw b{width:30px;height:17px;border-radius:9px;background:var(--acc);display:inline-block;position:relative}.sw b:after{content:"";position:absolute;right:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.nav{display:flex;justify-content:space-around;font-size:11px;color:var(--mut);border-top:1px solid var(--line);padding-top:6px;margin-top:10px}.nav b{color:var(--acc)}
+</style><main>
+<h1>Journal de session : la saisie refaite</h1>
+<p>Trois choses à régler : le choix des heures (plus de défilement sur le côté), les planches (juste le nom, ajout direct) et où mettre « + Session ». Quatre façons de choisir l'heure, puis le formulaire complet avec ma préférée.</p>
+
+<h3>1 · Choisir l'heure de début et de fin</h3>
+<div class="grid">
+ <div class="col"><h2>A · Glisser sur la barre de l'appli</h2><p>La même barre que dans Actuellement (heures du jour, nuit en blocs). On touche la case de début, puis celle de fin : la plage se colore. Rien à faire défiler.</p>
+ <div class="phone"><div class="lab">DÉBUT 8 h → FIN 10 h</div>
+ <div class="bar"><i class="n"></i><i class="n"></i><i></i><i></i><i class="d"></i><i class="s"></i><i class="s"></i><i class="s"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="n"></i></div>
+ <div class="bl"><span>6 h</span><span>8 h 17 ☀</span><span>14 h</span><span>19 h 22 ☀</span></div>
+ <div class="chips" style="margin-top:8px"><span class="chip">Lever du jour</span><span class="chip on">Matin</span><span class="chip">Après-midi</span><span class="chip">Coucher</span></div></div></div>
+ <div class="col"><h2>B · Début + durée</h2><p>Une seule heure à choisir (− / +), puis la durée en pastilles. L'heure de fin est calculée et écrite.</p>
+ <div class="phone"><div class="lab">DÉBUT</div><div class="row2"><span class="st">−</span><span class="big">8 h 00</span><span class="st">+</span></div>
+ <div class="lab">DURÉE</div><div class="chips"><span class="chip">30 min</span><span class="chip">1 h</span><span class="chip on">1 h 30</span><span class="chip">2 h</span><span class="chip">2 h 30</span><span class="chip">+</span></div>
+ <p style="text-align:center;margin-top:10px">de 8 h 00 à <b style="color:var(--fg)">9 h 30</b></p></div></div>
+ <div class="col"><h2>C · Roues comme sur un téléphone</h2><p>Deux roues (heure, minutes) pour le début, deux pour la fin. On fait glisser vers le haut ou le bas.</p>
+ <div class="phone"><div class="lab">DÉBUT</div><div class="drum"><div>7</div><div class="c">8</div><div>9</div></div><div class="drum" style="margin-top:-4px"><div>:00</div><div class="c">:15</div><div>:30</div></div>
+ <div class="lab">FIN</div><div class="drum"><div>9</div><div class="c">10</div><div>11</div></div></div></div>
+ <div class="col"><h2>D · Créneau + réglage fin</h2><p>On choisit un créneau (lever, matin, midi, après-midi, coucher) ; l'heure se règle ensuite de 15 minutes en 15 minutes.</p>
+ <div class="phone"><div class="chips"><span class="chip">Lever</span><span class="chip on">Matin</span><span class="chip">Midi</span><span class="chip">Après-midi</span><span class="chip">Coucher</span></div>
+ <div class="lab">DÉBUT</div><div class="row2"><span class="st">−</span><span class="big">8 h 15</span><span class="st">+</span></div>
+ <div class="lab">FIN</div><div class="row2"><span class="st">−</span><span class="big">10 h 00</span><span class="st">+</span></div></div></div>
+</div>
+
+<h3>2 · Le formulaire entier (avec A pour l'heure)</h3>
+<div class="grid">
+ <div class="col" style="width:330px"><h2>Nouvelle session</h2><p>Planches : juste le nom. Pas de type, pas de volume. « + Planche » ajoute directement dans ton matériel.</p>
+ <div class="phone">
+ <div class="t"><span>Nouvelle session</span><small>Montalivet · ✕</small></div>
+ <div class="chips"><span class="chip">Avant-hier</span><span class="chip">Hier</span><span class="chip on">Aujourd'hui</span></div>
+ <div class="lab">HEURES · 8 h → 10 h</div>
+ <div class="bar"><i class="n"></i><i class="n"></i><i></i><i></i><i class="d"></i><i class="s"></i><i class="s"></i><i class="s"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="n"></i></div>
+ <div class="lab">PLANCHE</div>
+ <div class="chips"><span class="chip on">xero</span><span class="chip">grace</span><span class="chip add">+ Planche</span></div>
+ <div class="lab">COMMENT C'ÉTAIT ?</div><div class="stars">★★★★☆</div>
+ <div class="lab">NOTE</div><div class="field">C'était le feu…</div>
+ <p style="margin-top:8px">📎 Photo ou vidéo</p>
+ <div class="btn">Enregistrer</div></div></div>
+ <div class="col" style="width:330px"><h2>« + Planche » : ajout direct</h2><p>On touche « + Planche » : un nom, et c'est tout. Elle entre dans « Mon matériel » (type et volume à préciser plus tard si on veut). Aucun lien vers Matériel dans le journal.</p>
+ <div class="phone">
+ <div class="t"><span>Ajouter une planche</span><small>✕</small></div>
+ <div class="lab">NOM</div><div class="field" style="color:var(--fg)">Hypto Krypto▏</div>
+ <div class="sw"><b></b> Ajouter à mon matériel (volume et type plus tard)</div>
+ <div class="chips" style="margin-top:12px"><span class="chip">Shortboard</span><span class="chip">Fish / twin</span><span class="chip">Mid-length</span><span class="chip">Longboard</span></div>
+ <p style="margin-top:6px">Le type est facultatif : « Je ne sais pas » est choisi par défaut.</p>
+ <div class="btn">Ajouter</div></div></div>
+</div>
+
+<h3>3 · Et le « + Session » de la carte Actuellement ?</h3>
+<div class="grid">
+ <div class="col"><h2>1 · On l'enlève d'Actuellement</h2><p>La carte reste claire. On ajoute une session depuis l'onglet Journal (un « + » en haut). Le plus simple, ma recommandation.</p>
+ <div class="phone"><div class="nav"><span>Prévisions</span><span>Webcam</span><b>Journal</b><span>Réglages</span></div><div class="lab" style="text-align:center">Journal : « + Nouvelle session » en haut de l'écran</div></div></div>
+ <div class="col"><h2>2 · Un « + » dans la barre du bas</h2><p>Un bouton rond « + » au milieu de la barre du bas : une saisie en un geste de partout.</p>
+ <div class="phone"><div class="nav"><span>Prévisions</span><span>Webcam</span><b style="font-size:20px">＋</b><span>Journal</span><span>Réglages</span></div></div></div>
+ <div class="col"><h2>3 · On le garde, mais sans fond</h2><p>Un petit « + » discret à droite de la ligne « Actuellement 14 h », sans le bouton plein.</p>
+ <div class="phone"><div style="display:flex;justify-content:space-between;color:var(--mut);font-size:13px"><span>Actuellement 14 h · Correct</span><span style="color:var(--acc);font-weight:800">＋</span></div></div></div>
+</div>
+<h3>Mon avis</h3><p><b>Heure :</b> A (la barre de l'appli) : même geste que partout, une seule vue, des créneaux pour aller vite ; D si tu veux régler à 15 minutes près. <b>Planche :</b> juste le nom, « + Planche » avec un nom suffit. <b>« + Session » :</b> 1 (retiré d'Actuellement, ajout depuis le Journal).</p>
+</main></html>

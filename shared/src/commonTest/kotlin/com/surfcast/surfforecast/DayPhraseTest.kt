@@ -68,10 +68,10 @@ class DayPhraseTest {
     @Test
     fun tideIsOneWord() {
         val tide = DailyTideInfo(highTideTime = "12:00", lowTideTime = "06:00")
-        assertEquals("pleine haute", tideStateWord(LocalTime(12, 20), tide))
-        assertEquals("pleine basse", tideStateWord(LocalTime(6, 10), tide))
-        assertEquals("montante", tideStateWord(LocalTime(9, 0), tide))
-        assertEquals("descendante", tideStateWord(LocalTime(15, 0), tide))
+        assertEquals("Pleine haute", tideStateWord(LocalTime(12, 20), tide))
+        assertEquals("Pleine basse", tideStateWord(LocalTime(6, 10), tide))
+        assertEquals("Montant", tideStateWord(LocalTime(9, 0), tide))
+        assertEquals("Descendant", tideStateWord(LocalTime(15, 0), tide))
         assertNull(tideStateWord(LocalTime(9, 0), null))
     }
 }

@@ -13,6 +13,9 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
+- **Journal de session : où mettre le résumé des conditions prévues** (maquette `journal-session-conditions.html`, 5 emplacements, à choisir).
+- **Journal de session, option 1 retenue** (début sur la barre, durée de 20 min à 5 h par pas de 20 min, minutes :00 / :20 / :40) : maquette interactive `journal-session-interactive.html` à valider (choix : garder ou non le lever/coucher du soleil sur la barre) ; reste à coder (formulaire, « + Planche » avec ajout au matériel, « + » central de la barre du bas).
+- **Journal de session refait** (maquettes `journal-session-saisie.html` et `journal-session-idees.html` : « Je pars surfer » début/fin, « ce matin / 1 h 30 », photo qui remplit, bandeau de confirmation ; le « + » est au centre de la barre du bas, symétrique ; à valider) : choix des heures sans défilement (barre de l'appli, durée, roues ou créneaux), planches réduites au nom avec « + Planche » qui ajoute dans le matériel, et que faire du « + Session » de la carte Actuellement.
 - **Loupe de spot dans l'en-tête** (maquette `entete-spot-favoris.html` : 5 en-têtes et 5 façons de placer les favoris, à valider ; la première maquette `loupe-spot.html` est abandonnée : « 1 2 3 » pas compris) : loupe à gauche du nom, ouvre le choix du spot avec recherche active, pastilles 1 2 3 par spot pour choisir la place de favori.
 - **Planche du jour, suite** : tenir compte de la marée, proposer une planche par heure choisie (l'en-tête utilise l'heure proche de 13 h), ajouter une phrase d'explication sous la planche (maquette d'abord).
 - **Vérifier sur téléphone** le trait de marée (collé au graphique, mot Montante/Descendante dessous, flèches, horaires).

@@ -279,8 +279,8 @@ internal fun isTideRising(targetTime: LocalTime, tideInfo: DailyTideInfo?): Bool
 }
 
 /**
- * La marée à une heure, en un mot : « pleine haute » ou « pleine basse » à moins de 40 minutes d'une marée extrême,
- * sinon « montante » ou « descendante » ; null sans horaires de marée.
+ * La marée à une heure, en un mot : « Pleine haute » ou « Pleine basse » à moins de 40 minutes d'une marée extrême,
+ * sinon « Montant » ou « Descendant » ; null sans horaires de marée.
  */
 internal fun tideStateWord(targetTime: LocalTime, tideInfo: DailyTideInfo?): String? {
     val rising = isTideRising(targetTime, tideInfo) ?: return null
@@ -293,9 +293,9 @@ internal fun tideStateWord(targetTime: LocalTime, tideInfo: DailyTideInfo?): Str
             kotlin.math.abs(target - t) <= 40 * 60 || kotlin.math.abs(target - t + dayS) <= 40 * 60 || kotlin.math.abs(target - t - dayS) <= 40 * 60
     }
     return when {
-        near(tideInfo?.highTideTime) -> "pleine haute"
-        near(tideInfo?.lowTideTime) -> "pleine basse"
-        rising -> "montante"
-        else -> "descendante"
+        near(tideInfo?.highTideTime) -> "Pleine haute"
+        near(tideInfo?.lowTideTime) -> "Pleine basse"
+        rising -> "Montant"
+        else -> "Descendant"
     }
 }
