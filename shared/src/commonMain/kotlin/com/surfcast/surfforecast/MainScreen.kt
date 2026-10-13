@@ -189,8 +189,13 @@ fun MainScreen(
         )
     }
 
+    // La section « Comprendre » s'ouvre de partout (accueil, ⚙ des encarts, Réglages) par ComprendreState.open.
+    ComprendreState.request?.let { start -> ComprendreDialog(startLesson = start, onDismiss = { ComprendreState.close() }) }
+
     if (showPreferencesDialog) {
         SurfPreferencesDialog(
+            modelPreview = viewModel.modelPreview,
+            onNeedModelPreview = { viewModel.loadModelPreview() },
             appVersion = appVersion,
             windUnit = viewModel.windUnit,
             onWindUnitSelected = { newUnit -> viewModel.changeWindUnit(newUnit) },
@@ -696,7 +701,7 @@ fun MainScreen(
                                     viewModel.offlineSinceMillis?.let { ms ->
                                         val dt = epochMillisToLocalDateTime(ms)
                                         Text(
-                                            text = "📴 Pas de réseau : prévisions du ${dt.dayOfMonth}/${dt.monthNumber} à ${dt.hour}h${dt.minute.toString().padStart(2, '0')}",
+                                            text = "Pas de réseau : prévisions du ${dt.dayOfMonth}/${dt.monthNumber} à ${dt.hour}h${dt.minute.toString().padStart(2, '0')}",
                                             fontSize = 12.sp,
                                             color = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -837,16 +842,16 @@ fun MainScreen(
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(
-                        "weekCard", "★ Étoiles et couleurs",
+                        "weekCard", "Étoiles et couleurs",
                         "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⚙ d'un encart : réglages et explications."
                     ),
                     CoachStep(
-                        "settings", "⚙️ Ton profil",
+                        "settings", "Ton profil",
                         "Pour l'instant, les notes sont celles d'un surfeur moyen. Réponds à quelques questions : elles deviennent les tiennes (taille, vent, « gros jour »). Une minute.",
                         actionLabel = "Renseigner mon profil",
                         onAction = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true }
                     ),
-                    CoachStep("journal", "📓 Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
+                    CoachStep("journal", "Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
                 ),
                 targets = coachTargets,
                 onFinish = { viewModel.dismissHomeTour() }
@@ -1176,7 +1181,8 @@ fun DynamicCardsSection(
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
                                     modifier = Modifier.fillMaxWidth(),
-                                    beachFacing = idealSwellDirection
+                                    beachFacing = idealSwellDirection,
+                                    buoy = viewModel.buoyReading
                                 )
                             }
                         }
@@ -1282,6 +1288,25 @@ fun DynamicCardsSection(
                             onLater = { viewModel.hideProfileNudge() },
                             modifier = (if (coachTargets != null) Modifier.coachTarget("bestSlot", coachTargets) else Modifier).padding(horizontal = 6.dp, vertical = 6.dp)
                         )
+                    }
+                    // Une porte discrète vers les leçons, sous la semaine.
+                    if (cardKey == "weekly") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp).clickable { ComprendreState.open() },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Comprendre la houle", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Période, séries, modèles, bouées : 11 leçons courtes", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text("›", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                     if (cardKey == afterKey) afterTimeline()
                 }

@@ -56,18 +56,20 @@ fun DonationButton(modifier: Modifier = Modifier) {
     val uri = LocalUriHandler.current
     val colors = MaterialTheme.colorScheme
     var open by remember { mutableStateOf(false) }
-    Button(
-        onClick = { open = true },
-        modifier = modifier,
-        shape = RoundedCornerShape(50),
-        colors = ButtonDefaults.buttonColors(containerColor = colors.primaryContainer)
-    ) { Text("❤️ Soutenir Surf Log", fontSize = 13.sp, color = colors.onPrimaryContainer) }
+    Row(
+        modifier = modifier.clip(RoundedCornerShape(12.dp)).background(colors.primaryContainer).clickable { open = true }.padding(horizontal = 16.dp, vertical = 13.dp),
+        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
+    ) {
+        SettingsIcon(SettingsIcons.Heart, colors.onPrimaryContainer, 20.dp)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Soutenir Surf Log", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.onPrimaryContainer)
+    }
 
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
             containerColor = colors.background,
-            title = { Text("❤️ Soutenir Surf Log", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = colors.onBackground) },
+            title = { Text("Soutenir Surf Log", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = colors.onBackground) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(

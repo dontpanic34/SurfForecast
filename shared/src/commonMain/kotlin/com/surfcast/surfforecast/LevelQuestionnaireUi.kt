@@ -144,10 +144,10 @@ fun LevelXpBar(score: Int, modifier: Modifier = Modifier, height: Int = 10) {
 fun LevelCard(result: LevelResult, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(result.name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        Text(result.name, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
         LevelXpBar(result.score)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            LEVEL_NAMES.forEach { Text(it, fontSize = 9.5.sp, color = colors.onSurfaceVariant, maxLines = 1) }
+            LEVEL_NAMES.forEach { Text(it, fontSize = 10.sp, color = colors.onSurfaceVariant, maxLines = 1) }
         }
     }
 }
@@ -176,38 +176,31 @@ fun LevelQuestionnaire(
     if (finished) {
         val result = computeLevel(answers, shift)
         val level = LEVEL_DEFINITIONS[result.bandIndex]
-        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Ton niveau", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurfaceVariant, letterSpacing = 0.8.sp)
-            Column(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceVariant).padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LevelCard(result)
-                Text(level.first, fontSize = 13.sp, color = colors.onBackground)
-                Text("Sur la vague, tu cherches : " + level.second, fontSize = 12.5.sp, color = colors.onSurfaceVariant)
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            SettingsSection("Ton niveau") {
+                Column(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LevelCard(result)
+                    Text(level.first, fontSize = 14.sp, color = colors.onSurface)
+                    Text("Sur la vague, tu cherches : " + level.second, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+                }
             }
             result.nextName?.let { next ->
-                Column(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant).padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text("Pour passer à « $next »", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-                    result.advice?.let { Text(it, fontSize = 12.5.sp, color = colors.onBackground) }
-                    // Un « + » veut dire qu'un seul point te retient : on le nomme.
-                    if (result.plus && result.holdBack.size == 1) {
-                        Text("Aujourd'hui, ce qui te retient : " + result.holdBack.first() + ".", fontSize = 11.5.sp, color = colors.onSurfaceVariant)
+                SettingsSection("Pour passer à « $next »") {
+                    Column(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        result.advice?.let { Text(it, fontSize = 14.sp, lineHeight = 19.sp, color = colors.onSurface) }
+                        // Un « + » veut dire qu'un seul point te retient : on le nomme.
+                        if (result.plus && result.holdBack.size == 1) {
+                            Text("Aujourd'hui, ce qui te retient : " + result.holdBack.first() + ".", fontSize = 12.5.sp, color = colors.onSurfaceVariant)
+                        }
                     }
                 }
-            } ?: Text("Tu es au sommet de l'échelle : tu perfectionnes.", fontSize = 12.5.sp, color = colors.onBackground)
+            } ?: SettingsNote("Tu es au sommet de l'échelle : tu perfectionnes.")
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { shift -= 1 }, enabled = result.bandIndex > 0, modifier = Modifier.weight(1f)) { Text("− Une marche", fontSize = 12.sp) }
-                OutlinedButton(onClick = { shift += 1 }, enabled = result.bandIndex < 8, modifier = Modifier.weight(1f)) { Text("+ Une marche", fontSize = 12.sp) }
+                SettingsButton("− Une marche", primary = false, enabled = result.bandIndex > 0, modifier = Modifier.weight(1f)) { shift -= 1 }
+                SettingsButton("+ Une marche", primary = false, enabled = result.bandIndex < 8, modifier = Modifier.weight(1f)) { shift += 1 }
             }
-            Button(
-                onClick = { onDone(answers, shift, listOf("tol1", "tol2", "tol3").mapNotNull { state[it]?.firstOrNull() }) },
-                modifier = Modifier.fillMaxWidth()
-            ) { Text("C'est mon niveau", fontWeight = FontWeight.Bold) }
-            TextButton(onClick = { finished = false; index = 0 }, modifier = Modifier.fillMaxWidth()) { Text("Refaire le questionnaire") }
+            SettingsButton("C'est mon niveau") { onDone(answers, shift, listOf("tol1", "tol2", "tol3").mapNotNull { state[it]?.firstOrNull() }) }
+            SettingsButton("Refaire le questionnaire", primary = false) { finished = false; index = 0 }
         }
         return
     }
@@ -219,49 +212,40 @@ fun LevelQuestionnaire(
     else if (answers.takeOff != null) 2 else 0
     fun advance() { if (index >= steps.lastIndex) finished = true else index += 1 }
 
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             "${step.section.uppercase()} · ${index + 1} SUR ${steps.size}",
-            fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurfaceVariant, letterSpacing = 0.8.sp
+            fontSize = 11.5.sp, fontWeight = FontWeight.Medium, color = colors.onSurfaceVariant, letterSpacing = 1.sp
         )
-        Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(colors.surfaceVariant)) {
-            Box(modifier = Modifier.fillMaxWidth((index + 1f) / steps.size).fillMaxHeight().background(colors.primaryContainer))
-        }
+        SettingsProgress((index + 1f) / steps.size)
         if (known >= 2) {
             val live = computeLevel(answers)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(modifier = Modifier.weight(1f)) { LevelXpBar(live.score, height = 8) }
-                Text(live.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-                Text("provisoire", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
+                Text(live.name, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+                Text("provisoire", fontSize = 11.sp, color = colors.onSurfaceVariant)
             }
         }
-        Text(step.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        if (step.sub.isNotBlank()) Text(step.sub, fontSize = 13.sp, color = colors.onSurfaceVariant)
-        step.options.forEachIndexed { i, label ->
-            val on = i in selected
-            Column(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                    .background(if (on) colors.primaryContainer else colors.surfaceVariant)
-                    .clickable {
-                        if (step.multi) {
-                            state[step.id] = if (on) selected - i else selected + i
-                        } else {
-                            state[step.id] = listOf(i)
-                            advance()
-                        }
+        Text(step.title, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, lineHeight = 25.sp, color = colors.onBackground)
+        if (step.sub.isNotBlank()) Text(step.sub, fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant)
+        SettingsSection {
+            step.options.forEachIndexed { i, label ->
+                val on = i in selected
+                SettingsChoiceRow(label, step.optionHints.getOrNull(i), on, multi = step.multi, top = i > 0) {
+                    if (step.multi) {
+                        state[step.id] = if (on) selected - i else selected + i
+                    } else {
+                        state[step.id] = listOf(i)
+                        advance()
                     }
-                    .padding(horizontal = 12.dp, vertical = 11.dp)
-            ) {
-                Text(label, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onBackground)
-                step.optionHints.getOrNull(i)?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, fontSize = 11.5.sp, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant)
                 }
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { if (index > 0) index -= 1 else onClose() }) { Text(if (index > 0) "‹ Précédent" else "Fermer") }
+            SettingsButton(if (index > 0) "‹ Précédent" else "Fermer", primary = false, modifier = Modifier.weight(1f)) { if (index > 0) index -= 1 else onClose() }
             if (step.multi) {
-                Button(onClick = { advance() }, enabled = selected.isNotEmpty()) { Text(if (index >= steps.lastIndex) "Voir mon profil ›" else "Suivant ›") }
+                Spacer(Modifier.width(8.dp))
+                SettingsButton(if (index >= steps.lastIndex) "Voir mon profil ›" else "Suivant ›", enabled = selected.isNotEmpty(), modifier = Modifier.weight(1f)) { advance() }
             }
         }
     }
@@ -277,34 +261,22 @@ fun LevelLadder(result: LevelResult, modifier: Modifier = Modifier) {
     val mine = result.bandIndex / 2
     var selected by remember(mine) { mutableStateOf(mine) }
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Comparer les niveaux", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            LEVEL_NAMES.forEachIndexed { i, name ->
-                val acquired = i <= mine
-                Column(
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
-                        .background(if (i == selected) colors.primary.copy(alpha = 0.22f) else colors.surfaceVariant)
-                        .clickable { selected = i }.padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Box(modifier = Modifier.size(if (i == mine) 14.dp else 10.dp).clip(RoundedCornerShape(50))
-                        .background(if (acquired) colors.primary else colors.onSurface.copy(alpha = 0.2f)))
-                    Text(name, fontSize = 9.5.sp, fontWeight = if (i == mine) FontWeight.Bold else FontWeight.Normal, color = colors.onBackground, maxLines = 1)
-                }
-            }
-        }
+        Text("COMPARER LES NIVEAUX", fontSize = 11.5.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+        SettingsSegments(LEVEL_NAMES.mapIndexed { i, n -> i.toString() to (if (i == mine) "$n ●" else n) }, selected.toString()) { selected = it.toInt() }
         val step = LADDER[selected]
         val acquired = selected <= mine
-        Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(LEVEL_NAMES[selected] + if (selected == mine) " · ton niveau" else if (acquired) " · acquis" else " · à venir",
-                fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-            // Ce qui définit la marche : en gras et plus grand quand c'est acquis, petit quand ça reste à venir.
-            step.have.forEach {
-                Text(it, fontSize = if (acquired) 13.5.sp else 11.5.sp, fontWeight = if (acquired) FontWeight.Bold else FontWeight.Normal,
-                    color = if (acquired) colors.onBackground else colors.onSurfaceVariant)
+        SettingsSection {
+            Column(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(LEVEL_NAMES[selected] + if (selected == mine) " · ton niveau" else if (acquired) " · acquis" else " · à venir",
+                    fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.primary)
+                // Ce qui définit la marche : en gras et plus grand quand c'est acquis, petit quand ça reste à venir.
+                step.have.forEach {
+                    Text(it, fontSize = if (acquired) 14.sp else 12.5.sp, fontWeight = if (acquired) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (acquired) colors.onSurface else colors.onSurfaceVariant)
+                }
+                Text("À travailler : " + step.work.joinToString(" · "), fontSize = 12.5.sp, color = colors.onSurfaceVariant)
+                step.next?.let { Text("Pour la marche d'après : $it", fontSize = 12.5.sp, color = colors.onSurfaceVariant) }
             }
-            Text("À travailler : " + step.work.joinToString(" · "), fontSize = 11.5.sp, color = colors.onSurfaceVariant)
-            step.next?.let { Text("Pour la marche d'après : $it", fontSize = 11.5.sp, color = colors.onSurfaceVariant) }
         }
     }
 }

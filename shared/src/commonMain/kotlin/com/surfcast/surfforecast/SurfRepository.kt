@@ -11,6 +11,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -27,6 +28,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -181,7 +183,9 @@ class SurfRepository(
         // Houle secondaire (Open-Meteo secondary_swell_wave_*) : 0 = pas de seconde houle.
         val secHeights: List<Double> = emptyList(),
         val secPeriods: List<Double> = emptyList(),
-        val secDirections: List<Float> = emptyList()
+        val secDirections: List<Float> = emptyList(),
+        // Désaccord des modèles par heure (consensus) : (max - min) / moyenne des hauteurs ; vide hors consensus.
+        val spreads: List<Double> = emptyList()
     )
 
     private class RawWeatherHourly(
@@ -209,6 +213,7 @@ class SurfRepository(
 
         val hourly = httpGet(url).getValue("hourly").jsonObject
         val timeArr = hourly.getValue("time").jsonArray
+        val meanToPeak = if (waveModel == WaveModel.GFS_WAVE) 1.0 else MEAN_TO_PEAK_PERIOD
 
         val swellHArr = hourly.optArray("swell_wave_height")
         val swellPArr = hourly.optArray("swell_wave_period")
@@ -264,8 +269,9 @@ class SurfRepository(
                 // Cas habituel (MFWAM) : la période de pic de la houle, comme avant.
                 !swellPeak.isNaN() && swellPeak > 0.0 -> swellPeak
                 !totalPeak.isNaN() && totalPeak > 0.0 -> maxOf(totalPeak, if (!swellP.isNaN()) swellP else 0.0)
-                !swellP.isNaN() && swellP > 0.0 -> swellP * MEAN_TO_PEAK_PERIOD
-                else -> totalP * MEAN_TO_PEAK_PERIOD
+                // GFS Wave donne déjà des périodes de pic : aucune conversion.
+                !swellP.isNaN() && swellP > 0.0 -> swellP * meanToPeak
+                else -> totalP * meanToPeak
             }
             val finalD = if (!swellD.isNaN()) swellD else totalD
 
@@ -287,6 +293,143 @@ class SurfRepository(
         }
 
         return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs, secHeights, secPeriods, secDirs)
+    }
+
+    /**
+     * Les valeurs de chaque modèle pour un même moment (14 h aujourd'hui, demain et J+3), pour les montrer sous le choix
+     * manuel des sources : on voit ce que chaque modèle annonce avant de le choisir. Un modèle qui échoue ou qui ne
+     * couvre pas l'échéance est simplement absent.
+     */
+    suspend fun fetchModelPreview(latitude: Double, longitude: Double, today: LocalDate): ModelPreview = coroutineScope {
+        val waveJobs = listOf("MF-WAM" to WaveModel.MFWAM, "ECMWF Wave" to WaveModel.ECMWF_WAM, "GFS Wave" to WaveModel.GFS_WAVE).map { (label, m) ->
+            async { label to runCatching { fetchMarineBlock(latitude, longitude, m, 4) }.getOrNull() }
+        }
+        val windJobs = listOf("AROME" to WeatherModel.AROME, "ARPEGE" to WeatherModel.ARPEGE, "ECMWF" to WeatherModel.ECMWF_IFS, "GFS" to WeatherModel.GFS).map { (label, m) ->
+            async { label to runCatching { fetchWeatherBlock(latitude, longitude, m, 4) }.getOrNull() }
+        }
+        val waves = HashMap<String, Map<Int, PreviewWave>>()
+        waveJobs.forEach { j ->
+            val (label, b) = j.await()
+            if (b != null) {
+                val byDay = HashMap<Int, PreviewWave>()
+                for (d in 0..3) {
+                    val i = b.times.indexOfFirst { it.date == today.plus(d, DateTimeUnit.DAY) && it.hour == 14 }
+                    val h = b.waveHeights.getOrNull(i)
+                    if (i >= 0 && h != null && h > 0.0) byDay[d] = PreviewWave(h, b.wavePeriods.getOrNull(i) ?: 0.0)
+                }
+                if (byDay.isNotEmpty()) waves[label] = byDay
+            }
+        }
+        val winds = HashMap<String, Map<Int, PreviewWind>>()
+        windJobs.forEach { j ->
+            val (label, b) = j.await()
+            if (b != null) {
+                val byDay = HashMap<Int, PreviewWind>()
+                for (d in 0..3) {
+                    val i = b.times.indexOfFirst { it.date == today.plus(d, DateTimeUnit.DAY) && it.hour == 14 }
+                    val v = b.windSpeeds.getOrNull(i)
+                    if (i >= 0 && v != null && !v.isNaN()) {
+                        byDay[d] = PreviewWind(
+                            speedKmh = v.roundToInt(), directionDeg = (b.windDirections.getOrNull(i) ?: Double.NaN).takeIf { !it.isNaN() }?.roundToInt(),
+                            temperature = b.temperatures.getOrNull(i)?.takeIf { !it.isNaN() }?.roundToInt(),
+                            cloudCover = b.cloudCovers.getOrNull(i), rainMm = b.precipitations.getOrNull(i)?.takeIf { !it.isNaN() }
+                        )
+                    }
+                }
+                if (byDay.isNotEmpty()) winds[label] = byDay
+            }
+        }
+        ModelPreview(waves, winds)
+    }
+
+    /**
+     * Dernière mesure de la bouée de référence du point, lue par le relais surflog.fr/api/bouee (cache de 15 minutes).
+     * Null sans bouée proche, sans réseau ou sans mesure : la carte n'affiche alors rien.
+     */
+    suspend fun fetchBuoyReading(latitude: Double, longitude: Double): BuoyReading? {
+        val (buoy, km) = BuoyCatalog.referenceFor(latitude, longitude) ?: return null
+        return try {
+            val points = httpGet("https://surflog.fr/api/bouee/${buoy.code}")["points"]?.jsonArray ?: return null
+            val last = points.mapNotNull { it as? JsonObject }.lastOrNull { it["hs"]?.jsonPrimitive?.doubleOrNull != null } ?: return null
+            BuoyReading(
+                buoy = buoy, distanceKm = km,
+                significantHeight = last["hs"]!!.jsonPrimitive.double,
+                maxHeight = last["hmax"]?.jsonPrimitive?.doubleOrNull,
+                period = last["th"]?.jsonPrimitive?.doubleOrNull,
+                direction = last["dir"]?.jsonPrimitive?.doubleOrNull?.roundToInt(),
+                timeUtc = LocalDateTime.parse(last["t"]!!.jsonPrimitive.content)
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Consensus des trois modèles de vagues, heure par heure : la hauteur, la période et la direction viennent du même
+     * calcul. Court terme (jusqu'à 36 h) : MF-WAM et ECMWF à parts égales, GFS Wave écarté (il surestimait la période
+     * de près de 2 s sur la bouée de Cap Ferret). Long terme (dès 60 h) : les trois à parts égales. Entre les deux,
+     * un fondu, pour ne pas voir un saut. Clapot et houle secondaire : du modèle le plus pesant qui les donne.
+     */
+    private suspend fun buildConsensusMarine(lat: Double, lon: Double, today: LocalDate): RawMarineHourly = coroutineScope {
+        val models = listOf(WaveModel.MFWAM, WaveModel.ECMWF_WAM, WaveModel.GFS_WAVE)
+        val blocks = models.map { m -> async { runCatching { fetchMarineBlock(lat, lon, m, 7) }.getOrNull() } }.map { it.await() }
+        val ok = models.indices.filter { blocks[it] != null }
+        if (ok.isEmpty()) throw IllegalStateException("aucun modèle de vagues disponible")
+        val base = blocks[ok.first()]!!
+        val maps = blocks.map { b -> b?.times?.indices?.associateBy { b.times[it] } }
+        val times = base.times
+        val heights = ArrayList<Double>(); val periods = ArrayList<Double>(); val dirs = ArrayList<Float>()
+        val wwH = ArrayList<Double>(); val wwP = ArrayList<Double>(); val wwD = ArrayList<Float>()
+        val sH = ArrayList<Double>(); val sP = ArrayList<Double>(); val sD = ArrayList<Float>()
+        val spreads = ArrayList<Double>()
+        for (t in times) {
+            val leadHours = ((t.date.toEpochDays() - today.toEpochDays()) * 24L + t.hour).toDouble()
+            val weights = waveConsensusWeights(leadHours)
+            var sw = 0.0; var hSum = 0.0; var pSum = 0.0; var pw = 0.0; var vx = 0.0; var vy = 0.0
+            var hMin = Double.MAX_VALUE; var hMax = 0.0; var hCount = 0; var hMean = 0.0
+            var best = -1
+            for (k in models.indices) {
+                val b = blocks[k] ?: continue
+                val idx = maps[k]?.get(t) ?: continue
+                val h = b.waveHeights.getOrNull(idx) ?: continue
+                if (h.isNaN() || h <= 0.0) continue
+                val w = weights[k]
+                if (w > 0.0) {
+                    sw += w; hSum += w * h
+                    val p = b.wavePeriods.getOrNull(idx) ?: 0.0
+                    if (p > 0.0) { pSum += w * p; pw += w }
+                    val d = (b.waveDirections.getOrNull(idx) ?: Float.NaN).toDouble()
+                    if (!d.isNaN()) { vx += w * cos(d * PI / 180.0); vy += w * sin(d * PI / 180.0) }
+                    if (best < 0 || w > weights[best]) best = k
+                }
+                hMin = minOf(hMin, h); hMax = maxOf(hMax, h); hMean += h; hCount++
+            }
+            if (sw <= 0.0) {
+                // Aucun modèle pesant n'a cette heure : on prend le premier qui l'a, sans consensus.
+                val k = ok.firstOrNull { maps[it]?.containsKey(t) == true }
+                val idx = k?.let { maps[it]?.get(t) }
+                val b = k?.let { blocks[it] }
+                heights += b?.waveHeights?.getOrNull(idx ?: -1) ?: 0.0
+                periods += b?.wavePeriods?.getOrNull(idx ?: -1) ?: 0.0
+                dirs += b?.waveDirections?.getOrNull(idx ?: -1) ?: 0f
+                wwH += 0.0; wwP += 0.0; wwD += 0f; sH += 0.0; sP += 0.0; sD += 0f; spreads += 0.0
+                continue
+            }
+            heights += hSum / sw
+            periods += if (pw > 0.0) pSum / pw else 0.0
+            dirs += ((atan2(vy, vx) * 180.0 / PI + 360.0) % 360.0).toFloat()
+            // Clapot et houle secondaire : du modèle le plus pesant (à égalité, MF-WAM en court terme, ECMWF ensuite).
+            val order = (if (leadHours < 48) listOf(0, 1, 2) else listOf(1, 0, 2)).filter { blocks[it] != null && maps[it]?.containsKey(t) == true }
+            val src = order.firstOrNull { k -> (maps[k]!![t]!!).let { i -> (blocks[k]!!.secHeights.getOrNull(i) ?: 0.0) > 0.0 } } ?: order.firstOrNull() ?: best
+            val bs = blocks[src]!!; val si = maps[src]!![t]!!
+            val wsrc = blocks[order.firstOrNull() ?: best]!!; val wi = maps[order.firstOrNull() ?: best]!![t]!!
+            wwH += wsrc.windWaveHeights.getOrNull(wi) ?: 0.0; wwP += wsrc.windWavePeriods.getOrNull(wi) ?: 0.0; wwD += wsrc.windWaveDirections.getOrNull(wi) ?: 0f
+            sH += bs.secHeights.getOrNull(si) ?: 0.0; sP += bs.secPeriods.getOrNull(si) ?: 0.0; sD += bs.secDirections.getOrNull(si) ?: 0f
+            spreads += if (hCount >= 2 && hMean > 0.0) (hMax - hMin) / (hMean / hCount) else 0.0
+        }
+        RawMarineHourly(times, heights, periods, dirs, wwH, wwP, wwD, sH, sP, sD, spreads)
     }
 
     /**
@@ -512,8 +655,9 @@ class SurfRepository(
 
             // Court terme (J0-J1) : AROME + MFWAM, plus précis sur la côte française.
             // Long terme : ECMWF prend le relais. Les 4 appels partent en parallèle.
-            val shortMarineDeferred = async { fetchMarineBlock(lat, lon, config.shortTermWave, 2) }
-            val longMarineDeferred = async { fetchMarineBlock(lat, lon, config.longTermWave, 7) }
+            val consensusDeferred = if (config.consensus) async { buildConsensusMarine(lat, lon, today) } else null
+            val shortMarineDeferred = async { consensusDeferred?.await() ?: fetchMarineBlock(lat, lon, config.shortTermWave, 2) }
+            val longMarineDeferred = async { consensusDeferred?.await() ?: fetchMarineBlock(lat, lon, config.longTermWave, 7) }
             val shortWeatherDeferred = async { fetchWeatherBlock(lat, lon, config.shortTermWeather, 2) }
             val aromeHdWindDeferred = async {
                 if (config.shortTermWeather == WeatherModel.AROME) fetchAromeHdWind(lat, lon) else emptyMap()
@@ -530,7 +674,7 @@ class SurfRepository(
             }
             val gfsWindDeferred = async { fetchGfsWind(lat, lon, 7) }
             val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
-            val referencePeriodsDeferred = async { fetchReferencePeriods(lat, lon, 7) }
+            val referencePeriodsDeferred = async { if (config.consensus) emptyMap() else fetchReferencePeriods(lat, lon, 7) }
 
             val shortMarine = shortMarineDeferred.await()
             val longMarine = longMarineDeferred.await()
@@ -638,6 +782,7 @@ class SurfRepository(
                         secondaryHeight = mData.secHeights.getOrElse(mIndex) { 0.0 },
                         secondaryPeriod = mData.secPeriods.getOrElse(mIndex) { 0.0 },
                         secondaryDirection = mData.secDirections.getOrElse(mIndex) { 0f },
+                        modelSpread = mData.spreads.getOrElse(mIndex) { 0.0 },
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
                         windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),

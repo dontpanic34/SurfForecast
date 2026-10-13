@@ -465,6 +465,7 @@ class SurfController(
         prefs.putString("short_wave", newConfig.shortTermWave.name)
         prefs.putString("long_weather", newConfig.longTermWeather.name)
         prefs.putString("long_wave", newConfig.longTermWave.name)
+        prefs.putBoolean("wave_consensus", newConfig.consensus)
         loadActiveSpot(initialLoad = false)
     }
 
@@ -482,6 +483,21 @@ class SurfController(
         }
     }
 
+    /** Les annonces de chaque modèle pour le spot affiché (page « Sources et modèles ») ; null tant qu'elles ne sont pas chargées. */
+    var modelPreview by mutableStateOf<ModelPreview?>(null)
+        private set
+
+    /** Charge les annonces des modèles du spot affiché : appelé à l'ouverture de la page des sources. */
+    fun loadModelPreview() {
+        val spot = lastLoadedSpot ?: return
+        if (modelPreview != null) return
+        scope.launch { modelPreview = runCatching { repository.fetchModelPreview(spot.latitude, spot.longitude, nowLocalDateTime().date) }.getOrNull() }
+    }
+
+    /** Dernière mesure de la bouée de référence du spot affiché (null = pas de bouée proche ou pas de mesure). */
+    var buoyReading by mutableStateOf<BuoyReading?>(null)
+        private set
+
     /** Non null = pas de réseau : les prévisions affichées datent de ce moment (ms). */
     var offlineSinceMillis by mutableStateOf<Long?>(null)
         private set
@@ -489,6 +505,10 @@ class SurfController(
     private suspend fun loadSpotInternal(spot: SurfSpotItem) {
         try {
             repository.resetStale()
+            // La bouée se charge à part : une panne du relais ne retarde jamais les prévisions.
+            buoyReading = null
+            modelPreview = null
+            scope.launch { buoyReading = repository.fetchBuoyReading(spot.latitude, spot.longitude) }
             val forecastResult = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig)
             offlineSinceMillis = repository.staleSinceMillis
             val forecast = forecastResult.hourly

@@ -275,7 +275,12 @@ fun calculateSlotRating(
     } ?: 0.0
     val coeffDirection = if (directionDiff >= 90.0) 0.0 else cos(directionDiff * PI / 180.0)
 
-    val energyKj = waveEnergyKj(h, t) * coeffDirection
+    // L'énergie est la somme des trains de houle : la houle secondaire compte quand elle est assez grosse et longue pour être surfée.
+    val secondaryKj = if (hourlyModel.secondaryHeight >= 0.2 && hourlyModel.secondaryPeriod >= 7.0) {
+        val secDiff = idealSwellDirection?.let { angularDifference(hourlyModel.secondaryDirection.toDouble(), it.toDouble()) } ?: 0.0
+        waveEnergyKj(hourlyModel.secondaryHeight, hourlyModel.secondaryPeriod) * (if (secDiff >= 90.0) 0.0 else cos(secDiff * PI / 180.0))
+    } else 0.0
+    val energyKj = waveEnergyKj(h, t) * coeffDirection + secondaryKj
     // Un offshore creuse la vague (plus puissante, plus creuse), un onshore l'écrase : à taille égale, la vague
     // « pèse » plus ou moins pour le surfeur.
     val powerFactor = when (windCategory) {
