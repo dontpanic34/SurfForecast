@@ -40,7 +40,8 @@ fun SurfCardComponent(
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
     // Orientation de la plage : la taille de la flèche de houle dit si la houle est bien orientée.
-    beachFacing: Int? = null
+    beachFacing: Int? = null,
+    sun: DailySunInfo? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -55,22 +56,7 @@ fun SurfCardComponent(
 
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .pointerInput(allHoursOfDay) {
-                detectHorizontalDragGestures { change, _ ->
-                    val x = change.position.x.coerceIn(0f, size.width.toFloat())
-                    val widthPerItem = size.width / allHoursOfDay.size.toFloat()
-                    val index = (x / widthPerItem).toInt().coerceIn(0, allHoursOfDay.size - 1)
-                    onHourSelected(allHoursOfDay[index])
-                }
-            }
-            .pointerInput(allHoursOfDay) {
-                detectTapGestures { offset ->
-                    val widthPerItem = size.width / allHoursOfDay.size.toFloat()
-                    val index = (offset.x / widthPerItem).toInt().coerceIn(0, allHoursOfDay.size - 1)
-                    onHourSelected(allHoursOfDay[index])
-                }
-            },
+            .fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = surfaceColor),
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -103,91 +89,12 @@ fun SurfCardComponent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                val currentHourNow = nowLocalDateTime().hour
-                val isToday = allHoursOfDay.firstOrNull()?.rawTime?.date == nowLocalDateTime().date
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    verticalAlignment = Alignment.Bottom,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    allHoursOfDay.forEach { hourly ->
-                        val isSelected = hourly.rawTime == selectedHour.rawTime
-                        val isCurrentHour = isToday && hourly.rawTime.hour == currentHourNow
-                        val heightRatio = (hourly.waveHeight / maxWave).toFloat().coerceIn(0.15f, 1f)
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            contentAlignment = Alignment.BottomCenter
-                        ) {
-                            Canvas(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(heightRatio)
-                            ) {
-                                val brush = Brush.verticalGradient(
-                                    colors = if (isSelected) {
-                                        listOf(primaryColor, primaryColor.copy(alpha = 0.85f))
-                                    } else {
-                                        listOf(primaryColor.copy(alpha = 0.5f), primaryColor.copy(alpha = 0.2f))
-                                    }
-                                )
-                                drawRoundRect(
-                                    brush = brush,
-                                    topLeft = Offset.Zero,
-                                    size = Size(size.width, size.height),
-                                    cornerRadius = CornerRadius(3f, 3f)
-                                )
-
-                                if (isCurrentHour) {
-                                    drawRoundRect(
-                                        color = onSurfaceColor.copy(alpha = 0.85f),
-                                        topLeft = Offset.Zero,
-                                        size = Size(size.width, size.height),
-                                        cornerRadius = CornerRadius(3f, 3f),
-                                        style = Stroke(width = 1.2.dp.toPx())
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val selectedIndex = allHoursOfDay.indexOfFirst { it.rawTime == selectedHour.rawTime }
-                if (selectedIndex != -1) {
-                    val fraction = selectedIndex.toFloat() / (allHoursOfDay.size - 1).coerceAtLeast(1)
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val indicatorX = size.width * fraction
-
-                        drawLine(
-                            color = onSurfaceColor.copy(alpha = 0.75f),
-                            start = Offset(indicatorX, 0f),
-                            end = Offset(indicatorX, size.height),
-                            strokeWidth = 1.8f
-                        )
-
-                        drawCircle(
-                            color = onSurfaceColor,
-                            radius = 3.2f,
-                            center = Offset(indicatorX, size.height * (1f - (selectedHour.waveHeight / maxWave).toFloat().coerceIn(0.15f, 1f)))
-                        )
-
-                        val timeStr = selectedHour.rawTime.formatHHmm()
-                        val timeStrLayout = textMeasurer.measure(timeStr, timeTextPaint)
-                        val textWidth = timeStrLayout.size.width.toFloat()
-                        val adjustedX = indicatorX.coerceIn(textWidth / 2f, size.width - textWidth / 2f)
-
-                        drawText(timeStrLayout, topLeft = Offset(adjustedX - textWidth / 2f, 4.dp.toPx() - timeStrLayout.firstBaseline))
-                    }
-                }
-            }
+            CellBars(
+                hours = allHoursOfDay, sun = sun, selected = selectedHour, onHourSelected = onHourSelected,
+                maxValue = maxWave,
+                valueOf = { g -> g.map { it.waveHeight }.average() },
+                colorOf = { _, sel -> if (sel) primaryColor else primaryColor.copy(alpha = 0.78f) }
+            )
             }
         }
     }

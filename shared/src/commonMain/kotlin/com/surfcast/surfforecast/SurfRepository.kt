@@ -19,6 +19,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -31,6 +32,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.PI
@@ -361,6 +364,34 @@ class SurfRepository(
                 period = last["th"]?.jsonPrimitive?.doubleOrNull,
                 direction = last["dir"]?.jsonPrimitive?.doubleOrNull?.roundToInt(),
                 timeUtc = LocalDateTime.parse(last["t"]!!.jsonPrimitive.content)
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Dernière mesure de la station Météo-France la plus proche qui mesure le vent, lue par le relais surflog.fr/api/obs
+     * (cache de 10 minutes). Null sans station à moins de 35 km, sans réseau, ou si la mesure date de plus de 3 heures.
+     */
+    suspend fun fetchObservedNow(latitude: Double, longitude: Double): ObservedNow? {
+        return try {
+            val o = httpGet("https://surflog.fr/api/obs/near?lat=$latitude&lon=$longitude")
+            val time = LocalDateTime.parse(o["time"]!!.jsonPrimitive.content.removeSuffix("Z"))
+            val age = nowLocalDateTime().toInstant(TimeZone.currentSystemDefault()).let { it - time.toInstant(TimeZone.UTC) }.inWholeHours
+            if (age >= OBSERVED_MAX_AGE_HOURS) return null
+            val st = o["station"]!!.jsonObject
+            ObservedNow(
+                stationName = st["name"]!!.jsonPrimitive.content,
+                distanceKm = st["km"]!!.jsonPrimitive.double,
+                timeUtc = time,
+                windKmh = o["windKmh"]!!.jsonPrimitive.int,
+                gustKmh = o["gustKmh"]?.jsonPrimitive?.intOrNull,
+                directionDeg = o["dirDeg"]?.jsonPrimitive?.intOrNull,
+                rainMm = o["rainMm"]?.jsonPrimitive?.doubleOrNull,
+                tempC = o["tempC"]?.jsonPrimitive?.doubleOrNull
             )
         } catch (e: CancellationException) {
             throw e
@@ -854,8 +885,11 @@ class SurfRepository(
                 val sites = fetchMareeSites()
                 val nearest = sites.minByOrNull { distanceKm(lat, lon, it.latitude, it.longitude) }
                 val distance = nearest?.let { distanceKm(lat, lon, it.latitude, it.longitude) }
+                var estimated = false
                 val days: List<MareeDayData> = if (nearest == null || (distance ?: 0.0) <= MAX_FRENCH_TIDE_KM) {
-                    fetchMareeExtrema(nearest?.siteId ?: "cordouan", fromDate, toDate)
+                    // Le service des marées en panne (et pas de copie de secours) : on estime les marées plutôt que de n'en montrer aucune.
+                    runCatching { fetchMareeExtrema(nearest?.siteId ?: "cordouan", fromDate, toDate) }.getOrNull()
+                        ?: estimatedTideDays(lat, lon, emptyList()).also { estimated = true }
                 } else {
                     // Hors France : on lit le coefficient chez le port français le plus proche (même date,
                     // PM la plus proche en heure). Le SHOM le définit à partir de Brest, mais chaque port
@@ -884,7 +918,8 @@ class SurfRepository(
                         highTideTime = dayPm?.time,
                         lowTideTime = dayBm?.time,
                         coefficient = coef,
-                        extrema = extrema
+                        extrema = extrema,
+                        estimated = estimated
                     )
                 }
                 TidesBundle(dailyMap, rawMap)

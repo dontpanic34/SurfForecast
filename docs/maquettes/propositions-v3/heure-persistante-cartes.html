@@ -1,0 +1,124 @@
+<title>Heure persistante et trois cartes harmonisées</title>
+<style>
+/* Mise en page : la ligne de temps unique dans l'encart Actuellement, toujours visible en bas ; trois cartes (houle, vent, météo) de même hauteur et même poids visuel. Ancien commentaire : cinq façons de montrer ensemble les cartes Houle, Vent et Météo avec la nuit regroupée en blocs de 3 heures ; une même heure choisie pour les trois, qu'on déplace en glissant sur n'importe quelle bande. */
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--cell:#0f1822;--night:#1b2540;--link:#4fb3e8;--sun:#f6c453;--dusk:#e8844a;--rain:#5aa9e6;--cloud:#9fb2bd;--sea:#4a9cc4;--sel:#7fc3e6;--w1:#f2c94c;--w2:#f2994a;--w3:#eb5757;--nacre:#e6f1ff;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--night:#b9c2dc;--link:#1b88c4;--sun:#e2a025;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--sea:#2a86b0;--sel:#1b88c4;--w1:#d9a800;--w2:#d9731b;--w3:#c4372f;--nacre:#10222e;color-scheme:light}}
+:root[data-theme="light"]{--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--night:#b9c2dc;--link:#1b88c4;--sun:#e2a025;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--sea:#2a86b0;--sel:#1b88c4;--w1:#d9a800;--w2:#d9731b;--w3:#c4372f;--nacre:#10222e;color-scheme:light}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding-inline:16px;padding-block:18px}
+main{max-width:440px;margin:0 auto;display:grid;gap:12px}h1{font-size:1.2rem;margin:0}h2{font-size:1rem;margin:16px 0 0;color:#7fc3e6}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12.5px}
+.card{background:var(--card);border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.hd{display:flex;justify-content:space-between;color:var(--mut);font-size:13px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.big{font-size:19px;font-weight:700}.per{color:var(--link);font-weight:600;margin-left:6px}
+.bars{position:relative;display:flex;gap:2px;align-items:flex-end;height:54px;cursor:ew-resize;touch-action:none;user-select:none}
+.bars i{flex:1 1 0;border-radius:2px 2px 0 0;position:relative}
+.bars i.blk{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 3px,transparent 3px 6px)}
+.bars i.on{outline:1.5px solid var(--nacre)}
+.lbl{position:absolute;top:-2px;text-shadow:0 0 3px var(--card),0 0 3px var(--card);font-size:11.5px;font-weight:800;color:var(--nacre);transform:translateX(-50%);white-space:nowrap;pointer-events:none}
+.cells{display:flex;gap:2px;height:14px;position:relative;cursor:ew-resize;touch-action:none;user-select:none}
+.cells i{flex:1 1 0;border-radius:3px;background:var(--cell);position:relative;overflow:hidden}.cells i u{position:absolute;inset:0;border-radius:3px}
+.cells i.blk{background:var(--night)}
+.cells i.on{outline:1.5px solid var(--nacre)}
+.dot{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#fff;border:2px solid #0b1519;pointer-events:none}
+.g{display:grid;grid-template-columns:54px 1fr 52px;column-gap:8px;row-gap:6px;align-items:center;font-size:12px;color:var(--mut)}.g b{text-align:right;color:var(--fg);font-size:13px}
+.hrs{position:relative;height:16px}.hrs span{position:absolute;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;font-weight:800}
+svg{display:block;width:100%;height:54px}
+.tog{display:flex;gap:6px;flex-wrap:wrap}.tog button{border:1px solid var(--mut);background:none;color:var(--mut);border-radius:99px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.tog button.on{background:var(--link);border-color:var(--link);color:#fff}
+.frame{height:620px;overflow:auto;border-radius:18px;border:1px solid var(--cell);background:var(--bg);position:relative;padding:8px 8px 0}
+.stack{display:grid;gap:8px;padding-bottom:12px}
+.now{position:sticky;bottom:0;margin:8px -8px 0;padding:8px 12px 10px;background:var(--card);border-top:1px solid var(--cell);border-radius:14px 14px 0 0;box-shadow:0 -6px 18px rgba(0,0,0,.28);display:grid;gap:5px;z-index:2}
+.now .t{display:flex;justify-content:space-between;align-items:baseline}.now .t b{font-size:15px;color:var(--mut)}
+.tiles{display:flex;gap:6px}.tile{flex:1;background:var(--cell);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--mut)}.tile b{display:block;font-size:13px;color:var(--fg)}
+.strip{position:relative;display:flex;gap:2px;height:20px;cursor:ew-resize;touch-action:none;user-select:none}
+.strip i{flex:1 1 0;border-radius:3px;background:var(--cell);position:relative;overflow:hidden}.strip i u{position:absolute;inset:0}
+.strip i.blk{background:var(--night)}.strip i.on{outline:1.5px solid var(--nacre)}
+.strip i.blk:after{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 3px,transparent 3px 6px)}
+.fix{height:6px}
+.bars.tall{height:54px}
+.mbars{position:relative;display:flex;gap:2px;align-items:flex-end;height:54px;cursor:ew-resize;touch-action:none;user-select:none}
+.mbars i{flex:1 1 0;border-radius:2px 2px 0 0;position:relative}.mbars i.blk{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 3px,transparent 3px 6px)}.mbars i.on{outline:1.5px solid var(--nacre)}
+.btabs{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+<main>
+<h1>Heure persistante et trois cartes harmonisées</h1>
+<p class="mut sm">Proposition 5 retenue : les cartes Houle, Vent et Météo n'ont plus de ligne d'heures. Une seule ligne de temps vit dans l'encart Actuellement, en bas de l'écran, donc toujours visible : l'heure choisie, le lever et le coucher, la bande d'ensoleillement et les blocs de nuit. Glisse dessus ou sur n'importe quelle barre ; fais défiler le cadre pour voir qu'elle reste. Les trois cartes ont la même hauteur et le même poids ; trois habillages pour la Météo.</p>
+<div class="btabs" id="tabs"><button data-m="1" class="on">Météo 1 · Ciel en barres</button><button data-m="2">Météo 2 · Ressenti et pluie</button><button data-m="3">Météo 3 · Bandes hautes</button></div>
+<div class="frame" id="frame"><div class="stack" id="stack"></div><div class="now" id="now"></div></div>
+<p class="sm mut" id="desc"></p>
+</main>
+<script>
+var SR=8+17/60,SS=19+22/60,sel=14,MODE=1;
+var W=[],V=[],D=[],T=[];
+for(var h=0;h<24;h++){W.push(+(1.0+0.9*Math.exp(-Math.pow((h-3)/9,2))+0.15*Math.sin(h/2)).toFixed(2));
+ V.push(Math.max(2,Math.round(4+10*Math.max(0,Math.sin((h-6)/14*Math.PI))+(h===13?3:0))));
+ D.push({cl:Math.round(100-(h%5)*3),r:(h>=16&&h<=18)?[0.3,0.6,0.2][h-16]:0,uv:(h>=8&&h<=19)?Math.max(0,Math.round(3*Math.sin((h-8)/11*Math.PI))):0});
+ T.push(Math.round(14+7*Math.sin((h-9)/24*2*Math.PI)))}
+var dirs=['OSO','O','ONO','ONO','NO'];
+function cells(){var a=Math.max(0,Math.floor(SR)-2),b=Math.min(23,Math.ceil(SS)+2),out=[];
+ for(var h=0;h<a;){var e=Math.min(h+3,a);out.push({a:h,b:e-1,blk:true});h=e}
+ for(var h=a;h<=b;h++)out.push({a:h,b:h,blk:false});
+ for(var h=b+1;h<24;){var e=Math.min(h+3,24);out.push({a:h,b:e-1,blk:true});h=e}return out}
+var C=cells();
+function ci(h){for(var i=0;i<C.length;i++)if(h>=C[i].a&&h<=C[i].b)return i;return 0}
+function mid(c){return c.blk?Math.round((c.a+c.b)/2):c.a}
+function avg(f,c){var s=0,n=0;for(var h=c.a;h<=c.b;h++){s+=f(h);n++}return s/n}
+function mx(f,c){var m=-1e9;for(var h=c.a;h<=c.b;h++)m=Math.max(m,f(h));return m}
+function fmtH(h){return Math.floor(h)+' h '+('0'+Math.round((h%1)*60)).slice(-2)}
+function posOf(t){var i=Math.floor(t),k=ci(Math.min(23,i)),c=C[k];var frac=c.blk?(t-c.a)/(c.b-c.a+1):(t-i);return (k+Math.max(0,Math.min(1,frac)))/C.length*100}
+function wave(c){return c.blk?avg(function(h){return W[h]},c):W[c.a]}
+function wind(c){return c.blk?mx(function(h){return V[h]},c):V[c.a]}
+function cloud(c){return c.blk?avg(function(h){return D[h].cl},c):D[c.a].cl}
+function rain(c){return c.blk?mx(function(h){return D[h].r},c):D[c.a].r}
+function temp(c){return c.blk?avg(function(h){return T[h]},c):T[c.a]}
+function wcol(v){return v<10?'var(--w1)':v<16?'var(--w2)':'var(--w3)'}
+function selLabel(k){return '<span class="lbl" style="left:'+((k+.5)/C.length*100)+'%">'+sel+':00</span>'}
+function dotAt(k,topPct){return '<div class="dot" style="left:'+((k+.5)/C.length*100)+'%;top:'+topPct+'%"></div>'}
+function bars(fn,max,col,k,cls){var h='',n=C.length;C.forEach(function(c,i){var v=fn(c);h+='<i class="'+(c.blk?'blk ':'')+(i===k?'on':'')+'" style="height:'+Math.max(10,Math.round(v/max*100))+'%;background-color:'+col(v,c,i===k)+'"></i>'});
+ return '<div class="'+(cls||'bars')+'" data-b>'+h+dotAt(k,100-Math.max(10,Math.round(fn(C[k])/max*100)))+'</div>'}
+function seaCol(v,c,on){return c.blk?'var(--night)':(on?'var(--sel)':'var(--sea)')}
+function windCol(v,c,on){return c.blk?'var(--night)':wcol(v)}
+function skyBars(k){return bars(function(c){return rain(c)>0?60+rain(c)*60:cloud(c)},100,function(v,c,on){if(c.blk)return 'var(--night)';return rain(c)>0?'var(--rain)':'var(--cloud)'},k,'mbars')}
+function tempCurve(k){ // aire du ressenti + barres de pluie
+ var n=C.length,mn=Math.min.apply(0,T),mxT=Math.max.apply(0,T);
+ var pts=C.map(function(c,i){return [(i+.5)/n*240,50-(temp(c)-mn)/(mxT-mn)*34]});
+ var d='M0 54 L'+pts[0][0]+' '+pts[0][1];for(var i=1;i<n;i++){var p=pts[i-1],q=pts[i],m=(p[0]+q[0])/2;d+=' C'+m+' '+p[1]+' '+m+' '+q[1]+' '+q[0]+' '+q[1]}
+ d+=' L240 54 Z';var rb='';C.forEach(function(c,i){if(rain(c)>0)rb+='<rect x="'+(i/n*240+.6)+'" y="'+(54-rain(c)*50)+'" width="'+(240/n-1.2)+'" height="'+(rain(c)*50)+'" fill="var(--rain)"/>'});
+ var sh='';C.forEach(function(c,i){if(c.blk)sh+='<rect x="'+(i/n*240)+'" y="0" width="'+(240/n)+'" height="54" fill="rgba(110,125,170,.22)"/>'});
+ var x=pts[k][0],y=pts[k][1];
+ return '<div class="bars" data-b style="display:block"><svg viewBox="0 0 240 54" preserveAspectRatio="none"><path d="'+d+'" fill="#e8a05a" opacity=".8"/>'+rb+sh+'<line x1="'+x+'" x2="'+x+'" y1="0" y2="54" stroke="var(--nacre)" stroke-width="1.2" vector-effect="non-scaling-stroke"/></svg>'+dotAt(k,y/54*100)+'</div>'}
+function bandsTall(k){var h1='',h2='';C.forEach(function(c,i){var rn=rain(c),cl=cloud(c);
+  h1+='<i class="'+(c.blk?'blk ':'')+(i===k?'on':'')+'" style="background:'+(c.blk?'var(--night)':'var(--cell)')+'">'+(c.blk?'':'<u style="background:'+(rn>0?'var(--rain)':'var(--cloud)')+';opacity:'+(rn>0?(0.45+Math.min(rn,1)*.55):(cl/100*.85)).toFixed(2)+'"></u>')+'</i>';
+  var up=!c.blk&&c.a+.5>SR&&c.a-.5<SS;var m=up?Math.sin(Math.PI*Math.min(Math.max((c.a-SR)/(SS-SR),0),1)):0;
+  h2+='<i class="'+(c.blk?'blk ':'')+(i===k?'on':'')+'" style="background:'+(c.blk?'var(--night)':'var(--cell)')+'">'+(up?'<u style="background:var(--sun);opacity:'+(0.4+0.6*m).toFixed(2)+'"></u>':'')+'</i>'});
+ return '<div data-b style="position:relative;display:grid;gap:5px"><div class="cells" style="height:24px">'+h1+'</div><div class="cells" style="height:24px">'+h2+'</div>'+dotAt(k,26)+dotAt(k,74)+'</div>'}
+function head(t,right){return '<div class="hd"><span>'+t+'</span><span>'+(right||'⚙ ▾')+'</span></div>'}
+function cur(){return C[ci(sel)]}
+function houleCard(k){var c=cur(),w=wave(c);return '<div class="card">'+head('Houle')+'<div class="row"><div><span class="big">'+w.toFixed(1).replace('.',',')+'m</span><span class="per">10s</span></div><div class="sm"><b>O 280°</b> <span style="color:var(--sea)">➤</span> <span style="color:#d9a03a;font-weight:700">'+Math.round(w*w*120)+' kJ</span></div></div>'+bars(wave,2.2,seaCol,k)+'</div>'}
+function ventCard(k){var c=cur(),v=wind(c);return '<div class="card">'+head('Vent')+'<div class="row"><div><span class="big">'+v+' km/h</span> <span class="sm mut">Rafales '+(v+5)+'</span></div><div class="sm"><b>'+dirs[Math.min(4,Math.floor(sel/5))]+'</b> <span style="color:var(--w2)">➤</span></div></div>'+bars(wind,18,windCol,k)+'</div>'}
+function metCard(k){var c=cur(),cl=Math.round(cloud(c)),rn=rain(c),t=Math.round(temp(c)),uv=c.blk?0:D[c.a].uv;
+ var left='<span class="big">'+(rn>0?'🌧':'☁️')+' '+t+'°C</span><span class="per" style="color:var(--mut)">eau 19°</span>';
+ var right=MODE===2?'<div class="sm"><b>'+(rn>0?rn.toFixed(1).replace('.',',')+' mm':'sec')+'</b> · UV '+uv+'</div>':'<div class="sm"><b>'+(rn>0?rn.toFixed(1).replace('.',',')+' mm':cl+' %')+'</b> · UV '+uv+'</div>';
+ var graph=MODE===1?skyBars(k):MODE===2?tempCurve(k):bandsTall(k);
+ return '<div class="card">'+head('Météo','Semaine › &nbsp; ⚙ ▾')+'<div class="row"><div>'+left+'</div>'+right+'</div>'+graph+'</div>'}
+function nowCard(k){var c=cur(),w=wave(c),v=wind(c);
+ var strip='';C.forEach(function(c2,i){var up=!c2.blk&&c2.a+.5>SR&&c2.a-.5<SS;var m=up?Math.sin(Math.PI*Math.min(Math.max((c2.a-SR)/(SS-SR),0),1)):0;
+  strip+='<i class="'+(c2.blk?'blk ':'')+(i===k?'on':'')+'">'+(up?'<u style="background:var(--sun);opacity:'+(0.4+0.6*m).toFixed(2)+'"></u>':'')+'</i>'});
+ var it=[{p:(k+.5)/C.length*100,t:sel+':00',c:'var(--nacre)',w:17,pr:0,f:13},{p:posOf(SR),t:fmtH(SR),c:'var(--sun)',w:15,pr:1,f:10.5},{p:posOf(SS),t:fmtH(SS),c:'var(--dusk)',w:15,pr:1,f:10.5}];
+ it.sort(function(a,b){return a.pr-b.pr});var kept=[],ls='';
+ it.forEach(function(x){if(kept.every(function(q){return Math.abs(q.p-x.p)>=(q.w+x.w)/2+1})){kept.push(x);ls+='<span style="left:'+x.p+'%;color:'+x.c+';font-size:'+x.f+'px">'+x.t+'</span>'}});
+ return '<div class="t"><b>Actuellement · '+sel+' h</b><span class="sm" style="color:#d9a03a;font-weight:800">Correct</span></div>'
+  +'<div class="strip" data-b>'+strip+dotAt(k,50)+'</div><div class="hrs">'+ls+'</div>'
+  +'<div class="tiles"><div class="tile">Houle<b>'+w.toFixed(1).replace('.',',')+' m · 10 s</b></div><div class="tile">Vent<b>'+v+' km/h '+dirs[Math.min(4,Math.floor(sel/5))]+'</b></div><div class="tile">Marée<b>▲ 16:30</b></div></div>'}
+var DESC={1:'Météo 1 : le ciel en barres, comme la houle et le vent. Une barre grise dont la hauteur est la couverture nuageuse, bleue et plus haute quand il pleut. Même hauteur, même geste que les deux autres cartes. La bande de soleil a déménagé dans l\'encart Actuellement.',
+2:'Météo 2 : la courbe du ressenti, avec la pluie en barres bleues au fond. C\'est la plus parlante pour la météo (ça se réchauffe, ça se rafraîchit, ça pleut quand), et elle a le même relief lisse que la houle. Les nuages ne sont donnés que par le chiffre.',
+3:'Météo 3 : les deux bandes actuelles (Ciel et Soleil), mais deux fois plus hautes, de façon à occuper la même place que les barres de houle et de vent. Le plus proche de ce que tu as aujourd\'hui.'};
+function render(){var k=ci(sel);
+ document.getElementById('stack').innerHTML=houleCard(k)+ventCard(k)+metCard(k)+'<div class="card"><div class="hd"><span>Prévision heure par heure</span><span>⚙ ▸</span></div></div><div class="card" style="height:150px"><div class="hd"><span>(la suite de la page défile derrière l\'encart du bas)</span></div></div>';
+ document.getElementById('now').innerHTML=nowCard(k);document.getElementById('desc').textContent=DESC[MODE]}
+function at(el,x){var r=el.getBoundingClientRect();var f=(x-r.left)/r.width;var i=Math.max(0,Math.min(C.length-1,Math.floor(f*C.length)));return mid(C[i])}
+var drag=false,dragEl=null;
+document.addEventListener('pointerdown',function(e){var b=e.target.closest('[data-b]');if(!b)return;drag=true;dragEl=b;sel=at(b,e.clientX);render()});
+document.addEventListener('pointermove',function(e){if(!drag)return;var all=document.querySelectorAll('[data-b]');var b=null;all.forEach(function(x){var r=x.getBoundingClientRect();if(!b&&e.clientY>=r.top-40&&e.clientY<=r.bottom+40)b=x});b=b||all[0];sel=at(b,e.clientX);render()});
+document.addEventListener('pointerup',function(){drag=false});
+document.getElementById('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;MODE=+b.dataset.m;document.querySelectorAll('#tabs button').forEach(function(x){x.classList.toggle('on',x===b)});render()});
+render();
+</script>

@@ -10,37 +10,23 @@ import csv, datetime as dt, gzip, io, json, math, os, sys, time, urllib.error, u
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CFG = json.load(open(os.path.join(HERE, "spots.json"), encoding="utf-8"))
-BASE = "https://public-api.meteofrance.fr/public/DPObs"
+BASE = "https://public-api.meteofrance.fr/public/DPObs/v2"
 MAX_KM = 35        # on garde les stations à moins de 35 km du spot
 PER_SPOT = 3       # au plus trois stations par spot
 KEY = os.environ.get("METEOFRANCE_API_KEY", "").strip()
-AUTH = []          # en-tête qui marche, trouvé au premier appel
-VERSION = [""]     # préfixe de version qui marche ("", "/v1" ou "/v2")
 
 
 def call(path, params, accept="application/json"):
-    """Renvoie (statut, texte). Essaie l'en-tête « apikey » puis « Authorization: Bearer »."""
-    url = f"{BASE}{VERSION[0]}{path}?{urllib.parse.urlencode(params)}"
-    variants = AUTH or [{"apikey": KEY}, {"Authorization": f"Bearer {KEY}"}]
-    status, text = 0, ""
-    for hdr in variants:
-        req = urllib.request.Request(url, headers={**hdr, "accept": accept, "User-Agent": "SurfLog-collector (https://surflog.fr)"})
-        try:
-            with urllib.request.urlopen(req, timeout=60) as r:
-                status, text = r.status, r.read().decode("utf-8", "replace")
-        except urllib.error.HTTPError as e:
-            status, text = e.code, e.read().decode("utf-8", "replace")[:200]
-        except Exception as e:
-            status, text = 0, str(e)[:200]
-        if status == 200:
-            if not AUTH:
-                AUTH.append(hdr)
-                print("auth :", "apikey" if "apikey" in hdr else "bearer")
-            return status, text
-        if status in (401, 403):
-            continue
-        break
-    return status, text
+    """Renvoie (statut, texte). La clé passe dans l'en-tête « apikey » (type de jeton « API Key » du portail)."""
+    url = f"{BASE}{path}?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"apikey": KEY, "accept": accept, "User-Agent": "SurfLog-collector (https://surflog.fr)"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.status, r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode("utf-8", "replace")[:200]
+    except Exception as e:
+        return 0, str(e)[:200]
 
 
 def km(a, b, c, d):
@@ -50,11 +36,9 @@ def km(a, b, c, d):
 
 
 def stations():
-    for version in ("", "/v1", "/v2"):
-      VERSION[0] = version
-      for fmt in ("csv", "json"):
+    for fmt in ("csv", "json"):
         st, text = call("/liste-stations", {"format": fmt}, "text/csv" if fmt == "csv" else "application/json")
-        print("liste-stations", version or "(sans version)", fmt, st, len(text), "" if st == 200 else text[:160].replace(chr(10), " "))
+        print("liste-stations", fmt, st, len(text), "" if st == 200 else text[:160].replace(chr(10), " "))
         if st != 200:
             continue
         rows = []
