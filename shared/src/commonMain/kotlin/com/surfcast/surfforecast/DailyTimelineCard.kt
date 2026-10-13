@@ -417,7 +417,7 @@ private fun DailyTimelineBody(
                             drawPath(arrow, if (up) rising else falling)
                             val hh = m.hour.toInt()
                             val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
-                            val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · $it" } ?: "")
+                            val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · " + (if (tidesEstimated) "≈" else "") + it } ?: "")
                             labels += cx to txt
                         }
                         if (selH != null && selH in ax0..ax1) {

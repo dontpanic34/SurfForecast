@@ -889,7 +889,7 @@ class SurfRepository(
                 val days: List<MareeDayData> = if (nearest == null || (distance ?: 0.0) <= MAX_FRENCH_TIDE_KM) {
                     // Le service des marées en panne (et pas de copie de secours) : on estime les marées plutôt que de n'en montrer aucune.
                     runCatching { fetchMareeExtrema(nearest?.siteId ?: "cordouan", fromDate, toDate) }.getOrNull()
-                        ?: estimatedTideDays(lat, lon, emptyList()).also { estimated = true }
+                        ?: estimatedTideDays(lat, lon, runCatching { estimatedBrestCoefs() }.getOrDefault(emptyList())).also { estimated = true }
                 } else {
                     // Hors France : on lit le coefficient chez le port français le plus proche (même date,
                     // PM la plus proche en heure). Le SHOM le définit à partir de Brest, mais chaque port
@@ -981,6 +981,20 @@ class SurfRepository(
             day.extrema.orEmpty().filter { it.type == "PM" && it.coef != null }.map { Triple(day.date, it.time, it.coef!!) }
         }
         return tideDaysFromSeaLevel(times, heights, frenchCoefs)
+    }
+
+    /**
+     * Coefficients estimés quand api-maree.fr ne répond pas : le SHOM définit le coefficient à partir du marnage de Brest
+     * (marnage ÷ 6,1 m × 100). On lit la hauteur d'eau d'Open-Meteo à Brest et on en tire le marnage de chaque pleine mer.
+     */
+    private suspend fun estimatedBrestCoefs(): List<MareeDayData> {
+        val url = "https://marine-api.open-meteo.com/v1/marine?latitude=48.38&longitude=-4.49" +
+            "&hourly=sea_level_height_msl&past_days=1&forecast_days=8&timezone=auto"
+        val root = Json.parseToJsonElement(cachedText(url, 6 * 3600_000L) { httpGetText(url) }).jsonObject
+        val hourly = root["hourly"]?.jsonObject ?: return emptyList()
+        val times = hourly.getValue("time").jsonArray.map { LocalDateTime.parse(it.jsonPrimitive.content) }
+        val levels = hourly.optArray("sea_level_height_msl") ?: return emptyList()
+        return brestCoefDays(times, times.indices.map { levels.doubleAt(it) })
     }
 
     private suspend fun httpGetText(url: String): String {
@@ -1076,6 +1090,31 @@ internal fun tideDaysFromSeaLevel(
             }
         )
     }
+}
+
+/** Le marnage de référence du SHOM : un coefficient de 100 vaut 6,1 m de marnage à Brest. */
+internal const val BREST_REFERENCE_RANGE_M = 6.1
+
+/**
+ * Les pleines mers de Brest avec leur coefficient estimé : marnage (pleine mer moins la moyenne des basses mers voisines)
+ * divisé par [BREST_REFERENCE_RANGE_M], entre 20 et 120. Sert de coefficient de secours, repris par les ports voisins.
+ */
+internal fun brestCoefDays(times: List<LocalDateTime>, heights: List<Double?>): List<MareeDayData> {
+    class T(val date: String, val time: String, val isHigh: Boolean, val height: Double)
+    val all = tideDaysFromSeaLevel(times, heights, emptyList()).flatMap { day ->
+        day.extrema.orEmpty().map { T(day.date, it.time, it.type == "PM", it.height) }
+    }
+    val withCoef = ArrayList<Pair<T, Int>>()
+    for (i in all.indices) {
+        if (!all[i].isHigh) continue
+        val lows = listOfNotNull(all.getOrNull(i - 1)?.takeIf { !it.isHigh }, all.getOrNull(i + 1)?.takeIf { !it.isHigh })
+        if (lows.isEmpty()) continue
+        val range = all[i].height - lows.map { it.height }.average()
+        withCoef += all[i] to (range / BREST_REFERENCE_RANGE_M * 100).roundToInt().coerceIn(20, 120)
+    }
+    return withCoef.groupBy { it.first.date }.map { (date, list) ->
+        MareeDayData(date, list.map { (t, c) -> MareeExtremum(type = "PM", time = t.time, coef = c) })
+    }.sortedBy { it.date }
 }
 
 private fun minutesOf(hhmm: String): Int {
