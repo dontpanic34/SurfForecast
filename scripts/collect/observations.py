@@ -82,15 +82,23 @@ def stations():
     return []
 
 
-def hourly(station_id):
+KEEP = ("validity_time", "t", "td", "u", "dd", "ff", "dxy", "fxy", "ddraf", "raf", "rr1", "vv", "n", "pres", "insolh")
+
+
+def hourly(station_id, date=None):
+    """Mesures horaires d'une station (la dernière, ou l'heure `date` AAAA-MM-JJTHH:00:00Z), vides retirées."""
+    params = {"id_station": station_id, "format": "json"}
+    if date:
+        params["date"] = date
     for path in ("/station/horaire", "/station-horaire"):
-        st, text = call(path, {"id_station": station_id, "format": "json"})
-        print(path, station_id, st, len(text))
+        st, text = call(path, params)
         if st == 200:
             try:
-                return json.loads(text)
+                data = json.loads(text)
             except ValueError:
                 return None
+            return [{k: r[k] for k in KEEP if r.get(k) is not None} for r in data if isinstance(r, dict)]
+        print(path, station_id, date or "dernière", st, text[:120].replace(chr(10), " "))
     return None
 
 
@@ -113,14 +121,31 @@ def main():
                 e = chosen.setdefault(s["id"], {"name": s["name"], "lat": s["lat"], "lon": s["lon"], "spots": {}})
                 e["spots"][spot["id"]] = round(d, 1)
     run = {"run_utc": now.strftime("%Y-%m-%dT%H:%MZ"), "source": "Météo-France, API Données d'observation (licence ouverte)", "stations": {}}
-    for sid, info in chosen.items():
-        data = hourly(sid)
-        if data:
-            info["hourly"] = data
-            run["stations"][sid] = info
-        time.sleep(1.2)  # reste sous la limite d'appels par minute
+    latest = {}
+    for sid in chosen:
+        latest[sid] = hourly(sid)
+        time.sleep(0.8)  # reste sous la limite d'appels par minute
+    # Pour chaque spot : les deux stations les plus proches qui mesurent le vent. On remonte ensuite les 8 dernières heures.
+    keep = {}
+    for spot in CFG["spots"]:
+        cands = sorted(((info["spots"][spot["id"]], sid) for sid, info in chosen.items() if spot["id"] in info["spots"]))
+        good = [sid for d, sid in cands if latest.get(sid) and any("ff" in r for r in latest[sid])][:2]
+        print(spot["id"], "stations avec vent :", good or "aucune")
+        for sid in good:
+            keep[sid] = chosen[sid]
+    for sid, info in keep.items():
+        series = {r["validity_time"]: r for r in (latest.get(sid) or []) if "validity_time" in r}
+        for back in range(1, 9):
+            when = (now - dt.timedelta(hours=back)).replace(minute=0, second=0, microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
+            for r in hourly(sid, when) or []:
+                if "validity_time" in r:
+                    series[r["validity_time"]] = r
+            time.sleep(0.8)
+        info["hourly"] = [series[k] for k in sorted(series)]
+        run["stations"][sid] = info
+        print(sid, info["name"], len(info["hourly"]), "heures")
     if not run["stations"]:
-        sys.exit("aucune station relevée")
+        sys.exit("aucune station avec vent")
     folder = os.path.join(out_dir, "obs", now.strftime("%Y-%m-%d"))
     os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, now.strftime("%H") + "Z.json.gz")
