@@ -13,7 +13,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
-- **Planche du jour, suite** : tenir compte du volume (litres, poids, niveau) et de la marée, proposer une planche par heure choisie (l'en-tête utilise l'heure proche de 13 h), ajouter une phrase d'explication sous la planche (maquette d'abord).
+- **Planche du jour, suite** : tenir compte de la marée, proposer une planche par heure choisie (l'en-tête utilise l'heure proche de 13 h), ajouter une phrase d'explication sous la planche (maquette d'abord).
 - **Vérifier sur téléphone** le trait de marée (collé au graphique, mot Montante/Descendante dessous, flèches, horaires).
 - **Relecture des traductions (EN, DE, NL, ES)** : tout est traduit et relu une fois par l'assistant, pas par un humain ; certains textes composés (phrases du jour) peuvent sonner bizarre, et quelques libellés sont longs en néerlandais (ex. « Gemotiveerd » coupé). À relire par un locuteur ; tout texte français ajouté doit recevoir sa traduction.
 - **Coefficient estimé** : comparer, quand api-maree.fr revient, le coefficient calculé (marnage de Brest d'Open-Meteo ÷ 6,1 m) aux vrais coefficients sur une quinzaine de jours, et ajouter un facteur de correction si l'écart est systématique. Prévoir de garder une copie quotidienne des marées dans la branche `data` pour ne plus dépendre du service.

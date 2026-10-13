@@ -96,6 +96,9 @@ fun MainScreen(
     var preferencesStartPage by remember { mutableStateOf<String?>(null) }
     var showWeatherDetail by remember { mutableStateOf(false) }
     val mainListState = rememberLazyListState()
+    // Le profil pour le choix de la planche du jour (poids, forme, niveau).
+    GearPrefs.body = viewModel.body
+    GearPrefs.levelIndex = volumeLevelIndex(viewModel.surferLevel)
     val navScope = rememberCoroutineScope()
     var showWebcamDirectoryDialog by remember { mutableStateOf(false) }
     var showForecastHistory by remember { mutableStateOf(false) }

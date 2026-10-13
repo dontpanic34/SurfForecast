@@ -21,6 +21,10 @@ val GEAR_CONDITIONS = listOf("petit" to "Petit", "gros" to "Gros", "mou" to "Mou
  * à quelle fréquence il surfe, et où afficher la planche du jour. Enregistré par le contrôleur ([persist]).
  */
 object GearPrefs {
+    // Le profil du surfeur, posé par l'écran principal : le poids, la forme et le niveau servent à juger si une planche a trop de volume.
+    var body: BodyState = BodyState()
+    var levelIndex: Int = 1
+
     /** Grille : « id=petit,mou;id=gros » (id de la planche). */
     var grid by mutableStateOf("")
         private set
@@ -99,7 +103,8 @@ private val OPPOSITE_CONDITIONS = mapOf(
  */
 fun boardOfTheDay(
     hour: HourlyUiModel?, boards: List<QuiverBoard>, beachFacing: Int?,
-    conditionsOf: (Long) -> Set<String> = { GearPrefs.conditionsOf(it) }
+    conditionsOf: (Long) -> Set<String> = { GearPrefs.conditionsOf(it) },
+    levelIndex: Int = GearPrefs.levelIndex, body: BodyState = GearPrefs.body
 ): QuiverBoard? {
     // Une seule planche : rien à conseiller. À partir de deux planches, il y a toujours une proposition.
     if (hour == null || boards.size < 2) return null
@@ -114,11 +119,22 @@ fun boardOfTheDay(
         "mousse" -> 0
         else -> 1
     }
+    // Le volume de référence du surfeur (son shortboard idéal) : une planche bien plus grosse est une planche indulgente,
+    // qui ne convient pas à un surfeur avancé un jour solide ou exigeant ; un jour petit ou mou, elle est bienvenue.
+    val reference = recommendedVolumeRange(body, levelIndex, "shortboard")?.let { (it.start + it.endInclusive) / 2 }
+    val demanding = !(soft && !strong)
     fun score(b: QuiverBoard): Int {
         val ticked = conditionsOf(b.id)
         val match = ticked.count { it in now }
         val against = ticked.count { c -> OPPOSITE_CONDITIONS[c].orEmpty().any { it in now } }
-        return match * 3 - against * 3 + fit(b)
+        var total = match * 3 - against * 3 + fit(b)
+        if (demanding) {
+            val big = reference != null && b.volumeL != null && b.volumeL > reference * 1.25
+            if (big) total -= if (strong) 5 else 3
+            // Un surfeur avancé ne sort pas une planche longue un jour solide ou exigeant.
+            if (levelIndex >= 3 && (b.family == "longboard" || b.family == "mid-length" || b.family == "mousse")) total -= 3
+        }
+        return total
     }
     return boards.maxByOrNull { score(it) }
 }
