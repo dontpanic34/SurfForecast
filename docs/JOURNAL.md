@@ -259,3 +259,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Échelle des notes codée : 25 / 45 / 62 / 80 / 94, zone de tendance ± 3 ; dégradé de couleurs recalé. Tests mis à jour. Pas encore en ligne.
 
 - Consensus des modèles de vagues codé (`buildConsensusMarine`, poids `waveConsensusWeights`) : hauteur et période du même calcul, GFS Wave écarté à court terme, houle secondaire dans l'énergie de la note, désaccord des modèles gardé par heure (`modelSpread`). Réglage manuel inchangé. Correction au passage : le modèle de vagues long terme par défaut était MF-WAM au lieu d'ECMWF. Tests ajoutés. Pas encore en ligne.
+
+- Signal de confiance codé : étoiles « ~ » plus pâles à partir de J+4, et « Modèles partagés » (orange) dans la carte du jour quand les modèles de vagues divergent de plus de 40 % en moyenne. Textes d'aide mis à jour. Pas encore en ligne.

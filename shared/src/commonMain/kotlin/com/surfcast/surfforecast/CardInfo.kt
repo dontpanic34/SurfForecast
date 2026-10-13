@@ -50,12 +50,14 @@ val CARD_HELP: Map<String, List<CardHelp>> = mapOf(
     "week" to listOf(
         CardHelp("Comment la note est calculée", "La note (1 à 5 étoiles) compare houle, période, direction et vent à ce que le spot aime. Elle est la même pour tout le monde : ni ton niveau ni ta motivation ne la changent."),
         CardHelp("Les trois traits", "Matin, midi, après-midi. Ils prennent la couleur de la condition à cette heure : vert propre, jaune moyen, rouge mauvais."),
-        CardHelp("Le vent de la semaine", "La flèche donne d'où il vient et sa taille la force. C'est la moyenne de deux modèles (ECMWF et GFS).")
+        CardHelp("Le vent de la semaine", "La flèche donne d'où il vient et sa taille la force. C'est la moyenne de deux modèles (ECMWF et GFS)."),
+        CardHelp("Les jours lointains", "À partir de J+4, les étoiles s'écrivent avec un « ~ » et sont plus pâles : c'est une tendance. Une houle lointaine peut arriver une demi-journée plus tôt ou plus tard que prévu.")
     ),
     "day" to listOf(
         CardHelp("Motivation : Flemme, Normal, Motivé", "Elle change seulement les couleurs et le libellé de l'heure (un peu plus exigeant ou plus indulgent). Elle ne change jamais les étoiles."),
         CardHelp("Comment le vent est calculé", "Moyenne des modèles ECMWF et GFS. Le chiffre affiché est le vent ressenti : le vent moyen plus 35 % de l'écart avec les rafales. La couleur dit s'il gêne."),
-        CardHelp("Modèles de prévision", "Houle : modèle de vagues Open-Meteo. Vent : ECMWF + GFS. AROME HD (Météo-France) tourne en coulisses pour comparer."),
+        CardHelp("Modèles de prévision", "Houle : consensus de trois modèles de vagues (MF-WAM, ECMWF, GFS), la hauteur et la période venant du même calcul. Vent : ECMWF + GFS. AROME HD (Météo-France) tourne en coulisses pour comparer."),
+        CardHelp("Modèles partagés", "Quand les trois modèles de vagues donnent des hauteurs très différentes pour la journée, l'appli l'écrit. Dans ce cas, la prévision est moins sûre."),
         CardHelp("La courbe bleue et le coef", "La marée monte ou descend. Les triangles sont les pleines et basses mers, le coefficient dit la taille de la marée.")
     ),
     "swell" to listOf(

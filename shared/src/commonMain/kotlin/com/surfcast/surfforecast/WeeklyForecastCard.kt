@@ -202,9 +202,11 @@ fun WeeklyForecastCard(
                                         } else {
                                             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                                 // Une seule étoile avec la note (3,5), puis le libellé en une ligne, puis une barre par créneau.
+                                                // À partir de J+4, les étoiles sont une tendance : le « ~ » et une teinte plus pâle le disent.
+                                                val isTrend = date >= today.plus(4, DateTimeUnit.DAY)
                                                 Text(
-                                                    "★ " + formatStars(stars), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
-                                                    color = Color(0xFFFFC107), maxLines = 1
+                                                    "★ " + (if (isTrend) "~" else "") + formatStars(stars), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
+                                                    color = Color(0xFFFFC107).copy(alpha = if (isTrend) 0.6f else 1f), maxLines = 1
                                                 )
                                                 val bars = dailyBands.getOrNull(index).orEmpty()
                                                 if (bars.isNotEmpty()) {
@@ -213,7 +215,7 @@ fun WeeklyForecastCard(
                                                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                                                     ) {
                                                         bars.forEach { b ->
-                                                            Box(Modifier.weight(1f).height(3.dp).clip(RoundedCornerShape(2.dp)).background(b.color()))
+                                                            Box(Modifier.weight(1f).height(3.dp).clip(RoundedCornerShape(2.dp)).background(b.color().copy(alpha = if (date >= today.plus(4, DateTimeUnit.DAY)) 0.55f else 1f)))
                                                         }
                                                     }
                                                 }

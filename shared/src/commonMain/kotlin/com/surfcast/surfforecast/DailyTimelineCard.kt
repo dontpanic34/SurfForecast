@@ -151,6 +151,11 @@ fun DailyTimelineCard(
                             bandLabelWithTrend(shownRating, ratings.getOrNull(selectedIndex - 1)), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
                             color = shownBand.textColor(), maxLines = 1
                         )
+                        // Quand les trois modèles de vagues se contredisent nettement sur la journée, on le dit sobrement.
+                        val daySpread = curveHours.filter { it.modelSpread > 0.0 }.map { it.modelSpread }.average().takeIf { !it.isNaN() } ?: 0.0
+                        if (daySpread >= MODELS_SPLIT_SPREAD) {
+                            Text("Modèles partagés", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9A1F), maxLines = 1)
+                        }
                         val board = curveHours.getOrNull(selectedIndex)?.let { boardOf?.invoke(it) }
                         if (board != null) {
                             Text("Planche : $board", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
@@ -793,3 +798,6 @@ private fun TideLine(tides: List<MareeExtremum>, coef: Int?, onSurfaceColor: Col
         }
     }
 }
+
+/** Écart moyen (en part de la hauteur) entre les modèles de vagues au-delà duquel on écrit « Modèles partagés ». */
+private const val MODELS_SPLIT_SPREAD = 0.4
