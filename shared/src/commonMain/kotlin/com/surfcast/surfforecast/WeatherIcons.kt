@@ -108,6 +108,11 @@ fun FlagIcon(code: String, height: Dp, modifier: Modifier = Modifier) {
                 drawRect(Color(0xFFDD0000), Offset(0f, h / 3), Size(w, h / 3))
                 drawRect(Color(0xFFFFCE00), Offset(0f, 2 * h / 3), Size(w, h / 3))
             }
+            "nl" -> {
+                drawRect(Color(0xFFAE1C28), Offset.Zero, Size(w, h / 3))
+                drawRect(Color.White, Offset(0f, h / 3), Size(w, h / 3))
+                drawRect(Color(0xFF21468B), Offset(0f, 2 * h / 3), Size(w, h / 3))
+            }
             "es" -> {
                 drawRect(Color(0xFFAA151B), Offset.Zero, Size(w, h))
                 drawRect(Color(0xFFF1BF00), Offset(0f, h * 0.25f), Size(w, h * 0.5f))

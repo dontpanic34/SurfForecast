@@ -71,7 +71,7 @@ fun NowTideCard(
     val speed = SurfUnitsHelper.formatWindValue(effectiveWindKmh(hourlyModel), windUnit)
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     val title = buildString {
-        append("Actuellement ").append(hourlyModel.rawTime.hour).append(" h")
+        append(tr("Actuellement")).append(" ").append(hourlyModel.rawTime.hour).append(" h")
     }
 
     Column(
@@ -91,21 +91,21 @@ fun NowTideCard(
                     Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f), maxLines = 1)
                     // L'état de l'heure juste après le titre, sans fond : le mot, dans la couleur de la note.
                     if (isNight) {
-                        Text(" · Nuit", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
+                        Text(" · " + tr("Nuit"), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
                     } else if (rating != null) {
                         Text(" · " + bandLabelWithTrend(rating, previousRating), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = conditionBand(rating).textColor(), maxLines = 1)
                     }
                 }
                 if (updatedText.isNotEmpty()) {
                     Text(
-                        "mis à jour $updatedText ↻", fontSize = 10.sp, color = colors.onSurface.copy(alpha = 0.45f), maxLines = 1,
+                        "${tr("mis à jour")} $updatedText ↻", fontSize = 10.sp, color = colors.onSurface.copy(alpha = 0.45f), maxLines = 1,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).let { if (onRefresh != null) it.clickable(onClick = onRefresh) else it }
                     )
                 }
             }
             if (onAddSession != null) {
                 Text(
-                    "+ Session", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.primary,
+                    tr("+ Session"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.primary,
                     modifier = Modifier.padding(end = 6.dp).clip(RoundedCornerShape(50)).background(colors.primary.copy(alpha = 0.15f))
                         .clickable(onClick = onAddSession).padding(horizontal = 9.dp, vertical = 2.dp)
                 )
@@ -119,10 +119,10 @@ fun NowTideCard(
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            NowTile("Houle", "${formatDecimal(hourlyModel.waveHeight, 1).replace('.', ',')} m · ${hourlyModel.wavePeriod.toInt()} s", Modifier.weight(1f))
-            NowTile("Vent", "$speed $unit $dirFr", Modifier.weight(1f))
+            NowTile(tr("Houle"), "${formatDecimal(hourlyModel.waveHeight, 1).replace('.', ',')} m · ${hourlyModel.wavePeriod.toInt()} s", Modifier.weight(1f))
+            NowTile(tr("Vent"), "$speed $unit $dirFr", Modifier.weight(1f))
             if (coef != null || next != null) {
-                NowTile("Marée", (if (next != null) (if (next.first) "▲ " else "▼ ") + next.second.replace(" h ", ":") else ""), Modifier.weight(1f), coef = coef)
+                NowTile(tr("Marée"), (if (next != null) (if (next.first) "▲ " else "▼ ") + next.second.replace(" h ", ":") else ""), Modifier.weight(1f), coef = coef)
             }
         }
         buoy?.let { b ->

@@ -61,7 +61,7 @@ fun CardControlsRow(
     // Le titre et une flèche : toucher l'encart réduit ou déplie son contenu.
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text = title,
+            text = tr(title),
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = onSurfaceColor.copy(alpha = 0.55f),
