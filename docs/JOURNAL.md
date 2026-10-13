@@ -219,3 +219,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 
 - Correctif : le modèle de vagues « ECMWF Wave » envoyait un nom invalide à Open-Meteo (`ecmwf_wave`, erreur 400, écran vide) ; le bon nom est `ecmwf_wam`. Corrigé, pas encore en ligne.
 - Libellé de tendance (« Correct à Bon ») : il suit maintenant l'heure d'avant (« Bon à Correct » si ça baisse). Codé, pas encore en ligne.
+
+- Maquette `modeles-prevision` : réglage des sources refait (court et long terme, vagues et vent, aperçu en direct sous les boutons avec les vraies prévisions). En attente de validation ; pas de code.
