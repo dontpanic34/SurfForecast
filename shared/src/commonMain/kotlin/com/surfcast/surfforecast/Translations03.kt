@@ -36,7 +36,7 @@ internal val TR_PART_3: Map<String, List<String>> = mapOf(
     "ECMWF WAM Europe" to listOf("ECMWF WAM Europe", "ECMWF WAM Europe", "ECMWF WAM Europe", "ECMWF WAM Europe"),
     "Viana do Castelo" to listOf("Viana do Castelo", "Viana do Castelo", "Viana do Castelo", "Viana do Castelo"),
     "Un peu de clapot" to listOf("A bit of chop", "Etwas Kabbelwasser", "Een beetje klotsende zee", "Un poco de chop"),
-    "Modèles partagés" to listOf("Shared models", "Geteilte Modelle", "Gedeelde modellen", "Modelos compartidos"),
+    "Modèles partagés" to listOf("Models disagree", "Modelle uneinig", "Modellen verschillen", "Modelos discrepan"),
     "Offshore soutenu" to listOf("Steady offshore", "Stetiger Offshore", "Aanhoudende offshore", "Offshore sostenido"),
     "À travailler : " to listOf("To work on: ", "Zum Üben: ", "Om aan te werken: ", "A trabajar: "),
     "Planche du jour" to listOf("Board of the day", "Board des Tages", "Board van de dag", "Tabla del día"),
