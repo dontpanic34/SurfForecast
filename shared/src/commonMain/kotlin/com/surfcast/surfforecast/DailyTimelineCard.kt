@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -102,14 +103,13 @@ fun DailyTimelineCard(
     val sun = dailySunInfo[selectedDate]
     val sunrise = sun?.let { it.sunrise.hour + it.sunrise.minute / 60f } ?: 7f
     val sunset = sun?.let { it.sunset.hour + it.sunset.minute / 60f } ?: 20f
-    val ax0 = sunrise - 0.5f
-    val ax1 = sunset + 0.5f
-    val dayTides = dailyTides[selectedDate]?.let { tidesForDay(it, sunrise, sunset) } ?: emptyList()
+    // Le graphique couvre toute la journée, avec la même ligne de temps que la barre d'Actuellement (heures du jour, nuit en blocs) : le curseur est au même endroit partout.
+    val ax0 = 0f
+    val ax1 = 24f
+    val dayTides = dailyTides[selectedDate]?.let { tidesForDay(it, 0f, 24f) } ?: emptyList()
     val tideCurve = dailyTides[selectedDate]?.let { tideCurveMarks(it) } ?: emptyList()
     val allDay = (groupedByDate[selectedDate] ?: emptyList()).sortedBy { it.rawTime }
-    val firstH = ceil(ax0).toInt().coerceAtLeast(0)
-    val lastH = floor(ax1).toInt().coerceAtMost(23)
-    val curveHours = allDay.filter { it.rawTime.hour in firstH..lastH }.let { if (it.size >= 2) it else allDay }
+    val curveHours = allDay
 
     // Notation avec la mémoire du vent : la mer ne devient pas « glacée » une heure après 30 km/h de vent de mer.
     val scoring = hoursWithWindMemory(selectedDate, groupedByDate).associateBy { it.rawTime }
@@ -209,7 +209,7 @@ fun DailyTimelineCard(
                 } else {
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
-                        sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
+                        sunrise = sunrise, sunset = sunset, sunInfo = sun, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
                         isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve, coefValue = dailyTides[selectedDate]?.coefficient, tidesEstimated = dailyTides[selectedDate]?.estimated == true,
                         beachFacing = idealSwellDirection, surferLevel = surferLevel
                     )
@@ -243,6 +243,7 @@ private fun DailyTimelineBody(
     onHourSelected: (HourlyUiModel) -> Unit,
     sunrise: Float,
     sunset: Float,
+    sunInfo: DailySunInfo?,
     ax0: Float,
     ax1: Float,
     windUnit: String,
@@ -272,12 +273,17 @@ private fun DailyTimelineBody(
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val wPx = with(density) { maxWidth.toPx() }
         val pad = with(density) { SIDE_PAD.dp.toPx() }
-        fun xOf(h: Float) = hourX(h, ax0, ax1, wPx, pad)
+        // Même ligne de temps que la barre d'Actuellement : heures du jour une par une, nuit par blocs de 3 heures.
+        val cells = remember(hours, sunInfo) { buildTimeCells(hours, sunInfo) }
+        fun xOf(h: Float) = pad + (wPx - 2 * pad) * timeFraction(cells, hours, h.toDouble())
+        // Le milieu de l'heure [h, h+1) : là où se pose son point, comme son curseur dans la barre d'Actuellement.
+        fun xHr(h: Float) = xOf(h + 0.5f)
 
         fun pickHour(x: Float) {
-            val h = ax0 + ((x - pad) / (wPx - 2 * pad)) * (ax1 - ax0)
-            val best = hours.minByOrNull { abs(it.rawTime.hour - h) } ?: return
-            onHourSelected(best)
+            if (cells.isEmpty()) return
+            val frac = ((x - pad) / (wPx - 2 * pad)).coerceIn(0f, 0.9999f)
+            val cell = cells[(frac * cells.size).toInt().coerceIn(0, cells.lastIndex)]
+            hours.getOrNull(cell.representativeIndex())?.let(onHourSelected)
         }
 
         Box(
@@ -294,7 +300,7 @@ private fun DailyTimelineBody(
                     if (selHour != null && selHour in sunnyHours) cand.add(selHour to 0)
                     val kept = ArrayList<Int>()
                     cand.sortedBy { it.second }.forEach { (h, _) ->
-                        if (kept.none { k -> k == h || abs(xOf(k.toFloat()) - xOf(h.toFloat())) < with(density) { windMinGap.dp.toPx() } }) kept.add(h)
+                        if (kept.none { k -> k == h || abs(xHr(k.toFloat()) - xHr(h.toFloat())) < with(density) { windMinGap.dp.toPx() } }) kept.add(h)
                     }
                     kept.sorted()
                 }
@@ -310,7 +316,7 @@ private fun DailyTimelineBody(
                         // La colonne de l'heure choisie descend un peu, avec une petite animation : c'est celle à lire.
                         val drop by animateDpAsState(if (h == selHour) SELECTED_WIND_DROP.dp else 0.dp, label = "windDrop")
                         Column(
-                            modifier = Modifier.offset { IntOffset((xOf(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
+                            modifier = Modifier.offset { IntOffset((xHr(h.toFloat()) - itemW.toPx() / 2f).roundToInt(), drop.roundToPx()) }.width(itemW),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             NavArrow(color, rotation, (windFont * 1.5f * windArrowScale(windFeelKmh(hourly))).dp)
@@ -344,7 +350,7 @@ private fun DailyTimelineBody(
                         modifier = Modifier.fillMaxWidth().height(plotHdp.dp),
                         isDark = isDark
                     ) { size ->
-                        val xs = FloatArray(hours.size) { xOf(hours[it].rawTime.hour.toFloat()) }
+                        val xs = FloatArray(hours.size) { xHr(hours[it].rawTime.hour.toFloat()) }
                         // Lissage sur plusieurs heures : le ciel et la pluie passent d'un état à l'autre sans colonne.
                         val hourPx = if (xs.size > 1) (xs.last() - xs.first()) / (hours.last().rawTime.hour - hours.first().rawTime.hour).coerceAtLeast(1)
                             else with(density) { 30.dp.toPx() }
@@ -363,7 +369,7 @@ private fun DailyTimelineBody(
                                 val horizon = waterline - with(density) { 18.dp.toPx() }
                                 val zenith = topPx + with(density) { 6.dp.toPx() }
                                 val cy = horizon - (horizon - zenith) * alt
-                                suns.add(SunSpot(xOf(selH), sizePx, extPx + cy - sizePx / 2f))
+                                suns.add(SunSpot(xHr(selH), sizePx, extPx + cy - sizePx / 2f))
                             }
                         }
                         SkyScene(
@@ -378,6 +384,23 @@ private fun DailyTimelineBody(
                         gridValues = gridValues, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
                         nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
                     )
+                    // La nuit en blocs : une trame hachurée par-dessus, comme dans la barre d'Actuellement.
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val inner = size.width - 2 * pad
+                        for ((k, c) in cells.withIndex()) {
+                            if (!c.isBlock) continue
+                            val x0 = pad + inner * k / cells.size
+                            val x1 = pad + inner * (k + 1) / cells.size
+                            drawRect(Color(0xFF0B121A).copy(alpha = 0.30f), Offset(x0, 0f), Size(x1 - x0, size.height))
+                            clipRect(x0, 0f, x1, size.height) {
+                                var d = -size.height
+                                while (d < x1 - x0) {
+                                    drawLine(Color.White.copy(alpha = 0.16f), Offset(x0 + d, size.height), Offset(x0 + d + size.height, 0f), strokeWidth = 1.dp.toPx())
+                                    d += 7.dp.toPx()
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // --- La marée : une petite courbe entre le graphique et la bande des heures (monte ou descend), triangles et heures dessus ---
@@ -504,7 +527,7 @@ private fun DailyCurveCanvas(
             drawLine(Color.White.copy(alpha = 0.60f), Offset(0f, y), Offset(size.width, y), strokeWidth = 1.2.dp.toPx(), pathEffect = dash)
         }
 
-        val pts = hours.map { Offset(xOf(it.rawTime.hour.toFloat()), yOf(it.waveHeight)) }
+        val pts = hours.map { Offset(xOf(it.rawTime.hour + 0.5f), yOf(it.waveHeight)) }
         if (pts.size >= 2) {
             // La courbe va d'un bord à l'autre de la fenêtre (lever − 0,5 h → coucher + 0,5 h) : on prolonge à plat le premier
             // et le dernier point jusqu'aux bords.
