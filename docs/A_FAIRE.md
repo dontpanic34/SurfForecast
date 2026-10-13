@@ -1,6 +1,6 @@
 # À faire
 
-Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est publié sur `web` et `unified` (voir le journal).
+Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne sur `web` (1.0.333) et `unified` (voir le journal).
 
 ## À trancher / valider par le propriétaire
 - **Flèche 3 et icône de l'eau** : à juger à l'écran (l'icône de l'eau a été redessinée : thermomètre plein sur deux vagues).

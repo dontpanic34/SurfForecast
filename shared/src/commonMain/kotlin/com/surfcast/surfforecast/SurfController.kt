@@ -462,8 +462,8 @@ class SurfController(
             buoyReading = null
             observedNow = null
             modelPreview = null
-            scope.launch { buoyReading = repository.fetchBuoyReading(spot.latitude, spot.longitude) }
-            scope.launch { observedNow = repository.fetchObservedNow(spot.latitude, spot.longitude) }
+            scope.launch { buoyReading = runCatching { repository.fetchBuoyReading(spot.latitude, spot.longitude) }.getOrNull() }
+            scope.launch { observedNow = runCatching { repository.fetchObservedNow(spot.latitude, spot.longitude) }.getOrNull() }
             val forecastResult = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig)
             offlineSinceMillis = repository.staleSinceMillis
             val forecast = forecastResult.hourly

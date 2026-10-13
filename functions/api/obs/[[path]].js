@@ -53,6 +53,11 @@ export function toReading(station, rec) {
   };
 }
 
+// Une erreur avec l'en-tête CORS : sans lui, le navigateur la lit comme une panne réseau.
+function err(message, status) {
+  return new Response(message, { status, headers: { 'access-control-allow-origin': '*', 'content-type': 'text/plain; charset=utf-8' } });
+}
+
 async function mf(path, params, env) {
   const url = `${BASE}${path}?${new URLSearchParams(params)}`;
   return fetch(url, { headers: { apikey: env.METEOFRANCE_API_KEY, accept: 'application/json' } });
@@ -72,18 +77,18 @@ async function cached(key, ttl, make) {
 
 export async function onRequestGet({ request, env, params }) {
   const path = Array.isArray(params.path) ? params.path.join('/') : String(params.path || '');
-  if (path !== 'near') return new Response('not found', { status: 404 });
-  if (!env.METEOFRANCE_API_KEY) return new Response('relais non configuré', { status: 503 });
+  if (path !== 'near') return err('not found', 404);
+  if (!env.METEOFRANCE_API_KEY) return err('relais non configuré', 503);
 
   const u = new URL(request.url);
   const lat = parseFloat(u.searchParams.get('lat')), lon = parseFloat(u.searchParams.get('lon'));
-  if (Number.isNaN(lat) || Number.isNaN(lon) || lat < 41 || lat > 52 || lon < -6 || lon > 10) return new Response('hors de France', { status: 404 });
+  if (Number.isNaN(lat) || Number.isNaN(lon) || lat < 41 || lat > 52 || lon < -6 || lon > 10) return err('hors de France', 404);
 
   const list = await cached('stations', LIST_TTL, async () => {
     const r = await mf('/liste-stations', { format: 'csv' }, env);
     return r.ok ? r.text() : null;
   });
-  if (list == null) return new Response('météo-france liste', { status: 502 });
+  if (list == null) return err('météo-france liste', 502);
 
   for (const s of nearest(parseStations(list), lat, lon)) {
     const text = await cached(`last-${s.id}`, OBS_TTL, async () => {
@@ -101,5 +106,5 @@ export async function onRequestGet({ request, env, params }) {
       });
     }
   }
-  return new Response('pas de station qui mesure le vent près de ce point', { status: 404, headers: { 'access-control-allow-origin': '*' } });
+  return err('pas de station qui mesure le vent près de ce point', 404);
 }
