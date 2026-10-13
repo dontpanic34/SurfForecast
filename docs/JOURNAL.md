@@ -229,3 +229,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Titre de la semaine : « ça va se caler » quand la journée s'améliore (le vent tourne offshore ou tombe l'après-midi, ou la note de l'après-midi dépasse celle du matin d'au moins 10 points). Le détail (« ça tourne offshore l'après-midi ») passe en deuxième ligne. Codé, testé, pas encore en ligne.
 
 - Maquette `modeles-prevision` : ajout du choix du modèle météo (ciel, température, pluie) et de vraies heures (8, 11, 14, 17, 20 h) avec choix du jour. Données réelles d'Open-Meteo. En attente de validation ; pas de code.
+
+- Note et phrase accordées : quand la phrase dit « dégrade », « ça sectionne » ou « démonté » (vent sous 0,75, ou clapot, rafales, période sous 0,55), la note ne dépasse pas « Bon ». Plus de « Très bon » à côté de « Onshore dégrade la vague ». Constantes `VERY_GOOD_MIN` (70) et `WIND_MILD` (0,75). Codé, testé, pas encore en ligne.

@@ -338,6 +338,10 @@ fun calculateSlotRating(
         else -> ConditionKind.NORMAL
     }
     val limits = ScoreLimits(fit, windFactor, gustF, chopF, periodF, directionF)
+    // La note et sa phrase doivent s'accorder : quand la phrase dit « dégrade » ou « ça sectionne » (vent sous 0,75, ou clapot, rafales, période sous 0,55), la note ne dépasse pas « Bon ».
+    if (kind == ConditionKind.NORMAL && (windFactor < WIND_MILD || chopF < STRONG_LIMIT || gustF < STRONG_LIMIT || periodF < STRONG_LIMIT)) {
+        final = minOf(final, VERY_GOOD_MIN - 1 - ToleranceSettings.mode * 8)
+    }
     // La note a retenu un vent qui gêne alors que le vent réel affiché est propre : c'est la mémoire du vent qui parle.
     val windMemory = displayedWind != null && windFactor < WIND_CLEAN &&
         windFactorOf(displayedWind, h, profile, windCategoryFor(displayedWind.windDirectionStr, idealSwellDirection)) >= WIND_CLEAN
@@ -414,6 +418,8 @@ private fun windSizeDivisor(heightM: Double): Double = heightM.pow(0.9).coerceIn
 /** Les facteurs (de 0 à 1) qui ont fait la note : celui qui pèse le plus donne la raison affichée. */
 private class ScoreLimits(val size: Double, val wind: Double, val gusts: Double, val chop: Double, val period: Double, val direction: Double)
 
+/** Sous ce facteur de vent, la phrase ne dit plus « un peu » mais « dégrade » : la note ne peut plus être Très bon. */
+const val WIND_MILD = 0.75
 private const val MINOR_LIMIT = 0.85
 private const val STRONG_LIMIT = 0.55
 
@@ -423,7 +429,7 @@ private const val STRONG_LIMIT = 0.55
  */
 internal fun windPhrase(windCategory: String, windFactor: Double): String {
     val level = when {
-        windFactor >= 0.75 -> 0
+        windFactor >= WIND_MILD -> 0
         windFactor >= WIND_STRONG -> 1
         windFactor >= 0.3 -> 2
         else -> 3
