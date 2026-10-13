@@ -274,3 +274,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Marée du déroulé : flèches posées sur le trait (haut et bleue quand ça monte, bas et verte quand ça descend) à la place des gros points ; curseur renommé « Hauteur de la marée », aide mise à jour. Codé et vérifié à l'écran avec les vraies données. Pas encore en ligne.
 
 - « Comprendre » : onglet dans la barre du bas (Prévisions, Webcam, Journal, Comprendre, Réglages) ; la carte du milieu de l'écran et les liens « Comprendre en détail » des ⚙ sont retirés. Test ajouté : la houle secondaire du modèle fin passe bien dans le consensus. Pas encore en ligne (avec les flèches de marée).
+
+- Bouée déplacée de la carte « Houle » vers l'encart « Actuellement » (une ligne sous les tuiles) : la mesure est celle du moment, elle ne doit pas suivre le jour choisi. Vérifié à l'écran. Pas encore en ligne.

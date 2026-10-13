@@ -768,6 +768,7 @@ fun MainScreen(
                                             nightHours(state.hourlyForecast, state.dailySunInfo, clock),
                                             idealSwellDirection
                                         ),
+                                        buoy = viewModel.buoyReading,
                                         dawnText = if (isDawnWindow(clock, state.dailySunInfo[today]) && !isNowNight(clock, state.dailySunInfo[today]))
                                             nightPhrase(nightHours(state.hourlyForecast, state.dailySunInfo, clock), idealSwellDirection) else null,
                                         onRefresh = { viewModel.refreshActiveSpot() },
@@ -1148,8 +1149,7 @@ fun DynamicCardsSection(
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
                                     modifier = Modifier.fillMaxWidth(),
-                                    beachFacing = idealSwellDirection,
-                                    buoy = viewModel.buoyReading
+                                    beachFacing = idealSwellDirection
                                 )
                             }
                         }
