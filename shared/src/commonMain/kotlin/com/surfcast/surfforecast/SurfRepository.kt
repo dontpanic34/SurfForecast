@@ -887,7 +887,7 @@ class SurfRepository(
                 val nearest = sites.minByOrNull { distanceKm(lat, lon, it.latitude, it.longitude) }
                 val distance = nearest?.let { distanceKm(lat, lon, it.latitude, it.longitude) }
                 var estimated = false
-                val days: List<MareeDayData> = if (nearest == null || (distance ?: 0.0) <= MAX_FRENCH_TIDE_KM) {
+                val rawDays: List<MareeDayData> = if (nearest == null || (distance ?: 0.0) <= MAX_FRENCH_TIDE_KM) {
                     // Le service des marées en panne (et pas de copie de secours) : on estime les marées plutôt que de n'en montrer aucune.
                     runCatching { fetchMareeExtrema(nearest?.siteId ?: "cordouan", fromDate, toDate) }.getOrNull()
                         ?: estimatedTideDays(lat, lon, runCatching { estimatedBrestCoefs() }.getOrDefault(emptyList())).also { estimated = true }
@@ -899,6 +899,10 @@ class SurfRepository(
                     val french = runCatching { fetchMareeExtrema(referenceSite.siteId, fromDate, toDate) }.getOrDefault(emptyList())
                     estimatedTideDays(lat, lon, french)
                 }
+
+                // Le site de référence peut être dans l'estuaire alors que le spot est sur la côte ouverte : la marée y arrive plus tard.
+                val shiftMinutes = nearest?.takeIf { (distance ?: 0.0) in 15.0..MAX_FRENCH_TIDE_KM }?.let { SITE_TIDE_SHIFT_MINUTES[it.siteId] } ?: 0
+                val days = if (shiftMinutes != 0 && !estimated) shiftMareeDays(rawDays, shiftMinutes) else rawDays
 
                 val dailyMap = mutableMapOf<LocalDate, DailyTideInfo>()
                 val rawMap = mutableMapOf<LocalDate, List<MareeExtremum>>()
@@ -1105,6 +1109,30 @@ internal fun tideDaysFromSeaLevel(
  */
 internal fun estimatedTideShiftMinutes(lat: Double, lon: Double): Int =
     if (lat in 43.3..46.1 && lon in -2.1..-0.9) 68 else 0
+
+/**
+ * Écart (minutes) entre l'horaire d'un site de référence d'api-maree.fr et celui d'une plage voisine sur la côte ouverte.
+ * Richards est dans l'estuaire de la Gironde : pour Montalivet, l'appli donnait 13 h 48 pour une basse mer annoncée à 13 h 11
+ * ailleurs (13 octobre 2026), soit environ 33 minutes de trop.
+ */
+internal val SITE_TIDE_SHIFT_MINUTES: Map<String, Int> = mapOf("richards" to -33)
+
+/** Décale tous les horaires de marée de [minutes] (les dates changent si on passe minuit). Hauteurs et coefficients restent. */
+internal fun shiftMareeDays(days: List<MareeDayData>, minutes: Int): List<MareeDayData> {
+    class T(val at: LocalDateTime, val e: MareeExtremum)
+    val shifted = days.flatMap { day ->
+        val date = LocalDate.parse(day.date)
+        day.extrema.orEmpty().map { e ->
+            val base = LocalDateTime(date, LocalTime(e.time.substringBefore(':').toInt(), e.time.substringAfter(':').toInt()))
+            T(base.toInstant(TimeZone.UTC).plus(minutes, DateTimeUnit.MINUTE, TimeZone.UTC).toLocalDateTime(TimeZone.UTC), e)
+        }
+    }
+    return shifted.groupBy { it.at.date }.entries.sortedBy { it.key }.map { (date, list) ->
+        MareeDayData(date.toString(), list.sortedBy { it.at }.map { t ->
+            t.e.copy(time = t.at.hour.toString().padStart(2, '0') + ":" + t.at.minute.toString().padStart(2, '0'))
+        })
+    }
+}
 
 /** Le marnage de référence du SHOM : un coefficient de 100 vaut 6,1 m de marnage à Brest. */
 internal const val BREST_REFERENCE_RANGE_M = 6.1

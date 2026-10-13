@@ -440,6 +440,23 @@ class SurfRepositoryTest {
     }
 
     @Test
+    fun estuarySiteTimesAreBroughtBackToTheOpenCoast() {
+        val days = listOf(
+            MareeDayData("2026-10-13", listOf(MareeExtremum("BM", "00:20", 0.5), MareeExtremum("PM", "07:40", 5.0, coef = 88), MareeExtremum("BM", "13:48", 0.6))),
+            MareeDayData("2026-10-14", listOf(MareeExtremum("PM", "00:10", 5.1, coef = 85)))
+        )
+        val out = shiftMareeDays(days, -33)
+        assertEquals(listOf("2026-10-12", "2026-10-13"), out.map { it.date })
+        val byDate = out.associate { it.date to it.extrema.orEmpty() }
+        assertEquals("13:15", byDate.getValue("2026-10-13").first { it.type == "BM" && it.time > "10:00" }.time)
+        assertEquals("07:07", byDate.getValue("2026-10-13").first { it.type == "PM" }.time)
+        assertEquals(88, byDate.getValue("2026-10-13").first { it.type == "PM" }.coef)
+        // 00:20 - 33 min passe la veille ; 00:10 du 14 aussi.
+        assertEquals("23:47", byDate.getValue("2026-10-12").first().time)
+        assertEquals("23:37", byDate.getValue("2026-10-13").last().time)
+    }
+
+    @Test
     fun seaTemperatureComesFromItsOwnMarineRequestAndMayBeMissing() = runTest {
         val engine = MockEngine { request ->
             val model = request.url.parameters["models"]
