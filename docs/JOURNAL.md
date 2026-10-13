@@ -233,3 +233,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Note et phrase accordées : quand la phrase dit « dégrade », « ça sectionne » ou « démonté » (vent sous 0,75, ou clapot, rafales, période sous 0,55), la note ne dépasse pas « Bon ». Plus de « Très bon » à côté de « Onshore dégrade la vague ». Constantes `VERY_GOOD_MIN` (70) et `WIND_MILD` (0,75). Codé, testé, pas encore en ligne.
 
 - Règle titre/phrase validée : le titre donne le ton, la phrase n'a que les mots de ce ton. Très bon et Parfait : pas de « dégrade » ni « gêne » ; Bon : « Onshore gêne un peu » (jamais « dégrade ») ; « dégrade » et « ça sectionne » vont avec Correct et en dessous (plafond « Correct » quand le vent est sous 0,6 ou le clapot, les rafales ou la période sont forts). Constante `GOOD_MIN` (55). Codé, testé, pas encore en ligne.
+
+- Nouveau fichier `docs/CONNAISSANCES_HOULE.md` : notes (résumés) des vidéos envoyées sur la houle, pour la future page « Comprendre la houle, les prévisions, la météo ». Rien n'est codé ; d'autres vidéos suivront.
