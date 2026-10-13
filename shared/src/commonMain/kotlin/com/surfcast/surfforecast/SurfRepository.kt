@@ -185,7 +185,10 @@ class SurfRepository(
         val secPeriods: List<Double> = emptyList(),
         val secDirections: List<Float> = emptyList(),
         // Désaccord des modèles par heure (consensus) : (max - min) / moyenne des hauteurs ; vide hors consensus.
-        val spreads: List<Double> = emptyList()
+        val spreads: List<Double> = emptyList(),
+        // Période la plus courte et la plus longue entre les modèles (consensus) ; vide hors consensus.
+        val periodMins: List<Double> = emptyList(),
+        val periodMaxs: List<Double> = emptyList()
     )
 
     private class RawWeatherHourly(
@@ -384,11 +387,13 @@ class SurfRepository(
         val wwH = ArrayList<Double>(); val wwP = ArrayList<Double>(); val wwD = ArrayList<Float>()
         val sH = ArrayList<Double>(); val sP = ArrayList<Double>(); val sD = ArrayList<Float>()
         val spreads = ArrayList<Double>()
+        val periodMins = ArrayList<Double>(); val periodMaxs = ArrayList<Double>()
         for (t in times) {
             val leadHours = ((t.date.toEpochDays() - today.toEpochDays()) * 24L + t.hour).toDouble()
             val weights = waveConsensusWeights(leadHours)
             var sw = 0.0; var hSum = 0.0; var pSum = 0.0; var pw = 0.0; var vx = 0.0; var vy = 0.0
             var hMin = Double.MAX_VALUE; var hMax = 0.0; var hCount = 0; var hMean = 0.0
+            var pMin = Double.MAX_VALUE; var pMax = 0.0; var pCount = 0
             var best = -1
             for (k in models.indices) {
                 val b = blocks[k] ?: continue
@@ -405,6 +410,7 @@ class SurfRepository(
                     if (best < 0 || w > weights[best]) best = k
                 }
                 hMin = minOf(hMin, h); hMax = maxOf(hMax, h); hMean += h; hCount++
+                (b.wavePeriods.getOrNull(idx) ?: 0.0).let { pp -> if (pp > 0.0) { pMin = minOf(pMin, pp); pMax = maxOf(pMax, pp); pCount++ } }
             }
             if (sw <= 0.0) {
                 // Aucun modèle pesant n'a cette heure : on prend le premier qui l'a, sans consensus.
@@ -415,6 +421,7 @@ class SurfRepository(
                 periods += b?.wavePeriods?.getOrNull(idx ?: -1) ?: 0.0
                 dirs += b?.waveDirections?.getOrNull(idx ?: -1) ?: 0f
                 wwH += 0.0; wwP += 0.0; wwD += 0f; sH += 0.0; sP += 0.0; sD += 0f; spreads += 0.0
+                periodMins += 0.0; periodMaxs += 0.0
                 continue
             }
             heights += hSum / sw
@@ -428,8 +435,9 @@ class SurfRepository(
             wwH += wsrc.windWaveHeights.getOrNull(wi) ?: 0.0; wwP += wsrc.windWavePeriods.getOrNull(wi) ?: 0.0; wwD += wsrc.windWaveDirections.getOrNull(wi) ?: 0f
             sH += bs.secHeights.getOrNull(si) ?: 0.0; sP += bs.secPeriods.getOrNull(si) ?: 0.0; sD += bs.secDirections.getOrNull(si) ?: 0f
             spreads += if (hCount >= 2 && hMean > 0.0) (hMax - hMin) / (hMean / hCount) else 0.0
+            periodMins += if (pCount >= 2) pMin else 0.0; periodMaxs += if (pCount >= 2) pMax else 0.0
         }
-        RawMarineHourly(times, heights, periods, dirs, wwH, wwP, wwD, sH, sP, sD, spreads)
+        RawMarineHourly(times, heights, periods, dirs, wwH, wwP, wwD, sH, sP, sD, spreads, periodMins, periodMaxs)
     }
 
     /**
@@ -769,6 +777,13 @@ class SurfRepository(
                     else -> Triple(0.0, 0.0, WIND_SOURCE_MISSING)
                 }
 
+                // Les vents annoncés par chaque modèle pour cette heure (ECMWF, GFS, AROME HD, AROME) : leur écart dit si le vent est incertain.
+                val windVoices = listOfNotNull(
+                    longSpeed.takeIf { ecmwfOk },
+                    gfs?.first,
+                    hd?.first,
+                    primarySpeed.takeIf { isShortTerm && wData === shortWeather && !it.isNaN() }
+                )
                 resultList.add(
                     HourlyUiModel(
                         timeFormatted = formatHour(t),
@@ -783,6 +798,10 @@ class SurfRepository(
                         secondaryPeriod = mData.secPeriods.getOrElse(mIndex) { 0.0 },
                         secondaryDirection = mData.secDirections.getOrElse(mIndex) { 0f },
                         modelSpread = mData.spreads.getOrElse(mIndex) { 0.0 },
+                        periodMin = mData.periodMins.getOrElse(mIndex) { 0.0 },
+                        periodMax = mData.periodMaxs.getOrElse(mIndex) { 0.0 },
+                        windMinKmh = if (windVoices.size >= 2) windVoices.min().roundToInt() else 0,
+                        windMaxKmh = if (windVoices.size >= 2) windVoices.max().roundToInt() else 0,
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
                         windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),

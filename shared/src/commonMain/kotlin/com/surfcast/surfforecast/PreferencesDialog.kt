@@ -50,8 +50,6 @@ fun SurfPreferencesDialog(
     onToggleSurfCard: (Boolean) -> Unit,
     showWindCard: Boolean,
     onToggleWindCard: (Boolean) -> Unit,
-    showWindSeaCard: Boolean,
-    onToggleWindSeaCard: (Boolean) -> Unit,
     showWeatherCard: Boolean,
     onToggleWeatherCard: (Boolean) -> Unit,
     showHourlyCard: Boolean,
@@ -287,16 +285,18 @@ fun SurfPreferencesDialog(
         )
     }
     Dialog(onDismissRequest = onDismiss) {
+      // La fenêtre épouse son contenu (jusqu'à 90 % de l'écran), au lieu d'être toujours haute.
+      BoxWithConstraints {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.9f)
+                .heightIn(max = maxHeight * 0.9f)
                 .clip(RoundedCornerShape(14.dp)),
             color = colors.background
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 SettingsTopBar(
@@ -327,7 +327,7 @@ fun SurfPreferencesDialog(
                 LaunchedEffect(page) { scrollState.scrollTo(0) }
                 Column(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f, fill = false)
                         .fillMaxWidth()
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -538,6 +538,7 @@ fun SurfPreferencesDialog(
                 }
             }
         }
+      }
     }
 }
 

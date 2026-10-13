@@ -126,6 +126,13 @@ fun WindCardComponent(
                 }
             }
 
+            if (windModelsDisagree(selectedHour)) {
+                Text(
+                    "Modèles partagés : ${SurfUnitsHelper.formatWindValue(selectedHour.windMinKmh, windUnit)} à ${SurfUnitsHelper.formatWindValue(selectedHour.windMaxKmh, windUnit)} $unitSymbol",
+                    fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFF2B84B),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(4.dp))
 
             Box(

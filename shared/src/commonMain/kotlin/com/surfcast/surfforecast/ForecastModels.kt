@@ -41,7 +41,13 @@ data class HourlyUiModel(
     // Température de surface de la mer (°C, Open-Meteo Marine) : null = non fournie pour ce point.
     val seaTemperature: Double? = null,
     // Désaccord des modèles de vagues pour cette heure : (plus grande - plus petite hauteur) / moyenne. 0 = un seul modèle ou d'accord.
-    val modelSpread: Double = 0.0
+    val modelSpread: Double = 0.0,
+    // Période la plus courte et la plus longue annoncées par les modèles de vagues (s) : 0 = un seul modèle.
+    val periodMin: Double = 0.0,
+    val periodMax: Double = 0.0,
+    // Vent le plus faible et le plus fort annoncés par les modèles (km/h) : 0 = un seul modèle.
+    val windMinKmh: Int = 0,
+    val windMaxKmh: Int = 0
 )
 
 data class DailyTideInfo(

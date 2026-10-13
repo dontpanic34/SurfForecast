@@ -1,6 +1,6 @@
 # À faire
 
-Mis à jour le 13 octobre 2026 au soir. Tout le lot validé est codé et en ligne sur le site (`web`), CI verte.
+Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est publié sur `web` et `unified` (voir le journal).
 
 ## À trancher / valider par le propriétaire
 - **Flèche 3 et icône de l'eau** : à juger à l'écran (l'icône de l'eau a été redessinée : thermomètre plein sur deux vagues).
@@ -13,6 +13,10 @@ Mis à jour le 13 octobre 2026 au soir. Tout le lot validé est codé et en lign
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
+- **Vent mesuré** (collecte en place depuis le 13 octobre) : après 3 à 4 semaines de relevés (`data/obs` sur la branche `data`), comparer chaque modèle de vent à la station la plus proche de chaque spot, choisir les poids du vent, puis afficher « mesuré » dans l'encart Actuellement. Lacanau n'a pas de station qui mesure le vent : choisir une station voisine.
+- **Encart Météo en bandes** : codé le 13 octobre mais pas vu à l'écran (quota Open-Meteo du poste de développement dépassé) : à vérifier sur le site, bandes Ciel et Soleil, point par bande, ligne d'heures.
+- **Option « Bulletin marine »** de Météo-France (rubrique Prévisions du portail) : à regarder.
+- **Vigilance Météo-France** (vent violent, vagues-submersion) : idée, pas de maquette.
 - **`unified` (appli Android)** : en retard depuis `d2f3cff`. À publier seulement sur demande.
 - **Légendes qui évitent le point** : fait pour la courbe de marée et le déroulé ; à étendre aux autres encarts (houle, vent, semaine) s'il en reste qui se recouvrent.
 - **Taille des flèches de clapot** : taille moyenne fixe, pas de règle.
