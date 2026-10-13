@@ -212,7 +212,7 @@ fun DailyTimelineCard(
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
                         sunrise = sunrise, sunset = sunset, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
-                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve, coefValue = dailyTides[selectedDate]?.coefficient,
+                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve, coefValue = dailyTides[selectedDate]?.coefficient, tidesEstimated = dailyTides[selectedDate]?.estimated == true,
                         beachFacing = idealSwellDirection, surferLevel = surferLevel
                     )
                 }
@@ -253,6 +253,7 @@ private fun DailyTimelineBody(
     tideMarks: List<TideMark>,
     tideCurve: List<TideMark> = emptyList(),
     coefValue: Int? = null,
+    tidesEstimated: Boolean = false,
     beachFacing: Int?,
     surferLevel: String
 ) {
@@ -417,7 +418,7 @@ private fun DailyTimelineBody(
                             drawPath(arrow, if (up) rising else falling)
                             val hh = m.hour.toInt()
                             val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
-                            val txt = hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · $it" } ?: "")
+                            val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · $it" } ?: "")
                             labels += cx to txt
                         }
                         if (selH != null && selH in ax0..ax1) {

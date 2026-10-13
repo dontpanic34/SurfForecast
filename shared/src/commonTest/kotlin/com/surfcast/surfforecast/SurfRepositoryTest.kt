@@ -402,6 +402,30 @@ class SurfRepositoryTest {
     }
 
     @Test
+    fun frenchTidesAreEstimatedWhenTheTideServiceIsDown() = runTest {
+        val engine = MockEngine { request ->
+            when {
+                request.url.encodedPath.endsWith("/sites") -> respondJson(
+                    """{"sites":[{"site_id":"cordouan","site_name":"Cordouan","latitude":45.58,"longitude":-1.17}]}"""
+                )
+                request.url.host == "marine-api.open-meteo.com" -> {
+                    val times = (0 until 24).joinToString(",") { "\"2026-01-01T${it.toString().padStart(2, '0')}:00\"" }
+                    val levels = (0 until 24).joinToString(",") { i ->
+                        (1.2 * kotlin.math.cos(2 * kotlin.math.PI * (i - 5.0) / 12.42)).toString()
+                    }
+                    respondJson("""{"hourly":{"time":[$times],"sea_level_height_msl":[$levels]}}""")
+                }
+                else -> respondError(HttpStatusCode.BadGateway)   // api-maree.fr en panne
+            }
+        }
+        val tides = repository(engine).getTides(45.38, -1.16, "2026-01-01", "2026-01-01")
+        val day = tides.dailyByDate.getValue(today)
+        assertTrue(day.estimated)
+        assertTrue(day.highTideTime != null && day.lowTideTime != null)
+        assertEquals(null, day.coefficient)   // pas de coefficient inventé
+    }
+
+    @Test
     fun seaTemperatureComesFromItsOwnMarineRequestAndMayBeMissing() = runTest {
         val engine = MockEngine { request ->
             val model = request.url.parameters["models"]

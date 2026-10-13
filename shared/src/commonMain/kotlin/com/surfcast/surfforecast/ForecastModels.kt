@@ -55,7 +55,9 @@ data class DailyTideInfo(
     val lowTideTime: String? = null,
     val coefficient: Int? = null,
     // Toutes les marées du jour, nuit comprise : le déroulé en retient les deux qui tombent le mieux dans la journée.
-    val extrema: List<MareeExtremum> = emptyList()
+    val extrema: List<MareeExtremum> = emptyList(),
+    // Horaires estimés (hauteur d'eau Open-Meteo) parce que le service des marées ne répond pas : à afficher avec « ≈ ».
+    val estimated: Boolean = false
 )
 
 data class DailySunInfo(

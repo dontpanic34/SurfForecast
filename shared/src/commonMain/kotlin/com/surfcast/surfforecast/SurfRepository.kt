@@ -885,8 +885,11 @@ class SurfRepository(
                 val sites = fetchMareeSites()
                 val nearest = sites.minByOrNull { distanceKm(lat, lon, it.latitude, it.longitude) }
                 val distance = nearest?.let { distanceKm(lat, lon, it.latitude, it.longitude) }
+                var estimated = false
                 val days: List<MareeDayData> = if (nearest == null || (distance ?: 0.0) <= MAX_FRENCH_TIDE_KM) {
-                    fetchMareeExtrema(nearest?.siteId ?: "cordouan", fromDate, toDate)
+                    // Le service des marées en panne (et pas de copie de secours) : on estime les marées plutôt que de n'en montrer aucune.
+                    runCatching { fetchMareeExtrema(nearest?.siteId ?: "cordouan", fromDate, toDate) }.getOrNull()
+                        ?: estimatedTideDays(lat, lon, emptyList()).also { estimated = true }
                 } else {
                     // Hors France : on lit le coefficient chez le port français le plus proche (même date,
                     // PM la plus proche en heure). Le SHOM le définit à partir de Brest, mais chaque port
@@ -915,7 +918,8 @@ class SurfRepository(
                         highTideTime = dayPm?.time,
                         lowTideTime = dayBm?.time,
                         coefficient = coef,
-                        extrema = extrema
+                        extrema = extrema,
+                        estimated = estimated
                     )
                 }
                 TidesBundle(dailyMap, rawMap)
