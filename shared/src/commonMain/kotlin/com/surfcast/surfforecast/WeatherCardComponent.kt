@@ -57,13 +57,7 @@ fun WeatherCardComponent(
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
                 summary = "${selectedHour.feelsLike}° ressentis · nuages ${selectedHour.cloudCover} %" +
-                    (if (selectedHour.precipitationMm >= 0.05) " · pluie ${formatDecimal(selectedHour.precipitationMm, 1).replace('.', ',')} mm" else ""),
-                trailing = if (onOpenDetail != null) ({
-                    Text(
-                        "Semaine ›", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onOpenDetail).padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }) else null
+                    (if (selectedHour.precipitationMm >= 0.05) " · pluie ${formatDecimal(selectedHour.precipitationMm, 1).replace('.', ',')} mm" else "")
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
