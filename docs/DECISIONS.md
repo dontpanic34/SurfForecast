@@ -144,3 +144,5 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **Accès à « Comprendre » (13 octobre)** : un cinquième onglet « Comprendre » dans la barre du bas, plus la ligne dans Réglages > Aide. Plus de carte au milieu de l'écran, plus de lien dans les ⚙ des encarts.
 - **« Comprendre » à un seul endroit** (13 octobre 2026) : seul l'onglet « Comprendre » de la barre du bas ouvre les explications. Plus de lignes « Comprendre… » dans Réglages, dans la page Sources et modèles, ni de section « Comprendre » dans le ⚙ des encarts ; la page « Comprendre les prévisions » est supprimée. Les explications des cartes (barres, mer mélangée, rafales, modèles partagés, marée) sont dans la leçon « Lire les cartes de l'appli ».
 - **Publication** (13 octobre 2026) : une fois un lot codé et testé, le propriétaire demande de publier sans attendre un nouveau « go » (site `web` puis appli `unified`), puis de lui donner la liste de ce qui reste à faire.
+
+- **Traductions manquantes** (13 octobre 2026) : en allemand, néerlandais ou espagnol, un texte sans traduction s'affiche en anglais.
