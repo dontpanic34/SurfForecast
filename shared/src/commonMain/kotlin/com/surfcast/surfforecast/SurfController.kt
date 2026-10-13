@@ -447,6 +447,10 @@ class SurfController(
     var buoyReading by mutableStateOf<BuoyReading?>(null)
         private set
 
+    /** Dernière mesure d'une station Météo-France proche du spot (null = pas de station proche ou pas de mesure récente). */
+    var observedNow by mutableStateOf<ObservedNow?>(null)
+        private set
+
     /** Non null = pas de réseau : les prévisions affichées datent de ce moment (ms). */
     var offlineSinceMillis by mutableStateOf<Long?>(null)
         private set
@@ -456,8 +460,10 @@ class SurfController(
             repository.resetStale()
             // La bouée se charge à part : une panne du relais ne retarde jamais les prévisions.
             buoyReading = null
+            observedNow = null
             modelPreview = null
             scope.launch { buoyReading = repository.fetchBuoyReading(spot.latitude, spot.longitude) }
+            scope.launch { observedNow = repository.fetchObservedNow(spot.latitude, spot.longitude) }
             val forecastResult = repository.getHybridForecast(spot.latitude, spot.longitude, engineConfig)
             offlineSinceMillis = repository.staleSinceMillis
             val forecast = forecastResult.hourly

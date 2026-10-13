@@ -769,6 +769,7 @@ fun MainScreen(
                                             idealSwellDirection
                                         ),
                                         buoy = viewModel.buoyReading,
+                                        observed = viewModel.observedNow,
                                         dawnText = if (isDawnWindow(clock, state.dailySunInfo[today]) && !isNowNight(clock, state.dailySunInfo[today]))
                                             nightPhrase(nightHours(state.hourlyForecast, state.dailySunInfo, clock), idealSwellDirection) else null,
                                         onRefresh = { viewModel.refreshActiveSpot() },

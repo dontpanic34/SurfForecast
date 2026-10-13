@@ -53,6 +53,8 @@ fun NowTideCard(
     dawnText: String? = null,
     // Dernière mesure de la bouée de référence : une ligne sous les tuiles, pour comparer la prévision à ce qu'on mesure en ce moment.
     buoy: BuoyReading? = null,
+    // Dernière mesure d'une station Météo-France proche : le vent et la pluie réels, sous la ligne de la bouée.
+    observed: ObservedNow? = null,
     onRefresh: (() -> Unit)? = null,
     boardOfDay: String? = null,
     // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
@@ -117,6 +119,9 @@ fun NowTideCard(
         }
         buoy?.let { b ->
             Text(buoyLine(b), fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 2, modifier = Modifier.padding(top = 6.dp))
+        }
+        observed?.let { o ->
+            Text(observedLine(o, windUnit), fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 2, modifier = Modifier.padding(top = if (buoy != null) 2.dp else 6.dp))
         }
     }
 }
