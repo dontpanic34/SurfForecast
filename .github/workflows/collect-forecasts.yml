@@ -2,7 +2,7 @@ name: Collecte des prévisions et des bouées
 
 # Relève, quatre fois par jour, les prévisions de chaque modèle et la mesure des bouées, pour comparer ensuite le prévu et le réel.
 # Les relevés sont rangés dans la branche `data` (data/runs/AAAA-MM-JJ/HHZ.json.gz), à part du code.
-# Sources : Open-Meteo (CC BY 4.0) et Candhis, Cerema (licence ouverte Etalab 2.0). Aucune clé n'est nécessaire.
+# Sources : Open-Meteo (CC BY 4.0), Candhis, Cerema (Etalab 2.0) et les stations Météo-France (licence ouverte, clé dans le secret METEOFRANCE_API_KEY).
 on:
   schedule:
     - cron: "17 2,8,14,20 * * *"
@@ -39,6 +39,13 @@ jobs:
 
       - name: Relever
         run: python3 scripts/collect/collect.py ../data-wt/data
+
+      - name: Relever les mesures des stations Météo-France
+        # La clé est le secret METEOFRANCE_API_KEY (réglages du dépôt) ; sans clé, l'étape ne fait rien.
+        env:
+          METEOFRANCE_API_KEY: ${{ secrets.METEOFRANCE_API_KEY }}
+        continue-on-error: true
+        run: python3 scripts/collect/observations.py ../data-wt/data
 
       - name: Enregistrer
         run: |
