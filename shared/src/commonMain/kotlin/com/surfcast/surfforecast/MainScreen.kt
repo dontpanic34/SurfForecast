@@ -6,7 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
@@ -207,8 +208,6 @@ fun MainScreen(
             onToggleSurfCard = { viewModel.toggleSurfCard(it) },
             showWindCard = viewModel.showWindCard,
             onToggleWindCard = { viewModel.toggleWindCard(it) },
-            showWindSeaCard = viewModel.showWindSeaCard,
-            onToggleWindSeaCard = { viewModel.toggleWindSeaCard(it) },
             showWeatherCard = viewModel.showWeatherCard,
             onToggleWeatherCard = { viewModel.toggleWeatherCard(it) },
             showHourlyCard = viewModel.showHourlyCard,
@@ -706,6 +705,7 @@ fun MainScreen(
                                             )
                                         ) {
                                         DynamicCardsSection(
+                                            listState = mainListState,
                                             onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
@@ -982,7 +982,8 @@ fun DynamicCardsSection(
     surferLevel: String,
     currentHour: Int = nowLocalDateTime().hour,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
-    onOpenWeatherDetail: (() -> Unit)? = null
+    onOpenWeatherDetail: (() -> Unit)? = null,
+    listState: androidx.compose.foundation.lazy.LazyListState? = null
 ) {
     val boardsForBar by viewModel.quiverBoards.collectAsState()
     // currentHour en clé : à chaque changement d'heure (ou rechargement), la sélection
@@ -1008,56 +1009,89 @@ fun DynamicCardsSection(
             "dailyTimeline" -> viewModel.showDailyTimelineCard
             "surf" -> viewModel.showSurfCard
             "wind" -> viewModel.showWindCard
-            "windSea" -> viewModel.showWindSeaCard
             "weather" -> viewModel.showWeatherCard
             "hourly" -> viewModel.showHourlyCard
             else -> true
         }
     }
 
-    // Glisser-déposer libre : on attrape la poignée, l'encart suit le doigt et les autres se
-    // décalent pour lui faire de la place, quelle que soit la distance parcourue.
+    // Appui long sur un encart (n'importe où dessus) : il se détache, suit le doigt et les autres se décalent pour lui
+    // faire de la place. Près du haut ou du bas de l'écran, la page défile toute seule pour continuer à le monter ou le descendre.
+    val dragScope = rememberCoroutineScope()
+    val cardCoords = remember { mutableMapOf<String, androidx.compose.ui.layout.LayoutCoordinates>() }
+    var autoScroll by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    var fingerY by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val windowHeight = androidx.compose.ui.platform.LocalWindowInfo.current.containerSize.height.toFloat()
+
+    // Plusieurs encarts peuvent être franchis d'un seul geste rapide.
+    fun reorder(cardKey: String) {
+        var guard = 0
+        while (guard++ < 12) {
+            val keys = renderableCardKeys()
+            val currentIndex = keys.indexOf(cardKey)
+            if (currentIndex == -1) break
+            if (dragOffsetY > 0f && currentIndex < keys.size - 1) {
+                val nextHeight = (itemHeights[keys[currentIndex + 1]] ?: 0).toFloat()
+                if (nextHeight > 0f && dragOffsetY > nextHeight / 2f) {
+                    viewModel.moveCardDown(cardKey)
+                    dragOffsetY -= nextHeight
+                    continue
+                }
+            } else if (dragOffsetY < 0f && currentIndex > 0) {
+                val prevHeight = (itemHeights[keys[currentIndex - 1]] ?: 0).toFloat()
+                if (prevHeight > 0f && -dragOffsetY > prevHeight / 2f) {
+                    viewModel.moveCardUp(cardKey)
+                    dragOffsetY += prevHeight
+                    continue
+                }
+            }
+            break
+        }
+    }
+
+    fun stopDrag() {
+        autoScroll?.cancel()
+        autoScroll = null
+        draggedKey = null
+        dragOffsetY = 0f
+    }
+
     fun dragModifierFor(cardKey: String): Modifier = Modifier.pointerInput(cardKey) {
-        detectDragGestures(
+        detectDragGesturesAfterLongPress(
             onDragStart = {
                 draggedKey = cardKey
                 dragOffsetY = 0f
+                val ls = listState
+                if (ls != null) {
+                    autoScroll = dragScope.launch {
+                        val topZone = with(density) { 150.dp.toPx() }
+                        val bottomZone = windowHeight - with(density) { 190.dp.toPx() }
+                        val maxStep = with(density) { 14.dp.toPx() }
+                        while (true) {
+                            val step = when {
+                                fingerY < topZone -> -maxStep * ((topZone - fingerY) / topZone).coerceIn(0.15f, 1f)
+                                fingerY > bottomZone -> maxStep * ((fingerY - bottomZone) / (windowHeight - bottomZone)).coerceIn(0.15f, 1f)
+                                else -> 0f
+                            }
+                            if (step != 0f) {
+                                val consumed = ls.dispatchRawDelta(step)
+                                // La page a bougé sous le doigt : l'encart doit rester sous lui.
+                                dragOffsetY += consumed
+                                reorder(cardKey)
+                            }
+                            delay(16)
+                        }
+                    }
+                }
             },
-            onDragEnd = {
-                draggedKey = null
-                dragOffsetY = 0f
-            },
-            onDragCancel = {
-                draggedKey = null
-                dragOffsetY = 0f
-            },
+            onDragEnd = { stopDrag() },
+            onDragCancel = { stopDrag() },
             onDrag = { change, dragAmount ->
                 change.consume()
                 dragOffsetY += dragAmount.y
-
-                // Plusieurs encarts peuvent être franchis d'un seul geste rapide.
-                var guard = 0
-                while (guard++ < 12) {
-                    val keys = renderableCardKeys()
-                    val currentIndex = keys.indexOf(cardKey)
-                    if (currentIndex == -1) break
-                    if (dragOffsetY > 0f && currentIndex < keys.size - 1) {
-                        val nextHeight = (itemHeights[keys[currentIndex + 1]] ?: 0).toFloat()
-                        if (nextHeight > 0f && dragOffsetY > nextHeight / 2f) {
-                            viewModel.moveCardDown(cardKey)
-                            dragOffsetY -= nextHeight
-                            continue
-                        }
-                    } else if (dragOffsetY < 0f && currentIndex > 0) {
-                        val prevHeight = (itemHeights[keys[currentIndex - 1]] ?: 0).toFloat()
-                        if (prevHeight > 0f && -dragOffsetY > prevHeight / 2f) {
-                            viewModel.moveCardUp(cardKey)
-                            dragOffsetY += prevHeight
-                            continue
-                        }
-                    }
-                    break
-                }
+                cardCoords[cardKey]?.let { fingerY = it.positionInWindow().y + change.position.y }
+                reorder(cardKey)
             }
         )
     }
@@ -1074,6 +1108,8 @@ fun DynamicCardsSection(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onGloballyPositioned { cardCoords[cardKey] = it }
+                    .then(dragMod)
                     .zIndex(if (isDragging) 1f else 0f)
                     .offset { IntOffset(0, (if (isDragging) dragOffsetY else 0f).roundToInt()) }
                     .then(if (isDragging) Modifier.shadow(6.dp) else Modifier)
@@ -1111,7 +1147,7 @@ fun DynamicCardsSection(
                                 onSurfaceColor = onSurfaceColor,
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
-                                dragHandleModifier = dragMod,
+                                dragHandleModifier = Modifier,
                                 modifier = if (coachTargets != null) Modifier.fillMaxWidth().coachTarget("weekCard", coachTargets) else Modifier.fillMaxWidth(),
                                 boardOfDay = boardOfDay,
                                 toleranceLabel = null
@@ -1131,7 +1167,7 @@ fun DynamicCardsSection(
                                 onHourSelected = { selectedHourlyItem = it },
                                 isCollapsed = isCollapsed,
                                 onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
-                                dragHandleModifier = dragMod,
+                                dragHandleModifier = Modifier,
                                 modifier = Modifier.fillMaxWidth(),
                                 boardOf = if (GearPrefs.boardDayMode == "none") null else { h -> boardOfTheDay(h, boardsForBar, idealSwellDirection)?.model },
                                 motivationLabel = ToleranceSettings.label(viewModel.toleranceMode),
@@ -1147,7 +1183,7 @@ fun DynamicCardsSection(
                                     onHourSelected = { selectedHourlyItem = it },
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
-                                    dragHandleModifier = dragMod,
+                                    dragHandleModifier = Modifier,
                                     modifier = Modifier.fillMaxWidth(),
                                     beachFacing = idealSwellDirection
                                 )
@@ -1163,23 +1199,8 @@ fun DynamicCardsSection(
                                     onHourSelected = { selectedHourlyItem = it },
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
-                                    dragHandleModifier = dragMod,
+                                    dragHandleModifier = Modifier,
                                     modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
-                        "windSea" -> {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            selectedHourlyItem?.let { hourly ->
-                                WindSeaCardComponent(
-                                    selectedHour = hourly,
-                                    allHoursOfDay = hoursForSelectedDay,
-                                    onHourSelected = { selectedHourlyItem = it },
-                                    isCollapsed = isCollapsed,
-                                    onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
-                                    dragHandleModifier = dragMod,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    beachFacing = idealSwellDirection
                                 )
                             }
                         }
@@ -1192,7 +1213,7 @@ fun DynamicCardsSection(
                                     onHourSelected = { selectedHourlyItem = it },
                                     isCollapsed = isCollapsed,
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
-                                    dragHandleModifier = dragMod,
+                                    dragHandleModifier = Modifier,
                                     modifier = Modifier.fillMaxWidth(),
                                     sun = dailySunInfo[selectedHourlyItem?.rawTime?.date],
                                     onOpenDetail = onOpenWeatherDetail
@@ -1212,7 +1233,7 @@ fun DynamicCardsSection(
                                         title = "Prévision heure par heure", guide = "hourly",
                                         isCollapsed = isCollapsed,
                                         onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
-                                        dragHandleModifier = dragMod,
+                                        dragHandleModifier = Modifier,
                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                                     )
 

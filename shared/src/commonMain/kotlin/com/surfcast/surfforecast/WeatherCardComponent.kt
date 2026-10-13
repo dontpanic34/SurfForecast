@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -44,30 +45,9 @@ fun WeatherCardComponent(
 
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val maxTemp = (allHoursOfDay.maxOfOrNull { it.temperature.toDouble() } ?: 25.0).coerceAtLeast(30.0)
-
-    // Remplace le Paint Android (non multiplateforme) : même taille, même graisse.
-    val textMeasurer = rememberTextMeasurer()
-    val timeTextPaint = TextStyle(color = onSurfaceColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .pointerInput(allHoursOfDay) {
-                detectHorizontalDragGestures { change, _ ->
-                    val x = change.position.x.coerceIn(0f, size.width.toFloat())
-                    val widthPerItem = size.width / allHoursOfDay.size.toFloat()
-                    val index = (x / widthPerItem).toInt().coerceIn(0, allHoursOfDay.size - 1)
-                    onHourSelected(allHoursOfDay[index])
-                }
-            }
-            .pointerInput(allHoursOfDay) {
-                detectTapGestures { offset ->
-                    val widthPerItem = size.width / allHoursOfDay.size.toFloat()
-                    val index = (offset.x / widthPerItem).toInt().coerceIn(0, allHoursOfDay.size - 1)
-                    onHourSelected(allHoursOfDay[index])
-                }
-            },
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = surfaceColor),
         shape = RoundedCornerShape(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -79,99 +59,180 @@ fun WeatherCardComponent(
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
                 summary = "${selectedHour.feelsLike}° ressentis · nuages ${selectedHour.cloudCover} %" +
-                    (if (selectedHour.precipitationMm >= 0.05) " · pluie ${formatDecimal(selectedHour.precipitationMm, 1).replace('.', ',')} mm" else "")
+                    (if (selectedHour.precipitationMm >= 0.05) " · pluie ${formatDecimal(selectedHour.precipitationMm, 1).replace('.', ',')} mm" else ""),
+                trailing = if (onOpenDetail != null) ({
+                    Text(
+                        "Semaine ›", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onOpenDetail).padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }) else null
             )
             if (!isCollapsed) {
             Spacer(modifier = Modifier.height(2.dp))
-            WeatherFacts(selectedHour, sun, onSurfaceColor, onOpenDetail)
-            Spacer(modifier = Modifier.height(6.dp))
+            WeatherHeader(selectedHour, sun, onSurfaceColor)
+            Spacer(modifier = Modifier.height(8.dp))
+            WeatherBands(selectedHour, allHoursOfDay, sun, onHourSelected, onSurfaceColor, isDarkSurfaceTheme())
+            }
+        }
+    }
+}
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                val currentHourNow = nowLocalDateTime().hour
-                val isToday = allHoursOfDay.firstOrNull()?.rawTime?.date == nowLocalDateTime().date
+private const val BAND_LABEL_W = 62
+private const val BAND_VALUE_W = 52
+private const val CIEL_H = 14
+private const val SOLEIL_H = 22
+private const val BAND_GAP = 7
+private const val HOURS_H = 18
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    verticalAlignment = Alignment.Bottom,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    allHoursOfDay.forEach { hourly ->
-                        val isSelected = hourly.rawTime == selectedHour.rawTime
-                        val isCurrentHour = isToday && hourly.rawTime.hour == currentHourNow
-                        val heightRatio = (hourly.temperature.toFloat() / maxTemp.toFloat()).coerceIn(0.15f, 1f)
+/** « 8 h 17 » : un lever ou un coucher écrit sur la ligne d'heures. */
+private fun sunHm(t: kotlinx.datetime.LocalTime): String = "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
 
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            contentAlignment = Alignment.BottomCenter
-                        ) {
-                            Canvas(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(heightRatio)
-                            ) {
-                                val brush = Brush.verticalGradient(
-                                    colors = if (isSelected) {
-                                        listOf(Color(0xFF26A69A), Color(0xFF00897B))
-                                    } else {
-                                        listOf(Color(0xFF26A69A).copy(alpha = 0.5f), Color(0xFF00897B).copy(alpha = 0.2f))
-                                    }
-                                )
-                                drawRoundRect(
-                                    brush = brush,
-                                    topLeft = Offset.Zero,
-                                    size = Size(size.width, size.height),
-                                    cornerRadius = CornerRadius(3f, 3f)
-                                )
+/**
+ * Les bandes de l'encart : une cellule par heure, comme la barre d'ensoleillement du déroulé de la journée.
+ * « Ciel » : bleue quand il pleut cette heure-là (plus foncée si c'est plus fort), sinon la couverture nuageuse en gris.
+ * « Soleil » : dorée entre le lever et le coucher (plus vive vers midi), sombre la nuit, avec l'indice UV à droite.
+ * Un point sur chaque bande marque l'heure choisie, écrite sous les bandes avec les heures rondes, le lever (jaune) et le coucher (orange).
+ * Toucher ou glisser sur une bande change l'heure choisie (comme dans la houle et le vent).
+ */
+@Composable
+private fun WeatherBands(
+    selected: HourlyUiModel, hours: List<HourlyUiModel>, sun: DailySunInfo?, onHourSelected: (HourlyUiModel) -> Unit,
+    onSurface: Color, isDark: Boolean
+) {
+    val textMeasurer = rememberTextMeasurer()
+    val n = hours.size
+    val selIndex = hours.indexOfFirst { it.rawTime == selected.rawTime }
+    val firstHour = hours.first().rawTime.hour
+    val sunrise = sun?.let { it.sunrise.hour + it.sunrise.minute / 60f }
+    val sunset = sun?.let { it.sunset.hour + it.sunset.minute / 60f }
+    val cellDark = if (isDark) Color(0xFF0F1822) else Color(0xFFD3DBE4)
+    val goldLo = if (isDark) Color(0xFF0B121A) else Color(0xFFC9D2DC)
+    val gold = if (isDark) Color(0xFFF6C453) else Color(0xFFE2A025)
+    val rainBlue = Color(0xFF5AA9E6)
+    val cloudGrey = if (isDark) Color(0xFF9FB2BD) else Color(0xFF6F8794)
+    val nacre = if (isDark) Color(0xFFF1F4F7) else Color(0xFF2A3A4A)
+    val sunYellow = if (isDark) Color(0xFFF6C453) else Color(0xFFB57A00)
+    val duskOrange = if (isDark) Color(0xFFE8844A) else Color(0xFFC4561F)
+    val muted = onSurface.copy(alpha = 0.6f)
+    val raining = selected.precipitationMm >= 0.05
+    val labelStyle = TextStyle(color = onSurface.copy(alpha = 0.6f), fontSize = 12.sp)
 
-                                if (isCurrentHour) {
-                                    drawRoundRect(
-                                        color = onSurfaceColor.copy(alpha = 0.85f),
-                                        topLeft = Offset.Zero,
-                                        size = Size(size.width, size.height),
-                                        cornerRadius = CornerRadius(3f, 3f),
-                                        style = Stroke(width = 1.2.dp.toPx())
-                                    )
-                                }
-                            }
+    fun indexAt(x: Float, width: Float): Int = (x / width * n).toInt().coerceIn(0, n - 1)
+
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        // Colonne des noms.
+        Column(modifier = Modifier.width(BAND_LABEL_W.dp), verticalArrangement = Arrangement.spacedBy(BAND_GAP.dp)) {
+            Box(Modifier.height(CIEL_H.dp), contentAlignment = Alignment.CenterStart) { Text("Ciel", style = labelStyle) }
+            Box(Modifier.height(SOLEIL_H.dp), contentAlignment = Alignment.CenterStart) { Text("Soleil", style = labelStyle) }
+        }
+        // Les bandes et la ligne d'heures.
+        Box(
+            modifier = Modifier.weight(1f)
+                .pointerInput(hours) {
+                    detectHorizontalDragGestures { change, _ -> onHourSelected(hours[indexAt(change.position.x, size.width.toFloat())]) }
+                }
+                .pointerInput(hours) {
+                    detectTapGestures { o -> onHourSelected(hours[indexAt(o.x, size.width.toFloat())]) }
+                }
+        ) {
+            Canvas(modifier = Modifier.fillMaxWidth().height((CIEL_H + BAND_GAP + SOLEIL_H + BAND_GAP + HOURS_H).dp)) {
+                val gap = 2.dp.toPx()
+                val cellW = (size.width - gap * (n - 1)) / n
+                val r = CornerRadius(3.dp.toPx())
+                fun x0(i: Int) = i * (cellW + gap)
+                val cielTop = 0f
+                val cielH = CIEL_H.dp.toPx()
+                val solTop = cielH + BAND_GAP.dp.toPx()
+                val solH = SOLEIL_H.dp.toPx()
+                for (i in 0 until n) {
+                    val h = hours[i]
+                    // Ciel
+                    drawRoundRect(cellDark, Offset(x0(i), cielTop), Size(cellW, cielH), r)
+                    if (h.precipitationMm >= 0.05) {
+                        val a = (0.45f + (h.precipitationMm.toFloat() / 1f).coerceIn(0f, 1f) * 0.55f)
+                        drawRoundRect(rainBlue.copy(alpha = a), Offset(x0(i), cielTop), Size(cellW, cielH), r)
+                    } else {
+                        drawRoundRect(cloudGrey.copy(alpha = (h.cloudCover / 100f * 0.85f).coerceIn(0f, 0.85f)), Offset(x0(i), cielTop), Size(cellW, cielH), r)
+                    }
+                    // Soleil
+                    drawRoundRect(cellDark, Offset(x0(i), solTop), Size(cellW, solH), r)
+                    if (sunrise != null && sunset != null) {
+                        val hr = h.rawTime.hour.toFloat()
+                        if (hr + 0.5f > sunrise && hr - 0.5f < sunset) {
+                            val mid = kotlin.math.sin(kotlin.math.PI * ((hr - sunrise) / (sunset - sunrise)).coerceIn(0f, 1f).toDouble()).toFloat()
+                            drawRoundRect(androidx.compose.ui.graphics.lerp(goldLo, gold, 0.4f + 0.6f * mid), Offset(x0(i), solTop), Size(cellW, solH), r)
                         }
                     }
-                }
-
-                val selectedIndex = allHoursOfDay.indexOfFirst { it.rawTime == selectedHour.rawTime }
-                if (selectedIndex != -1) {
-                    val fraction = selectedIndex.toFloat() / (allHoursOfDay.size - 1).coerceAtLeast(1)
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val indicatorX = size.width * fraction
-
-                        drawLine(
-                            color = onSurfaceColor.copy(alpha = 0.75f),
-                            start = Offset(indicatorX, 0f),
-                            end = Offset(indicatorX, size.height),
-                            strokeWidth = 1.8f
-                        )
-
-                        val currentBarHeight = size.height * (1f - (selectedHour.temperature.toFloat() / maxTemp.toFloat()).coerceIn(0.15f, 1f))
-                        drawCircle(
-                            color = onSurfaceColor,
-                            radius = 3.2f,
-                            center = Offset(indicatorX, currentBarHeight)
-                        )
-
-                        val timeStr = selectedHour.rawTime.formatHHmm()
-                        val timeStrLayout = textMeasurer.measure(timeStr, timeTextPaint)
-                        val textWidth = timeStrLayout.size.width.toFloat()
-                        val adjustedX = indicatorX.coerceIn(textWidth / 2f, size.width - textWidth / 2f)
-
-                        drawText(timeStrLayout, topLeft = Offset(adjustedX - textWidth / 2f, 4.dp.toPx() - timeStrLayout.firstBaseline))
+                    if (i == selIndex) {
+                        drawRoundRect(nacre, Offset(x0(i), cielTop), Size(cellW, cielH), r, style = Stroke(1.4.dp.toPx()))
+                        drawRoundRect(nacre, Offset(x0(i), solTop), Size(cellW, solH), r, style = Stroke(1.4.dp.toPx()))
                     }
                 }
+                // Un point sur chaque bande, à l'heure choisie.
+                if (selIndex >= 0) {
+                    val cx = x0(selIndex) + cellW / 2f
+                    for (cy in listOf(cielTop + cielH / 2f, solTop + solH / 2f)) {
+                        drawCircle(Color.White, 5.5.dp.toPx(), Offset(cx, cy))
+                        drawCircle(Color(0xFF0B1519), 5.5.dp.toPx(), Offset(cx, cy), style = Stroke(2.dp.toPx()))
+                    }
+                }
+                // La ligne d'heures : l'heure choisie d'abord, puis le lever et le coucher, puis les heures rondes ; une étiquette qui en toucherait une autre disparaît.
+                class Lbl(val cx: Float, val text: String, val color: Color, val size: Float, val bold: Boolean, val prio: Int)
+                fun xOfTime(t: Float) = (t - firstHour + 0.5f) / n * size.width
+                val items = ArrayList<Lbl>()
+                if (selIndex >= 0) items.add(Lbl(x0(selIndex) + cellW / 2f, selected.rawTime.formatHHmm(), nacre, 12.5f, true, 0))
+                if (sunrise != null) items.add(Lbl(xOfTime(sunrise), sunHm(sun!!.sunrise), sunYellow, 10.5f, true, 1))
+                if (sunset != null) items.add(Lbl(xOfTime(sunset), sunHm(sun!!.sunset), duskOrange, 10.5f, true, 1))
+                for (i in 0 until n) { val hr = hours[i].rawTime.hour; if (hr % 3 == 0) items.add(Lbl(x0(i) + cellW / 2f, "$hr h", muted, 10.5f, false, 2)) }
+                val laid = ArrayList<Pair<Lbl, androidx.compose.ui.text.TextLayoutResult>>()
+                val top = solTop + solH + BAND_GAP.dp.toPx() * 0.6f
+                for (lb in items.sortedBy { it.prio }) {
+                    val layout = textMeasurer.measure(lb.text, TextStyle(color = lb.color, fontSize = lb.size.sp, fontWeight = if (lb.bold) FontWeight.ExtraBold else FontWeight.SemiBold))
+                    val w = layout.size.width.toFloat()
+                    val left = (lb.cx - w / 2f).coerceIn(0f, size.width - w)
+                    val ok = laid.all { (k, kl) ->
+                        val kLeft = (k.cx - kl.size.width / 2f).coerceIn(0f, size.width - kl.size.width)
+                        left + w + 3.dp.toPx() <= kLeft || kLeft + kl.size.width + 3.dp.toPx() <= left
+                    }
+                    if (ok) { laid.add(lb to layout); drawText(layout, topLeft = Offset(left, top)) }
+                }
             }
+        }
+        // Colonne des valeurs de l'heure choisie.
+        Column(modifier = Modifier.width(BAND_VALUE_W.dp), verticalArrangement = Arrangement.spacedBy(BAND_GAP.dp), horizontalAlignment = Alignment.End) {
+            Box(Modifier.height(CIEL_H.dp), contentAlignment = Alignment.CenterEnd) {
+                Text(
+                    if (raining) "${formatDecimal(selected.precipitationMm, 1).replace('.', ',')} mm" else "${selected.cloudCover} %",
+                    fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (raining) rainBlue else onSurface
+                )
+            }
+            Box(Modifier.height(SOLEIL_H.dp), contentAlignment = Alignment.CenterEnd) {
+                Text("UV ${selected.uvIndex.roundToInt()}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = onSurface)
+            }
+        }
+    }
+}
+
+/** L'en-tête : le ressenti avec l'icône du ciel et la température de l'eau, la durée du jour à droite. */
+@Composable
+private fun WeatherHeader(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(h), 22.dp)
+            Text("${h.feelsLike}°C", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = onSurface)
+            h.seaTemperature?.let {
+                Spacer(modifier = Modifier.width(4.dp))
+                WaterTempIcon(18.dp, onSurface)
+                Text("${it.roundToInt()}°", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
+            }
+        }
+        if (sun != null) {
+            val minutes = (sun.sunset.hour * 60 + sun.sunset.minute) - (sun.sunrise.hour * 60 + sun.sunrise.minute)
+            if (minutes > 0) {
+                Text(
+                    "☀ ${minutes / 60} h ${(minutes % 60).toString().padStart(2, '0')}\nde jour", fontSize = 11.sp, lineHeight = 13.sp,
+                    color = onSurface.copy(alpha = 0.6f), textAlign = androidx.compose.ui.text.style.TextAlign.End
+                )
             }
         }
     }
@@ -183,44 +244,6 @@ private fun uvWord(uv: Double): String = when {
     uv < 8 -> "fort"
     uv < 11 -> "très fort"
     else -> "extrême"
-}
-
-private fun hm(t: kotlinx.datetime.LocalTime): String = "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
-
-/**
- * L'en-tête de la météo de l'heure. À gauche : l'icône du ciel et le ressenti en gros, la température de l'eau à côté, la pluie,
- * puis lever et coucher du soleil sur une même ligne. À droite, l'un au-dessus de l'autre : l'indice UV et les nuages.
- */
-@Composable
-private fun WeatherFacts(h: HourlyUiModel, sun: DailySunInfo?, onSurface: Color, onOpenDetail: (() -> Unit)?) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                WeatherIcon(SurfUnitsHelper.resolveRealWeatherEmoji(h), 22.dp)
-                Text("${h.feelsLike}°C", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = onSurface)
-                // Quand il pleut : l'icône de pluie et les millimètres de l'heure, juste à côté de la température.
-                if (h.precipitationMm >= 0.05) {
-                    Text("🌧️ ${formatDecimal(h.precipitationMm, 1).replace('.', ',')} mm", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
-                }
-                h.seaTemperature?.let {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    WaterTempIcon(18.dp, onSurface)
-                    Text("${it.roundToInt()}°", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
-                }
-            }
-        }
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text("☀️ UV ${h.uvIndex.roundToInt()}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
-            Text("☁️ ${h.cloudCover} %", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = onSurface)
-            if (sun != null) Text("🌅 ${hm(sun.sunrise)} · 🌇 ${hm(sun.sunset)}", fontSize = 12.sp, color = onSurface.copy(alpha = 0.85f), maxLines = 1)
-        }
-    }
-    if (onOpenDetail != null) {
-        Text(
-            "Détail sur la semaine ›", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 4.dp).clickable(onClick = onOpenDetail)
-        )
-    }
 }
 
 /** Température de l'eau : un thermomètre plein, rempli de bleu, posé sur deux petites vagues (même style que la flèche). */

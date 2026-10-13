@@ -27,7 +27,7 @@ class SurfControllerTest {
         val prefs = InMemoryKeyValueStore().apply { putString("cards_order", "hourly,surf"); putBoolean("hourly_last_v1", true) }
         val c = controller(prefs)
         assertEquals(
-            listOf("hourly", "surf", "weekly", "dailyTimeline", "wind", "windSea", "weather"),
+            listOf("hourly", "surf", "weekly", "dailyTimeline", "wind", "weather"),
             c.cardsOrder.toList()
         )
         advanceUntilIdle()
@@ -48,7 +48,7 @@ class SurfControllerTest {
         val c = controller(prefs)
         c.moveCardUp("dailyTimeline")
         c.toggleCardCollapsed("wind")
-        assertEquals("dailyTimeline,weekly,surf,wind,windSea,weather,hourly", prefs.getString("cards_order", null))
+        assertEquals("dailyTimeline,weekly,surf,wind,weather,hourly", prefs.getString("cards_order", null))
         assertEquals("wind", prefs.getString("collapsed_cards", null))
         assertTrue(c.isCardCollapsed("wind"))
         assertFalse(c.isCardCollapsed("surf"))
@@ -62,7 +62,6 @@ class SurfControllerTest {
         val c = controller(InMemoryKeyValueStore())
         assertFalse(c.showSurfCard)
         assertFalse(c.showWindCard)
-        assertFalse(c.showWindSeaCard)
         assertFalse(c.showWeatherCard)
         assertFalse(c.showHourlyCard)
         assertTrue(c.showWeeklyCard)
@@ -91,3 +90,4 @@ class SurfControllerTest {
         assertEquals(WaveModel.ECMWF_WAM, config.longTermWave)
     }
 }
+

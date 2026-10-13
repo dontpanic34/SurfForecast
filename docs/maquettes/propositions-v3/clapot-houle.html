@@ -1,0 +1,52 @@
+<title>Clapot dans la houle</title>
+<style>
+/* Mise en page : quatre façons de fondre le clapot (la mer de vent) dans la carte Houle, une carte par proposition, avec le cas « clapot fort » et le cas « mer lisse ». Style de la vraie carte sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--line:#21404c;--sea:#4fb3e8;--kj:#d9a03a;--ok:#34c98a;--warn:#f2b84b;--bad:#ef6a62;--chop:#9fd0e6;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--tile:#e3ebf1;--fg:#10222e;--mut:#566b76;--line:#d3dfe5;--sea:#1b88c4;--kj:#8f6300;--ok:#13875a;--warn:#a86d00;--bad:#c4372f;--chop:#2d7fa3;color-scheme:light}}
+:root[data-theme="light"]{--bg:#e9eff2;--card:#fff;--tile:#e3ebf1;--fg:#10222e;--mut:#566b76;--line:#d3dfe5;--sea:#1b88c4;--kj:#8f6300;--ok:#13875a;--warn:#a86d00;--bad:#c4372f;--chop:#2d7fa3;color-scheme:light}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,-apple-system,sans-serif;padding-inline:16px;padding-block:18px}
+main{max-width:440px;margin:0 auto;display:grid;gap:14px}
+h1{font-size:1.2rem;margin:0}h2{font-size:1rem;margin:10px 0 0;color:#7fc3e6}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12.5px}
+.card{background:var(--card);border-radius:12px;padding:10px 12px;display:grid;gap:6px}
+.hd{display:flex;justify-content:space-between;align-items:center;color:var(--mut);font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center}
+.big{font-size:19px;font-weight:700}.per{color:var(--sea);font-weight:600;margin-left:8px}
+.dir{font-weight:700;font-size:13px}.kj{color:var(--kj);font-weight:700;font-size:13px;margin-left:6px}
+.sec{opacity:.6;font-size:12px}
+.bars{display:flex;gap:2px;align-items:flex-end;height:50px;margin-top:4px}.bars i{flex:1;background:linear-gradient(#3a7390,#285a73);border-radius:2px 2px 0 0;position:relative}
+.bars i.sel{background:linear-gradient(#7fc3e6,#4a9cc4)}
+.bars.stack i{background:none;display:flex;flex-direction:column;justify-content:flex-end}.bars.stack b{display:block;background:#285a73;border-radius:2px 2px 0 0}.bars.stack em{display:block;background:var(--chop);opacity:.85}
+.bars.stack i.sel b{background:#4a9cc4}
+.chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:12.5px;font-weight:600}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.cl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--chop)}
+.cl svg{width:16px;height:16px;stroke:var(--chop);fill:none;stroke-width:1.7;stroke-linecap:round}
+.tog{display:flex;gap:6px;flex-wrap:wrap}.tog button{border:1px solid var(--line);background:none;color:var(--mut);border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}.tog button.on{background:#173b4c;color:var(--fg);border-color:#5fb4dc}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--mut)}.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;background:var(--c);vertical-align:-1px}
+.verdict{font-size:13px;display:flex;gap:8px;align-items:center}
+</style>
+<main>
+<h1>Clapot dans la houle</h1>
+<p class="mut sm">La carte « Mer de vent » disparaît. Quatre manières de garder l'information utile, sans alourdir la carte Houle. Choisis l'état du clapot pour voir chaque proposition dans les deux cas.</p>
+<div class="tog" id="tog"><button data-s="fort" class="on">Clapot : 0,4 m · 5 s</button><button data-s="faible">Clapot faible : 0,15 m</button><button data-s="lisse">Mer lisse</button></div>
+<div id="out"></div>
+</main>
+<script>
+var S={fort:{h:'0,4',p:5,d:'ONO 290°',c:'var(--warn)',w:'Un peu de clapot',share:.28},faible:{h:'0,15',p:4,d:'ONO 290°',c:'var(--ok)',w:'Mer presque lisse',share:.1},lisse:{h:'0',p:0,d:'',c:'var(--ok)',w:'Mer lisse',share:0}};
+var st='fort';
+var ico='<svg viewBox="0 0 24 24"><path d="M2.5 9c2.5-3 4.5-3 7 0s4.5 3 7 0 3.500-2 5 0M2.500 15c2.500-3 4.500-3 7 0s4.500 3 7 0 3.500-2 5 0"/></svg>';
+function head(extra){return '<div class="hd"><span>Houle</span><span>⚙ ▾</span></div><div class="row"><div><span class="big">1,5m</span><span class="per">10s</span>'+(extra||'')+'</div><div><span class="dir">O 280° ➤</span><span class="kj">457 kJ</span></div></div><div class="row sec"><span>0,6m · 12s</span><span>SO 200° ➤ 120 kJ</span></div>'}
+function bars(stack){var s=S[st],h='';for(var i=0;i<24;i++){var v=70+((i*37)%40),sel=i===9;if(stack){var c=Math.round(v*s.share);h+='<i class="'+(sel?'sel':'')+'" style="height:'+v+'%"><em style="height:'+c+'%"></em><b style="height:'+(100-c)+'%"></b></i>'}else h+='<i class="'+(sel?'sel':'')+'" style="height:'+v+'%"></i>'}return '<div class="bars '+(stack?'stack':'')+'">'+h+'</div>'}
+function render(){var s=S[st],o='';
+ // A
+ o+='<h2>A · Une ligne discrète sous la houle</h2><p class="sm mut">Même style que la houle secondaire : petite, atténuée. Rien quand la mer est lisse.</p><div class="card">'+head()+(st==='lisse'?'':'<div class="cl">'+ico+'Clapot '+s.h+' m · '+s.p+' s · '+s.d+'</div>')+bars(false)+'</div>';
+ // B
+ o+='<h2>B · Une pastille à côté de la hauteur</h2><p class="sm mut">Une seule pastille colorée : vert = propre, jaune = un peu de clapot, rouge = haché. On touche pour le détail.</p><div class="card">'+head('<span class="chip" style="--c:'+s.c+';margin-left:10px">'+(st==='lisse'?'lisse':'clapot '+s.h+' m')+'</span>')+bars(false)+'</div>';
+ // C
+ o+='<h2>C · Dans les barres</h2><p class="sm mut">Chaque barre montre la part de clapot en haut, d’une autre couleur. Aucune ligne ajoutée : on voit les heures où la mer est hachée.</p><div class="card">'+head()+bars(true)+'<div class="legend"><span style="--c:#285a73">Houle</span><span style="--c:var(--chop)">Clapot</span>'+(st==='lisse'?'':'<span style="--c:transparent;margin-left:auto">9 h : '+s.h+' m · '+s.p+' s</span>')+'</div></div>';
+ // D
+ o+='<h2>D · Un mot qui résume la mer</h2><p class="sm mut">« Mer lisse », « un peu de clapot », « mer hachée » avec un point de couleur ; le chiffre s’ouvre au toucher. Le plus léger.</p><div class="card">'+head()+'<div class="verdict"><span class="chip" style="--c:'+s.c+'">'+s.w+'</span>'+(st==='lisse'?'':'<span class="mut sm">'+s.h+' m · '+s.p+' s · '+s.d+'</span>')+'</div>'+bars(false)+'</div>';
+ document.getElementById('out').innerHTML=o}
+document.getElementById('tog').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;st=b.dataset.s;document.querySelectorAll('#tog button').forEach(function(x){x.classList.toggle('on',x===b)});render()});
+render();
+</script>
