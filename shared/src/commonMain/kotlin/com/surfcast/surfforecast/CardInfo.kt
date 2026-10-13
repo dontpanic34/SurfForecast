@@ -63,10 +63,12 @@ val CARD_HELP: Map<String, List<CardHelp>> = mapOf(
     "swell" to listOf(
         CardHelp("Taille et période", "Hauteur de la houle principale en mètres et période en secondes. Plus la période est longue, plus la houle a de la puissance."),
         CardHelp("L'énergie en kJ", "Elle combine hauteur et période : deux houles de même hauteur n'ont pas la même force."),
+        CardHelp("Mer mélangée", "Quand les modèles annoncent des périodes très différentes (3 s d'écart ou plus), la mer mêle plusieurs trains de houle : les vagues arrivent en désordre, même sans vent. La pastille donne la fourchette de périodes."),
         CardHelp("Le clapot", "Les petites vagues que le vent fabrique sur place, par-dessus la houle : seule leur taille est indiquée, sous la direction de la houle. Beaucoup de clapot, la vague est moins propre. Il se masque dans les réglages de l'encart."),
         CardHelp("Houle secondaire", "Affichée dès 0,2 m et 7 s. Elle vient d'une autre direction et peut brouiller la houle principale.")
     ),
     "wind" to listOf(
+        CardHelp("Modèles partagés", "Quand les modèles de vent ne sont pas d'accord (7 km/h d'écart ou plus), l'appli le dit et donne la fourchette au lieu de cacher le désaccord."),
         CardHelp("Comment le vent est calculé", "Moyenne ECMWF + GFS, direction en moyenne vectorielle. Le chiffre est le vent ressenti (rafales comprises)."),
         CardHelp("Les couleurs", "Jaune : propre. Orange : gênant. Rouge : fort ou onshore. Elles dépendent de la direction par rapport à la plage.")
     ),

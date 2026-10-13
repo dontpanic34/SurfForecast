@@ -89,7 +89,8 @@ fun SurfCardComponent(
             SwellLine(
                 height = selectedHour.waveHeight, period = selectedHour.wavePeriod, energyKj = selectedHour.energyKj,
                 direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false, beachFacing = beachFacing,
-                chopHeight = if (SkyGraphSettings.showChop) selectedHour.windWaveHeight else 0.0
+                chopHeight = if (SkyGraphSettings.showChop) selectedHour.windWaveHeight else 0.0,
+                mixedPeriods = if (seaIsMixed(selectedHour)) selectedHour.periodMin to selectedHour.periodMax else null
             )
             if (selectedHour.secondaryHeight >= 0.2 && selectedHour.secondaryPeriod >= 7.0) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -196,7 +197,7 @@ fun SurfCardComponent(
 @Composable
 private fun SwellLine(
     height: Double, period: Double, energyKj: Int, direction: Float,
-    onSurfaceColor: Color, primaryColor: Color, secondary: Boolean, beachFacing: Int?, chopHeight: Double = 0.0
+    onSurfaceColor: Color, primaryColor: Color, secondary: Boolean, beachFacing: Int?, chopHeight: Double = 0.0, mixedPeriods: Pair<Double, Double>? = null
 ) {
     val fade = if (secondary) 0.6f else 1f
     val big = if (secondary) 14.sp else 18.sp
@@ -215,6 +216,15 @@ private fun SwellLine(
             Text("$cardinal $deg°", fontSize = small, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
             NavArrow(Color(0xFF29B6F6).copy(alpha = fade), rotation, ((if (secondary) 11f else 13f) * swellArrowScale(direction, beachFacing)).dp)
             Text("$energyKj kJ", fontSize = small, fontWeight = FontWeight.Bold, color = Color(0xFF8F6300).copy(alpha = fade))
+        }
+        if (mixedPeriods != null) {
+            Text(
+                "Mer mélangée · ${mixedPeriods.first.roundToInt()} à ${mixedPeriods.second.roundToInt()} s", fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFF2B84B),
+                modifier = Modifier.padding(top = 3.dp)
+                    .border(1.dp, onSurfaceColor.copy(alpha = 0.25f), RoundedCornerShape(50))
+                    .padding(horizontal = 9.dp, vertical = 2.dp)
+            )
         }
         if (chopHeight >= CHOP_PILL_MIN) {
             Text(
