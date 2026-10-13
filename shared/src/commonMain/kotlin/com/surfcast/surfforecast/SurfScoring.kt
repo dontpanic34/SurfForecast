@@ -239,6 +239,9 @@ fun calculateSlotScore(
     tide: DailyTideInfo? = null
 ): Int = calculateSlotRating(hourlyModel, idealSwellDirection, surferLevel, isHighTide, tidePreference, tide).score
 
+/** Sous cette force (km/h), le plan d'eau est lisse quelle que soit la direction : le vent ne bloque pas « Parfait ». */
+const val PERFECT_CALM_KMH = 5.0
+
 /**
  * Note d'une heure de prévision (sans connaître le spot réel : bancs de sable, courants...).
  * Énergie de la houle selon le niveau, direction par rapport à la plage, vent (rafales comprises,
@@ -325,6 +328,9 @@ fun calculateSlotRating(
             windCategoryFor(p.direction, idealSwellDirection)) < WIND_CLEAN
     }
     if (pastDirty) final = minOf(final, PERFECT_MIN - 1 - ToleranceSettings.mode * 8)
+    // « Parfait » demande aussi un vent propre maintenant : glassy (moins de 5 km/h) ou offshore. Un vent de côté ou onshore, même léger, plafonne la note.
+    val windNowClean = effectiveWindKmh(hourlyModel) < PERFECT_CALM_KMH || windDirectionClass(hourlyModel.windDirectionStr, idealSwellDirection) == 0
+    if (!windNowClean) final = minOf(final, PERFECT_MIN - 1 - ToleranceSettings.mode * 8)
     val kind = when {
         energyKj < profile.idealMin * TOO_SMALL_RATIO -> ConditionKind.TOO_SMALL
         windFactor < TOO_WINDY_FACTOR -> ConditionKind.TOO_WINDY

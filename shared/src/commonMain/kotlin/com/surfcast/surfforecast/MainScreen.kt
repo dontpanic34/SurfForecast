@@ -745,7 +745,8 @@ fun MainScreen(
                             // « Maintenant » + marée + eau : toujours visible, juste au-dessus de la barre du bas.
                             run {
                                 val todayHours = groupedByDate[today].orEmpty()
-                                val closest = todayHours.minByOrNull { abs(it.rawTime.hour - clock.hour) }
+                                val cardHour = nowCardHourOf(clock, state.dailySunInfo[today])
+                                val closest = todayHours.minByOrNull { abs(it.rawTime.hour - cardHour) }
                                     ?: state.hourlyForecast.firstOrNull()
                                 if (viewModel.showLiveOverlay && closest != null) {
                                     NowTideCard(
@@ -757,7 +758,7 @@ fun MainScreen(
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
                                         updatedText = state.lastUpdatedTime,
-                                        isNight = daylightHoursFor(today, groupedByDate, state.dailySunInfo).let { d -> d.isNotEmpty() && d.none { it.rawTime == closest.rawTime } },
+                                        isNight = isNowNight(clock, state.dailySunInfo[today]),
                                         nightText = nightPhrase(
                                             nightHours(state.hourlyForecast, state.dailySunInfo, clock),
                                             idealSwellDirection

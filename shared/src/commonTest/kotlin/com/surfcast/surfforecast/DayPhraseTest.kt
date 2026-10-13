@@ -134,4 +134,17 @@ class NeutralStarsTest {
         val night = nightHours(hours, mapOf(date to sunToday), LocalDateTime(2026, 10, 13, 0, 17))
         assertEquals(7, night.size)
     }
+
+    @Test
+    fun nowCardLeavesTheNightAnHourBeforeSunrise() {
+        val sun = DailySunInfo(sunrise = LocalTime(8, 17), sunset = LocalTime(19, 40))
+        val date = kotlinx.datetime.LocalDate(2026, 10, 13)
+        assertEquals(true, isNowNight(LocalDateTime(2026, 10, 13, 7, 10), sun))
+        assertEquals(false, isNowNight(LocalDateTime(2026, 10, 13, 7, 20), sun))
+        assertEquals(false, isNowNight(LocalDateTime(2026, 10, 13, 8, 20), sun))
+        assertEquals(true, isNowNight(LocalDateTime(2026, 10, 13, 20, 0), sun))
+        assertEquals(8, nowCardHourOf(LocalDateTime(2026, 10, 13, 7, 30), sun))
+        assertEquals(10, nowCardHourOf(LocalDateTime(2026, 10, 13, 10, 5), sun))
+        assertEquals(date, date)
+    }
 }

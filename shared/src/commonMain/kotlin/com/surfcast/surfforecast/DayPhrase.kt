@@ -207,3 +207,22 @@ fun nightPhrase(night: List<HourlyUiModel>, beachFacing: Int?): String? {
     }
     return "Cette nuit, $swell, $nightWind ; $morning."
 }
+
+/** Une heure avant le lever, l'encart « Actuellement » passe déjà sur la première heure de surf. */
+private const val DAWN_LEAD_MINUTES = 60
+
+/** Vrai quand l'encart « Actuellement » est encore dans la nuit : avant l'heure qui précède le lever, ou après le coucher. */
+fun isNowNight(now: LocalDateTime, sun: DailySunInfo?): Boolean {
+    sun ?: return false
+    val minutes = now.time.hour * 60 + now.time.minute
+    val dawn = sun.sunrise.hour * 60 + sun.sunrise.minute - DAWN_LEAD_MINUTES
+    return minutes < dawn || now.time > sun.sunset
+}
+
+/** L'heure que l'encart « Actuellement » montre : la plus proche, mais l'heure du lever dès qu'on est dans l'heure qui le précède. */
+fun nowCardHourOf(now: LocalDateTime, sun: DailySunInfo?): Int {
+    sun ?: return now.time.hour
+    val minutes = now.time.hour * 60 + now.time.minute
+    val sunriseMin = sun.sunrise.hour * 60 + sun.sunrise.minute
+    return if (minutes in (sunriseMin - DAWN_LEAD_MINUTES) until sunriseMin) sun.sunrise.hour else now.time.hour
+}

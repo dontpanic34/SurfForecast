@@ -376,9 +376,9 @@ class SurfScoringTest {
     fun offshoreIsForConfirmedAndExpertNotForBeginners() {
         val offshore = hour(10, height = 1.2, period = 9.0, windKmh = 22, windDir = "E")
         val cross = hour(10, height = 1.2, period = 9.0, windKmh = 22, windDir = "N")
-        // Débutant : la direction ne change presque rien.
+        // Débutant : la direction change peu (le plafond « Parfait » demande un vent propre, d'où un petit écart de plus).
         val begDiff = calculateSlotScore(offshore, 275, "beginner", false) - calculateSlotScore(cross, 275, "beginner", false)
-        assertTrue(begDiff in 0..6, "débutant offshore - travers : $begDiff")
+        assertTrue(begDiff in 0..10, "débutant offshore - travers : $begDiff")
         // Confirmé : l'offshore est nettement mieux que le travers.
         val confDiff = calculateSlotScore(offshore, 275, "confirmed", false) - calculateSlotScore(cross, 275, "confirmed", false)
         assertTrue(confDiff >= 4, "confirmé offshore - travers : $confDiff")
@@ -458,6 +458,16 @@ class SurfScoringTest {
         near(0.9f, swellAxisFraction(8.0))
         near(1.0f, swellAxisFraction(20.0))
         near(0f, swellAxisFraction(0.0))
+    }
+
+    @Test
+    fun perfectNeedsCalmOrOffshoreWindNow() {
+        val offshore = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = 6, windDir = "E"), 275, "confirmed").score
+        val sideOn = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = 11, windDir = "SO"), 275, "confirmed").score
+        val calmSideOn = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = 3, windDir = "SO"), 275, "confirmed").score
+        assertTrue(sideOn < PERFECT_MIN, "un vent de sud-ouest de 11 km/h ne donne pas Parfait ($sideOn)")
+        assertTrue(calmSideOn >= sideOn, "sans vent, la note n'est pas plafonnée")
+        assertTrue(offshore >= sideOn)
     }
 }
 

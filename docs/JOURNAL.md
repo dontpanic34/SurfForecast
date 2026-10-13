@@ -212,3 +212,7 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Mon profil : les encarts « Des vraies journées à Montalivet, notées avec ton réglage » (huit journées avec Parfait, Trop gros, etc.) sont retirés de la page d'accueil du profil : le niveau passe par le questionnaire et la carte de niveau. Ils restent dans l'assistant « Personnaliser mon profil ». Dans la branche de travail, pas encore publié.
 
 - Maquette `maree-deroule` : 6 propositions pour l'affichage de la marée sous le déroulé (barre continue vert/bleu avec cheminée, courbe, trait fin, aire, pastilles, barres). En attente du choix du propriétaire ; pas de code.
+
+- Marée du déroulé (option 3 choisie) : trait fin vert (descend) / bleu (monte), gros point à chaque marée, heure + coefficient écrits dessous (« 13:16 · 88 »), qui glissent pour ne pas se chevaucher. Le rond de couleur du coef à droite de « Motivation » est retiré. État : codé et testé, pas encore en ligne (en attente du « go » pour publier).
+- « Parfait » demande un vent propre maintenant : moins de 5 km/h, ou offshore. Un vent de côté ou onshore (ex. sud-ouest 11 km/h) plafonne l'heure sous 90. Test ajouté.
+- Encart « Actuellement » : il quitte la nuit 1 h avant le lever du soleil et montre l'heure du lever (première heure de surf). Test ajouté. État : codé, pas encore en ligne.
