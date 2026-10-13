@@ -61,5 +61,15 @@ Notes prises à partir de vidéos que le propriétaire a envoyées, pour la futu
 - **Spectre fréquence-direction** : montre si la houle est unidirectionnelle et nette ou mélangée.
 - Idée pour l'appli : afficher la bouée la plus proche à côté de la prévision, pour vérifier la prévision avec le réel.
 
+## 10. L'énergie dans les reports (kJ) : comment la lire
+- Les données brutes des modèles et des bouées sont une **densité spectrale** : direction (angle), amplitude (couleur) et période (rayon). Trop dur à lire, d'où les « trains de houle » simplifiés (plusieurs courbes superposées).
+- En simplifiant, on perd de l'information. Exemple : une grosse dépression qui se déplace en mourant (houle qui vient de partout) et une petite dépression immobile (houle très concentrée) peuvent donner toutes deux « 2 m à 11 s » au pic, alors que la grosse envoie plus de vagues sur la plage.
+- L'**énergie** est la **somme** de tous les petits bouts du spectre, en angle et en fréquence : elle permet de comparer ces deux cas, ce que « 2 m à 11 s » ne fait pas.
+- **Étalement directionnel total** : dit si la houle est un mélange de trains venus de partout (grand étalement : chantier) ou concentrée sur un seul endroit (petit étalement : bien rangée).
+- Deux exemples de bouée (Pierres Noires) : Hs 2,13 m, période de pic 6,39 s, direction 225°, étalement 38,3°, vent 20,1 nœuds (houle de vent, désordonnée) ; Hs 1,14 m, 9,41 s, 265,6°, étalement 17,9°, vent 8,56 nœuds (houle plus rangée).
+- Comment s'en servir selon le niveau : **débutant**, la taille ; **intermédiaire**, la taille et la période (plus elle est longue, mieux c'est) ; **expert**, l'énergie.
+- Un spot commence à marcher vers **500 kJ** et sature vers **800 kJ** (exemple donné).
+- Dans l'appli : l'énergie (kJ) est déjà affichée ; l'étalement directionnel n'est pas disponible dans les modèles utilisés.
+
 ## À venir
 Le propriétaire enverra d'autres vidéos sur la houle. Ensuite : pages « Comprendre la houle », « Comprendre les prévisions », « Comprendre la météo ».
