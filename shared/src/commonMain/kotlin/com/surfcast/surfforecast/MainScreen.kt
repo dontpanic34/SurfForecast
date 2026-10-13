@@ -768,6 +768,7 @@ fun MainScreen(
                                             nightHours(state.hourlyForecast, state.dailySunInfo, clock),
                                             idealSwellDirection
                                         ),
+                                        buoy = viewModel.buoyReading,
                                         dawnText = if (isDawnWindow(clock, state.dailySunInfo[today]) && !isNowNight(clock, state.dailySunInfo[today]))
                                             nightPhrase(nightHours(state.hourlyForecast, state.dailySunInfo, clock), idealSwellDirection) else null,
                                         onRefresh = { viewModel.refreshActiveSpot() },
@@ -1148,8 +1149,7 @@ fun DynamicCardsSection(
                                     onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                     dragHandleModifier = dragMod,
                                     modifier = Modifier.fillMaxWidth(),
-                                    beachFacing = idealSwellDirection,
-                                    buoy = viewModel.buoyReading
+                                    beachFacing = idealSwellDirection
                                 )
                             }
                         }
@@ -1256,25 +1256,6 @@ fun DynamicCardsSection(
                             modifier = (if (coachTargets != null) Modifier.coachTarget("bestSlot", coachTargets) else Modifier).padding(horizontal = 6.dp, vertical = 6.dp)
                         )
                     }
-                    // Une porte discrète vers les leçons, sous la semaine.
-                    if (cardKey == "weekly") {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp).clickable { ComprendreState.open() },
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Comprendre la houle", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                                    Text("Période, séries, modèles, bouées : 11 leçons courtes", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Text("›", fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
                     if (cardKey == afterKey) afterTimeline()
                 }
             }
@@ -1328,6 +1309,9 @@ private fun BottomNavBar(
                 }
                 Item("Journal", false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
+                }
+                Item("Comprendre", false, { ComprendreState.open() }) {
+                    SettingsIcon(SettingsIcons.Book, colors.onSurface, 20.dp)
                 }
                 Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))

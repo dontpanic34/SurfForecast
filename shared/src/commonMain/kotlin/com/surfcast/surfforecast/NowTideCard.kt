@@ -51,6 +51,8 @@ fun NowTideCard(
     nightText: String? = null,
     // Le jour s'est levé depuis moins de 2 h : la nuit en une phrase reste affichée au-dessus des tuiles.
     dawnText: String? = null,
+    // Dernière mesure de la bouée de référence : une ligne sous les tuiles, pour comparer la prévision à ce qu'on mesure en ce moment.
+    buoy: BuoyReading? = null,
     onRefresh: (() -> Unit)? = null,
     boardOfDay: String? = null,
     // « + Session » : ouvre la saisie d'une session du journal (null = pas de bouton).
@@ -112,6 +114,9 @@ fun NowTideCard(
             if (coef != null || next != null) {
                 NowTile("Marée", (if (next != null) (if (next.first) "▲ " else "▼ ") + next.second.replace(" h ", ":") else ""), Modifier.weight(1f), coef = coef)
             }
+        }
+        buoy?.let { b ->
+            Text(buoyLine(b), fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 2, modifier = Modifier.padding(top = 6.dp))
         }
     }
 }
