@@ -47,7 +47,7 @@ internal val TR_PART_5: Map<String, List<String>> = mapOf(
     "Tu veux passer au large ?" to listOf("Want to go out back?", "Willst du raus aufs Meer?", "Wil je naar buiten, achter de brekers?", "¿Quieres ir mar adentro?"),
     "Période, séries, arrivée" to listOf("Period, sets, arrival", "Periode, Sets, Ankunft", "Periode, sets, aankomst", "Periodo, series, llegada"),
     "Ciel, température, pluie" to listOf("Sky, temperature, rain", "Himmel, Temperatur, Regen", "Lucht, temperatuur, regen", "Cielo, temperatura, lluvia"),
-    "Bancs de sable et baïnes" to listOf("Sandbanks and baïnes", "Sandbänke und Baïnes", "Zandbanken en baïnes", "Bancos de arena y baïnes"),
+    "Bancs de sable et baïnes" to listOf("Sandbanks and baïnes (rip channels)", "Sandbänke und Baïnes (Rinnen)", "Zandbanken en baïnes (geulen)", "Bancos de arena y baïnes (canales)"),
     "Quand arrive la houle ?" to listOf("When does the swell arrive?", "Wann kommt die Dünung an?", "Wanneer komt de deining aan?", "¿Cuándo llega el oleaje?"),
     "Journal des prévisions" to listOf("Forecast log", "Vorhersage-Logbuch", "Voorspellingslogboek", "Diario de previsiones"),
     "Avec ton compte PayPal" to listOf("With your PayPal account", "Mit deinem PayPal-Konto", "Met je PayPal-account", "Con tu cuenta de PayPal"),
