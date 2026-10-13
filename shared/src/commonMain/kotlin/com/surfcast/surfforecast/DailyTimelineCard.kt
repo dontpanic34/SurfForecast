@@ -148,7 +148,7 @@ fun DailyTimelineCard(
                             fontWeight = FontWeight.ExtraBold, color = onSurfaceColor, maxLines = 1
                         )
                         Text(
-                            bandLabelWithTrend(shownRating), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
+                            bandLabelWithTrend(shownRating, ratings.getOrNull(selectedIndex - 1)), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
                             color = shownBand.textColor(), maxLines = 1
                         )
                         val board = curveHours.getOrNull(selectedIndex)?.let { boardOf?.invoke(it) }
@@ -168,20 +168,6 @@ fun DailyTimelineCard(
                         val others = if (SkyGraphSettings.tideAll) info.extrema.filter { e -> dayTides.none { it.time == e.time } } else emptyList()
                         TideLine(dayTides, info.coefficient, onSurfaceColor, others)
                     }
-                    val coefNow = dailyTides[selectedDate]?.coefficient
-                    // Le coefficient a sa place ici, à droite de la ligne Motivation : hors du graphique, il ne peut gêner aucun repère.
-                    @Composable
-                    fun CoefBadge() {
-                        if (coefNow != null) {
-                            val dot = when { coefNow < 55 -> AppColors.WindLow; coefNow <= 80 -> AppColors.WindMid; else -> AppColors.WindHigh }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Canvas(modifier = Modifier.size(8.dp)) { drawCircle(dot, radius = size.minDimension / 2f) }
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Coef $coefNow", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor, maxLines = 1, softWrap = false)
-                            }
-                        }
-                    }
-                    if (motivationLabel == null) Row(modifier = Modifier.padding(top = 6.dp)) { CoefBadge() }
                     if (motivationLabel != null) {
                         Row(modifier = Modifier.padding(top = 6.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text("Motivation", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.55f))
@@ -199,8 +185,6 @@ fun DailyTimelineCard(
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.weight(1f))
-                            CoefBadge()
                         }
                     }
                 }
@@ -397,41 +381,50 @@ private fun DailyTimelineBody(
                     val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
                     Canvas(modifier = Modifier.fillMaxWidth().height(SkyGraphSettings.tideDp.dp)) {
-                        val yHigh = size.height * 0.47f
-                        val yLow = size.height * 0.8f
-                        fun yAt(h: Float): Float {
+                        val yLine = size.height * 0.28f
+                        val rising = Color(0xFF4A9BF0)
+                        val falling = Color(0xFF38C976)
+                        // Le trait est vert quand la marée descend, bleu quand elle monte (la prochaine marée est haute = elle monte).
+                        fun risingAt(h: Float): Boolean {
                             val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
-                            val a = tideCurve[i]; val b = tideCurve[i + 1]
-                            val t = ((h - a.hour) / (b.hour - a.hour)).coerceIn(0f, 1f)
-                            val ya = if (a.high) yHigh else yLow
-                            val yb = if (b.high) yHigh else yLow
-                            return ya + (yb - ya) * (1f - cos(PI * t).toFloat()) / 2f
+                            return tideCurve[i + 1].high
                         }
-                        val path = Path()
-                        var first = true
+                        val step = 0.25f
                         var h = ax0
-                        while (h <= ax1 + 0.01f) {
-                            val p = Offset(xOf(h), yAt(h))
-                            if (first) { path.moveTo(p.x, p.y); first = false } else path.lineTo(p.x, p.y)
-                            h += 0.25f
+                        while (h < ax1) {
+                            val h2 = minOf(h + step, ax1)
+                            drawLine(if (risingAt((h + h2) / 2f)) rising else falling, Offset(xOf(h), yLine), Offset(xOf(h2), yLine), strokeWidth = 2.dp.toPx())
+                            h = h2
                         }
-                        drawPath(path, Color(0xFF3B8BE8), style = Stroke(1.6.dp.toPx()))
-                        if (selH != null && selH in ax0..ax1) {
-                            drawCircle(onSurfaceColor, radius = 2.8.dp.toPx(), center = Offset(xOf(selH), yAt(selH)))
-                        }
+                        // Un gros point à chaque marée : de la couleur de ce qui suit (basse : ça monte, haute : ça descend).
+                        val labels = ArrayList<Pair<Float, String>>()
                         for (m in tideMarks) {
-                            val c = Offset(xOf(m.hour), if (m.high) yHigh else yLow)
-                            drawTideTriangle(c, m.high, 6.dp.toPx())
-                            val txt = (m.hour.toInt()).toString() + ":" + (((m.hour - m.hour.toInt()) * 60).roundToInt().coerceAtMost(59)).toString().padStart(2, '0')
-                            val w = textMeasurer.measure(txt, tideStyle).size.width.toFloat()
-                            if (m.high) drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, (c.x - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx()), c.y - 7.dp.toPx())
-                            else {
-                                // L'horaire d'une basse mer se met du côté où le point de l'heure choisie ne passe pas.
-                                val dotX = if (selH != null) xOf(selH) else null
-                                val onRight = dotX != null && dotX >= c.x - 6.dp.toPx() && dotX <= c.x + w + 14.dp.toPx()
-                                val tx = if (onRight) (c.x - 7.dp.toPx() - w).coerceAtLeast(2.dp.toPx()) else c.x + 7.dp.toPx()
-                                drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, tx, c.y + 3.dp.toPx())
-                            }
+                            val cx = xOf(m.hour)
+                            drawCircle(if (m.high) falling else rising, radius = 4.dp.toPx(), center = Offset(cx, yLine))
+                            val hh = m.hour.toInt()
+                            val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
+                            val txt = hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · $it" } ?: "")
+                            labels += cx to txt
+                        }
+                        if (selH != null && selH in ax0..ax1) {
+                            drawCircle(onSurfaceColor, radius = 3.dp.toPx(), center = Offset(xOf(selH), yLine))
+                        }
+                        // Les heures sont écrites sous le trait, centrées sur leur point ; si deux se touchent, la seconde glisse à droite.
+                        val gap = 6.dp.toPx()
+                        val edge = 2.dp.toPx()
+                        val widths = labels.map { textMeasurer.measure(it.second, tideStyle).size.width.toFloat() }
+                        val lefts = labels.indices.map { (labels[it].first - widths[it] / 2f).coerceIn(edge, maxOf(edge, size.width - widths[it] - edge)) }.toMutableList()
+                        for (i in 1 until lefts.size) {
+                            val minLeft = lefts[i - 1] + widths[i - 1] + gap
+                            if (lefts[i] < minLeft) lefts[i] = minLeft
+                        }
+                        for (i in lefts.indices.reversed()) {
+                            val maxLeft = size.width - widths[i] - edge
+                            if (lefts[i] > maxLeft) lefts[i] = maxLeft
+                            if (i > 0 && lefts[i - 1] + widths[i - 1] + gap > lefts[i]) lefts[i - 1] = lefts[i] - widths[i - 1] - gap
+                        }
+                        for (i in labels.indices) {
+                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + 17.dp.toPx())
                         }
                     }
                 }

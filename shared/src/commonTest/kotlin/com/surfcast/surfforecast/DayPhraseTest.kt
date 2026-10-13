@@ -43,7 +43,15 @@ class DayPhraseTest {
     @Test
     fun windThatFallsMakesTheAfternoonBetter() {
         val p = day(hour(9, 1.3, 20, "O"), hour(11, 1.3, 20, "O"), hour(14, 1.3, 8, "E"), hour(17, 1.3, 8, "E"))
-        assertEquals("Houle constante, ça tourne offshore l'après-midi", p.title)
+        assertEquals("Houle constante, ça va se caler", p.title)
+        assertEquals("ça tourne offshore l'après-midi", p.line)
+    }
+
+    @Test
+    fun sideWindThatDropsAlsoSettles() {
+        val p = day(hour(9, 1.3, 22, "N"), hour(11, 1.3, 22, "N"), hour(14, 1.3, 8, "N"), hour(17, 1.3, 8, "N"))
+        assertEquals("Houle constante, ça va se caler", p.title)
+        assertEquals("le vent tombe l'après-midi", p.line)
     }
 
     @Test
@@ -133,5 +141,34 @@ class NeutralStarsTest {
         }
         val night = nightHours(hours, mapOf(date to sunToday), LocalDateTime(2026, 10, 13, 0, 17))
         assertEquals(7, night.size)
+    }
+
+    @Test
+    fun nowCardLeavesTheNightAnHourBeforeSunrise() {
+        val sun = DailySunInfo(sunrise = LocalTime(8, 17), sunset = LocalTime(19, 40))
+        val date = kotlinx.datetime.LocalDate(2026, 10, 13)
+        assertEquals(true, isNowNight(LocalDateTime(2026, 10, 13, 7, 10), sun))
+        assertEquals(false, isNowNight(LocalDateTime(2026, 10, 13, 7, 20), sun))
+        assertEquals(false, isNowNight(LocalDateTime(2026, 10, 13, 8, 20), sun))
+        assertEquals(true, isNowNight(LocalDateTime(2026, 10, 13, 20, 0), sun))
+        assertEquals(8, nowCardHourOf(LocalDateTime(2026, 10, 13, 7, 30), sun))
+        assertEquals(10, nowCardHourOf(LocalDateTime(2026, 10, 13, 10, 5), sun))
+        assertEquals(date, date)
+    }
+
+    @Test
+    fun nightSummaryStaysTwoHoursAfterSunrise() {
+        val sun = DailySunInfo(sunrise = LocalTime(8, 17), sunset = LocalTime(19, 40))
+        val date = kotlinx.datetime.LocalDate(2026, 10, 13)
+        val hours = (0..12).map { h ->
+            HourlyUiModel(
+                timeFormatted = "$h h", rawTime = LocalDateTime(2026, 10, 13, h, 0), waveHeight = 1.4, wavePeriod = 11.0, waveDirection = 280f,
+                energyKj = 300, windSpeedKmh = 8, windDirectionStr = "E", weatherCode = 0, temperature = 12, windWaveHeight = 0.0
+            )
+        }
+        assertEquals(true, isDawnWindow(LocalDateTime(2026, 10, 13, 10, 0), sun))
+        assertEquals(false, isDawnWindow(LocalDateTime(2026, 10, 13, 10, 20), sun))
+        assertEquals(true, nightHours(hours, mapOf(date to sun), LocalDateTime(2026, 10, 13, 10, 0)).isNotEmpty())
+        assertEquals(true, nightHours(hours, mapOf(date to sun), LocalDateTime(2026, 10, 13, 9, 0)).all { it.rawTime.hour < 8 })
     }
 }

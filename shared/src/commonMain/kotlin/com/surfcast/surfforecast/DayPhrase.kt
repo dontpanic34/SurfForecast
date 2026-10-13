@@ -87,6 +87,19 @@ fun dayPhraseFor(hours: List<HourlyUiModel>, best: SlotRating?, beachFacing: Int
         else -> "offshore" + (if (strongest >= 18) " soutenu" else "") + " toute la journée"
     }
     val bad = wind == "c'est venté" || wind == "onshore modéré" || wind == "léger onshore" || wind == "ça tourne onshore l'après-midi"
+    // « Ça va se caler » : la journée s'améliore. Le vent tourne offshore ou tombe, ou la note de l'après-midi dépasse nettement celle du matin.
+    val windFalls = !calm && am.maxOf { windFeelKmh(it) } >= pm.maxOf { windFeelKmh(it) } + 8
+    val scoreRise = run {
+        val level = surferLevel
+        fun avg(hs: List<HourlyUiModel>) = hs.map { calculateSlotRating(it, beachFacing, level).score }.average()
+        avg(pm) - avg(am) >= 10.0
+    }
+    val improving = !bad && !onshorePm && (onshoreAm || windFalls || scoreRise)
+    if (improving) {
+        val lead = if (maxH < SMALL_BELOW) "Petit, mais" else if (swell == "ça tombe") "Ça tombe, mais" else swell.replaceFirstChar { it.uppercase() } + ","
+        val detail = if (onshoreAm && !onshorePm) "ça tourne offshore l'après-midi" else if (windFalls) "le vent tombe l'après-midi" else ""
+        return DayPhrase("$lead ça va se caler", detail)
+    }
     val title = if (maxH < SMALL_BELOW) {
         if (bad) "Petit et venté" else "Petit mais propre, " + wind.removeSuffix(" toute la journée")
     } else {
@@ -120,8 +133,11 @@ private fun strengthWord(kmh: Int): String = when {
     else -> "fort"
 }
 
+/** Le résumé de la nuit reste dans l'encart « Actuellement » jusqu'à 2 h après le lever. */
+private const val DAWN_TAIL_MINUTES = 120
+
 /**
- * Les heures de la nuit autour de [now] : de la tombée de la nuit jusqu'à 1 h avant le lever du soleil.
+ * Les heures de la nuit autour de [now] : de la tombée de la nuit jusqu'à 1 h avant le lever du soleil (et la nuit passée jusqu'à 2 h après le lever).
  * Vide quand les horaires du soleil manquent.
  */
 fun nightHours(all: List<HourlyUiModel>, sun: Map<LocalDate, DailySunInfo>, now: LocalDateTime): List<HourlyUiModel> {
@@ -131,7 +147,7 @@ fun nightHours(all: List<HourlyUiModel>, sun: Map<LocalDate, DailySunInfo>, now:
     val fromHour: Int
     val toDate: LocalDate
     val toHour: Int
-    if (now.time < todaySun.sunrise) {
+    if (now.time.toSecondOfDay() < todaySun.sunrise.toSecondOfDay() + DAWN_TAIL_MINUTES * 60) {
         val yesterday = today.minus(1, DateTimeUnit.DAY)
         // Les horaires de la veille manquent après minuit (les prévisions commencent aujourd'hui) : le coucher d'hier vaut celui d'aujourd'hui, à une minute près.
         val ySun = sun[yesterday] ?: todaySun
@@ -206,4 +222,31 @@ fun nightPhrase(night: List<HourlyUiModel>, beachFacing: Int?): String? {
         else -> "au lever, ${categoryWord(lateCat)} ${strengthWord(lateMax)} : plan d'eau ${waterWord(lateCat, strengthWord(lateMax))}"
     }
     return "Cette nuit, $swell, $nightWind ; $morning."
+}
+
+/** Une heure avant le lever, l'encart « Actuellement » passe déjà sur la première heure de surf. */
+private const val DAWN_LEAD_MINUTES = 60
+
+/** Vrai quand l'encart « Actuellement » est encore dans la nuit : avant l'heure qui précède le lever, ou après le coucher. */
+fun isNowNight(now: LocalDateTime, sun: DailySunInfo?): Boolean {
+    sun ?: return false
+    val minutes = now.time.hour * 60 + now.time.minute
+    val dawn = sun.sunrise.hour * 60 + sun.sunrise.minute - DAWN_LEAD_MINUTES
+    return minutes < dawn || now.time > sun.sunset
+}
+
+/** L'heure que l'encart « Actuellement » montre : la plus proche, mais l'heure du lever dès qu'on est dans l'heure qui le précède. */
+fun nowCardHourOf(now: LocalDateTime, sun: DailySunInfo?): Int {
+    sun ?: return now.time.hour
+    val minutes = now.time.hour * 60 + now.time.minute
+    val sunriseMin = sun.sunrise.hour * 60 + sun.sunrise.minute
+    return if (minutes in (sunriseMin - DAWN_LEAD_MINUTES) until sunriseMin) sun.sunrise.hour else now.time.hour
+}
+
+/** Vrai de l'heure qui précède le lever jusqu'à 2 h après : l'encart montre alors le résumé de la nuit en plus des tuiles. */
+fun isDawnWindow(now: LocalDateTime, sun: DailySunInfo?): Boolean {
+    sun ?: return false
+    val minutes = now.time.hour * 60 + now.time.minute
+    val sunriseMin = sun.sunrise.hour * 60 + sun.sunrise.minute
+    return minutes >= sunriseMin - DAWN_LEAD_MINUTES && minutes < sunriseMin + DAWN_TAIL_MINUTES
 }

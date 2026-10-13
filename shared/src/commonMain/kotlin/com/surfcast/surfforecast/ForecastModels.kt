@@ -105,7 +105,7 @@ enum class WaveModel(
         description = "Spécialiste de la bathymétrie côtière et des bancs de sable français."
     ),
     ECMWF_WAM(
-        apiParam = "ecmwf_wave",
+        apiParam = "ecmwf_wam",
         displayName = "ECMWF WAM Europe",
         resolution = "14 km",
         description = "Traqueur de grand large, référence sur la houle longue et l'énergie océanique."

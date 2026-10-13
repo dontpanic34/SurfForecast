@@ -1,0 +1,52 @@
+<title>Résumé de la journée</title>
+<style>
+/* Mise en page : l'en-tête de l'encart Semaine tel qu'il est dans l'appli (fond sombre, jours en dessous), avec trois façons d'écrire le résumé matin / après-midi, pour trois jours différents. */
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--sel:#2c5a70;--selt:#e6f3f9;--g:#2bd47a;--y:#ffd21f;--o:#ff9a1f;--r:#e53935;--link:#7fc3e6;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding-inline:16px;padding-block:20px}
+main{max-width:430px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:1.25rem;margin:0}h2{font-size:1rem;margin:10px 0 0;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:10px 12px}
+.days{display:flex;gap:2px;margin-top:8px}.d{flex:1;text-align:center;border-radius:6px;padding:4px 0}.d.on{background:var(--sel);color:var(--selt)}
+.d b{display:block;font-size:13px}.st{color:var(--y);font-weight:700}
+.t{font-size:16px;font-weight:800}
+.l{font-size:13px;margin-top:2px}.l i{font-style:normal;font-weight:700;color:var(--mut);margin-right:4px}
+.v{font-weight:800}
+.g{color:var(--g)}.y{color:var(--y)}.o{color:var(--o)}
+</style>
+<main>
+<h1>Résumé de la journée</h1>
+<p class="mut sm">Dans l'encart Semaine, à la place du titre actuel. Chaque moitié de journée dit la houle puis le vent. Trois jours de ta semaine, pour que tu voies si c'est logique.</p>
+
+<h2>A · Deux lignes, matin et après-midi</h2>
+<div class="card"><div class="t">Aujourd'hui</div>
+<div class="l"><i>Matin</i>Petite houle, 0,7 m à 11 s. Side-on modéré.</div>
+<div class="l"><i>Après-midi</i>Bonne houle, 1,3 m à 13 s. Onshore soutenu.</div>
+<div class="days"><div class="d on"><b>Auj. 12</b><span class="st">★ 3</span></div><div class="d"><b>Dem. 13</b><span class="st">★ 4</span></div><div class="d"><b>Mer. 14</b><span class="st">★ 4</span></div><div class="d"><b>Jeu. 15</b><span class="st">★ 5</span></div></div></div>
+<div class="card"><div class="t">Mercredi</div>
+<div class="l"><i>Toute la journée</i>Petite houle, 1,0 m à 11 s. Offshore modéré.</div>
+<div class="days"><div class="d"><b>Auj. 12</b><span class="st">★ 3</span></div><div class="d"><b>Dem. 13</b><span class="st">★ 4</span></div><div class="d on"><b>Mer. 14</b><span class="st">★ 4</span></div><div class="d"><b>Jeu. 15</b><span class="st">★ 5</span></div></div></div>
+<p class="sm mut">Le plus direct. Quand les deux moitiés sont identiques, une seule ligne « Toute la journée ».</p>
+
+<h2>B · Un verdict en titre, puis les deux lignes</h2>
+<div class="card"><div class="t">Le vent se lève, la houle grossit</div>
+<div class="l"><i>Matin</i>0,7 m à 11 s · side-on modéré</div>
+<div class="l"><i>Après-midi</i>1,3 m à 13 s · onshore soutenu</div>
+<div class="days"><div class="d on"><b>Auj. 12</b><span class="st">★ 3</span></div><div class="d"><b>Dem. 13</b><span class="st">★ 4</span></div><div class="d"><b>Mer. 14</b><span class="st">★ 4</span></div><div class="d"><b>Jeu. 15</b><span class="st">★ 5</span></div></div></div>
+<div class="card"><div class="t">Petit mais propre</div>
+<div class="l"><i>Toute la journée</i>1,0 m à 11 s · offshore modéré</div>
+<div class="days"><div class="d"><b>Auj. 12</b><span class="st">★ 3</span></div><div class="d"><b>Dem. 13</b><span class="st">★ 4</span></div><div class="d on"><b>Mer. 14</b><span class="st">★ 4</span></div><div class="d"><b>Jeu. 15</b><span class="st">★ 5</span></div></div></div>
+<p class="sm mut">Le verdict en une demi-ligne, les détails en chiffres compacts dessous. Plus de lecture rapide, mais un mot de plus à inventer chaque jour.</p>
+
+<h2>C · Les mots colorés comme dans le déroulé</h2>
+<div class="card"><div class="t">Aujourd'hui</div>
+<div class="l"><i>Matin</i><span class="y v">Taille juste</span> 0,7 m à 11 s · <span class="o v">side-on</span> modéré</div>
+<div class="l"><i>Après-midi</i><span class="g v">Bonne taille</span> 1,3 m à 13 s · <span class="o v">onshore</span> soutenu</div>
+<div class="days"><div class="d on"><b>Auj. 12</b><span class="st">★ 3</span></div><div class="d"><b>Dem. 13</b><span class="st">★ 4</span></div><div class="d"><b>Mer. 14</b><span class="st">★ 4</span></div><div class="d"><b>Jeu. 15</b><span class="st">★ 5</span></div></div></div>
+<div class="card"><div class="t">Jeudi</div>
+<div class="l"><i>Toute la journée</i><span class="g v">Bonne taille</span> 1,4 m à 13 s · <span class="g v">offshore</span> léger</div>
+<div class="days"><div class="d"><b>Auj. 12</b><span class="st">★ 3</span></div><div class="d"><b>Dem. 13</b><span class="st">★ 4</span></div><div class="d"><b>Mer. 14</b><span class="st">★ 4</span></div><div class="d on"><b>Jeu. 15</b><span class="st">★ 5</span></div></div></div>
+<p class="sm mut">Le mot de taille et la catégorie de vent prennent la couleur de leur effet (vert propre, jaune juste, orange gênant). On lit la couleur avant le texte.</p>
+
+<h2>Ma recommandation</h2>
+<p><b>C</b> : même code couleur que le déroulé, aucun titre à inventer, et ça répond à ce que tu demandes : houle et vent, matin et après-midi.</p>
+</main>

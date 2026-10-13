@@ -763,7 +763,8 @@ fun MainScreen(
                             // « Maintenant » + marée + eau : toujours visible, juste au-dessus de la barre du bas.
                             run {
                                 val todayHours = groupedByDate[today].orEmpty()
-                                val closest = todayHours.minByOrNull { abs(it.rawTime.hour - clock.hour) }
+                                val cardHour = nowCardHourOf(clock, state.dailySunInfo[today])
+                                val closest = todayHours.minByOrNull { abs(it.rawTime.hour - cardHour) }
                                     ?: state.hourlyForecast.firstOrNull()
                                 if (viewModel.showLiveOverlay && closest != null) {
                                     NowTideCard(
@@ -775,11 +776,13 @@ fun MainScreen(
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
                                         updatedText = state.lastUpdatedTime,
-                                        isNight = daylightHoursFor(today, groupedByDate, state.dailySunInfo).let { d -> d.isNotEmpty() && d.none { it.rawTime == closest.rawTime } },
+                                        isNight = isNowNight(clock, state.dailySunInfo[today]),
                                         nightText = nightPhrase(
                                             nightHours(state.hourlyForecast, state.dailySunInfo, clock),
                                             idealSwellDirection
                                         ),
+                                        dawnText = if (isDawnWindow(clock, state.dailySunInfo[today]) && !isNowNight(clock, state.dailySunInfo[today]))
+                                            nightPhrase(nightHours(state.hourlyForecast, state.dailySunInfo, clock), idealSwellDirection) else null,
                                         onRefresh = { viewModel.refreshActiveSpot() },
                                         onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")
@@ -788,6 +791,10 @@ fun MainScreen(
                                             hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
                                             idealSwellDirection, viewModel.surferLevel
                                         ),
+                                        previousRating = hoursWithWindMemory(today, groupedByDate).let { mem ->
+                                            val i = mem.indexOfFirst { it.rawTime == closest.rawTime }
+                                            mem.getOrNull(i - 1)?.takeIf { i > 0 }?.let { calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel) }
+                                        },
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
                                     )
                                 }
