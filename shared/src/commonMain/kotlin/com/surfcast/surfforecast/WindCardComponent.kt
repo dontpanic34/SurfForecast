@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,7 +68,8 @@ fun WindCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
             CardControlsRow(
-                title = "Vent", guide = "wind",
+                title = "Vent",
+                trailing = { WindUnitPicker(windUnit) },
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
@@ -135,6 +138,24 @@ fun WindCardComponent(
                 backValueOf = { g -> g.maxOf { it.windGustKmh.toDouble() } }
             )
             }
+        }
+    }
+}
+
+/** Le choix de l'unité du vent, discret en haut à droite de l'encart : « km/h · nds · Bft », l'unité choisie en gras et colorée. */
+@Composable
+private fun WindUnitPicker(current: String) {
+    val c = LocalCardSettings.current ?: return
+    val colors = MaterialTheme.colorScheme
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 6.dp)) {
+        listOf("kmh" to "km/h", "knots" to "nds", "bft" to "Bft").forEachIndexed { i, (key, label) ->
+            val on = key == current
+            if (i > 0) Text("·", fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.3f))
+            Text(
+                label, fontSize = 11.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Normal,
+                color = if (on) colors.primary else colors.onSurface.copy(alpha = 0.5f),
+                modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { c.onWindUnit(key) }.padding(horizontal = 5.dp, vertical = 4.dp)
+            )
         }
     }
 }
