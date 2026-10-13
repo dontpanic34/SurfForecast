@@ -120,8 +120,7 @@ fun boardOfTheDay(
     val strong = "gros" in now || "creux" in now || "puissant" in now
     fun fit(b: QuiverBoard): Int = when (b.family) {
         "longboard" -> if (soft && !strong) 3 else 0
-        "mid-length" -> if (soft && !strong) 2 else 1
-        "fish", "twin", "groveler" -> if (soft && !strong) 2 else 1
+        "mid-length", "fish", "twin", "groveler" -> if (soft && !strong) 2 else 1 // un seul style : les planches de petit temps
         "shortboard" -> if (strong) 3 else 1
         "mousse" -> 0
         else -> 1
@@ -138,8 +137,8 @@ fun boardOfTheDay(
         if (demanding) {
             val big = reference != null && b.volumeL != null && b.volumeL > reference * 1.25
             if (big) total -= if (strong) 5 else 3
-            // Un surfeur avancé ne sort pas une planche longue un jour solide ou exigeant.
-            if (levelIndex >= 3 && (b.family == "longboard" || b.family == "mid-length" || b.family == "mousse")) total -= 3
+            // Un surfeur avancé ne sort pas une longboard ou une mousse un jour solide ou exigeant (la mid-length fait partie des planches de petit temps, avec twin, fish et groveler).
+            if (levelIndex >= 3 && (b.family == "longboard" || b.family == "mousse")) total -= 3
         }
         return total
     }
