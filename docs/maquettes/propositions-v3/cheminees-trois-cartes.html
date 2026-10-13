@@ -25,8 +25,8 @@ svg{display:block;width:100%;height:54px}
 .tog{display:flex;gap:6px;flex-wrap:wrap}.tog button{border:1px solid var(--mut);background:none;color:var(--mut);border-radius:99px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.tog button.on{background:var(--link);border-color:var(--link);color:#fff}
 .frame{height:620px;overflow:auto;border-radius:18px;border:1px solid var(--cell);background:var(--bg);position:relative;padding:8px 8px 0}
 .stack{display:grid;gap:8px;padding-bottom:12px}
-.now{position:sticky;bottom:0;margin:8px -8px 0;padding:8px 12px 10px;background:var(--card);border-top:1px solid var(--cell);border-radius:14px 14px 0 0;box-shadow:0 -6px 18px rgba(0,0,0,.28);display:grid;gap:5px;z-index:2}
-.now .t{display:flex;justify-content:space-between;align-items:baseline}.now .t b{font-size:15px;color:var(--mut)}
+.now{position:sticky;bottom:0;margin:8px -8px 0;padding:8px 12px 8px;background:var(--card);border-top:1px solid var(--cell);border-radius:14px 14px 0 0;box-shadow:0 -6px 18px rgba(0,0,0,.28);display:grid;gap:5px;z-index:2}
+.now .t{display:flex;justify-content:space-between;align-items:baseline}.now .t b{font-size:13.5px;color:var(--mut)}
 .tiles{display:flex;gap:6px}.tile{flex:1;background:var(--cell);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--mut)}.tile b{display:block;font-size:13px;color:var(--fg)}
 .strip{position:relative;display:flex;gap:2px;height:20px;cursor:ew-resize;touch-action:none;user-select:none}
 .strip i{flex:1 1 0;border-radius:3px;background:var(--cell);position:relative;overflow:hidden}.strip i u{position:absolute;inset:0}
@@ -40,13 +40,13 @@ svg{display:block;width:100%;height:54px}
 </style>
 <main>
 <h1>Cheminées pour les trois cartes</h1>
-<p class="mut sm">Les trois cartes gardent le même habillage en cheminées (barres) ; seule la hauteur change d'une proposition à l'autre. La ligne des horaires est une règle unique dans l'encart Actuellement, toujours visible en bas : jour heure par heure avec une graduation, nuit en blocs hachurés, mêmes couleurs que la barre d'ensoleillement (or le jour, bleu nuit la nuit), lever en jaune et coucher en orange, heure choisie en blanc. Glisse sur la règle ou sur n'importe quelle barre ; fais défiler le cadre pour voir qu'elle reste.</p>
-<div class="btabs" id="tabs"><button data-m="1" class="on">A · Hautes</button><button data-m="2">B · Moyennes</button><button data-m="3">C · Basses</button><button data-m="4">D · Selon l'importance</button><button data-m="5">E · Avec un trait</button></div>
+<p class="mut sm">Les trois cartes gardent le même habillage en cheminées (barres) ; seule la hauteur change d'une proposition à l'autre. La ligne des horaires est une règle unique dans l'encart Actuellement, toujours visible en bas : jour heure par heure, nuit en blocs hachurés, mêmes couleurs que la barre d'ensoleillement (or le jour, bleu nuit la nuit), avec seulement trois repères écrits : l'heure choisie en blanc, le lever en jaune et le coucher en orange. Dessous, une seule ligne « Actuellement 14 h · Correct » (l'état ne reste plus à droite). Glisse sur la règle ou sur n'importe quelle barre ; fais défiler le cadre pour voir qu'elle reste.</p>
+<div class="btabs" id="tabs"><button data-m="1">A · Hautes</button><button data-m="2">B · Moyennes</button><button data-m="3" class="on">C · Basses</button><button data-m="4">D · Selon l'importance</button><button data-m="5">E · Avec un trait</button></div>
 <div class="frame" id="frame"><div class="stack" id="stack"></div><div class="now" id="now"></div></div>
 <p class="sm mut" id="desc"></p>
 </main>
 <script>
-var SR=8+17/60,SS=19+22/60,sel=14,MODE=1;
+var SR=8+17/60,SS=19+22/60,sel=14,MODE=3;
 var HEIGHTS={1:[84,84,84],2:[54,54,54],3:[32,32,32],4:[90,64,40],5:[64,64,64]};
 var W=[],V=[],D=[],T=[];
 for(var h=0;h<24;h++){W.push(+(1.0+0.9*Math.exp(-Math.pow((h-3)/9,2))+0.15*Math.sin(h/2)).toFixed(2));
@@ -108,12 +108,11 @@ function nowCard(k){var c=cur(),w=wave(c),v=wind(c);
   strip+='<i class="'+(c2.blk?'blk ':'')+(i===k?'on':'')+'">'+(up?'<u style="background:var(--sun);opacity:'+(0.4+0.6*m).toFixed(2)+'"></u>':'')+'</i>'});
  // graduations : une toutes les deux heures le jour, la fourchette de chaque bloc la nuit
  var items=[{p:(k+.5)/n*100,t:sel+':00',c:'var(--nacre)',w:11.5,pr:0,f:13,b:1},{p:posOf(SR),t:fmtH(SR),c:'var(--sun)',w:10,pr:1,f:10.5,b:1},{p:posOf(SS),t:fmtH(SS),c:'var(--dusk)',w:10,pr:1,f:10.5,b:1}];
- C.forEach(function(c2,i){var p=(i+.5)/n*100;if(c2.blk)items.push({p:p,t:c2.a+'–'+((c2.b+1)%24)+' h',c:'var(--mut)',w:9,pr:3,f:9.5,b:0});else if(c2.a%2===0)items.push({p:p,t:c2.a+' h',c:'var(--mut)',w:6.7,pr:2,f:10,b:0})});
  items.sort(function(a,b){return a.pr-b.pr});var kept=[],ls='';
  items.forEach(function(x){if(kept.every(function(q){return Math.abs(q.p-x.p)>=(q.w+x.w)/2+1})){kept.push(x);ls+='<span style="left:'+x.p+'%;color:'+x.c+';font-size:'+x.f+'px;font-weight:'+(x.b?800:600)+'">'+x.t+'</span>'}});
  var ticks='';for(var i=0;i<=n;i++)ticks+='<s style="left:'+(i/n*100)+'%"></s>';
- return '<div class="t"><b>Actuellement · '+sel+' h</b><span class="sm" style="color:#d9a03a;font-weight:800">Correct</span></div>'
-  +'<div class="strip" data-b>'+strip+dotAt(k,50)+'</div><div class="hrs" style="height:18px">'+ls+'</div>'
+ return '<div class="strip" data-b>'+strip+dotAt(k,50)+'</div><div class="hrs" style="height:18px">'+ls+'</div>'
+  +'<div class="t"><b>Actuellement '+sel+' h <span style="color:#d9a03a">· Correct</span></b></div>'
   +'<div class="tiles"><div class="tile">Houle<b>'+w.toFixed(1).replace('.',',')+' m · 10 s</b></div><div class="tile">Vent<b>'+v+' km/h '+dirs[Math.min(4,Math.floor(sel/5))]+'</b></div><div class="tile">Marée<b>▲ 16:30</b></div></div>'}
 var DESC={1:'A · Hautes : 84 px pour les trois cartes. Les différences de hauteur sautent aux yeux, c\'est la plus lisible au doigt, mais la page est plus longue.',
 2:'B · Moyennes : 54 px, la hauteur actuelle de la houle et du vent. Un bon compromis ; la Météo prend la même taille.',
