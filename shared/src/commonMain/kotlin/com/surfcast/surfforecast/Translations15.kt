@@ -14,7 +14,7 @@ internal val TR_PART_15: Map<String, List<String>> = mapOf(
     "Fish" to listOf("Fish", "Fish", "Fish", "Fish"),
     "août" to listOf("August", "August", "augustus", "agosto"),
     "déc." to listOf("Dec", "Dez.", "dec.", "dic."),
-    "Mou" to listOf("Soft", "Schwach", "Slap", "Blanda"),
+    "Mou" to listOf("Soft", "Weich", "Slap", "Blanda"),
     "SSO" to listOf("SSW", "SSW", "ZZW", "SSO"),
     "NNW" to listOf("NNW", "NNW", "NNW", "NNO"),
     "CB" to listOf("CB", "CB", "CB", "CB"),
@@ -57,5 +57,5 @@ internal val TR_PART_15: Map<String, List<String>> = mapOf(
     "sud" to listOf("south", "Süd", "zuid", "sur"),
     "est" to listOf("east", "Ost", "oost", "este"),
     "ouest" to listOf("west", "West", "west", "oeste"),
-    "mousse" to listOf("foam", "Softboard", "foam", "foam")
+    "mousse" to listOf("whitewater", "Softboard", "schuim", "espuma")
 )
