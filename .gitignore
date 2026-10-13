@@ -20,3 +20,5 @@ app.rar
 app.zip
 surfforecast_backup/
 app/src/SurfForecast_Main_Source.zip
+__pycache__/
+*.pyc
