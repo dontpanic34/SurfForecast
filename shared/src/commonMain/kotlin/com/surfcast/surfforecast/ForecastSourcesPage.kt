@@ -48,7 +48,6 @@ fun ForecastSourcesPage(
             TermSection("Aujourd'hui et demain", "J+0 et J+1", shortWave, onShortWave, shortWind, onShortWind, preview, day = 1)
             TermSection("Après-demain et la suite", "J+2 à J+7", longWave, onLongWave, longWind, onLongWind, preview, day = 3)
         }
-        SettingsHelpLink("Comprendre les modèles") { ComprendreState.open("modeles") }
         Text(
             "Les modèles viennent d'Open-Meteo. Un modèle qui ne couvre pas une heure est remplacé par le suivant : AROME s'arrête vers 2 jours, ARPEGE vers 4.",
             fontSize = 12.sp, color = colors.onSurfaceVariant
