@@ -1,9 +1,9 @@
 <title>Météo en bandes de soleil</title>
 <style>
 /* Mise en page : l'encart Météo en cellules heure par heure, comme la barre d'ensoleillement du déroulé de la journée : une bande par information (soleil, UV, nuages, pluie), un point sur chaque bande à l'heure choisie, l'heure écrite dessous. */
-:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--cell:#0f1822;--link:#4fb3e8;--sun:#f6c453;--sunlo:#0b121a;--dusk:#e8844a;--rain:#5aa9e6;--cloud:#9fb2bd;--nacre:#e6f1ff;color-scheme:dark}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--link:#1b88c4;--sun:#e2a025;--sunlo:#c9d2dc;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--nacre:#10222e;color-scheme:light}}
-:root[data-theme="light"]{--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--link:#1b88c4;--sun:#e2a025;--sunlo:#c9d2dc;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--nacre:#10222e;color-scheme:light}
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--cell:#0f1822;--link:#4fb3e8;--sun:#f6c453;--sunlo:#0b121a;--dusk:#e8844a;--rain:#5aa9e6;--cloud:#9fb2bd;--nacre:#e6f1ff;--onsun:#fff;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--link:#1b88c4;--sun:#e2a025;--sunlo:#c9d2dc;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--nacre:#10222e;--onsun:#3a2600;color-scheme:light}}
+:root[data-theme="light"]{--onsun:#3a2600;--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--cell:#d3dbe4;--link:#1b88c4;--sun:#e2a025;--sunlo:#c9d2dc;--dusk:#c4561f;--rain:#1f78c1;--cloud:#6f8794;--nacre:#10222e;color-scheme:light}
 *{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding-inline:16px;padding-block:18px}
 main{max-width:440px;margin:0 auto;display:grid;gap:12px}h1{font-size:1.2rem;margin:0}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12.5px}
 .card{background:var(--card);border-radius:12px;padding:12px 14px;display:grid;gap:8px}
@@ -16,6 +16,7 @@ main{max-width:440px;margin:0 auto;display:grid;gap:12px}h1{font-size:1.2rem;mar
 .cells i{flex:1;border-radius:3px;background:var(--cell);position:relative;overflow:hidden}
 .cells i u{position:absolute;inset:0;border-radius:3px}
 .cells i.on{outline:1.5px solid var(--nacre);outline-offset:0}
+.cells.tall{height:22px}.sunt{position:absolute;top:50%;transform:translateY(-50%);font-size:10.5px;font-weight:800;text-shadow:0 0 3px var(--card);pointer-events:none;white-space:nowrap}
 .dot{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:#fff;border:2px solid #0b1519;box-shadow:0 0 6px rgba(255,255,255,.7);pointer-events:none}
 .hrs{position:relative;height:18px}.hrs span{position:absolute;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;font-weight:600;color:var(--mut)}
 .hrs span.sel{font-size:12.5px;font-weight:800;color:var(--nacre)}.hrs span.sr{color:var(--sun);font-weight:800}.hrs span.ss{color:var(--dusk);font-weight:800}
@@ -23,7 +24,7 @@ main{max-width:440px;margin:0 auto;display:grid;gap:12px}h1{font-size:1.2rem;mar
 </style>
 <main>
 <h1>Météo en bandes de soleil</h1>
-<p class="mut sm">La barre d'ensoleillement du déroulé de la journée, reprise pour l'encart Météo : une cellule par heure, dorée entre le lever et le coucher (plus vive vers midi), sombre la nuit. Dessous, une bande par information, dans l'ordre soleil, UV, nuages, pluie. Un point sur chaque bande marque l'heure choisie, écrite sous les bandes. Glisse le doigt sur n'importe quelle bande. Exemple : 13 octobre, lever 8 h 17, coucher 19 h 22.</p>
+<p class="mut sm">La barre d'ensoleillement du déroulé de la journée, reprise pour l'encart Météo : une cellule par heure, dorée entre le lever et le coucher (plus vive vers midi), sombre la nuit. Dessous, une bande par information, dans l'ordre soleil, UV, nuages, pluie. Un point sur chaque bande marque l'heure choisie, écrite sous les bandes ; le lever (▲ 8 h 17) et le coucher (19 h 22) sont écrits dans la bande du soleil, dans la partie sombre juste avant et juste après la partie dorée. Glisse le doigt sur n'importe quelle bande. Exemple : 13 octobre, lever 8 h 17, coucher 19 h 22.</p>
 <div class="tog" id="tog"><button data-k="rain" class="on">Journée avec pluie</button><button data-k="dry">Journée sèche</button></div>
 <div id="out"></div>
 <p class="sm mut">Sans pluie prévue la bande de pluie disparaît ; sans soleil (UV à zéro toute la journée) la bande UV disparaît. Le soleil et les nuages restent toujours.</p>
@@ -36,15 +37,14 @@ function pct(x){return x/24*100}
 function fmt(h){var m=Math.round((h%1)*60);return Math.floor(h)+' h '+('0'+m).slice(-2)}
 function cell(i,bg,op){return '<i class="'+(i===sel?'on':'')+'"><u style="background:'+bg+';opacity:'+op+'"></u></i>'}
 function sunCell(i){var h=i,x0=Math.max(h-.5,SR),x1=Math.min(h+.5,SS);if(x1-x0<=.02)return cell(i,'var(--sun)',0);var mid=Math.sin(Math.PI*Math.min(Math.max((h-SR)/(SS-SR),0),1));return cell(i,'var(--sun)',(0.4+0.6*mid).toFixed(2))}
-function bandRow(label,fn,val){var c='';for(var i=0;i<24;i++)c+=fn(i);return '<span>'+label+'</span><div class="cells" data-b>'+c+'<div class="dot" style="left:'+pct(sel+.5)+'%"></div></div><b>'+val+'</b>'}
-function hours(){var s='',skip=function(h){return Math.abs(h-SR)<2.5||Math.abs(h-SS)<2.5||Math.abs(h-sel)<2.6};
- for(var h=0;h<24;h+=6)if(!skip(h))s+='<span style="left:'+pct(h+.5)+'%">'+h+' h</span>';
- s+='<span class="sr" style="left:'+pct(SR)+'%">▲ '+fmt(SR)+'</span><span class="ss" style="left:'+pct(SS)+'%">'+fmt(SS)+' ▼</span>';
- s+='<span class="sel" style="left:'+pct(sel+.5)+'%;top:-1px;background:var(--card);padding:0 3px">'+sel+':00</span>';
+function bandRow(label,fn,val,inner,cls){var c='';for(var i=0;i<24;i++)c+=fn(i);return '<span>'+label+'</span><div class="cells '+(cls||'')+'" data-b>'+c+(inner||'')+'<div class="dot" style="left:'+pct(sel+.5)+'%"></div></div><b>'+val+'</b>'}
+function hours(){var s='',skip=function(h){return Math.abs(h-sel)<2.6};
+ for(var h=0;h<24;h+=3)if(!skip(h))s+='<span style="left:'+pct(h+.5)+'%">'+h+' h</span>';
+  s+='<span class="sel" style="left:'+pct(sel+.5)+'%;top:-1px;background:var(--card);padding:0 3px">'+sel+':00</span>';
  return '<span></span><div class="hrs">'+s+'</div><span></span>'}
 function emoji(d){return d.r>0?'🌧':d.cl>85?'☁️':d.cl>40?'⛅':'☀️'}
 function render(){rainOn(mode==='rain');var d=D[sel],anyRain=D.some(function(x){return x.r>0}),anyUv=D.some(function(x){return x.uv>0});
- var g=bandRow('Soleil',sunCell,d.t+'°');
+ var g=bandRow('Soleil',sunCell,d.t+'°','<span class="sunt" style="right:calc('+(100-pct(SR+.5))+'% + 3px);color:var(--sun)">▲ '+fmt(SR)+'</span><span class="sunt" style="left:calc('+pct(SS+.5)+'% + 3px);color:var(--dusk)">'+fmt(SS)+'</span>','tall');
  if(anyUv)g+=bandRow('UV',function(i){return cell(i,'var(--sun)',(D[i].uv/3*.9).toFixed(2))},d.uv);
  g+=bandRow('Nuages',function(i){return cell(i,'var(--cloud)',(D[i].cl/100*.85).toFixed(2))},d.cl+' %');
  if(anyRain)g+=bandRow('Pluie',function(i){return cell(i,'var(--rain)',D[i].r>0?(0.4+Math.min(D[i].r,1)*.6).toFixed(2):0)},d.r?d.r+' mm':'sec');
