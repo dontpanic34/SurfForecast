@@ -58,7 +58,6 @@ private const val SELECTED_WIND_DROP = 9 // la colonne de vent de l'heure choisi
 private const val WIND_ROW_H = 46 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
-private const val HOURS_H = 22 // la ligne des heures (les repères de marée sont dans l’eau, sur la courbe)
 private const val SIDE_PAD = 4
 
 /**
@@ -385,8 +384,8 @@ private fun DailyTimelineBody(
                 if (tideCurve.size >= 2) {
                     val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
-                    Canvas(modifier = Modifier.fillMaxWidth().height(maxOf(SkyGraphSettings.tideDp, 36).dp)) {
-                        val yLine = maxOf(size.height * 0.28f, 11.dp.toPx())
+                    Canvas(modifier = Modifier.fillMaxWidth().height(maxOf(SkyGraphSettings.tideDp, 44).dp)) {
+                        val yLine = maxOf(size.height * 0.34f, 18.dp.toPx())
                         val rising = Color(0xFF4A9BF0)
                         val falling = Color(0xFF38C976)
                         // Le trait est vert quand la marée descend, bleu quand elle monte (la prochaine marée est haute = elle monte).
@@ -422,6 +421,13 @@ private fun DailyTimelineBody(
                         }
                         if (selH != null && selH in ax0..ax1) {
                             drawCircle(onSurfaceColor, radius = 3.dp.toPx(), center = Offset(xOf(selH), yLine))
+                            // Le mot « montante » ou « descendante » juste au-dessus du point de l'heure choisie, de la couleur du trait.
+                            val rises = risingAt(selH)
+                            val word = tr(if (rises) "montante" else "descendante")
+                            val wordStyle = TextStyle(color = if (rises) rising else falling, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+                            val ww = textMeasurer.measure(word, wordStyle).size.width.toFloat()
+                            val wx = (xOf(selH) - ww / 2f).coerceIn(2.dp.toPx(), maxOf(2.dp.toPx(), size.width - ww - 2.dp.toPx()))
+                            drawHaloTextAtBaseline(textMeasurer, word, wordStyle, tideHalo, wx, yLine - 7.dp.toPx())
                         }
                         // Les heures sont écrites sous le trait, centrées sur leur point ; si deux se touchent, la seconde glisse à droite.
                         val gap = 6.dp.toPx()
@@ -439,42 +445,6 @@ private fun DailyTimelineBody(
                         }
                         for (i in labels.indices) {
                             drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + 22.dp.toPx())
-                        }
-                    }
-                }
-
-                // --- Une seule ligne d'heures, dynamique ---
-                Box(modifier = Modifier.fillMaxWidth().height(HOURS_H.dp)) {
-                    class Lbl(val h: Float, val text: String, val kind: Int, val prio: Int)
-                    val items = ArrayList<Lbl>()
-                    if (selH != null) items.add(Lbl(selH, "${selHour}:00", 0, 0))
-                    for (h in hours.map { it.rawTime.hour }) {
-                        if (h % 2 == 0 && abs(h - sunrise) >= 1.25f && abs(h - sunset) >= 1.25f) items.add(Lbl(h.toFloat(), "$h h", 2, 2))
-                    }
-                    val edge = with(density) { 20.dp.toPx() }
-                    fun cx(h: Float) = xOf(h).coerceIn(edge, wPx - edge)
-                    val kept = ArrayList<Lbl>()
-                    for (lb in items.sortedBy { x -> x.prio }) {
-                        val w = with(density) { (if (lb.kind == 2) 30 else 34).dp.toPx() }
-                        if (kept.all { k ->
-                                val kw = with(density) { (if (k.kind == 2) 30 else 34).dp.toPx() }
-                                abs(cx(k.h) - cx(lb.h)) >= kw / 2f + w / 2f + with(density) { 2.dp.toPx() }
-                            }
-                        ) kept.add(lb)
-                    }
-                    for (l in kept) {
-                        val color = when (l.kind) {
-                            0 -> nacre
-                            1 -> sunGold
-                            else -> onSurfaceColor.copy(alpha = 0.6f)
-                        }
-                        val fs = when (l.kind) { 0 -> 12.5f; 1 -> 9.5f; else -> 10f }
-                        val weight = if (l.kind == 2) FontWeight.SemiBold else FontWeight.ExtraBold
-                        Box(
-                            modifier = Modifier.offset { IntOffset((cx(l.h) - 24.dp.toPx()).roundToInt(), 2.dp.roundToPx()) }.width(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(l.text, fontSize = fs.sp, fontWeight = weight, color = color, maxLines = 1)
                         }
                     }
                 }
