@@ -245,3 +245,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Bouées : accès vérifié à Candhis (Cap Ferret temps réel) ; premier essai de comparaison modèles / bouée noté dans `A_FAIRE.md`. Rien n'est codé.
 
 - Consensus des modèles de vagues : principe validé par le propriétaire. Test contre la bouée de Cap Ferret (48 h) noté dans `A_FAIRE.md`. Rien n'est codé.
+
+- Liste des bouées Candhis temps réel avec positions (`docs/BOUEES_CANDHIS.md`) et principe « une bouée de référence choisie par spot ». Rien n'est codé.
