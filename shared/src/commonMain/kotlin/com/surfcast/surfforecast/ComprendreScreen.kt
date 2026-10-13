@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -138,11 +140,13 @@ fun ComprendreDialog(startLesson: String, onDismiss: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     var view by remember(startLesson) { mutableStateOf<CView>(locate(startLesson) ?: CView.Home) }
     Dialog(onDismissRequest = onDismiss) {
+      // La fenêtre épouse son contenu (jusqu'à 90 % de l'écran), au lieu d'être toujours haute.
+      BoxWithConstraints {
         Surface(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.9f).clip(RoundedCornerShape(14.dp)),
+            modifier = Modifier.fillMaxWidth().heightIn(max = maxHeight * 0.9f).clip(RoundedCornerShape(14.dp)),
             color = colors.background
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     val current = view
                     when (current) {
@@ -157,7 +161,7 @@ fun ComprendreDialog(startLesson: String, onDismiss: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     when (val v = view) {
                         is CView.Home -> {
                             Text("Houle, vagues et prévisions, en leçons courtes.", fontSize = 13.sp, color = colors.onSurfaceVariant)
@@ -207,6 +211,7 @@ fun ComprendreDialog(startLesson: String, onDismiss: () -> Unit) {
                 }
             }
         }
+      }
     }
 }
 
