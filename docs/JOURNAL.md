@@ -227,3 +227,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Échelle des notes (maquette validée en cours) : limites 25 / 45 / 62 / 80 / 94, zone de tendance ± 3. Pas encore codée (en attente du « go »).
 
 - Titre de la semaine : « ça va se caler » quand la journée s'améliore (le vent tourne offshore ou tombe l'après-midi, ou la note de l'après-midi dépasse celle du matin d'au moins 10 points). Le détail (« ça tourne offshore l'après-midi ») passe en deuxième ligne. Codé, testé, pas encore en ligne.
+
+- Maquette `modeles-prevision` : ajout du choix du modèle météo (ciel, température, pluie) et de vraies heures (8, 11, 14, 17, 20 h) avec choix du jour. Données réelles d'Open-Meteo. En attente de validation ; pas de code.
