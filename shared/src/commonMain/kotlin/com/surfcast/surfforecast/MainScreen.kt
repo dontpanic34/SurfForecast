@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
@@ -573,14 +574,16 @@ fun MainScreen(
                             PullToRefreshBox(
                                 isRefreshing = viewModel.isRefreshing,
                                 onRefresh = { viewModel.refreshActiveSpot() },
-                                modifier = Modifier.weight(1f).fillMaxWidth()
+                                modifier = Modifier.weight(1f).fillMaxWidth().onGloballyPositioned { CardGear.listTopY = it.positionInRoot().y }
                             ) {
+                            CardGear.listState = mainListState
                             LazyColumn(
                                 state = mainListState,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(horizontal = 6.dp),
-                                contentPadding = PaddingValues(bottom = 16.dp)
+                                // Quand le tiroir de réglages d'un encart est ouvert, la liste s'allonge d'autant : l'encart peut monter au-dessus.
+                                contentPadding = PaddingValues(bottom = 16.dp + CardGear.sheetHeightDp.dp)
                             ) {
                                 stickyHeader {
                                     // L'icône montre le thème vers lequel on bascule : un soleil en thème sombre, une lune en thème clair.
@@ -776,6 +779,16 @@ fun MainScreen(
                                     }
                                 }
                             }
+                            // Le tiroir de réglages de l'encart dont le ⚙ est ouvert : l'encart reste en haut, entier et en direct.
+                            CompositionLocalProvider(
+                                LocalCardSettings provides CardSettingsControl(
+                                    windUnit = viewModel.windUnit, onWindUnit = { viewModel.changeWindUnit(it) },
+                                    weeklyWindMode = viewModel.weeklyWindMode, onWeeklyWindMode = { viewModel.changeWeeklyWindMode(it) },
+                                    weeklyDensity = viewModel.weeklyDensity, onWeeklyDensity = { viewModel.changeWeeklyDensity(it) }
+                                )
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) { CardSettingsSheet() }
+                            }
                             }
 
                             // « Maintenant » + marée + eau : toujours visible, juste au-dessus de la barre du bas.
@@ -823,7 +836,6 @@ fun MainScreen(
                                     )
                                 }
                             }
-
                             // Barre du bas : Prévisions, Journal, Météo, Réglages (toujours visible, à portée de pouce).
                             // Journal et Météo s'ouvrent depuis le haut de la liste : on y remonte d'abord.
                             BottomNavBar(
