@@ -1,0 +1,40 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Réglages d'un encart</title>
+<style>
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--sheet:#1b3340;--acc:#4a9bf0;--line:#2a4655;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--sheet:#e3ebf0;--line:#cbd7de;color-scheme:light}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding:16px}
+main{max-width:880px;margin:auto}h1{font-size:19px;margin:0 0 4px}h2{font-size:15px;margin:0 0 4px}p{color:var(--mut);font-size:13.5px;margin:4px 0 10px}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}.col{width:260px}
+.phone{height:520px;border:2px solid var(--line);border-radius:22px;overflow:hidden;position:relative;background:var(--bg);padding:8px}
+.card{background:var(--card);border-radius:10px;padding:8px;margin-bottom:7px;font-size:12px}
+.t{font-weight:700;color:var(--mut);font-size:11px;display:flex;justify-content:space-between}
+.gr{height:120px;border-radius:6px;background:linear-gradient(#7d8ca3 0 55%,#2a8aa3 55%,#0e5a76);margin:5px 0}
+.bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#38c976 0 30%,#4a9bf0 30% 70%,#38c976 70%);margin:4px 0}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sheet);border-radius:18px 18px 0 0;padding:10px;box-shadow:0 -6px 18px #0006}
+.sheet h3{margin:0 0 6px;font-size:13px;display:flex;justify-content:space-between}
+.set{border-top:1px solid var(--line);padding:6px 0;font-size:12px;display:flex;justify-content:space-between;gap:6px}
+.pill{background:var(--acc);color:#fff;border-radius:8px;padding:1px 8px;font-size:11px}
+.dim{opacity:.35}.inl{background:var(--sheet);border-radius:8px;padding:8px;margin-top:6px}
+.cut{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(transparent,var(--bg))}
+.lab{font-size:11px;color:var(--mut);text-align:center;margin-top:4px}
+</style><main>
+<h1>Réglages d'un encart : tout voir en même temps</h1>
+<p>Quand on touche le ⚙ d'un encart, on veut voir l'encart en entier <b>et</b> ses réglages. Trois façons.</p>
+<div class="row">
+ <div class="col"><h2>Aujourd'hui</h2><p>Les réglages s'ouvrent dans l'encart, qui devient plus haut que l'écran : le bas est coupé.</p>
+ <div class="phone"><div class="card"><div class="t"><span>Houle constante…</span><span>⚙ ▾</span></div>
+ <div class="inl"><b>Réglages du déroulé</b><div class="set"><span>Hauteur de l'encart</span><span class="pill">45 %</span></div><div class="set"><span>Échelle de la mer</span><span class="pill">40 %</span></div><div class="set"><span>Marées affichées</span><span class="pill">Soleil</span></div></div>
+ <div class="gr"></div><div class="bar"></div></div><div class="cut"></div></div><div class="lab">encart coupé</div></div>
+ <div class="col"><h2>A · Défilement automatique</h2><p>À l'ouverture, la page défile pour amener le haut de l'encart tout en haut ; réglages dans l'encart, juste sous le titre.</p>
+ <div class="phone"><div class="card"><div class="t"><span>Houle constante…</span><span>⚙ ▾</span></div>
+ <div class="inl"><b>Réglages du déroulé</b><div class="set"><span>Hauteur</span><span class="pill">45 %</span></div><div class="set"><span>Échelle</span><span class="pill">40 %</span></div></div>
+ <div class="gr" style="height:90px"></div><div class="bar"></div></div><div class="card dim">Houle</div></div><div class="lab">peut encore dépasser sur un petit écran</div></div>
+ <div class="col"><h2>B · Panneau en bas, encart en haut</h2><p>L'encart reste en haut, en entier et en direct ; les réglages montent en bas comme un tiroir. Un geste vers le bas ou ✕ ferme.</p>
+ <div class="phone"><div class="card"><div class="t"><span>Houle constante…</span><span>⚙ ▾</span></div>
+ <div class="gr" style="height:100px"></div><div class="bar"></div><div class="t"><span>13:18 · 88</span><span>19:18</span></div></div>
+ <div class="sheet"><h3><span>Réglages du déroulé</span><span>✕</span></h3>
+ <div class="set"><span>Hauteur de l'encart</span><span class="pill">45 %</span></div><div class="set"><span>Échelle de la mer</span><span class="pill">40 %</span></div><div class="set"><span>Hauteur de la marée</span><span class="pill">44</span></div><div class="set"><span>Marées affichées</span><span class="pill">Soleil</span></div></div></div><div class="lab">l'encart en entier + les réglages</div></div>
+</div>
+<p><b>Mon avis : B.</b> C'est le seul qui garantit que l'encart et les réglages tiennent ensemble, sur tous les écrans, et on voit le résultat bouger en direct quand on règle une hauteur. A est plus simple mais ne garantit rien.</p>
+</main></html>
