@@ -23,7 +23,7 @@ internal val FRAGMENT_TRANSLATIONS: Map<String, List<String>> = mapOf(
     "Houle" to listOf("Swell", "Dünung", "Deining", "Oleaje"),
     "La houle" to listOf("The swell", "Die Dünung", "De deining", "El oleaje"),
     "Max. :" to listOf("Max:", "Max.:", "Max.:", "Máx.:"),
-    "Mer mélangée ·" to listOf("Mixed sea ·", "Gemischte See ·", "Gemengde zee ·", "Mar mixto ·"),
+    "Mer mélangée ·" to listOf("Cross swell ·", "Kreuzsee ·", "Kruisende deining ·", "Mar cruzado ·"),
     "Mesuré à" to listOf("Measured at", "Gemessen um", "Gemeten om", "Medido a las"),
     "Mise à jour :" to listOf("Updated:", "Aktualisiert:", "Bijgewerkt:", "Actualizado:"),
     "Modèles partagés :" to listOf("Models disagree:", "Modelle uneinig:", "Modellen verschillen:", "Modelos discrepan:"),
