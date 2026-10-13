@@ -237,3 +237,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Nouveau fichier `docs/CONNAISSANCES_HOULE.md` : notes (résumés) des vidéos envoyées sur la houle, pour la future page « Comprendre la houle, les prévisions, la météo ». Rien n'est codé ; d'autres vidéos suivront.
 
 - Nouveau fichier `docs/COMPRENDRE_HOULE.md` : le contenu des vidéos, synthétisé et simplifié, avec des exemples changés (3 chapitres, 11 leçons). Prêt pour une maquette « Comprendre » dans l'appli ; rien n'est codé.
+
+- Maquette `comprendre-houle` (section « Comprendre » de l'appli : 3 chapitres, 11 leçons, 3 outils à manipuler, 3 portes d'entrée) et `docs/COMPTE_RENDU_APPLI.md` (compte-rendu : comment l'appli fabrique une note, ce qui est corrigé, 10 problèmes, plan). Rien n'est codé ni publié.
