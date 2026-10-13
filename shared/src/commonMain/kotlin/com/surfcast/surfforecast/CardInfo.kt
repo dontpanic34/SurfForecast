@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
@@ -110,7 +111,7 @@ fun CardSettingsSheet(modifier: Modifier = Modifier) {
     }
     val colors = MaterialTheme.colorScheme
     Surface(
-        modifier = modifier.fillMaxWidth().heightIn(max = 300.dp).onSizeChanged { CardGear.sheetHeightDp = with(density) { it.height.toDp().value } },
+        modifier = modifier.fillMaxWidth().heightIn(max = 340.dp).onSizeChanged { CardGear.sheetHeightDp = with(density) { it.height.toDp().value } },
         color = colors.surfaceVariant,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
         shadowElevation = 12.dp
@@ -130,49 +131,74 @@ fun CardSettingsSheet(modifier: Modifier = Modifier) {
     }
 }
 
-/** Les réglages liés à l'encart. */
+/** Une ligne de réglage : le nom (et sa valeur) à gauche, le contrôle à droite, sur une seule ligne. */
+@Composable
+private fun GearLine(label: String, value: String? = null, control: @Composable () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = 12.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(0.38f)) {
+            Text(tr(label), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.onSurface, lineHeight = 15.sp)
+            if (value != null) Text(value, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.primary)
+        }
+        Box(modifier = Modifier.weight(0.62f), contentAlignment = Alignment.CenterEnd) {
+            CompositionLocalProvider(LocalSegmentFontSize provides 12.sp) { control() }
+        }
+    }
+}
+
+@Composable
+private fun GearSlider(label: String, valueText: String, value: Float, range: ClosedFloatingPointRange<Float>, onChange: (Float) -> Unit) {
+    GearLine(label, valueText) {
+        val cs = MaterialTheme.colorScheme
+        Slider(
+            value = value, onValueChange = onChange, valueRange = range,
+            colors = SliderDefaults.colors(thumbColor = cs.primary, activeTrackColor = cs.primary, inactiveTrackColor = cs.outlineVariant)
+        )
+    }
+}
+
+/** Les réglages liés à l'encart : une ligne par réglage, pour tout voir sans défiler. */
 @Composable
 private fun CardGuideSettings(key: String) {
     val c = LocalCardSettings.current
-    when (key) {
-        "swell" -> {
-            SettingsSection("Affichage") {
-                SettingsField("Clapot", top = false) {
+    SettingsSection {
+        when (key) {
+            "swell" -> {
+                GearLine("Clapot") {
                     SettingsSegments(listOf("on" to "Afficher", "off" to "Masquer"), if (SkyGraphSettings.showChop) "on" else "off") { SkyGraphSettings.chooseShowChop(it == "on") }
                 }
             }
-        }
-        "wind" -> if (c != null) {
-            SettingsSection("Affichage") {
-                SettingsField("Unité du vent", top = false) {
+            "wind" -> if (c != null) {
+                GearLine("Unité du vent") {
                     SettingsSegments(listOf("kmh" to "km/h", "knots" to "nœuds", "bft" to "Beaufort"), c.windUnit, c.onWindUnit)
                 }
             }
-        }
-        "week" -> {
-            SettingsSection("Affichage") {
-                var first = true
+            "week" -> {
                 if (c != null) {
-                    SettingsField("Indicateurs du vent", top = false) {
-                        SettingsSegments(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun"), c.weeklyWindMode, c.onWeeklyWindMode)
+                    GearLine("Indicateurs du vent") {
+                        SettingsSegments(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Mixte", "none" to "Aucun"), c.weeklyWindMode, c.onWeeklyWindMode)
                     }
-                    SettingsField("Créneaux par jour") {
+                    SettingsDivider()
+                    GearLine("Créneaux par jour") {
                         SettingsSegments(listOf("1" to "1", "2" to "2", "3" to "3"), c.weeklyDensity.toString()) { c.onWeeklyDensity(it.toInt()) }
                     }
-                    first = false
+                    SettingsDivider()
                 }
-                SettingsSliderField("Hauteur de l'encart", "${SkyGraphSettings.weekPct} %", SkyGraphSettings.weekPct.toFloat(), 25f..70f, top = !first) { SkyGraphSettings.setWeek(it.toInt()) }
-                SettingsSliderField("Échelle de la mer", "${SkyGraphSettings.waterWeekPct} %", SkyGraphSettings.waterWeekPct.toFloat(), 20f..60f) { SkyGraphSettings.setWaterWeek(it.toInt()) }
+                GearSlider("Hauteur de l'encart", "${SkyGraphSettings.weekPct} %", SkyGraphSettings.weekPct.toFloat(), 25f..70f) { SkyGraphSettings.setWeek(it.toInt()) }
+                SettingsDivider()
+                GearSlider("Échelle de la mer", "${SkyGraphSettings.waterWeekPct} %", SkyGraphSettings.waterWeekPct.toFloat(), 20f..60f) { SkyGraphSettings.setWaterWeek(it.toInt()) }
                 SettingsRow("Valeurs par défaut", icon = SettingsIcons.Tune, chevron = false) { SkyGraphSettings.resetWeek() }
             }
-        }
-        "day" -> {
-            SettingsSection("Affichage") {
-                SettingsSliderField("Hauteur de l'encart", "${SkyGraphSettings.dayPct} %", SkyGraphSettings.dayPct.toFloat(), 25f..70f, top = false) { SkyGraphSettings.setDay(it.toInt()) }
-                SettingsSliderField("Échelle de la mer", "${SkyGraphSettings.waterPct} %", SkyGraphSettings.waterPct.toFloat(), 20f..60f) { SkyGraphSettings.setWater(it.toInt()) }
-                SettingsSliderField("Hauteur de la marée", "${SkyGraphSettings.tideDp}", SkyGraphSettings.tideDp.toFloat(), 24f..60f) { SkyGraphSettings.setTide(it.toInt()) }
-                SettingsField("Marées affichées") {
-                    SettingsSegments(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
+            "day" -> {
+                GearSlider("Hauteur de l'encart", "${SkyGraphSettings.dayPct} %", SkyGraphSettings.dayPct.toFloat(), 25f..70f) { SkyGraphSettings.setDay(it.toInt()) }
+                SettingsDivider()
+                GearSlider("Échelle de la mer", "${SkyGraphSettings.waterPct} %", SkyGraphSettings.waterPct.toFloat(), 20f..60f) { SkyGraphSettings.setWater(it.toInt()) }
+                SettingsDivider()
+                GearLine("Marées affichées") {
+                    SettingsSegments(listOf("sun" to "De jour", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
                 }
                 SettingsRow("Valeurs par défaut", icon = SettingsIcons.Tune, chevron = false) { SkyGraphSettings.resetDay() }
             }

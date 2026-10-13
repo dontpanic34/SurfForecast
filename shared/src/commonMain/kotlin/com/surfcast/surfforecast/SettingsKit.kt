@@ -175,9 +175,13 @@ fun SettingsField(title: String, value: String? = null, hint: String? = null, to
     }
 }
 
+/** La taille du texte des choix : plus petite dans les lignes de réglage compactes (tiroir de l'engrenage). */
+val LocalSegmentFontSize = androidx.compose.runtime.compositionLocalOf { 13.sp }
+
 /** Choix entre quelques options sur une seule ligne, l'option choisie cernée. */
 @Composable
 fun SettingsSegments(options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+    val fontSize = LocalSegmentFontSize.current
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.background)
@@ -193,7 +197,7 @@ fun SettingsSegments(options: List<Pair<String, String>>, selected: String, onSe
                     .clickable { onSelect(key) }.padding(horizontal = 4.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(tr(label), fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
+                Text(tr(label), fontSize = fontSize, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
                     color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant)
             }
         }
