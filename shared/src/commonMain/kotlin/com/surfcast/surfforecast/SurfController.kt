@@ -196,6 +196,7 @@ class SurfController(
         SkyGraphSettings.load(prefs.getInt("graph_week_pct", SkyGraphSettings.DEFAULT_WEEK), prefs.getInt("graph_day_pct", SkyGraphSettings.DEFAULT_DAY), prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER), prefs.getInt("graph_water_week_pct", prefs.getInt("graph_water_pct", SkyGraphSettings.DEFAULT_WATER)))
         SkyGraphSettings.loadTideAll(prefs.getInt("graph_tide_all", 0) == 1)
         SkyGraphSettings.loadTide(prefs.getInt("graph_tide_dp", SkyGraphSettings.DEFAULT_TIDE))
+        SkyGraphSettings.loadShowChop(prefs.getInt("show_chop", 1) == 1)
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
     }
     // Mouvement d'accroche de l'en-tête des spots : joué une seule fois.
@@ -245,9 +246,6 @@ class SurfController(
     var showHourlyCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    var showWindSeaCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
-        private set
-
     var cardsOrder = mutableStateListOf(*DEFAULT_CARDS_ORDER.toTypedArray())
         private set
 
@@ -283,7 +281,7 @@ class SurfController(
             cardsOrder.clear()
             val sanitized = savedOrder.split(",")
                 .map { it.trim() }
-                .filter { it.isNotEmpty() }
+                .filter { it.isNotEmpty() && it in DEFAULT_CARDS_ORDER } // l'ancien encart « windSea » disparaît
             val merged = sanitized + DEFAULT_CARDS_ORDER.filter { it !in sanitized }
             cardsOrder.addAll(merged.ifEmpty { DEFAULT_CARDS_ORDER })
             // Une fois : « Heure par heure » passe en dernier (il n'y a plus de poignée pour le déplacer à la main).
@@ -295,7 +293,7 @@ class SurfController(
         }
 
         // Première utilisation : seuls la semaine et le déroulé de la journée sont ouverts ;
-        // houle, vent, mer de vent, météo et heure par heure sont repliés (chaque réglage
+        // houle, vent, météo et heure par heure sont repliés (chaque réglage
         // ensuite mémorisé).
         val savedCollapsed = prefs.getString("collapsed_cards", null) ?: DEFAULT_COLLAPSED_CARDS
         collapsedCards.clear()
@@ -306,7 +304,6 @@ class SurfController(
                 when (key) {
                     "surf" -> toggleSurfCard(false)
                     "wind" -> toggleWindCard(false)
-                    "windSea" -> toggleWindSeaCard(false)
                     "weather" -> toggleWeatherCard(false)
                     "hourly" -> toggleHourlyCard(false)
                 }
@@ -687,11 +684,6 @@ class SurfController(
         prefs.putBoolean("show_weather_card", show)
     }
 
-    fun toggleWindSeaCard(show: Boolean) {
-        showWindSeaCard = show
-        prefs.putBoolean("show_wind_sea_card", show)
-    }
-
     fun toggleHourlyCard(show: Boolean) {
         showHourlyCard = show
         prefs.putBoolean("show_hourly_card", show)
@@ -835,7 +827,7 @@ class SurfController(
 
     companion object {
         private const val RESUME_REFRESH_AFTER_MINUTES = 15
-        const val DEFAULT_COLLAPSED_CARDS = "surf,wind,windSea,weather,hourly"
-        val DEFAULT_CARDS_ORDER = listOf("weekly", "dailyTimeline", "surf", "wind", "windSea", "weather", "hourly")
+        const val DEFAULT_COLLAPSED_CARDS = "surf,wind,weather,hourly"
+        val DEFAULT_CARDS_ORDER = listOf("weekly", "dailyTimeline", "surf", "wind", "weather", "hourly")
     }
 }

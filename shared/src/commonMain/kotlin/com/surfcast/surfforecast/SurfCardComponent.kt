@@ -4,6 +4,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -87,7 +88,8 @@ fun SurfCardComponent(
             Spacer(modifier = Modifier.height(2.dp))
             SwellLine(
                 height = selectedHour.waveHeight, period = selectedHour.wavePeriod, energyKj = selectedHour.energyKj,
-                direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false, beachFacing = beachFacing
+                direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false, beachFacing = beachFacing,
+                chopHeight = if (SkyGraphSettings.showChop) selectedHour.windWaveHeight else 0.0
             )
             if (selectedHour.secondaryHeight >= 0.2 && selectedHour.secondaryPeriod >= 7.0) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -194,7 +196,7 @@ fun SurfCardComponent(
 @Composable
 private fun SwellLine(
     height: Double, period: Double, energyKj: Int, direction: Float,
-    onSurfaceColor: Color, primaryColor: Color, secondary: Boolean, beachFacing: Int?
+    onSurfaceColor: Color, primaryColor: Color, secondary: Boolean, beachFacing: Int?, chopHeight: Double = 0.0
 ) {
     val fade = if (secondary) 0.6f else 1f
     val big = if (secondary) 14.sp else 18.sp
@@ -208,12 +210,33 @@ private fun SwellLine(
             Text("${formatDecimal(height, 1)}m", fontSize = big, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
             Text("${period.roundToInt()}s", fontSize = mid, fontWeight = FontWeight.SemiBold, color = primaryColor.copy(alpha = fade))
         }
+        Column(horizontalAlignment = Alignment.End) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Text("$cardinal $deg°", fontSize = small, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = fade))
             NavArrow(Color(0xFF29B6F6).copy(alpha = fade), rotation, ((if (secondary) 11f else 13f) * swellArrowScale(direction, beachFacing)).dp)
             Text("$energyKj kJ", fontSize = small, fontWeight = FontWeight.Bold, color = Color(0xFF8F6300).copy(alpha = fade))
         }
+        if (chopHeight >= CHOP_PILL_MIN) {
+            Text(
+                "Clapot ${formatDecimal(chopHeight, 1).replace('.', ',')} m", fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                color = chopColor(chopHeight),
+                modifier = Modifier.padding(top = 3.dp)
+                    .border(1.dp, onSurfaceColor.copy(alpha = 0.25f), RoundedCornerShape(50))
+                    .padding(horizontal = 9.dp, vertical = 2.dp)
+            )
+        }
+        }
     }
+}
+
+/** Sous ce seuil (m), la mer est lisse : pas de pastille. */
+internal const val CHOP_PILL_MIN = 0.1
+
+/** Vert quand le clapot est faible, jaune puis rouge quand il gêne (mêmes repères que la note : 0,3 m). */
+internal fun chopColor(h: Double): Color = when {
+    h < 0.3 -> Color(0xFF34C98A)
+    h < 0.6 -> Color(0xFFF2B84B)
+    else -> Color(0xFFEF6A62)
 }
 
 

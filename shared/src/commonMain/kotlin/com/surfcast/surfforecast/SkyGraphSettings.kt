@@ -30,6 +30,10 @@ object SkyGraphSettings {
     var tideAll by mutableStateOf(false)
         private set
 
+    /** Pastille « Clapot » dans l'encart Houle (réglage de l'engrenage de l'encart). */
+    var showChop by mutableStateOf(true)
+        private set
+
     var tideDp by mutableIntStateOf(DEFAULT_TIDE)
         private set
 
@@ -44,6 +48,8 @@ object SkyGraphSettings {
     }
 
     fun loadTide(dp: Int) { tideDp = dp.coerceIn(24, 60) }
+    fun loadShowChop(v: Boolean) { showChop = v }
+    fun chooseShowChop(v: Boolean) { showChop = v; persist("show_chop", if (v) 1 else 0) }
     fun loadTideAll(v: Boolean) { tideAll = v }
     fun chooseTideAll(v: Boolean) { tideAll = v; persist("graph_tide_all", if (v) 1 else 0) }
     fun setTide(dp: Int) { tideDp = dp.coerceIn(24, 60); persist("graph_tide_dp", tideDp) }

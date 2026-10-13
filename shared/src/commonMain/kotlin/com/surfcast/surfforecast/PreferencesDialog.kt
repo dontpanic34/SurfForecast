@@ -50,8 +50,6 @@ fun SurfPreferencesDialog(
     onToggleSurfCard: (Boolean) -> Unit,
     showWindCard: Boolean,
     onToggleWindCard: (Boolean) -> Unit,
-    showWindSeaCard: Boolean,
-    onToggleWindSeaCard: (Boolean) -> Unit,
     showWeatherCard: Boolean,
     onToggleWeatherCard: (Boolean) -> Unit,
     showHourlyCard: Boolean,

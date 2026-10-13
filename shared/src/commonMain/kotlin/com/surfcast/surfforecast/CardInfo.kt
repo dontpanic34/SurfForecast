@@ -63,6 +63,7 @@ val CARD_HELP: Map<String, List<CardHelp>> = mapOf(
     "swell" to listOf(
         CardHelp("Taille et période", "Hauteur de la houle principale en mètres et période en secondes. Plus la période est longue, plus la houle a de la puissance."),
         CardHelp("L'énergie en kJ", "Elle combine hauteur et période : deux houles de même hauteur n'ont pas la même force."),
+        CardHelp("Le clapot", "Les petites vagues que le vent fabrique sur place, par-dessus la houle : seule leur taille est indiquée, sous la direction de la houle. Beaucoup de clapot, la vague est moins propre. Il se masque dans les réglages de l'encart."),
         CardHelp("Houle secondaire", "Affichée dès 0,2 m et 7 s. Elle vient d'une autre direction et peut brouiller la houle principale.")
     ),
     "wind" to listOf(
@@ -72,10 +73,6 @@ val CARD_HELP: Map<String, List<CardHelp>> = mapOf(
     "weather" to listOf(
         CardHelp("D'où vient la météo", "Open-Meteo : ciel, température ressentie, pluie en mm, UV, nuages. Température de l'eau : modèle marin."),
         CardHelp("Température ressentie", "Elle tient compte du vent : plus fraîche qu'au thermomètre quand il souffle.")
-    ),
-    "windsea" to listOf(
-        CardHelp("Le clapot", "Les petites vagues que le vent fabrique sur place, par-dessus la houle. Beaucoup de clapot, la vague est moins propre."),
-        CardHelp("La flèche", "Direction du clapot ; grande s'il arrive bien face à la plage.")
     ),
     "hourly" to listOf(
         CardHelp("Heure par heure", "Une ligne par heure : houle, vent, météo. Touches-en une : tous les encarts suivent.")
@@ -102,7 +99,7 @@ fun CardInfoButton(guideKey: String) {
 
 private val CARD_TITLES = mapOf(
     "week" to "de la semaine", "day" to "du déroulé de la journée", "swell" to "de la houle", "wind" to "du vent",
-    "weather" to "de la météo", "windsea" to "du vent et de la mer", "hourly" to "de l'heure par heure"
+    "weather" to "de la météo", "hourly" to "de l'heure par heure"
 )
 
 /** Le panneau de réglages de l'encart, à placer sous son titre. N'affiche rien si l'engrenage n'est pas ouvert. */
@@ -144,6 +141,13 @@ fun CardSettingsPanel(key: String) {
 private fun CardGuideSettings(key: String) {
     val c = LocalCardSettings.current
     when (key) {
+        "swell" -> {
+            SettingsSection("Affichage") {
+                SettingsField("Clapot", top = false) {
+                    SettingsSegments(listOf("on" to "Afficher", "off" to "Masquer"), if (SkyGraphSettings.showChop) "on" else "off") { SkyGraphSettings.chooseShowChop(it == "on") }
+                }
+            }
+        }
         "wind" -> if (c != null) {
             SettingsSection("Affichage") {
                 SettingsField("Unité du vent", top = false) {
