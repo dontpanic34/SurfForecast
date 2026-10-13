@@ -11,6 +11,7 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 13 octobre 2026
+- **Marées : panne d'api-maree.fr** (état : branche, publication sur `web` en attente de « go ») : le service répondait 502 depuis la mi-journée, donc plus de marées après l'expiration du cache de 12 h. Le relais garde maintenant une copie de secours de 7 jours et la sert quand le service est en panne (solution 1 choisie ; marées estimées en secours non retenues).
 - **Maquette** `clapot-houle-v2.html` : décisions du propriétaire (option ⚙ pour afficher ou non le clapot, taille seule, pastille) ; 2 emplacements proposés : sous la houle secondaire, ou près de la direction de la houle. En attente de choix, pas de code.
 - **En ligne** (13 octobre, vérifié) : marée en flèches, onglet Comprendre, bouée dans Actuellement. Constructions vertes (web `739772b`, run 327 ; unified `88c8b16`, run 328) ; `surflog.fr/version.json` indique 1.0.327.
 - **Maquette** `clapot-houle.html` : 4 propositions pour fusionner le clapot dans la carte Houle et supprimer l'encart « Mer de vent » (A ligne discrète, B pastille, C barres, D un mot). En attente de choix, pas de code.
