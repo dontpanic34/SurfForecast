@@ -367,7 +367,7 @@ class SurfRepository(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {   // sur le web, un échec réseau est une kotlin.Error, pas une Exception
             null
         }
     }
@@ -395,7 +395,7 @@ class SurfRepository(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {   // sur le web, un échec réseau est une kotlin.Error, pas une Exception
             null
         }
     }
