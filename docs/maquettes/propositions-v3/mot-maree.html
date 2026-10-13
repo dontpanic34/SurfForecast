@@ -1,0 +1,42 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mot « Marée » sur la courbe</title>
+<style>
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--sea:#4a9cc4;--up:#4a9cc4;--down:#4fc38a;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--sea:#2a86b0;--up:#2a86b0;--down:#2f9a68;color-scheme:light}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding:18px 16px}
+main{max-width:440px;margin:auto}h1{font-size:19px}h2{font-size:15px;margin:22px 0 4px}p{color:var(--mut);margin:4px 0 8px;font-size:13.5px}
+.card{background:var(--card);border-radius:12px;padding:10px 10px 8px}
+svg{width:100%;height:auto;display:block}.t{font:11px system-ui;fill:var(--mut)}.w{font:700 10.5px system-ui;fill:var(--fg);opacity:.5;letter-spacing:.3px}.wl{font:700 11px system-ui;fill:var(--up)}
+.h{font:11px system-ui;fill:var(--fg)}
+</style><main>
+<h1>Le mot « Marée » sur la courbe</h1>
+<p>Même courbe que dans le déroulé de la journée : horaires sous le trait, flèche posée sur le trait. Trois façons d'ajouter le mot sans alourdir.</p>
+
+<h2>A · Mot discret dans le plus grand vide (dynamique)</h2>
+<p>Petit, en gris, 50 % d'opacité. L'appli cherche le plus long espace libre entre les horaires et les flèches et y pose le mot, au-dessus du trait. Le mot glisse si les marées changent de place d'un jour à l'autre.</p>
+<div class="card"><svg viewBox="0 0 400 110">
+<path d="M0 70 C40 70 50 25 100 25 S160 85 215 85 S280 25 335 25 S380 60 400 70" fill="none" stroke="var(--sea)" stroke-width="2.2"/>
+<circle cx="100" cy="25" r="3.5" fill="var(--up)"/><circle cx="215" cy="85" r="3.5" fill="var(--down)"/><circle cx="335" cy="25" r="3.5" fill="var(--up)"/>
+<text class="w" x="132" y="48">MARÉE</text>
+<text class="t" x="72" y="104">≈7:11 · 88</text><text class="t" x="188" y="104">13:18</text><text class="t" x="302" y="104">19:28 · 90</text></svg></div>
+
+<h2>B · Le mot suit l'heure choisie : « Marée montante »</h2>
+<p>Le mot se pose à côté du point blanc de l'heure choisie et dit ce qui se passe à cet heure-là : « Marée montante », « Marée descendante », « Pleine mer », « Basse mer ». Pas de place fixe, l'info change quand on glisse la ligne de temps.</p>
+<div class="card"><svg viewBox="0 0 400 110">
+<path d="M0 70 C40 70 50 25 100 25 S160 85 215 85 S280 25 335 25 S380 60 400 70" fill="none" stroke="var(--sea)" stroke-width="2.2"/>
+<circle cx="100" cy="25" r="3.5" fill="var(--up)"/><circle cx="215" cy="85" r="3.5" fill="var(--down)"/><circle cx="335" cy="25" r="3.5" fill="var(--up)"/>
+<circle cx="268" cy="54" r="4" fill="#fff" stroke="#000" stroke-opacity=".4"/>
+<text class="wl" x="156" y="46">▲ Marée montante</text>
+<text class="t" x="72" y="104">≈7:11 · 88</text><text class="t" x="188" y="104">13:18</text><text class="t" x="302" y="104">19:28 · 90</text></svg></div>
+
+<h2>C · Mot collé à gauche, tout petit</h2>
+<p>Étiquette fixe en haut à gauche, comme le titre des autres cartes. Le plus simple, mais il peut chevaucher une pleine mer qui tombe tôt.</p>
+<div class="card"><svg viewBox="0 0 400 110">
+<text class="w" x="2" y="12">MARÉE</text>
+<path d="M0 70 C40 70 50 25 100 25 S160 85 215 85 S280 25 335 25 S380 60 400 70" fill="none" stroke="var(--sea)" stroke-width="2.2"/>
+<circle cx="100" cy="25" r="3.5" fill="var(--up)"/><circle cx="215" cy="85" r="3.5" fill="var(--down)"/><circle cx="335" cy="25" r="3.5" fill="var(--up)"/>
+<text class="t" x="72" y="104">≈7:11 · 88</text><text class="t" x="188" y="104">13:18</text><text class="t" x="302" y="104">19:28 · 90</text></svg></div>
+
+<h2>Ma recommandation</h2>
+<p><b>B</b> : le mot apporte une info (monte ou descend à l'heure choisie) au lieu de n'être qu'une étiquette, et il ne prend de place que là où l'œil est déjà. <b>A</b> comme repli quand aucune heure n'est choisie (mot discret dans le vide). Traduit : Marée / Tide / Gezeiten / Getij / Marea.</p>
+</main></html>
