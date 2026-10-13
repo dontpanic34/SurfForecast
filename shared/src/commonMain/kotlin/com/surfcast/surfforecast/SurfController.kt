@@ -223,6 +223,7 @@ class SurfController(
             prefs.getString("gear_grid", "") ?: "", prefs.getString("gear_since", "") ?: "", prefs.getString("gear_frequency", "") ?: "",
             prefs.getString("gear_season", "") ?: "", prefs.getString("gear_board_day", "both") ?: "both"
         )
+        GearPrefs.loadMainFamily(prefs.getString("gear_main_family", "") ?: "")
         GearPrefs.persist = { k, v -> prefs.putString(k, v) }
     }
     var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))

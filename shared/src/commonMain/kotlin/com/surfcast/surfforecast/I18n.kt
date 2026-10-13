@@ -146,6 +146,9 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Descendante" to t("Falling", "Fallend", "Afgaand", "Bajando"),
     "montante" to t("rising", "steigend", "opkomend", "subiendo"),
     "descendante" to t("falling", "fallend", "afgaand", "bajando"),
+    "Touche une ligne pour l'afficher en haut." to t("Tap a line to show it at the top.", "Tippe auf eine Zeile, um sie oben anzuzeigen.", "Tik op een regel om hem bovenaan te tonen.", "Toca una línea para mostrarla arriba."),
+    "Principale" to t("Main", "Hauptbrett", "Hoofdboard", "Principal"),
+    "★ Principale" to t("★ Main", "★ Hauptbrett", "★ Hoofdboard", "★ Principal"),
     // Divers
     "Aujourd'hui" to t("Today", "Heute", "Vandaag", "Hoy"),
     "Demain" to t("Tomorrow", "Morgen", "Morgen", "Mañana"),
