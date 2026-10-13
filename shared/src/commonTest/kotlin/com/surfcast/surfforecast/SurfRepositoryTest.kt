@@ -96,6 +96,26 @@ class SurfRepositoryTest {
     }
 
     @Test
+    fun consensusKeepsTheSecondarySwellOfTheFineModel() = runTest {
+        val engine = MockEngine { request ->
+            val model = request.url.parameters["models"]
+            if (model == "meteofrance_arome_france_hd") return@MockEngine respondError(HttpStatusCode.InternalServerError)
+            val sec = if (model == "meteofrance_wave") ""","secondary_swell_wave_height":[0.6],"secondary_swell_wave_period":[12.0],"secondary_swell_wave_direction":[200.0]""" else ""
+            val body = when {
+                request.url.host == "marine-api.open-meteo.com" ->
+                    """{"hourly":{"time":["2026-01-01T10:00"],"wave_height":[1.4],"wave_period":[10.0],"wave_direction":[280.0],"swell_wave_height":[1.4],"swell_wave_period":[10.0],"swell_wave_peak_period":[10.0]$sec}}"""
+                model == "meteofrance_arome_france" -> shortWeather
+                else -> longWeather
+            }
+            respondJson(body)
+        }
+        val h = repository(engine).getHybridForecast(45.38, -1.16, ForecastEngineConfig(), today).hourly[0]
+        assertEquals(0.6, h.secondaryHeight, 1e-9)
+        assertEquals(12.0, h.secondaryPeriod, 1e-9)
+        assertEquals(200f, h.secondaryDirection)
+    }
+
+    @Test
     fun buoyReadingComesFromTheRelayAndTheNearestReferenceBuoy() = runTest {
         val engine = MockEngine { request ->
             assertEquals("surflog.fr", request.url.host)

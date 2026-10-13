@@ -385,8 +385,8 @@ private fun DailyTimelineBody(
                 if (tideCurve.size >= 2) {
                     val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
-                    Canvas(modifier = Modifier.fillMaxWidth().height(SkyGraphSettings.tideDp.dp)) {
-                        val yLine = size.height * 0.28f
+                    Canvas(modifier = Modifier.fillMaxWidth().height(maxOf(SkyGraphSettings.tideDp, 36).dp)) {
+                        val yLine = maxOf(size.height * 0.28f, 11.dp.toPx())
                         val rising = Color(0xFF4A9BF0)
                         val falling = Color(0xFF38C976)
                         // Le trait est vert quand la marée descend, bleu quand elle monte (la prochaine marée est haute = elle monte).
@@ -405,7 +405,16 @@ private fun DailyTimelineBody(
                         val labels = ArrayList<Pair<Float, String>>()
                         for (m in tideMarks) {
                             val cx = xOf(m.hour)
-                            drawCircle(if (m.high) falling else rising, radius = 4.dp.toPx(), center = Offset(cx, yLine))
+                            // Une flèche posée sur le trait : vers le haut, au-dessus, si la marée monte (après une basse) ; vers le bas, en dessous, si elle descend (après une haute).
+                            val up = !m.high
+                            val arrow = Path().apply {
+                                val half = 4.5.dp.toPx(); val tip = 8.dp.toPx()
+                                moveTo(cx - half, yLine)
+                                lineTo(cx + half, yLine)
+                                lineTo(cx, if (up) yLine - tip else yLine + tip)
+                                close()
+                            }
+                            drawPath(arrow, if (up) rising else falling)
                             val hh = m.hour.toInt()
                             val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
                             val txt = hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · $it" } ?: "")
@@ -429,7 +438,7 @@ private fun DailyTimelineBody(
                             if (i > 0 && lefts[i - 1] + widths[i - 1] + gap > lefts[i]) lefts[i - 1] = lefts[i] - widths[i - 1] - gap
                         }
                         for (i in labels.indices) {
-                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + 17.dp.toPx())
+                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + 22.dp.toPx())
                         }
                     }
                 }
