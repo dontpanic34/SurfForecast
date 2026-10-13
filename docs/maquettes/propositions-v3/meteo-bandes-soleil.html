@@ -50,7 +50,7 @@ function render(){rainOn(mode==='rain');var d=D[sel],anyRain=D.some(function(x){
  var g=bandRow('Ciel',function(i){return D[i].r>0?cell(i,'var(--rain)',(0.45+Math.min(D[i].r,1)*.55).toFixed(2)):cell(i,'var(--cloud)',(D[i].cl/100*.85).toFixed(2))},d.r?d.r+' mm':d.cl+' %');
  g+=bandRow('Soleil',sunCell,'UV '+d.uv,'','tall');
  g+=hours();
- document.getElementById('out').innerHTML='<div class="card"><div class="hd"><span>Météo</span><span>⚙ ▾</span></div><div class="row"><div class="big">'+emoji(d)+' '+d.t+'°C <span style="font-size:15px;color:var(--mut);font-weight:600">· eau 19°</span></div></div><div class="g">'+g+'</div><div class="row"><span class="sm mut">11 h 05 de jour</span><span class="lnk">Détail sur la semaine ›</span></div></div>'}
+ document.getElementById('out').innerHTML='<div class="card"><div class="hd"><span>Météo</span><span style="display:flex;gap:14px;align-items:center"><span class="lnk">Semaine ›</span><span>⚙ ▾</span></span></div><div class="row"><div class="big">'+emoji(d)+' '+d.t+'°C <span style="font-size:15px;color:var(--mut);font-weight:600">· eau 19°</span></div><span class="sm mut" style="text-align:right;line-height:1.2">☀ 11 h 05<br>de jour</span></div><div class="g">'+g+'</div></div>'}
 function hourAt(el,x){var r=el.getBoundingClientRect();return Math.max(0,Math.min(23,Math.floor((x-r.left)/r.width*24)))}
 var drag=false;
 document.addEventListener('pointerdown',function(e){var b=e.target.closest('[data-b]');if(!b)return;drag=true;sel=hourAt(b,e.clientX);render()});
