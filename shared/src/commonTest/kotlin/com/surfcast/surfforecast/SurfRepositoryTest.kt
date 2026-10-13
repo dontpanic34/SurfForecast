@@ -422,7 +422,19 @@ class SurfRepositoryTest {
         val day = tides.dailyByDate.getValue(today)
         assertTrue(day.estimated)
         assertTrue(day.highTideTime != null && day.lowTideTime != null)
-        assertEquals(null, day.coefficient)   // pas de coefficient inventé
+        // Le coefficient est estimé à partir du marnage de Brest (ici la même hauteur d'eau simulée : 2,4 m de marnage, soit environ 39).
+        assertTrue(day.coefficient in 35..43, "coef : ${day.coefficient}")
+    }
+
+    @Test
+    fun brestCoefficientIsTheRangeOverSixPointOneMetres() {
+        // Marée simulée : demi-marnage 3,05 m (marnage 6,1 m) donc coefficient 100 ; marnage divisé par deux : coefficient 50.
+        fun series(amplitude: Double) = (0 until 72).map { i -> amplitude * kotlin.math.cos(2 * kotlin.math.PI * (i - 3.0) / 12.42) }
+        val times = (0 until 72).map { LocalDateTime(2026, 1, 1 + it / 24, it % 24, 0) }
+        val big = brestCoefDays(times, series(3.05)).flatMap { it.extrema.orEmpty() }.mapNotNull { it.coef }
+        val small = brestCoefDays(times, series(1.525)).flatMap { it.extrema.orEmpty() }.mapNotNull { it.coef }
+        assertTrue(big.isNotEmpty() && big.all { it in 97..103 }, "coefs : $big")
+        assertTrue(small.isNotEmpty() && small.all { it in 48..52 }, "coefs : $small")
     }
 
     @Test
