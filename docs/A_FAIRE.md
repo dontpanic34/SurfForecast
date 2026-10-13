@@ -13,6 +13,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
+- **Finir la traduction (EN, DE, NL, ES)** : première tranche faite (voir journal). Reste : jours et mois selon la langue, phrases du jour, textes de verdict, leçons de Comprendre, questionnaire de niveau, journal, pages Sources et Matériel, unités et décimales. Ajouter les entrées dans `I18n.kt`.
 - **Coefficient estimé** : comparer, quand api-maree.fr revient, le coefficient calculé (marnage de Brest d'Open-Meteo ÷ 6,1 m) aux vrais coefficients sur une quinzaine de jours, et ajouter un facteur de correction si l'écart est systématique. Prévoir de garder une copie quotidienne des marées dans la branche `data` pour ne plus dépendre du service.
 - **Ligne « Mesuré » dans Actuellement** (à reprendre quand le propriétaire sera concentré dessus) : tout est codé sur la branche (relais `functions/api/obs`, `ObservedNow`, ligne sous la bouée) mais **pas publié**. Pour la mettre en ligne : ajouter la variable secrète `METEOFRANCE_API_KEY` dans le projet Cloudflare Pages (Settings, Variables and Secrets), puis le « go ».
 - **Corriger le prévu avec le réel** (idée du 13 octobre) : décaler les 3 à 6 prochaines heures vers la mesure de la station ; à maquetter avant de coder.

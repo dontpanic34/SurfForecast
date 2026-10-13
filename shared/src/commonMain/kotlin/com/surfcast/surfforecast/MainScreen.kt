@@ -1367,17 +1367,17 @@ private fun BottomNavBar(
                         )
                     }
                 }
-                Item("Prévisions", true, onForecast) { WaveIcon(color = waterTempColor(), modifier = Modifier.size(20.dp)) }
-                Item("Webcam", false, onWebcam) {
+                Item(tr("Prévisions"), true, onForecast) { WaveIcon(color = waterTempColor(), modifier = Modifier.size(20.dp)) }
+                Item(tr("Webcam"), false, onWebcam) {
                     WebcamIcon(tint = if (hasWebcam) AppColors.WindMid else colors.onSurface.copy(alpha = 0.35f), size = 20.dp)
                 }
-                Item("Journal", false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
+                Item(tr("Journal"), false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
                 }
-                Item("Comprendre", false, { ComprendreState.open() }) {
+                Item(tr("Comprendre"), false, { ComprendreState.open() }) {
                     SettingsIcon(SettingsIcons.Book, colors.onSurface, 20.dp)
                 }
-                Item("Réglages", false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
+                Item(tr("Réglages"), false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
                 }
             }

@@ -563,11 +563,12 @@ class SurfController(
     }
 
     // Langue de l'appli (voir APP_LANGUAGES ; seul le français est traduit pour l'instant ; les autres langues viendront).
-    var language by mutableStateOf(prefs.getString("app_language", null) ?: defaultAppLanguage())
+    var language by mutableStateOf((prefs.getString("app_language", null) ?: defaultAppLanguage()).also { I18n.language = it })
         private set
 
     fun changeLanguage(code: String) {
         language = code
+        I18n.language = code
         prefs.putString("app_language", code)
     }
 
