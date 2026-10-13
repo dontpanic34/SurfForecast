@@ -149,6 +149,11 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Touche une ligne pour l'afficher en haut." to t("Tap a line to show it at the top.", "Tippe auf eine Zeile, um sie oben anzuzeigen.", "Tik op een regel om hem bovenaan te tonen.", "Toca una línea para mostrarla arriba."),
     "Principale" to t("Main", "Hauptbrett", "Hoofdboard", "Principal"),
     "★ Principale" to t("★ Main", "★ Hauptbrett", "★ Hoofdboard", "★ Principal"),
+    "Mettre en favori" to t("Add to favorites", "Zu Favoriten hinzufügen", "Toevoegen aan favorieten", "Añadir a favoritos"),
+    "Favori" to t("Favorite", "Favorit", "Favoriet", "Favorito"),
+    "place libre" to t("free slot", "freier Platz", "vrije plek", "lugar libre"),
+    "Choisir un spot" to t("Choose a spot", "Spot wählen", "Kies een spot", "Elegir un spot"),
+    "Les leçons pour lire les prévisions" to t("Lessons to read the forecast", "Lektionen zum Lesen der Vorhersage", "Lessen om de voorspelling te lezen", "Lecciones para leer la previsión"),
     // Divers
     "Aujourd'hui" to t("Today", "Heute", "Vandaag", "Hoy"),
     "Demain" to t("Tomorrow", "Morgen", "Morgen", "Mañana"),

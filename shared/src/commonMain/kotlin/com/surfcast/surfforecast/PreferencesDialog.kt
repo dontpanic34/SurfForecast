@@ -341,7 +341,8 @@ fun SurfPreferencesDialog(
                             }
                         }
                         SettingsSection("Aide") {
-                            SettingsRow("Aide et langue", "Visite guidée et langue", SettingsIcons.Globe, top = false) { page = "help" }
+                            SettingsRow("Comprendre", "Les leçons pour lire les prévisions", SettingsIcons.Book, top = false) { onDismiss(); ComprendreState.open() }
+                            SettingsRow("Aide et langue", "Visite guidée et langue", SettingsIcons.Globe) { page = "help" }
                         }
                         if (!appVersion.isNullOrEmpty()) {
                             Text(

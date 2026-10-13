@@ -110,7 +110,7 @@ fun CardSettingsSheet(modifier: Modifier = Modifier) {
     }
     val colors = MaterialTheme.colorScheme
     Surface(
-        modifier = modifier.fillMaxWidth().heightIn(max = 250.dp).onSizeChanged { CardGear.sheetHeightDp = with(density) { it.height.toDp().value } },
+        modifier = modifier.fillMaxWidth().heightIn(max = 300.dp).onSizeChanged { CardGear.sheetHeightDp = with(density) { it.height.toDp().value } },
         color = colors.surfaceVariant,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
         shadowElevation = 12.dp
