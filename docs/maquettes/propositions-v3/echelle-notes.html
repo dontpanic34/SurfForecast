@@ -1,0 +1,61 @@
+<title>Échelle des notes</title>
+<style>
+/* Mise en page : une jauge de 0 à 100 avec cinq poignées à faire glisser (les limites entre niveaux), la zone de tendance réglable, puis des heures d'exemple dont le libellé se recalcule en direct. Fond sombre de l'appli. */
+:root{--bg:#0b1519;--card:#14262f;--tile:#1b333d;--fg:#ecf0f1;--mut:#90a4ae;--link:#7fc3e6;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;font-size:14px;line-height:1.4;padding:20px 16px}
+main{max-width:470px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+h1{font-size:1.25rem;margin:0}h2{font-size:1rem;margin:12px 0 0;color:var(--link)}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12px}
+.card{background:var(--card);border-radius:12px;padding:12px}
+.gauge{position:relative;height:46px;margin:14px 10px 30px;touch-action:none}
+.bar{position:absolute;left:0;right:0;top:12px;height:22px;border-radius:11px;overflow:hidden;display:flex}
+.seg{height:100%}
+.h{position:absolute;top:2px;width:30px;margin-left:-15px;height:42px;cursor:ew-resize;display:flex;flex-direction:column;align-items:center;touch-action:none}
+.h b{background:var(--fg);color:#061018;border-radius:8px;padding:0 5px;font-size:12px;line-height:16px;font-weight:800}
+.h i{width:4px;flex:1;background:var(--fg);border-radius:2px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px}.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;background:var(--c)}
+.row{display:flex;align-items:center;gap:8px;margin-top:6px}input[type=range]{flex:1;accent-color:#5aa6cc}
+button{border:0;background:var(--tile);color:var(--fg);border-radius:99px;padding:6px 12px;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+.ex{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #243846}.ex:first-child{border-top:0}
+.ex .t{flex:1}.ex .s{font-size:12px;color:var(--mut)}.ex .l{font-weight:800;font-size:15px;text-align:right}
+</style>
+<main>
+<h1>Échelle des notes</h1>
+<p class="mut sm">Fais glisser les poignées blanches : chacune est la limite entre deux niveaux. Les heures d'exemple en dessous changent de libellé en direct. Les notes des exemples sont inventées, pour voir l'effet.</p>
+<div class="card">
+<div class="gauge" id="g"><div class="bar" id="bar"></div></div>
+<div class="legend" id="leg"></div>
+<div class="row"><span class="sm">Zone de tendance ± <b id="tv"></b> pts</span><input id="tr" type="range" min="0" max="8" value="4"></div>
+<div class="row"><button id="cur">Échelle actuelle</button><button id="str">Plus stricte en haut</button><button id="wid">Plus large</button></div>
+</div>
+<h2>Heures d'exemple</h2>
+<div class="card" id="ex"></div>
+<p class="sm mut">La tendance suit l'heure d'avant : si la note baisse, le libellé va du plus haut au plus bas (« Bon à Correct »).</p>
+</main>
+<script>
+var NAMES=['Mauvais','Médiocre','Correct','Bon','Très bon','Parfait'];
+var COL=['#9b1c31','#e53935','#ffd21f','#1a9c82','#2bd47a','#0f8a52'];
+var B=[20,40,55,70,90];
+var EX=[['Houle 1,2 m, SO 11 km/h, onshore',[66,69,53,50]],['Houle 1,5 m, offshore léger',[82,88,93,91]],['Houle 1,5 m, glassy',[91,96,97,94]],['Petit 0,6 m, propre',[58,60,62,63]],['Houle 1,4 m, onshore modéré',[44,41,36,30]],['Houle 1,8 m, offshore soutenu',[74,79,86,84]]];
+var T=4;
+function band(s){var i=0;while(i<5&&s>=B[i])i++;return i}
+function label(s,prev){var i=band(s),k=-1;for(var j=0;j<5;j++)if(Math.abs(s-B[j])<=T)k=j;
+ if(k<0)return NAMES[i];var f=prev!=null&&prev>s;return f?NAMES[k+1]+' à '+NAMES[k]:NAMES[k]+' à '+NAMES[k+1]}
+function draw(){
+ var bar=document.getElementById('bar'),lim=[0].concat(B,[100]),h='';
+ for(var i=0;i<6;i++)h+='<div class="seg" style="width:'+(lim[i+1]-lim[i])+'%;background:'+COL[i]+'"></div>';bar.innerHTML=h;
+ var g=document.getElementById('g');g.querySelectorAll('.h').forEach(function(e){e.remove()});
+ B.forEach(function(v,j){var e=document.createElement('div');e.className='h';e.style.left=v+'%';e.innerHTML='<b>'+v+'</b><i></i>';
+  e.addEventListener('pointerdown',function(ev){e.setPointerCapture(ev.pointerId);function mv(m){var r=g.getBoundingClientRect(),x=Math.round((m.clientX-r.left)/r.width*100);var lo=j?B[j-1]+2:2,hi=j<4?B[j+1]-2:98;B[j]=Math.max(lo,Math.min(hi,x));draw()}
+   e.addEventListener('pointermove',mv);e.addEventListener('pointerup',function(){e.removeEventListener('pointermove',mv)},{once:true})});
+  g.appendChild(e)});
+ document.getElementById('leg').innerHTML=NAMES.map(function(n,i){return '<span style="--c:'+COL[i]+'">'+n+' '+(lim[i])+'–'+(lim[i+1])+'</span>'}).join('');
+ document.getElementById('tv').textContent=T;
+ document.getElementById('ex').innerHTML=EX.map(function(e){return '<div class="ex"><div class="t">'+e[0]+'<div class="s">notes : '+e[1].join(' → ')+'</div></div><div>'+e[1].map(function(s,i){return '<div class="l" style="color:'+COL[band(s)]+'">'+label(s,e[1][i-1])+'</div>'}).join('')+'</div></div>'}).join('');
+}
+document.getElementById('tr').addEventListener('input',function(e){T=+e.target.value;draw()});
+function set(a){B=a.slice();draw()}
+document.getElementById('cur').onclick=function(){set([20,40,55,70,90])};
+document.getElementById('str').onclick=function(){set([25,45,62,80,94])};
+document.getElementById('wid').onclick=function(){set([15,35,50,65,85])};
+draw();
+</script>
