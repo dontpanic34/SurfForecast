@@ -44,7 +44,7 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:2px 0 0;height:20px}
 const $=id=>document.getElementById(id);
 const SUNRISE=8.28, SUNSET=19.37; // 8 h 17, 19 h 22
 const BANDS=[['Mauvais','#9B1C31','#fff'],['Médiocre','#E53935','#fff'],['Correct','#FFD21F','#061018'],['Bon','#1A9C82','#fff'],['Très bon','#2BD47A','#061018'],['Parfait','#0F8A52','#fff'],['Challengeant','#FF9A1F','#061018']];
-const st={day:2,hour:8,min:0,dur:80,band:3,board:0,boards:['xero','grace']};
+const st={day:2,hour:8,min:0,dur:80,band:3,board:0,boards:['Xero','Grace']};
 const fmt=m=>{const h=Math.floor(m/60),mm=m%60;return h+' h '+String(mm).padStart(2,'0')};
 const dur=m=>{const h=Math.floor(m/60),mm=m%60;return (h?h+' h ':'')+(mm?String(mm).padStart(h?2:1,'0')+(h?'':' min'):'')||'0'};
 // cases : nuit par blocs de 3 h, jour heure par heure (lever-2 h ... coucher+2 h)
