@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -384,23 +383,6 @@ private fun DailyTimelineBody(
                         gridValues = gridValues, plotBottomDp = plotBottomDp, onSurfaceColor = onSurfaceColor, isDark = isDark,
                         nacre = nacre, textMeasurer = textMeasurer, xOf = ::xOf, edgeLeft = xOf(ax0), edgeRight = xOf(ax1), nowHour = nowHour
                     )
-                    // La nuit en blocs : une trame hachurée par-dessus, comme dans la barre d'Actuellement.
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val inner = size.width - 2 * pad
-                        for ((k, c) in cells.withIndex()) {
-                            if (!c.isBlock) continue
-                            val x0 = pad + inner * k / cells.size
-                            val x1 = pad + inner * (k + 1) / cells.size
-                            drawRect(Color(0xFF0B121A).copy(alpha = 0.30f), Offset(x0, 0f), Size(x1 - x0, size.height))
-                            clipRect(x0, 0f, x1, size.height) {
-                                var d = -size.height
-                                while (d < x1 - x0) {
-                                    drawLine(Color.White.copy(alpha = 0.16f), Offset(x0 + d, size.height), Offset(x0 + d + size.height, 0f), strokeWidth = 1.dp.toPx())
-                                    d += 7.dp.toPx()
-                                }
-                            }
-                        }
-                    }
                 }
 
                 // --- La marée : une petite courbe entre le graphique et la bande des heures (monte ou descend), triangles et heures dessus ---
