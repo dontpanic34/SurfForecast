@@ -1,0 +1,52 @@
+name: Collecte des prévisions et des bouées
+
+# Relève, quatre fois par jour, les prévisions de chaque modèle et la mesure des bouées, pour comparer ensuite le prévu et le réel.
+# Les relevés sont rangés dans la branche `data` (data/runs/AAAA-MM-JJ/HHZ.json.gz), à part du code.
+# Sources : Open-Meteo (CC BY 4.0) et Candhis, Cerema (licence ouverte Etalab 2.0). Aucune clé n'est nécessaire.
+on:
+  schedule:
+    - cron: "17 2,8,14,20 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect-forecasts
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (scripts)
+        uses: actions/checkout@v4
+
+      - name: Préparer la branche data
+        run: |
+          git config user.name "surflog-collecte"
+          git config user.email "collecte@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
+            git fetch origin data
+            git worktree add ../data-wt origin/data
+            cd ../data-wt && git checkout -B data
+          else
+            git worktree add --detach ../data-wt
+            cd ../data-wt && git checkout --orphan data && git rm -rfq . || true
+            printf '# Relevés de prévisions et de bouées\n\nFichiers data/runs/AAAA-MM-JJ/HHZ.json.gz (heures UTC). Sources : Open-Meteo (CC BY 4.0), Candhis / Cerema (Etalab 2.0).\n' > README.md
+          fi
+
+      - name: Relever
+        run: python3 scripts/collect/collect.py ../data-wt/data
+
+      - name: Enregistrer
+        run: |
+          cd ../data-wt
+          git add -A
+          if git diff --cached --quiet; then echo "rien à enregistrer"; exit 0; fi
+          git commit -qm "Relevé $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do
+            git push origin HEAD:data && break
+            git pull --rebase origin data
+          done
