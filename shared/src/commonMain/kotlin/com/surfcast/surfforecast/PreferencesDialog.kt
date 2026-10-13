@@ -306,7 +306,6 @@ fun SurfPreferencesDialog(
                         "gear" -> "Matériel"
                         "forecast" -> "Sources et modèles"
                         "app" -> "Application"
-                        "guide" -> "Comprendre les prévisions"
                         else -> "Aide"
                     },
                     onBack = if (page == null) null else ({ page = if (page == "gear") "profile" else null }),
@@ -349,8 +348,7 @@ fun SurfPreferencesDialog(
                             }
                         }
                         SettingsSection("Aide") {
-                            SettingsRow("Comprendre la houle", "11 leçons courtes : période, séries, modèles, bouées", SettingsIcons.Book, top = false) { ComprendreState.open() }
-                            SettingsRow("Aide et langue", "Visite guidée, explications des prévisions, langue", SettingsIcons.Globe) { page = "help" }
+                            SettingsRow("Aide et langue", "Visite guidée et langue", SettingsIcons.Globe, top = false) { page = "help" }
                         }
                         if (!appVersion.isNullOrEmpty()) {
                             Text(
@@ -407,13 +405,10 @@ fun SurfPreferencesDialog(
                         SettingsSection("Langue") {
                             SettingsField("Langue", top = false) { LanguageFlags(language = language, onChange = onLanguageChanged) }
                         }
-                        SettingsSection("Explications") {
-                            SettingsRow("Comprendre la houle", "11 leçons courtes : période, séries, modèles, bouées", SettingsIcons.Book, top = false) { ComprendreState.open() }
-                            SettingsRow("Comprendre les prévisions", "Houle, période, vent, marée, note", SettingsIcons.Chart) { page = "guide" }
-                            if (onShowTour != null) SettingsRow("Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", SettingsIcons.Compass, onClick = onShowTour)
+                        if (onShowTour != null) SettingsSection("Visite guidée") {
+                            SettingsRow("Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", SettingsIcons.Compass, top = false, onClick = onShowTour)
                         }
                     }
-                    if (page == "guide") ForecastGuideContent()
 
                     if (page == "app" && backup != null) {
                         var importMessage by remember { mutableStateOf<String?>(null) }

@@ -46,7 +46,7 @@ import androidx.compose.ui.window.Dialog
 import kotlin.math.roundToInt
 
 /**
- * La section « Comprendre » : trois chapitres, onze leçons courtes et trois petits outils à manipuler.
+ * La section « Comprendre » : trois chapitres, douze leçons courtes et trois petits outils à manipuler.
  * Le texte vient de docs/COMPRENDRE_HOULE.md. N'importe quel écran peut l'ouvrir sur une leçon avec [ComprendreState.open].
  */
 object ComprendreState {
@@ -110,6 +110,10 @@ internal val COMPRENDRE_CHAPTERS: List<Chapter> = listOf(
         Lesson("carte", "Lire une carte",
             "1. Repère les **dépressions** : le vent tourne autour, d'autant plus fort que les isobares sont serrées. 2. Regarde la **carte de la période** plutôt que celle des hauteurs. 3. Puis le vent sur ton secteur. 4. Seulement ensuite, ton site de prévision pour le spot.",
             "Houle d'abord, vent ensuite, détail du spot en dernier."),
+        Lesson("lire-appli", "Lire les cartes de l'appli",
+            "**Les barres** : une par heure le jour, un bloc de 3 heures hachuré la nuit ; le point blanc marque l'heure choisie. La **ligne de temps** de l'encart Actuellement choisit l'heure des trois cartes : elle s'écrit en blanc, le lever en jaune, le coucher en orange.\n\n**Houle** : la hauteur et la période viennent d'un même calcul de trois modèles. La **mer mélangée** apparaît quand ils annoncent des périodes à 3 s d'écart ou plus : plusieurs houles se croisent, les vagues arrivent en désordre, même sans vent. Le **clapot** (petites vagues du vent local) se masque dans les réglages de l'encart.\n\n**Vent** : le chiffre est le vent ressenti (le vent moyen plus 35 % de l'écart avec les rafales) ; la barre grise derrière chaque barre est la rafale. **Modèles partagés** : quand ECMWF, GFS et AROME s'écartent de 7 km/h ou plus, l'appli l'écrit au lieu de choisir pour toi.\n\n**Météo** : la barre est grise selon les nuages, bleue quand il pleut (les nuages ne comptent plus sous la pluie) ; l'UV prend sa couleur. **Marée** : le trait est bleu quand elle monte, vert quand elle descend ; un « ≈ » devant l'heure veut dire estimée.",
+            "Un point blanc, une heure, trois cartes qui bougent ensemble.",
+            "Les réglages d'un encart (le ⚙) ne servent plus qu'à régler : tout ce qui explique se trouve ici."),
         Lesson("bouee", "Vérifier avec la bouée",
             "Une **bouée** mesure la houle pour de vrai. Si elle voit 1,3 m et la prévision 0,8 m, la prévision est trop basse sur ce secteur. Son spectre montre si la houle est rangée ou mélangée.",
             "La bouée est la vérité du moment, la prévision est une hypothèse.",

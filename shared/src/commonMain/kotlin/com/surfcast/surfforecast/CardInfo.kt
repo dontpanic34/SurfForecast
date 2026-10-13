@@ -42,45 +42,6 @@ class CardSettingsControl(
 
 val LocalCardSettings = compositionLocalOf<CardSettingsControl?> { null }
 
-/** Une ligne « Comprendre » : un titre qu'on touche pour lire une ou deux phrases. */
-class CardHelp(val title: String, val text: String)
-
-/** Les explications de chaque encart, repliées par défaut dans le panneau de réglages. */
-val CARD_HELP: Map<String, List<CardHelp>> = mapOf(
-    "week" to listOf(
-        CardHelp("Comment la note est calculée", "La note (1 à 5 étoiles) compare houle, période, direction et vent à ce que le spot aime. Elle est la même pour tout le monde : ni ton niveau ni ta motivation ne la changent."),
-        CardHelp("Les trois traits", "Matin, midi, après-midi. Ils prennent la couleur de la condition à cette heure : vert propre, jaune moyen, rouge mauvais."),
-        CardHelp("Le vent de la semaine", "La flèche donne d'où il vient et sa taille la force. C'est la moyenne de deux modèles (ECMWF et GFS)."),
-        CardHelp("Les jours lointains", "À partir de J+4, les étoiles s'écrivent avec un « ~ » et sont plus pâles : c'est une tendance. Une houle lointaine peut arriver une demi-journée plus tôt ou plus tard que prévu.")
-    ),
-    "day" to listOf(
-        CardHelp("Motivation : Flemme, Normal, Motivé", "Elle change seulement les couleurs et le libellé de l'heure (un peu plus exigeant ou plus indulgent). Elle ne change jamais les étoiles."),
-        CardHelp("Comment le vent est calculé", "Moyenne des modèles ECMWF et GFS. Le chiffre affiché est le vent ressenti : le vent moyen plus 35 % de l'écart avec les rafales. La couleur dit s'il gêne."),
-        CardHelp("Modèles de prévision", "Houle : consensus de trois modèles de vagues (MF-WAM, ECMWF, GFS), la hauteur et la période venant du même calcul. Vent : ECMWF + GFS. AROME HD (Météo-France) tourne en coulisses pour comparer."),
-        CardHelp("Modèles partagés", "Quand les trois modèles de vagues donnent des hauteurs très différentes pour la journée, l'appli l'écrit. Dans ce cas, la prévision est moins sûre."),
-        CardHelp("La marée et le coef", "Le trait est vert quand la marée descend, bleu quand elle monte. Une flèche vers le haut posée sur le trait marque une marée basse (elle va remonter), une flèche vers le bas une marée haute (elle va redescendre). L'heure et le coefficient sont écrits dessous.")
-    ),
-    "swell" to listOf(
-        CardHelp("Taille et période", "Hauteur de la houle principale en mètres et période en secondes. Plus la période est longue, plus la houle a de la puissance."),
-        CardHelp("L'énergie en kJ", "Elle combine hauteur et période : deux houles de même hauteur n'ont pas la même force."),
-        CardHelp("Mer mélangée", "Quand les modèles annoncent des périodes très différentes (3 s d'écart ou plus), la mer mêle plusieurs trains de houle : les vagues arrivent en désordre, même sans vent. La pastille donne la fourchette de périodes."),
-        CardHelp("Le clapot", "Les petites vagues que le vent fabrique sur place, par-dessus la houle : seule leur taille est indiquée, sous la direction de la houle. Beaucoup de clapot, la vague est moins propre. Il se masque dans les réglages de l'encart."),
-        CardHelp("Houle secondaire", "Affichée dès 0,2 m et 7 s. Elle vient d'une autre direction et peut brouiller la houle principale.")
-    ),
-    "wind" to listOf(
-        CardHelp("Modèles partagés", "Quand les modèles de vent ne sont pas d'accord (7 km/h d'écart ou plus), l'appli le dit et donne la fourchette au lieu de cacher le désaccord."),
-        CardHelp("Comment le vent est calculé", "Moyenne ECMWF + GFS, direction en moyenne vectorielle. Le chiffre est le vent ressenti (rafales comprises)."),
-        CardHelp("Les couleurs", "Jaune : propre. Orange : gênant. Rouge : fort ou onshore. Elles dépendent de la direction par rapport à la plage.")
-    ),
-    "weather" to listOf(
-        CardHelp("D'où vient la météo", "Open-Meteo : ciel, température ressentie, pluie en mm, UV, nuages. Température de l'eau : modèle marin."),
-        CardHelp("Température ressentie", "Elle tient compte du vent : plus fraîche qu'au thermomètre quand il souffle.")
-    ),
-    "hourly" to listOf(
-        CardHelp("Heure par heure", "Une ligne par heure : houle, vent, météo. Touches-en une : tous les encarts suivent.")
-    )
-)
-
 /** L'engrenage ouvert (un seul à la fois) : son panneau s'affiche sous le titre de l'encart. */
 object CardGear {
     var open by mutableStateOf<String?>(null)
@@ -120,21 +81,6 @@ fun CardSettingsPanel(key: String) {
             }
         }
         CardGuideSettings(key)
-        CARD_HELP[key]?.let { items ->
-            SettingsSection("Comprendre") {
-                items.forEachIndexed { i, h ->
-                    var more by remember { mutableStateOf(false) }
-                    if (i > 0) SettingsDivider()
-                    Column(modifier = Modifier.fillMaxWidth().clickable { more = !more }.padding(horizontal = 14.dp, vertical = 11.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(h.title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
-                            Text(if (more) "–" else "+", fontSize = 16.sp, color = colors.primary)
-                        }
-                        if (more) Text(h.text, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
-                    }
-                }
-            }
-        }
     }
 }
 
