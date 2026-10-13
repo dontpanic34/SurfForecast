@@ -63,7 +63,7 @@ fun SurfCardComponent(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
             CardControlsRow(
-                title = "Houle", guide = "swell",
+                title = "Houle",
                 isCollapsed = isCollapsed,
                 onToggleCollapse = onToggleCollapse,
                 dragHandleModifier = dragHandleModifier,
@@ -75,7 +75,7 @@ fun SurfCardComponent(
             SwellLine(
                 height = selectedHour.waveHeight, period = selectedHour.wavePeriod, energyKj = selectedHour.energyKj,
                 direction = selectedHour.waveDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = false, beachFacing = beachFacing,
-                chopHeight = if (SkyGraphSettings.showChop) selectedHour.windWaveHeight else 0.0,
+                chopHeight = selectedHour.windWaveHeight, // le clapot s'affiche toujours
                 mixedPeriods = if (seaIsMixed(selectedHour)) selectedHour.periodMin to selectedHour.periodMax else null
             )
             if (selectedHour.secondaryHeight >= 0.2 && selectedHour.secondaryPeriod >= 7.0) {
