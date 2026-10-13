@@ -210,3 +210,43 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Niveaux : une définition et un « tu cherches » propres à chacune des neuf tranches (les « + » ne reprennent plus celle du niveau principal) ; conseil Confirmé → Confirmé + : « Gère tes manœuvres de replacement pour rester en rythme avec la vague : reprends de la vitesse si elle devient molle, fais un cutback si tu t'éloignes trop, attends un peu quand il faut. » ; « réforme » devient « reforme » partout (appli, maquettes, docs). Dans la branche de travail, pas encore publié.
 - Niveaux : conseil Confirmé → Confirmé + raccourci (« Gère tes manœuvres de replacement pour rester en rythme avec la vague. Tu ne cherches plus seulement à la suivre : tu commences à revenir ou à rester dans la zone critique. ») ; Confirmé + a une autre description (« Tu lis la vague avant qu'elle ne change : tes replacements deviennent naturels et tu surfes de plus en plus près de la partie qui pousse. Tes manœuvres restent simples. »). Pas encore publié.
 - Mon profil : les encarts « Des vraies journées à Montalivet, notées avec ton réglage » (huit journées avec Parfait, Trop gros, etc.) sont retirés de la page d'accueil du profil : le niveau passe par le questionnaire et la carte de niveau. Ils restent dans l'assistant « Personnaliser mon profil ». Dans la branche de travail, pas encore publié.
+
+- Maquette `maree-deroule` : 6 propositions pour l'affichage de la marée sous le déroulé (barre continue vert/bleu avec cheminée, courbe, trait fin, aire, pastilles, barres). En attente du choix du propriétaire ; pas de code.
+
+- Marée du déroulé (option 3 choisie) : trait fin vert (descend) / bleu (monte), gros point à chaque marée, heure + coefficient écrits dessous (« 13:16 · 88 »), qui glissent pour ne pas se chevaucher. Le rond de couleur du coef à droite de « Motivation » est retiré. État : codé et testé, pas encore en ligne (en attente du « go » pour publier).
+- « Parfait » demande un vent propre maintenant : moins de 5 km/h, ou offshore. Un vent de côté ou onshore (ex. sud-ouest 11 km/h) plafonne l'heure sous 90. Test ajouté.
+- Encart « Actuellement » : il quitte la nuit 1 h avant le lever du soleil et montre l'heure du lever (première heure de surf). Test ajouté. État : codé, pas encore en ligne.
+
+- Correctif : le modèle de vagues « ECMWF Wave » envoyait un nom invalide à Open-Meteo (`ecmwf_wave`, erreur 400, écran vide) ; le bon nom est `ecmwf_wam`. Corrigé, pas encore en ligne.
+- Libellé de tendance (« Correct à Bon ») : il suit maintenant l'heure d'avant (« Bon à Correct » si ça baisse). Codé, pas encore en ligne.
+
+- Maquette `modeles-prevision` : réglage des sources refait (court et long terme, vagues et vent, aperçu en direct sous les boutons avec les vraies prévisions). En attente de validation ; pas de code.
+
+- Maquette `modeles-prevision` refaite en version légère (sans graphique : une ligne par modèle, chiffres côte à côte, phrase de ce que ça change). En attente de validation ; pas de code.
+- Encart « Actuellement » : le résumé de la nuit reste jusqu'à 2 h après le lever, au-dessus des tuiles. Codé, testé, pas encore en ligne.
+- Échelle des notes (maquette validée en cours) : limites 25 / 45 / 62 / 80 / 94, zone de tendance ± 3. Pas encore codée (en attente du « go »).
+
+- Titre de la semaine : « ça va se caler » quand la journée s'améliore (le vent tourne offshore ou tombe l'après-midi, ou la note de l'après-midi dépasse celle du matin d'au moins 10 points). Le détail (« ça tourne offshore l'après-midi ») passe en deuxième ligne. Codé, testé, pas encore en ligne.
+
+- Maquette `modeles-prevision` : ajout du choix du modèle météo (ciel, température, pluie) et de vraies heures (8, 11, 14, 17, 20 h) avec choix du jour. Données réelles d'Open-Meteo. En attente de validation ; pas de code.
+
+- Note et phrase accordées : quand la phrase dit « dégrade », « ça sectionne » ou « démonté » (vent sous 0,75, ou clapot, rafales, période sous 0,55), la note ne dépasse pas « Bon ». Plus de « Très bon » à côté de « Onshore dégrade la vague ». Constantes `VERY_GOOD_MIN` (70) et `WIND_MILD` (0,75). Codé, testé, pas encore en ligne.
+
+- Règle titre/phrase validée : le titre donne le ton, la phrase n'a que les mots de ce ton. Très bon et Parfait : pas de « dégrade » ni « gêne » ; Bon : « Onshore gêne un peu » (jamais « dégrade ») ; « dégrade » et « ça sectionne » vont avec Correct et en dessous (plafond « Correct » quand le vent est sous 0,6 ou le clapot, les rafales ou la période sont forts). Constante `GOOD_MIN` (55). Codé, testé, pas encore en ligne.
+
+- Nouveau fichier `docs/CONNAISSANCES_HOULE.md` : notes (résumés) des vidéos envoyées sur la houle, pour la future page « Comprendre la houle, les prévisions, la météo ». Rien n'est codé ; d'autres vidéos suivront.
+
+- Nouveau fichier `docs/COMPRENDRE_HOULE.md` : le contenu des vidéos, synthétisé et simplifié, avec des exemples changés (3 chapitres, 11 leçons). Prêt pour une maquette « Comprendre » dans l'appli ; rien n'est codé.
+
+- Maquette `comprendre-houle` (section « Comprendre » de l'appli : 3 chapitres, 11 leçons, 3 outils à manipuler, 3 portes d'entrée) et `docs/COMPTE_RENDU_APPLI.md` (compte-rendu : comment l'appli fabrique une note, ce qui est corrigé, 10 problèmes, plan). Rien n'est codé ni publié.
+
+- Maquette « Comprendre » validée par le propriétaire. Principe posé : un chiffre par donnée à l'écran, les modèles comparés en coulisses. Décisions précises à prendre avant de coder (voir `DECISIONS.md`).
+
+- Bouées : accès vérifié à Candhis (Cap Ferret temps réel) ; premier essai de comparaison modèles / bouée noté dans `A_FAIRE.md`. Rien n'est codé.
+
+- Consensus des modèles de vagues : principe validé par le propriétaire. Test contre la bouée de Cap Ferret (48 h) noté dans `A_FAIRE.md`. Rien n'est codé.
+
+- Liste des bouées Candhis temps réel avec positions (`docs/BOUEES_CANDHIS.md`) et principe « une bouée de référence choisie par spot ». Rien n'est codé.
+
+- Maquette `reglages-pro` : refonte des réglages (accueil, sources et modèles, affichage, profil, ⚙ d'un encart) : listes groupées, icônes au trait de même épaisseur, aperçu en direct sous chaque réglage, lien « Comprendre ». En attente de validation ; pas de code.
+- Relais des bouées : `functions/api/bouee/[[path]].js` (Cloudflare Pages Function, cache 15 min, 21 bouées autorisées), testé sur une page Candhis enregistrée ; il sera mis en ligne à la prochaine publication du site. Collecte des prévisions et des bouées : `scripts/collect/` (script Python, spots et bouées de départ dans `spots.json`) ; la tâche planifiée n'est pas encore en place.

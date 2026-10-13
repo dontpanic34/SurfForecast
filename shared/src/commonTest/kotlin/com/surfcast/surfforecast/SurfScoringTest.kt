@@ -190,6 +190,9 @@ class SurfScoringTest {
         assertEquals("Bon à Très bon", bandLabelWithTrend(SlotRating(71, false)))
         assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(88, false)))
         assertEquals("Médiocre à Correct", bandLabelWithTrend(SlotRating(38, false)))
+        // Le libellé suit l'heure d'avant : si ça baisse, on le dit dans ce sens.
+        assertEquals("Bon à Correct", bandLabelWithTrend(SlotRating(53, false), SlotRating(66, false)))
+        assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(53, false), SlotRating(40, false)))
         // Loin d'une limite : le niveau seul. Les cas à part n'ont pas de tendance.
         assertEquals("Bon", bandLabelWithTrend(SlotRating(62, false)))
         assertEquals("Challengeant", bandLabelWithTrend(SlotRating(54, false, ConditionKind.CHALLENGING)))
@@ -376,9 +379,9 @@ class SurfScoringTest {
     fun offshoreIsForConfirmedAndExpertNotForBeginners() {
         val offshore = hour(10, height = 1.2, period = 9.0, windKmh = 22, windDir = "E")
         val cross = hour(10, height = 1.2, period = 9.0, windKmh = 22, windDir = "N")
-        // Débutant : la direction ne change presque rien.
+        // Débutant : la direction change peu (le plafond « Parfait » demande un vent propre, d'où un petit écart de plus).
         val begDiff = calculateSlotScore(offshore, 275, "beginner", false) - calculateSlotScore(cross, 275, "beginner", false)
-        assertTrue(begDiff in 0..6, "débutant offshore - travers : $begDiff")
+        assertTrue(begDiff in 0..10, "débutant offshore - travers : $begDiff")
         // Confirmé : l'offshore est nettement mieux que le travers.
         val confDiff = calculateSlotScore(offshore, 275, "confirmed", false) - calculateSlotScore(cross, 275, "confirmed", false)
         assertTrue(confDiff >= 4, "confirmé offshore - travers : $confDiff")
@@ -458,6 +461,29 @@ class SurfScoringTest {
         near(0.9f, swellAxisFraction(8.0))
         near(1.0f, swellAxisFraction(20.0))
         near(0f, swellAxisFraction(0.0))
+    }
+
+    @Test
+    fun titleAndPhraseShareTheSameTone() {
+        // Le titre donne le ton : « dégrade » ou « gêne » jamais avec Très bon ; « sectionne » jamais avec Bon ; « dégrade » jamais dans un titre Bon.
+        for (kmh in listOf(8, 12, 16, 20, 25, 30)) for (dir in listOf("O", "NO", "SO")) {
+            val r = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = kmh, windDir = dir), 275, "confirmed")
+            val band = conditionBand(r)
+            val msg = "$dir $kmh km/h : « ${r.why} » avec ${band.label} (${r.score})"
+            if (r.why.contains("sectionne") || r.why.contains("démonté")) assertTrue(r.score < GOOD_MIN || r.kind != ConditionKind.NORMAL, msg)
+            if (r.why.contains("dégrade")) assertTrue(r.score < GOOD_MIN || r.kind != ConditionKind.NORMAL, msg)
+            if (r.why.contains("gêne un peu")) assertTrue(r.score < VERY_GOOD_MIN, msg)
+        }
+    }
+
+    @Test
+    fun perfectNeedsCalmOrOffshoreWindNow() {
+        val offshore = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = 6, windDir = "E"), 275, "confirmed").score
+        val sideOn = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = 11, windDir = "SO"), 275, "confirmed").score
+        val calmSideOn = calculateSlotRating(hour(10, height = 1.5, period = 12.0, waveDir = 275f, windKmh = 3, windDir = "SO"), 275, "confirmed").score
+        assertTrue(sideOn < PERFECT_MIN, "un vent de sud-ouest de 11 km/h ne donne pas Parfait ($sideOn)")
+        assertTrue(calmSideOn >= sideOn, "sans vent, la note n'est pas plafonnée")
+        assertTrue(offshore >= sideOn)
     }
 }
 

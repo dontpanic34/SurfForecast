@@ -239,6 +239,9 @@ fun calculateSlotScore(
     tide: DailyTideInfo? = null
 ): Int = calculateSlotRating(hourlyModel, idealSwellDirection, surferLevel, isHighTide, tidePreference, tide).score
 
+/** Sous cette force (km/h), le plan d'eau est lisse quelle que soit la direction : le vent ne bloque pas « Parfait ». */
+const val PERFECT_CALM_KMH = 5.0
+
 /**
  * Note d'une heure de prévision (sans connaître le spot réel : bancs de sable, courants...).
  * Énergie de la houle selon le niveau, direction par rapport à la plage, vent (rafales comprises,
@@ -325,6 +328,9 @@ fun calculateSlotRating(
             windCategoryFor(p.direction, idealSwellDirection)) < WIND_CLEAN
     }
     if (pastDirty) final = minOf(final, PERFECT_MIN - 1 - ToleranceSettings.mode * 8)
+    // « Parfait » demande aussi un vent propre maintenant : glassy (moins de 5 km/h) ou offshore. Un vent de côté ou onshore, même léger, plafonne la note.
+    val windNowClean = effectiveWindKmh(hourlyModel) < PERFECT_CALM_KMH || windDirectionClass(hourlyModel.windDirectionStr, idealSwellDirection) == 0
+    if (!windNowClean) final = minOf(final, PERFECT_MIN - 1 - ToleranceSettings.mode * 8)
     val kind = when {
         energyKj < profile.idealMin * TOO_SMALL_RATIO -> ConditionKind.TOO_SMALL
         windFactor < TOO_WINDY_FACTOR -> ConditionKind.TOO_WINDY
@@ -332,10 +338,18 @@ fun calculateSlotRating(
         else -> ConditionKind.NORMAL
     }
     val limits = ScoreLimits(fit, windFactor, gustF, chopF, periodF, directionF)
+    // La note et sa phrase s'accordent : le titre donne le ton, la phrase n'a que les mots de ce ton.
+    // « Ça sectionne » ou « Beaucoup de clapot » (vent sous 0,6, ou clapot, rafales, période sous 0,55) : la note ne dépasse pas « Correct ».
+    // « Dégrade » ou « gêne » (vent sous 0,75) : pas plus que « Bon ».
+    if (kind == ConditionKind.NORMAL) {
+        val strongLimit = windFactor < WIND_STRONG || chopF < STRONG_LIMIT || gustF < STRONG_LIMIT || periodF < STRONG_LIMIT
+        if (strongLimit) final = minOf(final, GOOD_MIN - 1 - ToleranceSettings.mode * 8)
+        else if (windFactor < WIND_MILD) final = minOf(final, VERY_GOOD_MIN - 1 - ToleranceSettings.mode * 8)
+    }
     // La note a retenu un vent qui gêne alors que le vent réel affiché est propre : c'est la mémoire du vent qui parle.
     val windMemory = displayedWind != null && windFactor < WIND_CLEAN &&
         windFactorOf(displayedWind, h, profile, windCategoryFor(displayedWind.windDirectionStr, idealSwellDirection)) >= WIND_CLEAN
-    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits, windMemory))
+    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits, windMemory, scoreBand(final)))
 }
 
 /**
@@ -408,6 +422,8 @@ private fun windSizeDivisor(heightM: Double): Double = heightM.pow(0.9).coerceIn
 /** Les facteurs (de 0 à 1) qui ont fait la note : celui qui pèse le plus donne la raison affichée. */
 private class ScoreLimits(val size: Double, val wind: Double, val gusts: Double, val chop: Double, val period: Double, val direction: Double)
 
+/** Sous ce facteur de vent, la phrase ne dit plus « un peu » mais « dégrade » : la note ne peut plus être Très bon. */
+const val WIND_MILD = 0.75
 private const val MINOR_LIMIT = 0.85
 private const val STRONG_LIMIT = 0.55
 
@@ -415,12 +431,17 @@ private const val STRONG_LIMIT = 0.55
  * La phrase du vent, avec sa force : quatre niveaux d'après le facteur de vent (léger de 0,9 à 0,75, gêne jusqu'à 0,6,
  * fort jusqu'à 0,3, très fort en dessous), les mêmes mots pour l'onshore et le sideshore.
  */
-internal fun windPhrase(windCategory: String, windFactor: Double): String {
+internal fun windPhrase(windCategory: String, windFactor: Double, softened: Boolean = false): String {
     val level = when {
-        windFactor >= 0.75 -> 0
+        windFactor >= WIND_MILD -> 0
         windFactor >= WIND_STRONG -> 1
         windFactor >= 0.3 -> 2
         else -> 3
+    }
+    // Titre Bon ou mieux : « gêne un peu » plutôt que « dégrade la vague » (les mots forts sont pour Correct et en dessous).
+    if (softened && level == 1) {
+        val name = when (windCategory) { "onshore" -> "Onshore"; "side-off" -> "Side-off"; "side-on" -> "Side-on"; "side" -> "Side"; else -> null }
+        if (name != null) return "$name gêne un peu"
     }
     return when (windCategory) {
         "onshore" -> listOf("Un peu d'onshore", "Onshore dégrade la vague", "Onshore fort, ça sectionne", "Onshore très fort, c'est démonté")[level]
@@ -435,7 +456,7 @@ internal fun windPhrase(windCategory: String, windFactor: Double): String {
  * Phrase courte qui dit pourquoi la note est ce qu'elle est (voir les maquettes du profil) : ce qui pèse vraiment
  * (taille, vent, rafales, clapot, période, direction de la houle), ou « Bonne taille, vent propre » quand rien ne pèse.
  */
-private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, windMemory: Boolean = false): String = when (kind) {
+private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, windMemory: Boolean = false, band: ScoreBand = ScoreBand.GOOD): String = when (kind) {
     ConditionKind.TOO_SMALL -> WHY_TOO_SMALL
     ConditionKind.TOO_WINDY -> windPhrase(windCategory, l.wind)
     ConditionKind.TOO_BIG -> WHY_TOO_BIG
@@ -459,7 +480,7 @@ private fun whyFor(kind: ConditionKind, windCategory: String, l: ScoreLimits, wi
             val strong = worst.value < worst.strong
             when (worst.name) {
                 "size" -> if (strong) "Taille limite" else "Taille un peu juste"
-                "wind" -> if (windMemory) WHY_WIND_MEMORY else windPhrase(windCategory, l.wind)
+                "wind" -> if (windMemory) WHY_WIND_MEMORY else windPhrase(windCategory, l.wind, softened = band == ScoreBand.GOOD || band == ScoreBand.VERY_GOOD || band == ScoreBand.EXCELLENT)
                 "gusts" -> if (strong) "Rafales fortes" else "Des rafales gênent"
                 "chop" -> if (strong) "Beaucoup de clapot" else "Un peu de clapot"
                 "period" -> if (strong) "Houle trop courte" else "Houle un peu courte"
