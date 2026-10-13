@@ -63,42 +63,64 @@ object GearPrefs {
     }
 }
 
-/** Les conditions d'une heure, dans les mots de la grille. */
+/**
+ * Les conditions d'une heure, dans les mots de la grille. Une vague solide (grosse ou puissante) n'est jamais « molle » :
+ * un vent de mer qui la ride ne la rend pas molle ; « creux » demande de la hauteur ET de la période.
+ */
 fun gearConditionsOf(hour: HourlyUiModel, beachFacing: Int?): Set<String> {
     val cat = windCategoryFor(hour.windDirectionStr, beachFacing)
     val wind = effectiveWindKmh(hour)
     val out = mutableSetOf<String>()
     if (hour.waveHeight < 0.8) out += "petit"
     if (hour.waveHeight >= 1.6) out += "gros"
-    if (hour.wavePeriod < 8.0 || (cat == "onshore" && wind >= 10)) out += "mou"
-    if (cat == "offshore" && hour.waveHeight >= 1.0) out += "creux"
     if (hour.energyKj >= 600) out += "puissant"
+    val solid = "gros" in out || "puissant" in out
+    if (hour.wavePeriod < 8.0 || (cat == "onshore" && wind >= 10 && !solid && hour.waveHeight < 1.3)) out += "mou"
+    if (cat == "offshore" && hour.waveHeight >= 1.2 && hour.wavePeriod >= 9.0) out += "creux"
     if (hour.wavePeriod >= 12.0) out += "longues"
     return out
 }
 
+/** Les conditions qui s'excluent : une planche cochée « Petit » ne convient pas un jour « Gros », etc. */
+private val OPPOSITE_CONDITIONS = mapOf(
+    "petit" to setOf("gros", "puissant", "creux"),
+    "gros" to setOf("petit"),
+    "mou" to setOf("creux", "puissant", "gros"),
+    "creux" to setOf("mou", "petit"),
+    "puissant" to setOf("petit", "mou"),
+    "longues" to emptySet()
+)
+
 /**
- * La planche du quiver qui colle le mieux aux conditions de [hour] : d'abord d'après ta grille « Je la sors quand… » ; tant que
- * la grille est vide, d'après le type de planche (petit ou mou : mid-length, longboard, fish ; gros, creux ou puissant :
- * shortboard). Toujours une planche à partir de deux planches ; null avec moins de deux.
+ * La planche du quiver qui colle le mieux aux conditions de [hour] : chaque condition cochée qui correspond rapporte des points,
+ * chaque condition cochée qui contredit le jour en retire (un jour solide ne va pas à une planche cochée « Petit »), et le type de
+ * planche départage (petit ou mou : mid-length, longboard, fish ; gros, creux ou puissant : shortboard), y compris quand la grille est vide.
+ * Toujours une planche à partir de deux planches ; null avec moins de deux.
  */
-fun boardOfTheDay(hour: HourlyUiModel?, boards: List<QuiverBoard>, beachFacing: Int?): QuiverBoard? {
+fun boardOfTheDay(
+    hour: HourlyUiModel?, boards: List<QuiverBoard>, beachFacing: Int?,
+    conditionsOf: (Long) -> Set<String> = { GearPrefs.conditionsOf(it) }
+): QuiverBoard? {
     // Une seule planche : rien à conseiller. À partir de deux planches, il y a toujours une proposition.
     if (hour == null || boards.size < 2) return null
     val now = gearConditionsOf(hour, beachFacing)
-    val byGrid = boards.map { b -> b to GearPrefs.conditionsOf(b.id).count { it in now } }.filter { it.second > 0 }.maxByOrNull { it.second }?.first
-    if (byGrid != null) return byGrid
     val soft = "petit" in now || "mou" in now || "longues" in now
     val strong = "gros" in now || "creux" in now || "puissant" in now
     fun fit(b: QuiverBoard): Int = when (b.family) {
-        "longboard" -> if (soft) 3 else 0
-        "mid-length" -> if (soft) 2 else 1
-        "fish", "twin", "groveler" -> if (soft) 2 else 1
+        "longboard" -> if (soft && !strong) 3 else 0
+        "mid-length" -> if (soft && !strong) 2 else 1
+        "fish", "twin", "groveler" -> if (soft && !strong) 2 else 1
         "shortboard" -> if (strong) 3 else 1
         "mousse" -> 0
         else -> 1
     }
-    return boards.maxByOrNull { fit(it) }
+    fun score(b: QuiverBoard): Int {
+        val ticked = conditionsOf(b.id)
+        val match = ticked.count { it in now }
+        val against = ticked.count { c -> OPPOSITE_CONDITIONS[c].orEmpty().any { it in now } }
+        return match * 3 - against * 3 + fit(b)
+    }
+    return boards.maxByOrNull { score(it) }
 }
 
 @Composable
