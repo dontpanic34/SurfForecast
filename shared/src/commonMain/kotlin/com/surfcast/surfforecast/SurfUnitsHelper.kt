@@ -45,9 +45,11 @@ object SurfUnitsHelper {
     }
 
     fun formatCardinalFr(direction: String): String {
-        return direction.uppercase().trim()
+        val fr = direction.uppercase().trim()
             .replace("WEST", "O")
             .replace("W", "O")
+        // Anglais, allemand et néerlandais écrivent l'ouest « W » ; français et espagnol « O ».
+        return if (I18n.language in setOf("en", "de", "nl")) fr.replace("O", "W") else fr
     }
 
     fun cardinalToDegrees(direction: String): Float {

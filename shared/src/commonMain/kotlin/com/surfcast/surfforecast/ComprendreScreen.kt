@@ -24,7 +24,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -121,7 +120,8 @@ internal val COMPRENDRE_CHAPTERS: List<Chapter> = listOf(
     ))
 )
 
-private fun richText(text: String, boldColor: androidx.compose.ui.graphics.Color): AnnotatedString = buildAnnotatedString {
+private fun richText(source: String, boldColor: androidx.compose.ui.graphics.Color): AnnotatedString = buildAnnotatedString {
+    val text = tr(source)
     val parts = text.split("**")
     parts.forEachIndexed { i, p ->
         if (i % 2 == 1) withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = boldColor)) { append(p) } else append(p)
@@ -157,7 +157,7 @@ fun ComprendreDialog(startLesson: String, onDismiss: () -> Unit) {
                         is CView.Home -> Text("Comprendre", fontSize = 19.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                         is CView.Chapter -> TextButton(onClick = { view = CView.Home }) { Text("‹ Comprendre", fontSize = 13.sp, color = colors.primary) }
                         is CView.LessonView -> TextButton(onClick = { view = CView.Chapter(current.chapter) }) {
-                            Text("‹ " + COMPRENDRE_CHAPTERS[current.chapter].title, fontSize = 13.sp, color = colors.primary)
+                            Text("‹ " + tr(COMPRENDRE_CHAPTERS[current.chapter].title), fontSize = 13.sp, color = colors.primary)
                         }
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
