@@ -3,11 +3,12 @@ package com.surfcast.surfforecast
 /** Langue proposée dans l'appli : code, drapeau, nom dans sa propre langue. */
 data class AppLanguage(val code: String, val flag: String, val name: String)
 
-/** Langues proposées. Seul le français est traduit pour l'instant : la traduction viendra une fois l'appli stabilisée. */
+/** Langues proposées (l'interface est traduite au fil de l'eau : voir I18n.kt ; un texte sans traduction reste en français). */
 val APP_LANGUAGES = listOf(
     AppLanguage("fr", "🇫🇷", "Français"),
     AppLanguage("en", "🇬🇧", "English"),
     AppLanguage("de", "🇩🇪", "Deutsch"),
+    AppLanguage("nl", "🇳🇱", "Nederlands"),
     AppLanguage("es", "🇪🇸", "Español")
 )
 

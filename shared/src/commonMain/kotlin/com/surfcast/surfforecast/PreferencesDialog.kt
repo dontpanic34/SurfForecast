@@ -311,13 +311,6 @@ fun SurfPreferencesDialog(
                     onBack = if (page == null) null else ({ page = if (page == "gear") "profile" else null }),
                     onClose = onDismiss
                 )
-                if (language != "fr") {
-                    Text(
-                        "La traduction arrive bientôt : pour l'instant l'appli reste en français.",
-                        fontSize = 11.5.sp,
-                        color = colors.onSurfaceVariant
-                    )
-                }
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Colonne défilante simple (et non LazyColumn) : le contenu est court, et la hauteur de la

@@ -114,15 +114,15 @@ private val BOUNDS = listOf(POOR_MIN, FAIR_MIN, GOOD_MIN, VERY_GOOD_MIN, PERFECT
  */
 fun bandLabelWithTrend(rating: SlotRating, previous: SlotRating? = null): String {
     val band = conditionBand(rating)
-    if (band !in BAND_ORDER) return band.label
+    if (band !in BAND_ORDER) return tr(band.label)
     for ((i, bound) in BOUNDS.withIndex()) {
         if (kotlin.math.abs(rating.score - bound) <= TREND_ZONE) {
             // Le libellé va de l'heure d'avant vers celle-ci : si ça baisse, « Bon à Correct » ; sinon « Correct à Bon ».
             val falling = previous != null && previous.score > rating.score
-            return if (falling) BAND_ORDER[i + 1].label + " à " + BAND_ORDER[i].label else BAND_ORDER[i].label + " à " + BAND_ORDER[i + 1].label
+            return if (falling) tr(BAND_ORDER[i + 1].label) + tr(" à ") + tr(BAND_ORDER[i].label) else tr(BAND_ORDER[i].label) + tr(" à ") + tr(BAND_ORDER[i + 1].label)
         }
     }
-    return band.label
+    return tr(band.label)
 }
 
 /**

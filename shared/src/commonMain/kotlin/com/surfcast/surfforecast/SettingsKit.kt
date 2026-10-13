@@ -99,7 +99,7 @@ fun SettingsTopBar(title: String, onBack: (() -> Unit)?, onClose: () -> Unit) {
         Box(modifier = Modifier.size(44.dp).clickable(enabled = onBack != null) { onBack?.invoke() }, contentAlignment = Alignment.Center) {
             if (onBack != null) SettingsIcon(SettingsIcons.Back, colors.primary)
         }
-        Text(title, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f), maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(tr(title), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, modifier = Modifier.weight(1f), maxLines = 1, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         Box(modifier = Modifier.size(44.dp).clickable { onClose() }, contentAlignment = Alignment.Center) {
             SettingsIcon(SettingsIcons.Close, colors.onSurfaceVariant)
         }
@@ -112,7 +112,7 @@ fun SettingsSection(title: String? = null, content: @Composable ColumnScope.() -
     val colors = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (title != null) {
-            Text(title.uppercase(), fontSize = 11.5.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+            Text(tr(title).uppercase(), fontSize = 11.5.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
         }
         Column(
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surface)
@@ -146,11 +146,11 @@ fun SettingsRow(
             Spacer(Modifier.width(12.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.onSurface)
-            if (subtitle != null) Text(subtitle, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+            Text(tr(title), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.onSurface)
+            if (subtitle != null) Text(tr(subtitle), fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
         }
         if (badge != null) {
-            Text(badge, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.onPrimaryContainer,
+            Text(tr(badge), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.onPrimaryContainer,
                 modifier = Modifier.padding(start = 8.dp).clip(RoundedCornerShape(50)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp))
         }
         if (value != null) Text(value, fontSize = 13.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
@@ -168,11 +168,11 @@ fun SettingsField(title: String, value: String? = null, hint: String? = null, to
     if (top) SettingsDivider()
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
+            Text(tr(title), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
             if (value != null) Text(value, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, color = colors.primary)
         }
         control()
-        if (hint != null) Text(hint, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+        if (hint != null) Text(tr(hint), fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
     }
 }
 
@@ -194,7 +194,7 @@ fun SettingsSegments(options: List<Pair<String, String>>, selected: String, onSe
                     .clickable { onSelect(key) }.padding(horizontal = 4.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(label, fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
+                Text(tr(label), fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
                     color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant)
             }
         }
@@ -222,8 +222,8 @@ fun SettingsSwitchRow(title: String, subtitle: String? = null, checked: Boolean,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.onSurface)
-            if (subtitle != null) Text(subtitle, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+            Text(tr(title), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.onSurface)
+            if (subtitle != null) Text(tr(subtitle), fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
         }
         Switch(checked = checked, onCheckedChange = onChange)
     }
@@ -240,7 +240,7 @@ fun SettingsHelpLink(text: String, onClick: () -> Unit) {
     ) {
         SettingsIcon(SettingsIcons.Book)
         Spacer(Modifier.width(12.dp))
-        Text(text, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.primary, modifier = Modifier.weight(1f))
+        Text(tr(text), fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.primary, modifier = Modifier.weight(1f))
         SettingsIcon(SettingsIcons.Chevron, colors.primary, 18.dp)
     }
 }
@@ -248,7 +248,7 @@ fun SettingsHelpLink(text: String, onClick: () -> Unit) {
 /** Un petit texte d'explication sous un groupe. */
 @Composable
 fun SettingsNote(text: String) {
-    Text(text, fontSize = 12.5.sp, lineHeight = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
+    Text(tr(text), fontSize = 12.5.sp, lineHeight = 17.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
 }
 
 /** Un cadre en pointillés pour l'aperçu en direct sous un réglage. */
@@ -260,7 +260,7 @@ fun SettingsPreviewBox(label: String, content: @Composable ColumnScope.() -> Uni
             .border(BorderStroke(1.dp, colors.outlineVariant), RoundedCornerShape(10.dp)).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(label.uppercase(), fontSize = 11.sp, letterSpacing = 0.8.sp, color = colors.onSurfaceVariant)
+        Text(tr(label).uppercase(), fontSize = 11.sp, letterSpacing = 0.8.sp, color = colors.onSurfaceVariant)
         content()
     }
 }
@@ -277,8 +277,8 @@ fun SettingsChoiceRow(title: String, hint: String? = null, selected: Boolean, mu
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 15.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = colors.onSurface)
-            if (!hint.isNullOrBlank()) Text(hint, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+            Text(tr(title), fontSize = 15.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = colors.onSurface)
+            if (!hint.isNullOrBlank()) Text(tr(hint), fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
         }
         Spacer(Modifier.width(10.dp))
         val shape = if (multi) RoundedCornerShape(6.dp) else RoundedCornerShape(50)
@@ -304,7 +304,7 @@ fun SettingsButton(text: String, primary: Boolean = true, enabled: Boolean = tru
             .then(if (!primary) Modifier.border(BorderStroke(1.dp, if (enabled) colors.primary else colors.outlineVariant), RoundedCornerShape(12.dp)) else Modifier)
             .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
-    ) { Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = fg) }
+    ) { Text(tr(text), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = fg) }
 }
 
 /** Une barre de progression fine. */
@@ -319,5 +319,5 @@ fun SettingsProgress(fraction: Float) {
 /** Un titre de bloc en petites capitales, hors liste. */
 @Composable
 fun SettingsLabel(text: String) {
-    Text(text.uppercase(), fontSize = 11.5.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 6.dp))
+    Text(tr(text).uppercase(), fontSize = 11.5.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 6.dp))
 }
