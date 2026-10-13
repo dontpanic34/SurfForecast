@@ -1,0 +1,37 @@
+<title>Lever et coucher du soleil</title>
+<style>
+/* Mise en page : la carte Météo avec une barre du jour (nuit sombre, jour doré) et les heures du lever et du coucher écrites dessus ; deux emplacements possibles. */
+:root{--bg:#0b1519;--card:#14262f;--fg:#ecf0f1;--mut:#90a4ae;--line:#21404c;--night:#1d2b52;--day:#f2b84b;--dusk:#e8844a;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--line:#d3dfe5;--night:#33447d;--day:#e2a025;--dusk:#d9692f;color-scheme:light}}
+:root[data-theme="light"]{--bg:#e9eff2;--card:#fff;--fg:#10222e;--mut:#566b76;--line:#d3dfe5;--night:#33447d;--day:#e2a025;--dusk:#d9692f;color-scheme:light}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif;padding-inline:16px;padding-block:18px}
+main{max-width:440px;margin:0 auto;display:grid;gap:14px}h1{font-size:1.2rem;margin:0}h2{font-size:1rem;margin:8px 0 0;color:#7fc3e6}p{margin:0}.mut{color:var(--mut)}.sm{font-size:12.5px}
+.card{background:var(--card);border-radius:12px;padding:10px 12px;display:grid;gap:8px}
+.row{display:flex;justify-content:space-between;align-items:flex-start}.big{font-size:18px;font-weight:700}
+.bar{position:relative;height:10px;border-radius:99px;background:linear-gradient(90deg,var(--night) 0,var(--night) 30%,var(--dusk) 33%,var(--day) 37%,var(--day) 78%,var(--dusk) 82%,var(--night) 85%,var(--night) 100%)}
+.now{position:absolute;top:-3px;width:3px;height:16px;border-radius:2px;background:var(--fg);left:57%}
+.lab{position:relative;height:16px;font-size:12px;font-weight:700}.lab span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.tk{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut)}
+.hours{display:grid;grid-template-columns:repeat(8,1fr);text-align:center;font-size:12px;gap:2px}.hours b{display:block;font-size:13px}
+</style>
+<main>
+<h1>Lever et coucher du soleil</h1>
+<p class="mut sm">La ligne « 🌅 8 h 17 · 🌇 19 h 22 » disparaît de l'en-tête de la Météo. À la place, une barre de la journée : nuit sombre, jour doré, avec les deux heures écrites en permanence. Exemple : 13 octobre, lever 8 h 17, coucher 19 h 22.</p>
+
+<h2>A · Une barre sous l'en-tête de la Météo</h2>
+<div class="card">
+<div class="row"><div class="big">☁️ 14°C · 🌊 17°</div><div style="text-align:right" class="sm">UV 2<br>☁️ 60 %</div></div>
+<div><div class="bar"><i class="now"></i></div>
+<div class="lab"><span style="left:34.5%;color:var(--day)">▲ 8 h 17</span><span style="left:80%;color:var(--dusk)">19 h 22 ▼</span></div>
+<div class="tk"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>24 h</span></div></div>
+</div>
+
+<h2>B · La barre posée sur la bande « heure par heure »</h2>
+<div class="card">
+<div class="row"><div class="big">☁️ 14°C · 🌊 17°</div><div style="text-align:right" class="sm">UV 2 · ☁️ 60 %</div></div>
+<div class="bar" style="height:6px"><i class="now" style="top:-5px;height:16px"></i></div>
+<div class="lab"><span style="left:34.5%;color:var(--day)">▲ 8 h 17</span><span style="left:80%;color:var(--dusk)">19 h 22 ▼</span></div>
+<div class="hours"><div><b>12 h</b>☀️ 16°</div><div><b>14 h</b>⛅ 17°</div><div><b>16 h</b>⛅ 17°</div><div><b>18 h</b>☁️ 15°</div><div><b>20 h</b>🌙 13°</div><div><b>22 h</b>🌙 12°</div><div><b>0 h</b>🌙 11°</div><div><b>2 h</b>🌙 11°</div></div>
+</div>
+<p class="sm mut">Le trait blanc est l'heure actuelle. Dorée = jour, bleu foncé = nuit, orange = quelques minutes autour du lever et du coucher. En A la barre couvre 24 h ; en B elle suit les heures affichées.</p>
+</main>
