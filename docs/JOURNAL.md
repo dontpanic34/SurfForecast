@@ -243,3 +243,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Maquette « Comprendre » validée par le propriétaire. Principe posé : un chiffre par donnée à l'écran, les modèles comparés en coulisses. Décisions précises à prendre avant de coder (voir `DECISIONS.md`).
 
 - Bouées : accès vérifié à Candhis (Cap Ferret temps réel) ; premier essai de comparaison modèles / bouée noté dans `A_FAIRE.md`. Rien n'est codé.
+
+- Consensus des modèles de vagues : principe validé par le propriétaire. Test contre la bouée de Cap Ferret (48 h) noté dans `A_FAIRE.md`. Rien n'est codé.
