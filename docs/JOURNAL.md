@@ -241,3 +241,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Maquette `comprendre-houle` (section « Comprendre » de l'appli : 3 chapitres, 11 leçons, 3 outils à manipuler, 3 portes d'entrée) et `docs/COMPTE_RENDU_APPLI.md` (compte-rendu : comment l'appli fabrique une note, ce qui est corrigé, 10 problèmes, plan). Rien n'est codé ni publié.
 
 - Maquette « Comprendre » validée par le propriétaire. Principe posé : un chiffre par donnée à l'écran, les modèles comparés en coulisses. Décisions précises à prendre avant de coder (voir `DECISIONS.md`).
+
+- Bouées : accès vérifié à Candhis (Cap Ferret temps réel) ; premier essai de comparaison modèles / bouée noté dans `A_FAIRE.md`. Rien n'est codé.

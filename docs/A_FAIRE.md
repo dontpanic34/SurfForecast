@@ -22,3 +22,8 @@ Mis à jour le 13 octobre 2026 au soir. Tout le lot validé est codé et en lign
 - « Tu surfes sur quoi ? » en choix multiple dans le matériel.
 - Nettoyer les anciens réglages inutilisés (`volume_level_idx`, `body_height_cm`, `body_fitness`, `stars_offset`, `show_*_card`).
 - Nuages : transitions plus douces si un défaut revient.
+
+## Bouées (13 octobre 2026, à décider)
+- **Candhis (Cerema)** : réseau national de bouées, données sous licence ouverte Etalab 2.0 (citer le Cerema et l'organisme de la campagne, la date de mise à jour, ne pas altérer les données). Bouée temps réel la plus proche des spots de Gironde : **03302 Cap Ferret [TR]** (mesure toutes les 30 min : H1/3, Hmax, Th1/3, direction au pic, étalement, température de l'eau). Pas d'API publique documentée : les chiffres sont dans la page web de la station. Le serveur n'autorise pas l'appel direct depuis le navigateur (pas d'en-tête CORS) : il faudrait un petit relais. À étudier : demander un accès propre au Cerema, ou regarder les jeux de données sur data.gouv.fr.
+- **Mesure de l'appli contre la bouée** (premier essai, 11 au 13 octobre, Cap Ferret) : le mélange actuel (hauteur de MF-WAM + période de GFS Wave) donne environ 845 kJ à 7 h le 13, la bouée environ 534 kJ ; MF-WAM seul ou ECMWF seul sont à environ 10 % de la bouée, avec leurs propres périodes. La période de GFS Wave est plus longue d'environ 2 s que celle de la bouée (définitions un peu différentes, à vérifier).
+- **WaveWatch III** : c'est le modèle derrière GFS Wave (déjà utilisé). Pas d'autre source WW3 nécessaire pour l'instant.
