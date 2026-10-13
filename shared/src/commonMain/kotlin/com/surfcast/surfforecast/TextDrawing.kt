@@ -21,7 +21,7 @@ fun DrawScope.drawTextAtBaseline(
     x: Float,
     baselineY: Float
 ) {
-    val layout = textMeasurer.measure(text, style)
+    val layout = textMeasurer.measure(tr(text), style)
     drawText(layout, topLeft = Offset(x, baselineY - layout.firstBaseline))
 }
 
@@ -57,7 +57,7 @@ fun TextMeasurer.fontAscentDescentSum(style: TextStyle): Float {
 }
 
 /** Comme DateTimeFormatter.ofPattern("EEE", Locale.FRANCE) : "lun.", "mar."... */
-fun frenchShortDayName(date: LocalDate): String = when (date.dayOfWeek) {
+fun frenchShortDayName(date: LocalDate): String = tr(when (date.dayOfWeek) {
     DayOfWeek.MONDAY -> "lun."
     DayOfWeek.TUESDAY -> "mar."
     DayOfWeek.WEDNESDAY -> "mer."
@@ -65,10 +65,10 @@ fun frenchShortDayName(date: LocalDate): String = when (date.dayOfWeek) {
     DayOfWeek.FRIDAY -> "ven."
     DayOfWeek.SATURDAY -> "sam."
     DayOfWeek.SUNDAY -> "dim."
-}
+})
 
 /** Comme DateTimeFormatter.ofPattern("EEEE", Locale.FRANCE) : "lundi", "mardi"... */
-fun frenchDayName(date: LocalDate): String = when (date.dayOfWeek) {
+fun frenchDayName(date: LocalDate): String = tr(when (date.dayOfWeek) {
     DayOfWeek.MONDAY -> "lundi"
     DayOfWeek.TUESDAY -> "mardi"
     DayOfWeek.WEDNESDAY -> "mercredi"
@@ -76,10 +76,10 @@ fun frenchDayName(date: LocalDate): String = when (date.dayOfWeek) {
     DayOfWeek.FRIDAY -> "vendredi"
     DayOfWeek.SATURDAY -> "samedi"
     DayOfWeek.SUNDAY -> "dimanche"
-}
+})
 
 /** Comme DateTimeFormatter.ofPattern("MMM", Locale.FRANCE) : "janv.", "févr."... */
-fun frenchShortMonthName(date: LocalDate): String = when (date.month.number) {
+fun frenchShortMonthName(date: LocalDate): String = tr(when (date.month.number) {
     1 -> "janv."
     2 -> "févr."
     3 -> "mars"
@@ -92,10 +92,10 @@ fun frenchShortMonthName(date: LocalDate): String = when (date.month.number) {
     10 -> "oct."
     11 -> "nov."
     else -> "déc."
-}
+})
 
 /** Comme Month.getDisplayName(TextStyle.FULL, Locale.FRANCE) : "janvier", "février"... */
-fun frenchMonthName(date: LocalDate): String = when (date.month.number) {
+fun frenchMonthName(date: LocalDate): String = tr(when (date.month.number) {
     1 -> "janvier"
     2 -> "février"
     3 -> "mars"
@@ -108,4 +108,4 @@ fun frenchMonthName(date: LocalDate): String = when (date.month.number) {
     10 -> "octobre"
     11 -> "novembre"
     else -> "décembre"
-}
+})

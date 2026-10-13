@@ -18,7 +18,60 @@ private val LANG_INDEX = mapOf("en" to 0, "de" to 1, "nl" to 2, "es" to 3)
 
 fun tr(fr: String): String {
     val i = LANG_INDEX[I18n.language] ?: return fr
-    return TRANSLATIONS[fr]?.getOrNull(i)?.takeIf { it.isNotEmpty() } ?: fr
+    TRANSLATIONS[fr]?.getOrNull(i)?.takeIf { it.isNotEmpty() }?.let { return it }
+    return translateByFragments(fr, I18n.language, i)
+}
+
+private val cache = HashMap<String, String>()
+
+/**
+ * Texte composé (« houle qui monte de 1,2 m à 1,8 m ») : on remplace les morceaux français connus (les plus longs d'abord)
+ * et, en anglais, la virgule décimale devient un point.
+ */
+private fun translateByFragments(text: String, lang: String, i: Int): String {
+    if (text.length < 3 || text.none { it.isLetter() }) return text
+    val key = lang + "|" + text
+    cache[key]?.let { return it }
+    var out = text
+    for (f in FRAGMENTS) {
+        var from = 0
+        while (true) {
+            val at = out.indexOf(f.fr, from)
+            if (at < 0) break
+            val end = at + f.fr.length
+            val okBefore = !f.fr.first().isLetter() || at == 0 || !out[at - 1].isLetter()
+            val okAfter = !f.fr.last().isLetter() || end >= out.length || !out[end].isLetter()
+            val rep = f.tr.getOrNull(i)
+            if (okBefore && okAfter && !rep.isNullOrEmpty()) {
+                out = out.substring(0, at) + rep + out.substring(end)
+                from = at + rep.length
+            } else from = at + 1
+        }
+    }
+    // « 1,2 m à 1,8 m » : le « à » entre deux valeurs.
+    val to = listOf("to", "bis", "tot", "a")[i]
+    out = RANGE_A.replace(out) { it.groupValues[1] + " " + to + " " + it.groupValues[2] }
+    if (lang == "en") out = DECIMAL_COMMA.replace(out) { it.groupValues[1] + "." + it.groupValues[2] }
+    if (cache.size > 4000) cache.clear()
+    cache[key] = out
+    return out
+}
+
+private val RANGE_A = Regex("(\\d[^\\s]*(?: m| s| km/h| kJ| h)?) à (\\d)")
+
+private val DECIMAL_COMMA = Regex("(\\d),(\\d)")
+
+private class Fragment(val fr: String, val tr: List<String>)
+
+/** Morceaux traduisibles à l'intérieur d'un texte composé : les textes de plus d'un mot (ou en minuscules), plus les morceaux de FRAGMENT_TRANSLATIONS. */
+private val FRAGMENTS: List<Fragment> by lazy {
+    val all = HashMap<String, List<String>>()
+    for ((k, v) in TRANSLATIONS) {
+        val t = k.trim()
+        if (t.length >= 4 && (t.contains(' ') || t.first().isLowerCase()) && v.size == 4) if (t !in all) all[t] = v
+    }
+    for ((k, v) in FRAGMENT_TRANSLATIONS) all[k] = v
+    all.map { Fragment(it.key, it.value) }.sortedByDescending { it.fr.length }
 }
 
 /** Comme [tr], avec des valeurs à la place de {0}, {1}… (l'ordre des mots change d'une langue à l'autre). */
@@ -34,7 +87,7 @@ internal fun missingTranslations(): List<String> =
 
 private fun t(en: String, de: String, nl: String, es: String) = listOf(en, de, nl, es)
 
-private val TRANSLATIONS: Map<String, List<String>> = mapOf(
+private val CORE: Map<String, List<String>> = mapOf(
     // Barre du bas
     "Prévisions" to t("Forecast", "Vorhersage", "Voorspelling", "Previsión"),
     "Webcam" to t("Webcam", "Webcam", "Webcam", "Webcam"),
@@ -97,3 +150,11 @@ private val TRANSLATIONS: Map<String, List<String>> = mapOf(
     "Supprimer" to t("Delete", "Löschen", "Verwijderen", "Eliminar"),
     "Modifier" to t("Edit", "Bearbeiten", "Bewerken", "Editar")
 )
+
+/** Le dictionnaire entier : les textes du cœur ci-dessus, puis les fichiers Translations*.kt (générés). */
+private val TRANSLATIONS: Map<String, List<String>> by lazy {
+    HashMap<String, List<String>>().apply {
+        for (part in GENERATED_TRANSLATIONS) for ((k, v) in part) if (k !in this) put(k, v)
+        putAll(CORE)
+    }
+}

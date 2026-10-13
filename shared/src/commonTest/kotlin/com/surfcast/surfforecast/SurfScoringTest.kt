@@ -1,6 +1,7 @@
 package com.surfcast.surfforecast
 
 import kotlinx.datetime.LocalDateTime
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -9,6 +10,9 @@ import kotlin.test.assertTrue
 
 // Valeurs attendues calculées avec un portage des formules de SurfScoring.kt (hauteur / période / vent / profil).
 class SurfScoringTest {
+    // La langue est globale : un autre test (ou la langue du système) ne doit pas traduire les libellés attendus en français.
+    @BeforeTest fun french() { I18n.language = "fr" }
+
 
     private fun hour(
         h: Int,
