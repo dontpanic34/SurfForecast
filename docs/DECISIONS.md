@@ -146,3 +146,6 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **Publication** (13 octobre 2026) : une fois un lot codé et testé, le propriétaire demande de publier sans attendre un nouveau « go » (site `web` puis appli `unified`), puis de lui donner la liste de ce qui reste à faire.
 
 - **Traductions manquantes** (13 octobre 2026) : en allemand, néerlandais ou espagnol, un texte sans traduction s'affiche en anglais.
+
+- **Comprendre dans Réglages** (13 octobre 2026, soir) : « Comprendre » n'est plus un onglet de la barre du bas ; il se trouve dans Réglages > Aide (une seule entrée, plus l'accès depuis les « i »). Remplace la décision précédente (onglet du bas).
+- **En-tête du spot** (13 octobre 2026, soir) : loupe à gauche, favoris en pastilles au centre (pas de titre ni de chevrons), thème à droite ; les favoris se placent par un menu « Favori 1, 2, 3 » depuis l'étoile du choix du spot.

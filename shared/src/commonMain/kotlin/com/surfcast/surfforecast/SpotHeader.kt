@@ -32,13 +32,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.material3.Icon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
 /**
- * L'en-tête du spot, épinglé en haut : ‹ Montalivet ▾ ☆ › et Thème. Le nom ouvre la liste des spots, l'étoile ajoute ou retire des
- * favoris, les flèches (ou un balayage de l'en-tête) passent au favori d'à côté. Les points disent combien de favoris on parcourt.
+ * L'en-tête du spot, épinglé en haut : une loupe (choix du spot), les favoris en pastilles (l'actif est plein, un tap passe à un
+ * autre, un balayage de l'en-tête aussi) et le thème. Le spot ouvert qui n'est pas un favori prend une pastille active.
  */
 @Composable
 fun SpotHeader(
@@ -81,30 +82,33 @@ fun SpotHeader(
                 ) { _, dx -> drag += dx }
             }
     ) {
+        // Loupe à gauche, les favoris en pastilles au centre (l'actif est plein), le thème à droite. Plus de titre ni de chevrons :
+        // le nom du spot actif est dans sa pastille ; la loupe ouvre le choix du spot.
         Row(
             modifier = Modifier.fillMaxWidth().offset { IntOffset(with(density) { nudge.value.dp.roundToPx() }, 0) },
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val multi = filled.size > 1
-            val soft = colors.onSurface.copy(alpha = if (multi) 0.4f else 0f)
-            Spacer(Modifier.width(48.dp))
-            Text("‹", fontSize = 26.sp, color = soft, modifier = Modifier.clip(CircleShape).clickable(enabled = multi) { step(-1) }.padding(horizontal = 10.dp))
-            Row(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).clickable(onClick = onOpenSpots).padding(horizontal = 4.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
-            ) {
-                Text(spotName, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = colors.onBackground, maxLines = 1)
+            Box(modifier = Modifier.size(44.dp).clip(CircleShape).clickable(onClick = onOpenSpots), contentAlignment = Alignment.Center) {
+                Icon(SurfIcons.Search, contentDescription = tr("Choisir un spot"), tint = colors.onBackground, modifier = Modifier.size(22.dp))
             }
-            Text("›", fontSize = 26.sp, color = soft, modifier = Modifier.clip(CircleShape).clickable(enabled = multi) { step(+1) }.padding(horizontal = 10.dp))
-            Box(modifier = Modifier.width(48.dp), contentAlignment = Alignment.Center) { themeToggle() }
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            filled.forEach { i ->
-                Box(
-                    modifier = Modifier.padding(horizontal = 3.dp).size(if (i == activeIndex) 7.dp else 5.dp).clip(CircleShape)
-                        .background(if (i == activeIndex) colors.primary else colors.onSurface.copy(alpha = 0.25f))
-                )
+            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+                val names = filled.map { favorites[it]!! to (it == activeIndex && favorites[it] == spotName) }.toMutableList()
+                // Le spot ouvert n'est pas un favori : on l'ajoute, actif, pour toujours voir où on est.
+                if (names.none { it.second }) { if (names.size >= 3) names.removeAt(names.lastIndex); names += spotName to true }
+                names.forEach { (name, on) ->
+                    val idx = filled.firstOrNull { favorites[it] == name }
+                    Text(
+                        name, fontSize = 13.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Medium, maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        color = if (on) colors.onPrimary else colors.onBackground.copy(alpha = 0.7f),
+                        modifier = Modifier.weight(1f, fill = false).clip(RoundedCornerShape(50))
+                            .background(if (on) colors.primary else colors.surfaceVariant)
+                            .clickable { if (on || idx == null) onOpenSpots() else onSelectIndex(idx) }
+                            .padding(horizontal = 11.dp, vertical = 7.dp)
+                    )
+                }
             }
+            Box(modifier = Modifier.width(44.dp), contentAlignment = Alignment.Center) { themeToggle() }
         }
     }
 }
