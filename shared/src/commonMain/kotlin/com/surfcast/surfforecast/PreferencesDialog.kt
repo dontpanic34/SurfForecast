@@ -399,6 +399,9 @@ fun SurfPreferencesDialog(
                         SettingsSection("Langue") {
                             SettingsField("Langue", top = false) { LanguageFlags(language = language, onChange = onLanguageChanged) }
                         }
+                        SettingsSection("Historique") {
+                            SettingsRow("Historique des relevés", "Ce que l'appli a relevé en coulisse : les prévisions heure par heure", SettingsIcons.Layers, top = false) { onViewLogs() }
+                        }
                         if (onShowTour != null) SettingsSection("Visite guidée") {
                             SettingsRow("Revoir la visite guidée", "Les bulles qui expliquent l'écran principal", SettingsIcons.Compass, top = false, onClick = onShowTour)
                         }

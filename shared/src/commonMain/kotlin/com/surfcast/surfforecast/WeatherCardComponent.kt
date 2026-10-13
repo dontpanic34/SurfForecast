@@ -70,17 +70,34 @@ fun WeatherCardComponent(
                 // Le ciel : bleu et plus haut quand il pleut, sinon la couverture nuageuse en gris (la couverture ne compte pas sous la pluie).
                 valueOf = { g ->
                     val rain = g.maxOf { it.precipitationMm }
-                    if (rain >= 0.05) 60.0 + minOf(rain, 1.0) * 40.0 else g.map { it.cloudCover }.average()
+                    // Ciel dégagé : une barre basse (jaune à rouge selon la température) plutôt que rien.
+                    if (rain >= 0.05) 60.0 + minOf(rain, 1.0) * 40.0 else maxOf(g.map { it.cloudCover }.average(), 14.0)
                 },
                 colorOf = { g, sel ->
                     val raining = g.any { it.precipitationMm >= 0.05 }
-                    val base = if (raining) Color(0xFF5AA9E6) else if (isDark) Color(0xFF9FB2BD) else Color(0xFF6F8794)
+                    val cover = g.map { it.cloudCover }.average()
+                    val temp = g.map { it.temperature }.average()
+                    // La couleur dit le ciel : de la pluie en bleu ; des nuages en gris, plus sombre quand le ciel se couvre ; un ciel
+                    // dégagé en jaune, orange puis rouge selon la température.
+                    val base = if (raining) Color(0xFF5AA9E6) else skyColor(cover, temp, isDark)
                     if (sel) base else base.copy(alpha = 0.85f)
                 }
             )
             }
         }
     }
+}
+
+/** La couleur d'une barre du ciel : gris selon la couverture nuageuse ; sans nuages, jaune (frais) à rouge (très chaud) selon la température. */
+internal fun skyColor(cover: Double, tempC: Double, dark: Boolean): Color {
+    if (cover >= 15.0) {
+        val light = if (dark) Color(0xFFD3DCE2) else Color(0xFFB4C1CA)
+        val heavy = if (dark) Color(0xFF55697A) else Color(0xFF4C6070)
+        return androidx.compose.ui.graphics.lerp(light, heavy, ((cover - 15.0) / 85.0).coerceIn(0.0, 1.0).toFloat())
+    }
+    val yellow = Color(0xFFF7D23E); val orange = Color(0xFFF59A23); val red = Color(0xFFE5483B)
+    return if (tempC <= 26.0) androidx.compose.ui.graphics.lerp(yellow, orange, ((tempC - 14.0) / 12.0).coerceIn(0.0, 1.0).toFloat())
+    else androidx.compose.ui.graphics.lerp(orange, red, ((tempC - 26.0) / 10.0).coerceIn(0.0, 1.0).toFloat())
 }
 
 /** Une couleur pour l'indice UV : vert (faible), jaune (modéré), orange (fort), rouge (très fort et plus). */
