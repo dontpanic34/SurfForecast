@@ -176,14 +176,13 @@ private fun WeatherBands(
                         drawCircle(Color(0xFF0B1519), 5.5.dp.toPx(), Offset(cx, cy), style = Stroke(2.dp.toPx()))
                     }
                 }
-                // La ligne d'heures : l'heure choisie d'abord, puis le lever et le coucher, puis les heures rondes ; une étiquette qui en toucherait une autre disparaît.
+                // La ligne d'heures : seulement l'heure choisie, le lever et le coucher (plus d'heures rondes) ; une étiquette qui en toucherait une autre disparaît.
                 class Lbl(val cx: Float, val text: String, val color: Color, val size: Float, val bold: Boolean, val prio: Int)
                 fun xOfTime(t: Float) = (t - firstHour + 0.5f) / n * size.width
                 val items = ArrayList<Lbl>()
                 if (selIndex >= 0) items.add(Lbl(x0(selIndex) + cellW / 2f, selected.rawTime.formatHHmm(), nacre, 12.5f, true, 0))
                 if (sunrise != null) items.add(Lbl(xOfTime(sunrise), sunHm(sun!!.sunrise), sunYellow, 10.5f, true, 1))
                 if (sunset != null) items.add(Lbl(xOfTime(sunset), sunHm(sun!!.sunset), duskOrange, 10.5f, true, 1))
-                for (i in 0 until n) { val hr = hours[i].rawTime.hour; if (hr % 3 == 0) items.add(Lbl(x0(i) + cellW / 2f, "$hr h", muted, 10.5f, false, 2)) }
                 val laid = ArrayList<Pair<Lbl, androidx.compose.ui.text.TextLayoutResult>>()
                 val top = solTop + solH + BAND_GAP.dp.toPx() * 0.6f
                 for (lb in items.sortedBy { it.prio }) {
