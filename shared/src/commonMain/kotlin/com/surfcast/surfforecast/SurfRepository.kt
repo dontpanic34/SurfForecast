@@ -28,6 +28,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -292,6 +293,30 @@ class SurfRepository(
         }
 
         return RawMarineHourly(times, waveHeights, wavePeriods, waveDirs, windWaveHeights, windWavePeriods, windWaveDirs, secHeights, secPeriods, secDirs)
+    }
+
+    /**
+     * Dernière mesure de la bouée de référence du point, lue par le relais surflog.fr/api/bouee (cache de 15 minutes).
+     * Null sans bouée proche, sans réseau ou sans mesure : la carte n'affiche alors rien.
+     */
+    suspend fun fetchBuoyReading(latitude: Double, longitude: Double): BuoyReading? {
+        val (buoy, km) = BuoyCatalog.referenceFor(latitude, longitude) ?: return null
+        return try {
+            val points = httpGet("https://surflog.fr/api/bouee/${buoy.code}")["points"]?.jsonArray ?: return null
+            val last = points.mapNotNull { it as? JsonObject }.lastOrNull { it["hs"]?.jsonPrimitive?.doubleOrNull != null } ?: return null
+            BuoyReading(
+                buoy = buoy, distanceKm = km,
+                significantHeight = last["hs"]!!.jsonPrimitive.double,
+                maxHeight = last["hmax"]?.jsonPrimitive?.doubleOrNull,
+                period = last["th"]?.jsonPrimitive?.doubleOrNull,
+                direction = last["dir"]?.jsonPrimitive?.doubleOrNull?.roundToInt(),
+                timeUtc = LocalDateTime.parse(last["t"]!!.jsonPrimitive.content)
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /**

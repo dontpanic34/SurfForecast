@@ -25,6 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun SurfCardComponent(
@@ -36,7 +39,9 @@ fun SurfCardComponent(
     dragHandleModifier: Modifier = Modifier,
     modifier: Modifier = Modifier,
     // Orientation de la plage : la taille de la flèche de houle dit si la houle est bien orientée.
-    beachFacing: Int? = null
+    beachFacing: Int? = null,
+    // Dernière mesure de la bouée de référence : une ligne sous la houle, pour comparer la prévision au réel.
+    buoy: BuoyReading? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -93,6 +98,11 @@ fun SurfCardComponent(
                     energyKj = calculateWaveEnergyReal(selectedHour.secondaryHeight, selectedHour.secondaryPeriod),
                     direction = selectedHour.secondaryDirection, onSurfaceColor = onSurfaceColor, primaryColor = primaryColor, secondary = true, beachFacing = beachFacing
                 )
+            }
+
+            buoy?.let { b ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(buoyLine(b), fontSize = 11.sp, color = onSurfaceColor.copy(alpha = 0.7f), maxLines = 2)
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -211,4 +221,14 @@ private fun SwellLine(
             Text("$energyKj kJ", fontSize = small, fontWeight = FontWeight.Bold, color = Color(0xFF8F6300).copy(alpha = fade))
         }
     }
+}
+
+
+/** « Bouée Cap Ferret, à 43 km : 1,7 m · 9,8 s · mesuré à 09 h 30 » (heure locale). */
+private fun buoyLine(b: BuoyReading): String {
+    val local = b.timeUtc.toInstant(TimeZone.UTC).toLocalDateTime(TimeZone.currentSystemDefault())
+    val h = formatDecimal(b.significantHeight, 1).replace('.', ',')
+    val period = b.period?.let { " · ${it.roundToInt()} s" }.orEmpty()
+    val max = b.maxHeight?.let { " (max ${formatDecimal(it, 1).replace('.', ',')} m)" }.orEmpty()
+    return "Bouée ${b.buoy.name}, à ${b.distanceKm} km : $h m$period$max · mesuré à ${local.hour} h ${local.minute.toString().padStart(2, '0')}"
 }
