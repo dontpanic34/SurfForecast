@@ -48,10 +48,10 @@ fun IosInstallGuideDialog(onDismiss: () -> Unit) {
                     }
                 }
                 GuideStep(2, "Fais défiler le menu et choisis « Sur l'écran d'accueil ».") {
-                    Text("➕", fontSize = 22.sp)
+                    Text("+", fontSize = 24.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Light, color = MaterialTheme.colorScheme.primary)
                 }
                 GuideStep(3, "Touche « Ajouter » en haut à droite. L'icône Surf Log arrive sur ton écran d'accueil.") {
-                    Text("✅", fontSize = 22.sp)
+                    Text("OK", fontSize = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
                 Text(
                     "Astuce : à faire depuis Safari, avec le site ouvert (pas depuis une application qui l'ouvre en fenêtre intégrée).",

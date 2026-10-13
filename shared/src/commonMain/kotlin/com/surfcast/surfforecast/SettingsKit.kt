@@ -78,6 +78,11 @@ object SettingsIcons {
     val Wind = icon("wind", "M3 9h10a2.5 2.5 0 1 0-2.5-2.5M3 14h14a2.5 2.5 0 1 1-2.5 2.5M3 19h7")
     val Wave = icon("wave", "M2.5 9c2.5-3 4.5-3 7 0s4.5 3 7 0 3.5-2 5 0M2.5 15c2.5-3 4.5-3 7 0s4.5 3 7 0 3.5-2 5 0")
     val Cloud = icon("cloud", "M7 18a4 4 0 0 1-.5-8A5.5 5.5 0 0 1 17 8.5 4.8 4.8 0 0 1 17.5 18H7Z")
+    val Gear = icon(
+        "gear",
+        "M19.4 13c.04-.32.07-.65.07-1s-.03-.68-.07-1l2.1-1.65c.2-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.6 11c-.04.32-.07.65-.07 1s.03.68.07 1l-2.1 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64L19.4 13Z",
+        "M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"
+    )
     val TextSize = icon("text", "M4 18 9 6l5 12M5.8 14h6.4M15 18l3-7 3 7M16 16h4")
 }
 
@@ -258,4 +263,61 @@ fun SettingsPreviewBox(label: String, content: @Composable ColumnScope.() -> Uni
         Text(label.uppercase(), fontSize = 11.sp, letterSpacing = 0.8.sp, color = colors.onSurfaceVariant)
         content()
     }
+}
+
+/** Une réponse à choisir (un seul choix : rond ; plusieurs : case) avec son titre et une aide. */
+@Composable
+fun SettingsChoiceRow(title: String, hint: String? = null, selected: Boolean, multi: Boolean = false, top: Boolean = true, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    if (top) SettingsDivider()
+    Row(
+        modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 52.dp)
+            .background(if (selected) colors.primaryContainer.copy(alpha = 0.35f) else Color.Transparent)
+            .clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = colors.onSurface)
+            if (!hint.isNullOrBlank()) Text(hint, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+        }
+        Spacer(Modifier.width(10.dp))
+        val shape = if (multi) RoundedCornerShape(6.dp) else RoundedCornerShape(50)
+        Box(
+            modifier = Modifier.size(22.dp).clip(shape)
+                .background(if (selected) colors.primary else Color.Transparent)
+                .border(BorderStroke(2.dp, if (selected) colors.primary else colors.outline), shape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (selected) Box(modifier = Modifier.size(if (multi) 10.dp else 8.dp).clip(if (multi) RoundedCornerShape(2.dp) else RoundedCornerShape(50)).background(colors.onPrimary))
+        }
+    }
+}
+
+/** Un bouton : plein pour l'action principale, cerné pour une action secondaire. */
+@Composable
+fun SettingsButton(text: String, primary: Boolean = true, enabled: Boolean = true, modifier: Modifier = Modifier.fillMaxWidth(), onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val bg = if (!enabled) colors.onSurface.copy(alpha = 0.08f) else if (primary) colors.primary else Color.Transparent
+    val fg = if (!enabled) colors.onSurface.copy(alpha = 0.38f) else if (primary) colors.onPrimary else colors.primary
+    Box(
+        modifier = modifier.defaultMinSize(minHeight = 46.dp).clip(RoundedCornerShape(12.dp)).background(bg)
+            .then(if (!primary) Modifier.border(BorderStroke(1.dp, if (enabled) colors.primary else colors.outlineVariant), RoundedCornerShape(12.dp)) else Modifier)
+            .clickable(enabled = enabled, onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) { Text(text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = fg) }
+}
+
+/** Une barre de progression fine. */
+@Composable
+fun SettingsProgress(fraction: Float) {
+    val colors = MaterialTheme.colorScheme
+    Box(modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(colors.outlineVariant)) {
+        Box(modifier = Modifier.fillMaxWidth(fraction.coerceIn(0.02f, 1f)).height(4.dp).background(colors.primary))
+    }
+}
+
+/** Un titre de bloc en petites capitales, hors liste. */
+@Composable
+fun SettingsLabel(text: String) {
+    Text(text.uppercase(), fontSize = 11.5.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 6.dp))
 }

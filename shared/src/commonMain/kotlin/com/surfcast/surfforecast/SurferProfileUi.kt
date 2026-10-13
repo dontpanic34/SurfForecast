@@ -1,7 +1,9 @@
 @file:Suppress("SpellCheckingInspection")
 package com.surfcast.surfforecast
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,30 +45,29 @@ internal fun ScorePreviewList(surferLevel: String) {
 fun ProfileBenefitsCard() {
     val colors = MaterialTheme.colorScheme
     var open by remember { mutableStateOf(false) }
-    Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.primary.copy(alpha = 0.12f)).padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Text("Tes notes, à ta mesure", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-        Text(
-            "Dis-nous quelle vague tu cherches : les notes et le « trop gros » deviennent les tiens. Ça prend une minute.",
-            fontSize = 12.5.sp, color = colors.onSurfaceVariant
-        )
-        Text(
-            if (open) "Masquer" else "Comment ça marche ?", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.primary,
-            modifier = Modifier.clip(RoundedCornerShape(50)).clickable { open = !open }.padding(vertical = 2.dp)
-        )
-        if (open) {
+    SettingsSection("Pourquoi un profil") {
+        Column(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Tes notes, à ta mesure", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
             Text(
-                "Deux surfeurs ne cherchent pas la même vague. Une journée à 1,4 m et 10 s peut être parfaite pour l'un et trop grosse pour l'autre.",
-                fontSize = 12.sp, color = colors.onSurfaceVariant
+                "Dis-nous quelle vague tu cherches : les notes et le « trop gros » deviennent les tiens. Ça prend une minute.",
+                fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant
             )
-            listOf(
-                "🎯 Des notes faites pour toi : la taille qui te convient, et « trop gros » (orange) quand ça dépasse ton niveau, sans que ce soit « mauvais ».",
-                "💨 Ta tolérance au vent, aux rafales, au clapot et aux houles courtes : les notes et les étoiles en tiennent compte.",
-                "🏄 Ton matériel : tes planches avec leur volume et leur ratio litres par kilo.",
-                "📓 Le journal de bord : tu choisis ta planche en un geste, et l'appli retient avec quoi tu surfes le mieux."
-            ).forEach { Text(it, fontSize = 12.sp, color = colors.onBackground) }
+            Text(
+                if (open) "Masquer" else "Comment ça marche ?", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary,
+                modifier = Modifier.clip(RoundedCornerShape(50)).clickable { open = !open }.padding(vertical = 4.dp)
+            )
+            if (open) {
+                Text(
+                    "Deux surfeurs ne cherchent pas la même vague. Une journée à 1,4 m et 10 s peut être parfaite pour l'un et trop grosse pour l'autre.",
+                    fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant
+                )
+            }
+        }
+        if (open) {
+            SettingsRow("Des notes faites pour toi", "La taille qui te convient, et « trop gros » (orange) quand ça dépasse ton niveau, sans que ce soit « mauvais ».", SettingsIcons.Tune)
+            SettingsRow("Ta tolérance", "Vent, rafales, clapot et houles courtes : les notes et les étoiles en tiennent compte.", SettingsIcons.Wind)
+            SettingsRow("Ton matériel", "Tes planches avec leur volume et leur ratio litres par kilo.", SettingsIcons.Board)
+            SettingsRow("Le journal de bord", "Tu choisis ta planche en un geste, et l'appli retient avec quoi tu surfes le mieux.", SettingsIcons.Book)
         }
     }
 }
@@ -79,20 +80,24 @@ fun ProfileNudgeCard(onOpen: () -> Unit, onLater: () -> Unit, modifier: Modifier
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(colors.primary.copy(alpha = 0.14f))
+            .background(colors.surface)
+            .border(BorderStroke(1.dp, colors.outlineVariant), RoundedCornerShape(12.dp))
             .clickable(onClick = onOpen)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text("⭐ Des prévisions calculées pour toi", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SettingsIcon(SettingsIcons.User, size = 20.dp)
+            Text("Des prévisions calculées pour toi", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+        }
         Text(
             "Renseigne ton profil (niveau, vent, poids, planches) : sans lui, la note est celle d'un surfeur moyen. Une minute suffit.",
-            fontSize = 11.5.sp, color = colors.onSurfaceVariant
+            fontSize = 12.sp, lineHeight = 16.sp, color = colors.onSurfaceVariant
         )
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Renseigner mon profil ›", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.primary, modifier = Modifier.weight(1f))
+            Text("Renseigner mon profil ›", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.primary, modifier = Modifier.weight(1f))
             Text(
-                "Plus tard", fontSize = 11.sp, color = colors.onSurfaceVariant,
+                "Plus tard", fontSize = 12.sp, color = colors.onSurfaceVariant,
                 modifier = Modifier.clip(RoundedCornerShape(50)).clickable(onClick = onLater).padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
@@ -128,9 +133,7 @@ fun ProfilePage(
                 LevelCard(result)
                 LevelLadder(result)
             }
-            if (levelQuiz != null) Button(onClick = { mode = "quiz" }, modifier = Modifier.fillMaxWidth()) {
-                Text(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire", fontWeight = FontWeight.Bold)
-            }
+            if (levelQuiz != null) SettingsButton(if (levelQuiz.result == null) "Trouver mon niveau" else "Refaire le questionnaire") { mode = "quiz" }
         }
     }
 }

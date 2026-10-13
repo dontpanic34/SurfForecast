@@ -118,6 +118,8 @@ fun SurfPreferencesDialog(
     var modelInfo by remember { mutableStateOf<String?>(null) }
     // Page ouverte : null = menu des Paramètres, sinon "display", "forecast", "journal", "app" ou "help".
     var page by remember { mutableStateOf(if (startPage == "profileQuiz") "profile" else startPage) }
+    // Vrai quand le questionnaire occupe la page de profil : le bloc Matériel est alors masqué.
+    var profileFocus by remember { mutableStateOf(false) }
 
     modelInfo?.let { name ->
         val info = forecastModelInfo(name)
@@ -362,7 +364,6 @@ fun SurfPreferencesDialog(
                     }
 
                     if (page == "profile") Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        var profileFocus by remember { mutableStateOf(false) }
                         ProfilePage(
                             surferLevel = surferLevel,
                             onInfo = { showScoreInfo = true },
@@ -372,7 +373,7 @@ fun SurfPreferencesDialog(
                         )
                     }
 
-                    if (page == "profile") SettingsSection("Matériel") {
+                    if (page == "profile" && !profileFocus) SettingsSection("Matériel") {
                         SettingsRow("Mon matériel", "Planches, planche du jour, volume conseillé", SettingsIcons.Board, top = false) { page = "gear" }
                     }
 
@@ -477,7 +478,7 @@ fun SurfPreferencesDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = pillShape,
                                     colors = ButtonDefaults.buttonColors(containerColor = colors.primaryContainer)
-                                ) { Text("⬇ Télécharger l'APK", fontSize = 12.sp, color = colors.onPrimaryContainer) }
+                                ) { Text("Télécharger l'APK", fontSize = 12.sp, color = colors.onPrimaryContainer) }
                                 Text(
                                     "Android demandera d'autoriser l'installation depuis le navigateur. Le journal du site et celui de l'appli sont séparés : sauvegarde puis restaure pour transférer.",
                                     fontSize = 11.5.sp,

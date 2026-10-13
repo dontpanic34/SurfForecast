@@ -56,7 +56,7 @@ fun BeachFacingCard(
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("📍 Orientation de $spotName", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        Text("Orientation de $spotName", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
         Text(
             "Vers où regarde la plage (275° = plein ouest). Le score s'en sert pour savoir si la houle arrive de face " +
                 "et si le vent est offshore (de la terre) ou onshore (de la mer). Valeur estimée : corrige-la si tu connais la plage.",
@@ -69,7 +69,7 @@ fun BeachFacingCard(
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(colors.background).padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("🔎 Où trouver l'orientation ?", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
+            Text("Où trouver l'orientation ?", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground)
             Text(
                 "• Sur Google Maps en vue satellite : regarde vers où la plage fait face à la mer (face à l'ouest ≈ 270°, au nord ≈ 0°).\n" +
                     "• Sur Google, tape « orientation plage $spotName » ou « $spotName beach facing ».\n" +

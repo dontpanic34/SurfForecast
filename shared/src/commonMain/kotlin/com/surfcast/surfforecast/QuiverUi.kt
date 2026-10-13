@@ -3,6 +3,7 @@ package com.surfcast.surfforecast
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -87,8 +88,9 @@ private fun FamilySelector(
             Box(
                 modifier = Modifier
                     .padding(end = 6.dp)
-                    .clip(pillShape)
-                    .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else onSurfaceColor.copy(alpha = 0.08f))
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isSelected) primaryColor.copy(alpha = 0.18f) else Color.Transparent)
+                    .border(androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) primaryColor else onSurfaceColor.copy(alpha = 0.25f)), RoundedCornerShape(10.dp))
                     .clickable { onSelect(id) }
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
@@ -137,8 +139,9 @@ internal fun PillRow(options: List<String>, selected: Int, onSelect: (Int) -> Un
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(50))
-                            .background(if (on) colors.primary else colors.onBackground.copy(alpha = 0.08f))
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (on) colors.primaryContainer else Color.Transparent)
+                            .border(androidx.compose.foundation.BorderStroke(1.dp, if (on) colors.primary else colors.outlineVariant), RoundedCornerShape(10.dp))
                             .clickable { onSelect(i) }
                             .padding(horizontal = 6.dp, vertical = 7.dp),
                         contentAlignment = Alignment.Center
@@ -177,7 +180,8 @@ private fun DimensionSlider(
             value = value.toFloat(),
             onValueChange = { onChange(it.roundToInt().coerceIn(range.first, range.last)) },
             valueRange = range.first.toFloat()..range.last.toFloat(),
-            steps = range.last - range.first - 1
+            steps = range.last - range.first - 1,
+            colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary, inactiveTrackColor = colors.outlineVariant, activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent)
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(minLabel, fontSize = 10.5.sp, color = colors.onSurface.copy(alpha = 0.55f))
@@ -255,14 +259,14 @@ fun GearContent(
         // --- Mon volume : un seul chiffre en gros ---
         Spacer(modifier = Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Mon volume", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+            SettingsLabel("Mon volume")
             IconButton(onClick = { showInfo = !showInfo }, modifier = Modifier.size(24.dp)) {
                 Icon(SurfIcons.Info, contentDescription = "Comment ce volume est calculé", tint = colors.primary, modifier = Modifier.size(15.dp))
             }
         }
         if (showInfo) {
             Column(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).border(androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant), RoundedCornerShape(10.dp)).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text("Comment on l'a calculé", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
@@ -283,7 +287,7 @@ fun GearContent(
             }
         }
         Column(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(14.dp),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).border(androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant), RoundedCornerShape(10.dp)).padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if (mainRange != null) {
@@ -332,7 +336,7 @@ fun GearContent(
 
         run {
         // --- Mes mensurations : poids, âge (facultatif) ---
-        Text("Mes mensurations", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        SettingsLabel("Mes mensurations")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             var weightText by remember { mutableStateOf(if (body.weightKg > 0) body.weightKg.toString() else "") }
             var ageText by remember { mutableStateOf(if (body.ageYears > 0) body.ageYears.toString() else "") }
@@ -353,7 +357,7 @@ fun GearContent(
         }
         run {
         // --- Mes planches ---
-        Text("Mes planches", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
+        SettingsLabel("Mes planches")
         if (quiverBoards.isEmpty()) {
             Text(
                 text = "Aucune planche pour l'instant. Ajoute ta première planche ci-dessous.",
@@ -362,7 +366,7 @@ fun GearContent(
         }
         quiverBoards.forEach { board ->
             val boardRange = recommendedVolumeRange(body, levelIdx, board.family)
-            Surface(modifier = Modifier.fillMaxWidth(), color = colors.surface, shape = RoundedCornerShape(10.dp)) {
+            Surface(modifier = Modifier.fillMaxWidth(), color = colors.surface, shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -391,10 +395,10 @@ fun GearContent(
         }
 
         if (!showAddForm) {
-            OutlinedButton(onClick = { showAddForm = true }, modifier = Modifier.fillMaxWidth()) { Text("+ Ajouter une planche") }
+            SettingsButton("+ Ajouter une planche", primary = false) { showAddForm = true }
         } else {
             Column(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).padding(12.dp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surface).border(androidx.compose.foundation.BorderStroke(1.dp, colors.outlineVariant), RoundedCornerShape(10.dp)).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Nom vide : l'utilisateur écrit le nom de sa planche.
@@ -459,17 +463,13 @@ fun GearContent(
                 )
 
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    TextButton(onClick = { resetForm() }, modifier = Modifier.weight(1f)) { Text("Annuler") }
+                    SettingsButton("Annuler", primary = false, modifier = Modifier.weight(1f)) { resetForm() }
                     Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            val dims = formatSliderDimensions(lengthIn, widthEighths, thicknessSixteenths)
-                            onAddBoard(model.trim(), family, dims, finSetup.trim(), volumeL, isEstimated && volumeL != null)
-                            resetForm()
-                        },
-                        enabled = model.isNotBlank(),
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Ajouter") }
+                    SettingsButton("Ajouter", enabled = model.isNotBlank(), modifier = Modifier.weight(1f)) {
+                        val dims = formatSliderDimensions(lengthIn, widthEighths, thicknessSixteenths)
+                        onAddBoard(model.trim(), family, dims, finSetup.trim(), volumeL, isEstimated && volumeL != null)
+                        resetForm()
+                    }
                 }
             }
         }

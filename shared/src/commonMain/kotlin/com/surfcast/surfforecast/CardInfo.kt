@@ -92,11 +92,12 @@ object CardGear {
 fun CardInfoButton(guideKey: String) {
     val on = CardGear.open == guideKey
     val colors = MaterialTheme.colorScheme
-    Text(
-        "⚙", fontSize = 17.sp, color = if (on) colors.onPrimaryContainer else colors.onSurface.copy(alpha = 0.55f),
+    Box(
         modifier = Modifier.clip(CircleShape).background(if (on) colors.primaryContainer else Color.Transparent)
-            .clickable { CardGear.open = if (on) null else guideKey }.padding(horizontal = 7.dp, vertical = 2.dp)
-    )
+            .clickable { CardGear.open = if (on) null else guideKey }.padding(horizontal = 7.dp, vertical = 4.dp)
+    ) {
+        SettingsIcon(SettingsIcons.Gear, if (on) colors.onPrimaryContainer else colors.onSurface.copy(alpha = 0.55f), 20.dp)
+    }
 }
 
 private val CARD_TITLES = mapOf(

@@ -683,7 +683,7 @@ fun MainScreen(
                                     viewModel.offlineSinceMillis?.let { ms ->
                                         val dt = epochMillisToLocalDateTime(ms)
                                         Text(
-                                            text = "📴 Pas de réseau : prévisions du ${dt.dayOfMonth}/${dt.monthNumber} à ${dt.hour}h${dt.minute.toString().padStart(2, '0')}",
+                                            text = "Pas de réseau : prévisions du ${dt.dayOfMonth}/${dt.monthNumber} à ${dt.hour}h${dt.minute.toString().padStart(2, '0')}",
                                             fontSize = 12.sp,
                                             color = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -809,16 +809,16 @@ fun MainScreen(
             CoachMarkOverlay(
                 steps = listOf(
                     CoachStep(
-                        "weekCard", "★ Étoiles et couleurs",
+                        "weekCard", "Étoiles et couleurs",
                         "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⚙ d'un encart : réglages et explications."
                     ),
                     CoachStep(
-                        "settings", "⚙️ Ton profil",
+                        "settings", "Ton profil",
                         "Pour l'instant, les notes sont celles d'un surfeur moyen. Réponds à quelques questions : elles deviennent les tiennes (taille, vent, « gros jour »). Une minute.",
                         actionLabel = "Renseigner mon profil",
                         onAction = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true }
                     ),
-                    CoachStep("journal", "📓 Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
+                    CoachStep("journal", "Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
                 ),
                 targets = coachTargets,
                 onFinish = { viewModel.dismissHomeTour() }

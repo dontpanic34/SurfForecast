@@ -18,11 +18,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private data class GuideSection(val icon: String, val title: String, val text: String)
+
+private val GUIDE_ICONS = listOf(SettingsIcons.Wave, SettingsIcons.Ruler, SettingsIcons.Tune, SettingsIcons.Compass, SettingsIcons.Wind, SettingsIcons.Layers, SettingsIcons.Chart, SettingsIcons.Book, SettingsIcons.Globe)
 
 private val guideSections = listOf(
     GuideSection(
@@ -84,11 +88,11 @@ private val guideSections = listOf(
         "📅", "Quelle confiance accorder à chaque jour ?",
         "• Aujourd'hui et demain : fiable (modèle Météo-France AROME pour le vent, maille 1,3 km).\n" +
             "• Après-demain et J+3 : bon indicateur.\n" +
-            "• À partir de J+4 : une tendance, pas une promesse. Elle se précise en se rapprochant : compare toujours la veille."
+            "• À partir de J+4 : une tendance, pas une promesse (les étoiles s'écrivent avec un « ~ »). Une houle lointaine peut arriver une demi-journée plus tôt ou plus tard. Elle se précise en se rapprochant : compare toujours la veille."
     ),
     GuideSection(
         "📡", "D'où viennent les données",
-        "• Houle et vent : Open-Meteo.com (CC BY 4.0), à partir des modèles Météo-France (AROME, ARPEGE, MFWAM) et ECMWF.\n" +
+        "• Houle : consensus de trois modèles de vagues (MF-WAM de Météo-France, ECMWF Wave, GFS Wave). Vent : ECMWF et GFS. Ciel : Météo-France (AROME, ARPEGE), puis ECMWF. Le tout vient d'Open-Meteo.com (CC BY 4.0).\n• Bouées : Candhis, Cerema (licence ouverte Etalab 2.0), pour comparer la prévision à la mesure.\n" +
             "• Marées et coefficients en France : api-maree.fr, à partir des composantes harmoniques Ifremer / PREVIMER (CC BY 4.0). Ce sont des prévisions calculées, à vérifier avant de partir. Hors de France : estimation Open-Meteo.\n" +
             "• Température de la mer : Open-Meteo Marine."
     )
@@ -98,28 +102,23 @@ private val guideSections = listOf(
 @Composable
 fun ForecastGuideContent() {
     val colors = MaterialTheme.colorScheme
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Touche un titre pour lire l'explication.", fontSize = 12.5.sp, color = colors.onSurfaceVariant)
-        guideSections.forEach { section ->
-            var open by remember { mutableStateOf(false) }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(colors.surfaceVariant)
-                    .clickable { open = !open }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(section.icon, fontSize = 18.sp, modifier = Modifier.padding(end = 10.dp))
-                    Text(section.title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground, modifier = Modifier.weight(1f))
-                    Text(if (open) "⌃" else "⌄", fontSize = 18.sp, color = colors.primary)
-                }
-                if (open) {
-                    Text(section.text, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SettingsNote("Touche un titre pour lire l'explication.")
+        SettingsSection {
+            guideSections.forEachIndexed { i, section ->
+                var open by remember { mutableStateOf(false) }
+                if (i > 0) SettingsDivider()
+                Column(modifier = Modifier.fillMaxWidth().clickable { open = !open }.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SettingsIcon(GUIDE_ICONS.getOrElse(i) { SettingsIcons.Book })
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(section.title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
+                        Text(if (open) "–" else "+", fontSize = 18.sp, color = colors.primary)
+                    }
+                    if (open) Text(section.text, fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant)
                 }
             }
         }
+        SettingsHelpLink("Comprendre la houle en leçons") { ComprendreState.open() }
     }
 }
