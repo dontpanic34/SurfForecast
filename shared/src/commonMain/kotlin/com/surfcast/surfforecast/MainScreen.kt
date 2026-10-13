@@ -1293,7 +1293,7 @@ fun DynamicCardsSection(
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 8.dp)) {
                                     CardControlsRow(
-                                        title = "Prévision heure par heure", guide = "hourly",
+                                        title = "Prévision heure par heure",
                                         isCollapsed = isCollapsed,
                                         onToggleCollapse = { viewModel.toggleCardCollapsed(cardKey) },
                                         dragHandleModifier = Modifier,
