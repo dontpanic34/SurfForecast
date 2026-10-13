@@ -24,10 +24,10 @@ main{max-width:440px;margin:0 auto;display:grid;gap:12px}h1{font-size:1.2rem;mar
 </style>
 <main>
 <h1>Météo en bandes de soleil</h1>
-<p class="mut sm">La barre d'ensoleillement du déroulé de la journée, reprise pour l'encart Météo : une cellule par heure, dorée entre le lever et le coucher (plus vive vers midi), sombre la nuit. Dessous, une bande par information, dans l'ordre nuages, pluie, puis soleil (avec l'UV à droite), juste au-dessus des heures. Un point sur chaque bande marque l'heure choisie, écrite sous les bandes ; le lever (en doré) et le coucher (en orange) remplacent, sur cette ligne d'heures, les heures rondes voisines ; la ligne reste dynamique (l'heure choisie a toujours la priorité). Glisse le doigt sur n'importe quelle bande, par exemple vers 8 h ou 19 h, pour le voir. Exemple : 13 octobre, lever 8 h 17, coucher 19 h 22.</p>
+<p class="mut sm">La barre d'ensoleillement du déroulé de la journée, reprise pour l'encart Météo : une cellule par heure, dorée entre le lever et le coucher (plus vive vers midi), sombre la nuit. Dessous, une bande par information, dans l'ordre ciel (nuages et pluie fusionnés), puis soleil (avec l'UV à droite), juste au-dessus des heures. Un point sur chaque bande marque l'heure choisie, écrite sous les bandes ; le lever (en doré) et le coucher (en orange) remplacent, sur cette ligne d'heures, les heures rondes voisines ; la ligne reste dynamique (l'heure choisie a toujours la priorité). Glisse le doigt sur n'importe quelle bande, par exemple vers 8 h ou 19 h, pour le voir. Exemple : 13 octobre, lever 8 h 17, coucher 19 h 22.</p>
 <div class="tog" id="tog"><button data-k="rain" class="on">Journée avec pluie</button><button data-k="dry">Journée sèche</button></div>
 <div id="out"></div>
-<p class="sm mut">Sans pluie prévue la bande de pluie disparaît. La bande Soleil et la bande des nuages restent toujours ; l'indice UV de l'heure est à droite de la bande du soleil, la température reste seulement dans le titre de l'encart.</p>
+<p class="sm mut">La bande Ciel est dynamique : une cellule est bleue quand il pleut cette heure-là (plus foncée si c'est plus fort, millimètres à droite), sinon elle montre la couverture nuageuse en gris (pourcentage à droite). Sans pluie prévue, elle reste toute grise. La bande Soleil reste toujours ; l'indice UV de l'heure est à droite de la bande du soleil, la température reste seulement dans le titre de l'encart.</p>
 </main>
 <script>
 var SR=8+17/60,SS=19+22/60,sel=14,mode='rain';
@@ -47,8 +47,7 @@ function hours(){
  return '<span></span><div class="hrs">'+s+'</div><span></span>'}
 function emoji(d){return d.r>0?'🌧':d.cl>85?'☁️':d.cl>40?'⛅':'☀️'}
 function render(){rainOn(mode==='rain');var d=D[sel],anyRain=D.some(function(x){return x.r>0}),anyUv=D.some(function(x){return x.uv>0});
- var g=bandRow('Nuages',function(i){return cell(i,'var(--cloud)',(D[i].cl/100*.85).toFixed(2))},d.cl+' %');
- if(anyRain)g+=bandRow('Pluie',function(i){return cell(i,'var(--rain)',D[i].r>0?(0.4+Math.min(D[i].r,1)*.6).toFixed(2):0)},d.r?d.r+' mm':'sec');
+ var g=bandRow('Ciel',function(i){return D[i].r>0?cell(i,'var(--rain)',(0.45+Math.min(D[i].r,1)*.55).toFixed(2)):cell(i,'var(--cloud)',(D[i].cl/100*.85).toFixed(2))},d.r?d.r+' mm':d.cl+' %');
  g+=bandRow('Soleil',sunCell,'UV '+d.uv,'','tall');
  g+=hours();
  document.getElementById('out').innerHTML='<div class="card"><div class="hd"><span>Météo</span><span>⚙ ▾</span></div><div class="row"><div class="big">'+emoji(d)+' '+d.t+'°C <span style="font-size:15px;color:var(--mut);font-weight:600">· eau 19°</span></div></div><div class="g">'+g+'</div><div class="row"><span class="sm mut">11 h 05 de jour</span><span class="lnk">Détail sur la semaine ›</span></div></div>'}
