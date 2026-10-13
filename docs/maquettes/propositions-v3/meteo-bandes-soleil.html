@@ -40,7 +40,7 @@ function sunCell(i){var h=i,x0=Math.max(h-.5,SR),x1=Math.min(h+.5,SS);if(x1-x0<=
 function bandRow(label,fn,val,inner,cls){var c='';for(var i=0;i<24;i++)c+=fn(i);return '<span>'+label+'</span><div class="cells '+(cls||'')+'" data-b>'+c+(inner||'')+'<div class="dot" style="left:'+pct(sel+.5)+'%"></div></div><b>'+val+'</b>'}
 function hours(){
  // Comme dans le déroulé : l'heure choisie d'abord, puis le lever et le coucher, puis les heures rondes ; une étiquette qui en toucherait une autre disparaît.
- var it=[{p:pct(sel+.5),w:17,t:sel+':00',c:'sel',pr:0},{p:pct(SR+.5),w:16,t:'▲ '+fmt(SR),c:'sr',pr:1},{p:pct(SS+.5),w:16,t:fmt(SS)+' ▼',c:'ss',pr:1}];
+ var it=[{p:pct(sel+.5),w:17,t:sel+':00',c:'sel',pr:0},{p:pct(SR+.5),w:16,t:fmt(SR),c:'sr',pr:1},{p:pct(SS+.5),w:16,t:fmt(SS),c:'ss',pr:1}];
  for(var h=0;h<24;h+=3)it.push({p:pct(h+.5),w:9,t:h+' h',c:'',pr:2});
  it.sort(function(a,b){return a.pr-b.pr});var kept=[],s='';
  it.forEach(function(x){if(kept.every(function(k){return Math.abs(k.p-x.p)>=(k.w+x.w)/2+1})){kept.push(x);s+='<span class="'+x.c+'" style="left:'+x.p+'%">'+x.t+'</span>'}});
