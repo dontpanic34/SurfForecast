@@ -422,6 +422,8 @@ class SurfRepositoryTest {
         val day = tides.dailyByDate.getValue(today)
         assertTrue(day.estimated)
         assertTrue(day.highTideTime != null && day.lowTideTime != null)
+        // La pleine mer simulée à 05:00 arrive à 06:08 sur la plage de Montalivet (retard de 68 min corrigé).
+        assertTrue(day.highTideTime!! in listOf("06:07", "06:08", "06:09"), "PM : ${day.highTideTime}")
         // Le coefficient est estimé à partir du marnage de Brest (ici la même hauteur d'eau simulée : 2,4 m de marnage, soit environ 39).
         assertTrue(day.coefficient in 35..43, "coef : ${day.coefficient}")
     }

@@ -20,6 +20,7 @@ import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -980,7 +981,12 @@ class SurfRepository(
         val frenchCoefs = french.flatMap { day ->
             day.extrema.orEmpty().filter { it.type == "PM" && it.coef != null }.map { Triple(day.date, it.time, it.coef!!) }
         }
-        return tideDaysFromSeaLevel(times, heights, frenchCoefs)
+        // La hauteur d'eau d'Open-Meteo est celle du large : la marée y arrive plus tôt que sur la plage (retard de la côte).
+        val shift = estimatedTideShiftMinutes(lat, lon)
+        val shifted = if (shift == 0) times else times.map {
+            it.toInstant(TimeZone.UTC).plus(shift, DateTimeUnit.MINUTE, TimeZone.UTC).toLocalDateTime(TimeZone.UTC)
+        }
+        return tideDaysFromSeaLevel(shifted, heights, frenchCoefs)
     }
 
     /**
@@ -1091,6 +1097,14 @@ internal fun tideDaysFromSeaLevel(
         )
     }
 }
+
+/**
+ * Retard (minutes) à ajouter aux marées estimées avec la hauteur d'eau du large d'Open-Meteo. Mesuré le 13 octobre 2026 à Montalivet
+ * contre les horaires du SHOM : pleines mers estimées à 06:03 et 18:22 pour 07:11 et 19:28, basse mer 12:04 pour 13:18, soit environ
+ * 1 h 08 de retard. Appliqué à la côte des Landes et de la Gironde ; ailleurs, aucune correction connue (à mesurer quand api-maree.fr revient).
+ */
+internal fun estimatedTideShiftMinutes(lat: Double, lon: Double): Int =
+    if (lat in 43.3..46.1 && lon in -2.1..-0.9) 68 else 0
 
 /** Le marnage de référence du SHOM : un coefficient de 100 vaut 6,1 m de marnage à Brest. */
 internal const val BREST_REFERENCE_RANGE_M = 6.1
