@@ -445,14 +445,14 @@ private fun DailyTimelineBody(
                             val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · " + (if (tidesEstimated) "≈" else "") + it } ?: "")
                             labels += cx to txt
                         }
-                        // Le mot « Montante » ou « Descendante » écrit juste sous le trait, au milieu de chaque tronçon assez long.
+                        // Le mot « Montant » ou « Descendant » écrit juste sous le trait, au milieu de chaque tronçon assez long.
                         val wordStyleUp = TextStyle(color = rising, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         val wordStyleDown = TextStyle(color = falling, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         val bounds = listOf(ax0) + tideCurve.map { it.hour }.filter { it > ax0 && it < ax1 } + listOf(ax1)
                         for (k in 0 until bounds.size - 1) {
                             val mid = (bounds[k] + bounds[k + 1]) / 2f
                             val rises = risingAt(mid)
-                            val word = tr(if (rises) "Montante" else "Descendante")
+                            val word = tr(if (rises) "Montant" else "Descendant")
                             val style = if (rises) wordStyleUp else wordStyleDown
                             val ww = textMeasurer.measure(word, style).size.width.toFloat()
                             if (xOf(bounds[k + 1]) - xOf(bounds[k]) < ww + 24.dp.toPx()) continue

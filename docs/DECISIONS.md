@@ -149,3 +149,5 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 
 - **Comprendre dans Réglages** (13 octobre 2026, soir) : « Comprendre » n'est plus un onglet de la barre du bas ; il se trouve dans Réglages > Aide (une seule entrée, plus l'accès depuis les « i »). Remplace la décision précédente (onglet du bas).
 - **En-tête du spot** (13 octobre 2026, soir) : loupe à gauche, favoris en pastilles au centre (pas de titre ni de chevrons), thème à droite ; les favoris se placent par un menu « Favori 1, 2, 3 » depuis l'étoile du choix du spot.
+
+- **Vocabulaire de la marée** (13 octobre 2026, nuit) : partout dans l'appli, on dit « Montant » et « Descendant » (le vocabulaire du surf), avec une majuscule, comme les noms de planche (Xero, Grace). Pas « montante » ni « descendante ».
