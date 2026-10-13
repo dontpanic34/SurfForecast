@@ -58,7 +58,7 @@ val CARD_HELP: Map<String, List<CardHelp>> = mapOf(
         CardHelp("Comment le vent est calculé", "Moyenne des modèles ECMWF et GFS. Le chiffre affiché est le vent ressenti : le vent moyen plus 35 % de l'écart avec les rafales. La couleur dit s'il gêne."),
         CardHelp("Modèles de prévision", "Houle : consensus de trois modèles de vagues (MF-WAM, ECMWF, GFS), la hauteur et la période venant du même calcul. Vent : ECMWF + GFS. AROME HD (Météo-France) tourne en coulisses pour comparer."),
         CardHelp("Modèles partagés", "Quand les trois modèles de vagues donnent des hauteurs très différentes pour la journée, l'appli l'écrit. Dans ce cas, la prévision est moins sûre."),
-        CardHelp("La courbe bleue et le coef", "La marée monte ou descend. Les triangles sont les pleines et basses mers, le coefficient dit la taille de la marée.")
+        CardHelp("La marée et le coef", "Le trait est vert quand la marée descend, bleu quand elle monte. Une flèche vers le haut posée sur le trait marque une marée basse (elle va remonter), une flèche vers le bas une marée haute (elle va redescendre). L'heure et le coefficient sont écrits dessous.")
     ),
     "swell" to listOf(
         CardHelp("Taille et période", "Hauteur de la houle principale en mètres et période en secondes. Plus la période est longue, plus la houle a de la puissance."),
@@ -173,7 +173,7 @@ private fun CardGuideSettings(key: String) {
             SettingsSection("Affichage") {
                 SettingsSliderField("Hauteur de l'encart", "${SkyGraphSettings.dayPct} %", SkyGraphSettings.dayPct.toFloat(), 25f..70f, top = false) { SkyGraphSettings.setDay(it.toInt()) }
                 SettingsSliderField("Échelle de la mer", "${SkyGraphSettings.waterPct} %", SkyGraphSettings.waterPct.toFloat(), 20f..60f) { SkyGraphSettings.setWater(it.toInt()) }
-                SettingsSliderField("Hauteur de la courbe de marée", "${SkyGraphSettings.tideDp}", SkyGraphSettings.tideDp.toFloat(), 24f..60f) { SkyGraphSettings.setTide(it.toInt()) }
+                SettingsSliderField("Hauteur de la marée", "${SkyGraphSettings.tideDp}", SkyGraphSettings.tideDp.toFloat(), 24f..60f) { SkyGraphSettings.setTide(it.toInt()) }
                 SettingsField("Marées affichées") {
                     SettingsSegments(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
                 }
