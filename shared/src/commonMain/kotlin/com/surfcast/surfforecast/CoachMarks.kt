@@ -144,10 +144,10 @@ fun JournalTipsCard(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Comment ça marche", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             val tip = TextStyle12
-            Text("1. Choisis le jour (aujourd'hui, hier ou avant-hier) et tes heures dans l'eau.", style = tip)
-            Text("2. Choisis le sous-spot et ta planche. Touche « Fiche du banc » pour noter quand il marche (marée, houle).", style = tip)
-            Text("3. Note ta session de 1 à 5. Les conditions se remplissent toutes seules.", style = tip)
-            Text("4. Avec tes sessions notées 4 ou 5, l'appli te signale les prévisions qui leur ressemblent.", style = tip)
+            Text("1. Touche la barre du jour pour choisir l'heure de début, puis règle la durée.", style = tip)
+            Text("2. Choisis ta planche (« + Planche » pour en ajouter une).", style = tip)
+            Text("3. L'appli te dit ce qui était prévu sur ton créneau : touche la couleur de ce que tu as vécu.", style = tip)
+            Text("4. Avec tes sessions Très bon ou Parfait, l'appli te signale les prévisions qui leur ressemblent.", style = tip)
             TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text("Compris") }
         }
     }

@@ -38,7 +38,8 @@ val BOARD_FAMILIES = listOf(
     "twin" to "Twin",
     "groveler" to "Groveler",
     "fish" to "Fish",
-    "shortboard" to "Shortboard"
+    "shortboard" to "Shortboard",
+    "autre" to "Autre"
 )
 
 fun boardFamilyLabel(family: String): String = BOARD_FAMILIES.firstOrNull { it.first == family }?.second ?: family

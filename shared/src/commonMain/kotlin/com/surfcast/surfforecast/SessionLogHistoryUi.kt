@@ -235,31 +235,31 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${startTime.hour}h-${endTime.hour}h · ${session.microSpot.name}",
+                    text = hmShort(startTime) + " → " + hmShort(endTime) + " · " + session.microSpot.name,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = colors.onSurface
                 )
-                StarsRow(value = session.session.rating.coerceIn(0, 5).toFloat(), starSize = 14.dp)
+                feelIndexOf(session.session.rating)?.let { i ->
+                    Text(tr(SESSION_FEELS[i].first), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = bandWordColor(SESSION_FEELS[i].second))
+                }
             }
             val forecast = session.condition.forecastScore
             if (forecast != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Prévu", fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.7f))
-                    if (forecast < 0) {
-                        Text("trop gros", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ScoreBand.TOO_BIG.color())
-                    } else {
-                        StarsRow(value = starsForScore(forecast), starSize = 11.dp)
+                    Text(tr("Prévu"), fontSize = 11.5.sp, color = colors.onSurface.copy(alpha = 0.7f))
+                    Text(forecastLabel(forecast), fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, color = bandWordColor(forecastBand(forecast)))
+                    Text("· " + tr("Vécu"), fontSize = 11.5.sp, color = colors.onSurface.copy(alpha = 0.7f))
+                    feelIndexOf(session.session.rating)?.let { i ->
+                        Text(tr(SESSION_FEELS[i].first), fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, color = bandWordColor(SESSION_FEELS[i].second))
                     }
-                    Text("· Vécu", fontSize = 11.sp, color = colors.onSurface.copy(alpha = 0.7f))
-                    StarsRow(value = session.session.rating.coerceIn(0, 5).toFloat(), starSize = 11.dp)
                 }
             }
 
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Planche : ${session.quiverBoard.model}",
+                text = tr("Planche") + " : " + session.quiverBoard.model.replaceFirstChar { it.uppercase() },
                 fontSize = 12.sp,
                 color = colors.onSurface.copy(alpha = 0.7f)
             )
@@ -286,3 +286,5 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
         }
     }
 }
+
+private fun hmShort(t: kotlinx.datetime.LocalDateTime): String = t.hour.toString() + " h " + t.minute.toString().padStart(2, '0')

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,7 +66,8 @@ class SurfController(
         .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val referenceSessions: StateFlow<List<SurfSessionWithRelations>> =
-        (sessionLogStore?.getReferenceSessions(4) ?: flowOf(emptyList()))
+        (sessionLogStore?.getAllSessions() ?: flowOf(emptyList()))
+            .map { list -> list.filter { isReferenceFeel(it.session.rating) } }
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val allSessions: StateFlow<List<SurfSessionWithRelations>> = (sessionLogStore?.getAllSessions() ?: flowOf(emptyList()))
@@ -836,8 +838,8 @@ class SurfController(
 
     fun logSurfSession(
         date: LocalDate,
-        startHour: Int,
-        endHour: Int,
+        startMinutes: Int,
+        endMinutes: Int,
         microSpotId: Long,
         quiverId: Long,
         rating: Int,
@@ -862,8 +864,8 @@ class SurfController(
                 forecastScore = forecastScore
             )
             dao.logSession(
-                startTime = LocalDateTime(date, LocalTime(startHour, 0)).toEpochMillis(),
-                endTime = LocalDateTime(date, LocalTime(endHour.coerceAtMost(23), 0)).toEpochMillis(),
+                startTime = LocalDateTime(date, LocalTime(startMinutes.coerceIn(0, 1439) / 60, startMinutes.coerceIn(0, 1439) % 60)).toEpochMillis(),
+                endTime = LocalDateTime(date, LocalTime(endMinutes.coerceIn(0, 1439) / 60, endMinutes.coerceIn(0, 1439) % 60)).toEpochMillis(),
                 microSpotId = microSpotId,
                 quiverId = quiverId,
                 condition = snapshot,

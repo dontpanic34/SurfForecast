@@ -15,7 +15,7 @@ main{max-width:430px;margin:auto}.bar{display:flex;justify-content:space-between
 .seg{display:flex;background:var(--segbg);border-radius:10px;padding:2px;gap:2px}.seg span{flex:1;text-align:center;font-size:12.5px;padding:5px 3px;border-radius:9px;color:var(--mut);cursor:pointer;white-space:nowrap}.seg span.on{background:var(--segon);color:#fff;font-weight:700}.seg span.add{color:var(--acc);font-weight:700}
 input[type=range]{width:100%;accent-color:var(--acc);margin:2px 0 0;height:20px}
 .sum{text-align:center;font-size:12px;color:var(--mut);margin-top:0}.sum b{color:var(--fg)}
-.bands{display:flex;flex-wrap:wrap;gap:5px}.bands span{padding:5px 10px;border-radius:50px;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--tile);color:var(--mut);border:2px solid transparent}.bands span.on{border-color:#fff}.lab em{font-style:normal;font-weight:600;font-size:11.5px;color:var(--acc)}textarea.txt{resize:none;margin-top:6px;padding:7px 10px;font-size:13px}
+.bands{display:flex;flex-wrap:wrap;gap:5px}.bands span{padding:5px 10px;border-radius:50px;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--tile);color:var(--mut);border:2px solid transparent}.bands span.on{border-color:#fff}.pv{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin:8px 2px 5px;font-weight:600}.pv strong{font-weight:800}.sent{background:var(--tile);border-radius:10px;padding:7px 10px;font-weight:700;font-size:12.5px;margin-top:8px}.lab em{font-style:normal;font-weight:600;font-size:11.5px;color:var(--acc)}textarea.txt{resize:none;margin-top:6px;padding:7px 10px;font-size:13px}
 .btn{background:var(--segon);color:#fff;border-radius:11px;text-align:center;padding:10px;font-weight:800;margin-top:10px;cursor:pointer}
 .txt{width:100%;background:var(--tile);border:0;border-radius:10px;padding:9px 11px;color:var(--fg);font:inherit;margin-top:6px}
 .toast{display:none;margin-top:10px;background:#2c7a4f;color:#fff;border-radius:10px;padding:9px;text-align:center;font-size:13px}
@@ -34,7 +34,8 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:2px 0 0;height:20px}
  <div class="lab"><span>PLANCHE</span></div>
  <div class="seg" id="boards"></div>
  <div id="newBoard" style="display:none"><input class="txt" id="nb" placeholder="Nom de la planche (ajoutée à Mon matériel)"></div>
- <div class="lab"><span>COMMENT C’ÉTAIT ?</span><em id="hint"></em></div>
+ <div class="sent" id="sent"></div>
+ <div class="pv"><span>Prévu <strong id="pv"></strong></span><span>Vécu <strong id="vc">…</strong></span></div>
  <div class="bands" id="bands"></div>
  <textarea class="txt" id="note" rows="1" placeholder="Une note perso (facultatif) : le pic, la foule, le feeling…"></textarea>
  <div class="btn" id="save">Enregistrer</div>
@@ -43,8 +44,9 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:2px 0 0;height:20px}
 <script>
 const $=id=>document.getElementById(id);
 const SUNRISE=8.28, SUNSET=19.37; // 8 h 17, 19 h 22
+const FC=h=>h<8?{b:1,t:'0,9 m à 8 s · Onshore modéré · Descendant'}:h<11?{b:3,t:'1,3 m à 10 s · Offshore léger · Montant'}:h<16?{b:2,t:'1,5 m à 10 s · Onshore soutenu · Marée haute'}:{b:5,t:'1,6 m à 12 s · Offshore léger · Descendant'};
 const BANDS=[['Mauvais','#9B1C31','#fff'],['Médiocre','#E53935','#fff'],['Correct','#FFD21F','#061018'],['Bon','#1A9C82','#fff'],['Très bon','#2BD47A','#061018'],['Parfait','#0F8A52','#fff'],['Challengeant','#FF9A1F','#061018']];
-const st={day:2,hour:8,min:0,dur:80,band:3,board:0,boards:['Xero','Grace']};
+const st={day:2,hour:8,min:0,dur:80,band:-1,board:0,boards:['Xero','Grace']};
 const fmt=m=>{const h=Math.floor(m/60),mm=m%60;return h+' h '+String(mm).padStart(2,'0')};
 const dur=m=>{const h=Math.floor(m/60),mm=m%60;return (h?h+' h ':'')+(mm?String(mm).padStart(h?2:1,'0')+(h?'':' min'):'')||'0'};
 // cases : nuit par blocs de 3 h, jour heure par heure (lever-2 h ... coucher+2 h)
@@ -68,7 +70,9 @@ function draw(){
  $('day').innerHTML='';['Avant-hier','Hier','Aujourd’hui'].forEach((t,i)=>{const s=document.createElement('span');s.textContent=t;if(i==st.day)s.className='on';s.onclick=()=>{st.day=i;draw()};$('day').appendChild(s)});
  $('boards').innerHTML='';st.boards.forEach((b,i)=>{const s=document.createElement('span');s.textContent=b;if(i==st.board)s.className='on';s.onclick=()=>{st.board=i;$('newBoard').style.display='none';draw()};$('boards').appendChild(s)});
  const a=document.createElement('span');a.className='add';a.textContent='+ Planche';a.onclick=()=>{$('newBoard').style.display='block';$('nb').focus()};$('boards').appendChild(a);
- $('bands').innerHTML='';BANDS.forEach((b,i)=>{const e=document.createElement('span');e.textContent=b[0];if(i==st.band){e.className='on';e.style.background=b[1];e.style.color=b[2]}else{e.style.borderColor=b[1]+'66'}e.onclick=()=>{st.band=i;draw()};$('bands').appendChild(e)});$('hint').textContent='La prévision était : Bon';
+ const fc=FC(st.hour);$('sent').textContent=fc.t;const pb=BANDS[fc.b];$('pv').textContent=pb[0];$('pv').style.color=pb[1]==='#FFD21F'?'#d6a400':pb[1]==='#0F8A52'?'#0F8A52':pb[1];
+ const vb=st.band>=0?BANDS[st.band]:null;$('vc').textContent=vb?vb[0]:'…';$('vc').style.color=vb?vb[1]:'';
+ $('bands').innerHTML='';BANDS.forEach((b,i)=>{const e=document.createElement('span');e.textContent=b[0];if(i==st.band){e.className='on';e.style.background=b[1];e.style.color=b[2]}else{e.style.borderColor=b[1]+'66'}if(i==fc.b&&st.band!==i)e.style.borderStyle='dashed';e.onclick=()=>{st.band=i;draw()};$('bands').appendChild(e)});
 }
 function pick(c){st.hour=c.block?Math.floor((c.a+c.b)/2):c.a;draw()}
 // glisser sur la barre pour choisir le début

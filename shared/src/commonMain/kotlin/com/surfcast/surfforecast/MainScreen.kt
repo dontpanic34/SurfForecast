@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -675,11 +676,16 @@ fun MainScreen(
 
                                         SessionLogEntryDialog(
                                             spotName = state.spotName,
-                                            todayHours = todayHours,
-                                            tideInfo = todayTide,
+                                            hoursFor = { offset -> if (offset == 0) todayHours else pastConditions[offset]?.first.orEmpty() },
+                                            tideFor = { offset -> if (offset == 0) todayTide else pastConditions[offset]?.second },
+                                            sunFor = { offset ->
+                                                state.dailySunInfo[today.minus(offset, DateTimeUnit.DAY)] ?: state.dailySunInfo[today]
+                                            },
+                                            ratingOf = { h -> calculateSlotRating(h, idealSwellDirection, viewModel.surferLevel) },
+                                            beachFacing = idealSwellDirection,
+                                            nowHour = clock.hour,
                                             quiverBoards = quiverBoards,
-                                            weightKg = viewModel.body.weightKg,
-                                            onOpenGear = { showQuiverDialog = true },
+                                            onAddBoard = { name -> viewModel.addQuiverBoard(name, "autre", "", "", null, false) },
                                             microSpots = microSpots,
                                             onAddMicroSpot = { name -> viewModel.addMicroSpot(state.spotName, name) },
                                             onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },
@@ -687,17 +693,17 @@ fun MainScreen(
                                             onDismissTips = { viewModel.dismissJournalTips() },
                                             availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
                                             initialDayOffset = entryInitialOffset,
-                                            onSave = { dayOffset, startHour, endHour, microSpotId, quiverId, rating, comment, mediaUri ->
+                                            onSave = { dayOffset, startMin, endMin, microSpotId, quiverId, rating, comment, mediaUri, forecastScore ->
                                                 val past = pastConditions[dayOffset]
                                                 val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
                                                 val dayTide = if (dayOffset == 0) todayTide else past?.second
-                                                val midpointHour = (startHour + endHour) / 2
+                                                val midpointHour = (startMin + endMin) / 2 / 60
                                                 val hourlyModel = dayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
                                                 if (hourlyModel != null) {
                                                     viewModel.logSurfSession(
                                                         date = today.minus(dayOffset, DateTimeUnit.DAY),
-                                                        startHour = startHour,
-                                                        endHour = endHour,
+                                                        startMinutes = startMin,
+                                                        endMinutes = endMin,
                                                         microSpotId = microSpotId,
                                                         quiverId = quiverId,
                                                         rating = rating,
@@ -705,9 +711,7 @@ fun MainScreen(
                                                         mediaUri = mediaUri,
                                                         hourlyModel = hourlyModel,
                                                         tideInfo = dayTide,
-                                                        forecastScore = calculateSlotRating(
-                                                            hourlyModel, idealSwellDirection, viewModel.surferLevel
-                                                        ).let { if (it.tooBig) -1 else it.score }
+                                                        forecastScore = forecastScore
                                                     )
                                                 }
                                             },
@@ -816,7 +820,6 @@ fun MainScreen(
                                         dawnText = if (isDawnWindow(clock, state.dailySunInfo[today]) && !isNowNight(clock, state.dailySunInfo[today]))
                                             nightPhrase(nightHours(state.hourlyForecast, state.dailySunInfo, clock), idealSwellDirection) else null,
                                         onRefresh = { viewModel.refreshActiveSpot() },
-                                        onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                         boardOfDay = if (GearPrefs.boardDayMode == "now" || GearPrefs.boardDayMode == "both")
                                             boardOfTheDay(closest, viewModel.quiverBoards.collectAsState().value, idealSwellDirection)?.model else null,
                                         rating = calculateSlotRating(
@@ -849,6 +852,7 @@ fun MainScreen(
                             BottomNavBar(
                                 onForecast = { navScope.launch { mainListState.animateScrollToItem(0) } },
                                 onJournal = { navScope.launch { mainListState.scrollToItem(0); showSessionLogDialog = true } },
+                                onAddSession = { entryInitialOffset = 0; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } },
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
@@ -1116,13 +1120,17 @@ fun DynamicCardsSection(
         autoScroll = null
         draggedKey = null
         dragOffsetY = 0f
+        fingerY = windowHeight / 2f
     }
 
     fun dragModifierFor(cardKey: String): Modifier = Modifier.pointerInput(cardKey) {
         detectDragGesturesAfterLongPress(
-            onDragStart = {
+            onDragStart = { start ->
                 draggedKey = cardKey
                 dragOffsetY = 0f
+                // Le doigt est là où l'appui long a eu lieu : sans ça, la position du doigt restait celle du geste d'avant (ou 0, le haut de
+                // l'écran) et la page défilait vers le haut toute seule en emportant l'encart.
+                cardCoords[cardKey]?.let { fingerY = it.positionInWindow().y + start.y }
                 val ls = listState
                 if (ls != null) {
                     autoScroll = dragScope.launch {
@@ -1355,6 +1363,7 @@ fun DynamicCardsSection(
 private fun BottomNavBar(
     onForecast: () -> Unit,
     onJournal: () -> Unit,
+    onAddSession: () -> Unit,
     onSettings: () -> Unit,
     hasWebcam: Boolean,
     onWebcam: () -> Unit,
@@ -1390,6 +1399,13 @@ private fun BottomNavBar(
                 Item(tr("Prévisions"), true, onForecast) { WaveIcon(color = waterTempColor(), modifier = Modifier.size(20.dp)) }
                 Item(tr("Webcam"), false, onWebcam) {
                     WebcamIcon(tint = if (hasWebcam) AppColors.WindMid else colors.onSurface.copy(alpha = 0.35f), size = 20.dp)
+                }
+                // Le « + » au centre exact de la barre (deux onglets de chaque côté) : une nouvelle session.
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.size(42.dp).clip(CircleShape).background(colors.primary).clickable(onClick = onAddSession),
+                        contentAlignment = Alignment.Center
+                    ) { Text("+", fontSize = 26.sp, color = colors.onPrimary, fontWeight = FontWeight.Light) }
                 }
                 Item(tr("Journal"), false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
