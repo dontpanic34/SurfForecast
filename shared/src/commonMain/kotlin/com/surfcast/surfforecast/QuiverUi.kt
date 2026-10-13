@@ -230,7 +230,8 @@ fun GearContent(
     // Comparaison : un autre niveau que le sien, au même poids et au même âge (null = mon niveau calculé par l'appli).
     val levelIdx = myLevelIdx
     // Le volume en gros : celui de la famille de la première planche du quiver (shortboard à défaut).
-    val firstFamily = quiverBoards.firstOrNull()?.family
+    // La famille choisie (touche une ligne du détail, ou « Principale » sur une planche) ; à défaut, celle de la première planche.
+    val firstFamily = GearPrefs.mainFamily.ifBlank { quiverBoards.firstOrNull()?.family }
     val mainFamily = when (firstFamily) {
         null, "mousse" -> "shortboard"
         "twin", "groveler" -> "fish"
@@ -310,10 +311,17 @@ fun GearContent(
             )
             if (showMore && mainRange != null) {
                 if (body.weightKg > 0) {
-                    RECOMMENDATION_FAMILIES.filter { it.first != mainFamily && it.first != "mousse" }.forEach { (fam, label) ->
+                    Text("Touche une ligne pour l'afficher en haut.", fontSize = 11.5.sp, color = colors.onSurface.copy(alpha = 0.55f))
+                    RECOMMENDATION_FAMILIES.filter { it.first != "mousse" }.forEach { (fam, label) ->
                         recommendedVolumeRange(body, levelIdx, fam)?.let { r ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(label, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.7f))
+                            val chosen = fam == mainFamily
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                                    .background(if (chosen) colors.primaryContainer.copy(alpha = 0.6f) else androidx.compose.ui.graphics.Color.Transparent)
+                                    .clickable { GearPrefs.chooseMainFamily(fam) }.padding(horizontal = 6.dp, vertical = 5.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text((if (chosen) "● " else "") + label, fontSize = 13.sp, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Normal, color = colors.onSurface.copy(alpha = if (chosen) 1f else 0.7f))
                                 Text(volumeRangeLabel(r, fam), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
                             }
                         }
@@ -386,10 +394,19 @@ fun GearContent(
                         }
                         BoardConditionChips(board.id)
                     }
-                    Text(
-                        text = "Supprimer", fontSize = 12.sp, color = AppColors.WindHigh,
-                        modifier = Modifier.clip(CircleShape).clickable { boardPendingDelete = board }.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        val boardMain = when (board.family) { "twin", "groveler" -> "fish"; else -> board.family }
+                        val isMain = boardMain == mainFamily && board.family != "mousse"
+                        if (board.family != "mousse") Text(
+                            text = if (isMain) "★ Principale" else "Principale", fontSize = 12.sp, fontWeight = if (isMain) FontWeight.Bold else FontWeight.Normal,
+                            color = colors.primary,
+                            modifier = Modifier.clip(CircleShape).clickable { GearPrefs.chooseMainFamily(boardMain) }.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                        Text(
+                            text = "Supprimer", fontSize = 12.sp, color = AppColors.WindHigh,
+                            modifier = Modifier.clip(CircleShape).clickable { boardPendingDelete = board }.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }

@@ -38,7 +38,14 @@ object GearPrefs {
     var boardDayMode by mutableStateOf("both")
         private set
 
+    /** La famille de planche dont le volume s'affiche en gros dans Matériel (« shortboard », « fish », « mid-length », « longboard ») ; vide = celle de la première planche. */
+    var mainFamily by mutableStateOf("")
+        private set
+
     var persist: (String, String) -> Unit = { _, _ -> }
+
+    fun loadMainFamily(v: String) { mainFamily = v }
+    fun chooseMainFamily(v: String) { mainFamily = v; persist("gear_main_family", v) }
 
     fun load(grid: String, since: String, frequency: String, season: String, mode: String) {
         this.grid = grid; this.since = since; this.frequency = frequency; this.season = season
