@@ -45,5 +45,12 @@ Notes prises à partir de vidéos que le propriétaire a envoyées, pour la futu
 - En eau profonde : **vitesse de phase = 2 × vitesse de groupe**. Près de la côte, ça ne tient plus.
 - La vitesse du groupe vaut environ 0,78 × la période (m/s) : 14 s, environ 11 m/s. Idée pour plus tard : estimer l'heure d'arrivée d'une houle (il faudrait la position de la tempête, que les modèles ne donnent pas).
 
+## 8. Pourquoi les vagues arrivent plus tard (ou plus tôt) que prévu
+- La vitesse du groupe de houle est environ **0,75 × la période** (en m/s).
+- Exemple sur 2000 km : houle de **16 s** = environ 44 h ; houle de **12 s** = environ 59 h ; soit **15 h de décalage**.
+- Une dépression un peu moins grande ou moins creuse réduit le **fetch** (la distance sur laquelle le vent souffle) : la période baisse (16 s devient 12 s), la houle est plus petite et arrive plus tard.
+- Donc une prévision à plusieurs jours peut se décaler d'une demi-journée ou plus, et sa taille aussi, selon la période réellement formée.
+- Idée pour l'appli : au-delà de J+3, présenter l'arrivée comme une plage d'heures plutôt qu'une heure précise.
+
 ## À venir
 Le propriétaire enverra d'autres vidéos sur la houle. Ensuite : pages « Comprendre la houle », « Comprendre les prévisions », « Comprendre la météo ».
