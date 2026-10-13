@@ -216,3 +216,6 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - Marée du déroulé (option 3 choisie) : trait fin vert (descend) / bleu (monte), gros point à chaque marée, heure + coefficient écrits dessous (« 13:16 · 88 »), qui glissent pour ne pas se chevaucher. Le rond de couleur du coef à droite de « Motivation » est retiré. État : codé et testé, pas encore en ligne (en attente du « go » pour publier).
 - « Parfait » demande un vent propre maintenant : moins de 5 km/h, ou offshore. Un vent de côté ou onshore (ex. sud-ouest 11 km/h) plafonne l'heure sous 90. Test ajouté.
 - Encart « Actuellement » : il quitte la nuit 1 h avant le lever du soleil et montre l'heure du lever (première heure de surf). Test ajouté. État : codé, pas encore en ligne.
+
+- Correctif : le modèle de vagues « ECMWF Wave » envoyait un nom invalide à Open-Meteo (`ecmwf_wave`, erreur 400, écran vide) ; le bon nom est `ecmwf_wam`. Corrigé, pas encore en ligne.
+- Libellé de tendance (« Correct à Bon ») : il suit maintenant l'heure d'avant (« Bon à Correct » si ça baisse). Codé, pas encore en ligne.

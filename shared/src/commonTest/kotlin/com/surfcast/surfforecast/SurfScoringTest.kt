@@ -190,6 +190,9 @@ class SurfScoringTest {
         assertEquals("Bon à Très bon", bandLabelWithTrend(SlotRating(71, false)))
         assertEquals("Très bon à Parfait", bandLabelWithTrend(SlotRating(88, false)))
         assertEquals("Médiocre à Correct", bandLabelWithTrend(SlotRating(38, false)))
+        // Le libellé suit l'heure d'avant : si ça baisse, on le dit dans ce sens.
+        assertEquals("Bon à Correct", bandLabelWithTrend(SlotRating(53, false), SlotRating(66, false)))
+        assertEquals("Correct à Bon", bandLabelWithTrend(SlotRating(53, false), SlotRating(40, false)))
         // Loin d'une limite : le niveau seul. Les cas à part n'ont pas de tendance.
         assertEquals("Bon", bandLabelWithTrend(SlotRating(62, false)))
         assertEquals("Challengeant", bandLabelWithTrend(SlotRating(54, false, ConditionKind.CHALLENGING)))

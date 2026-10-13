@@ -40,6 +40,8 @@ fun NowTideCard(
     seaTemperature: Int? = null,
     // La note de l'heure, avec son libellé et sa tendance (null = pas de libellé).
     rating: SlotRating? = null,
+    // La note de l'heure d'avant : elle donne le sens du libellé (« Bon à Correct » si ça baisse).
+    previousRating: SlotRating? = null,
     spotName: String = "",
     // « mis à jour 17:20 ↻ » sous le titre ; toucher relance les prévisions.
     updatedText: String = "",
@@ -92,7 +94,7 @@ fun NowTideCard(
             } else if (rating != null) {
                 val band = conditionBand(rating)
                 // Le libellé de la note, sans fond : juste le mot, dans la couleur de la note (comme dans le déroulé).
-                Text(bandLabelWithTrend(rating), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = band.textColor(), maxLines = 1)
+                Text(bandLabelWithTrend(rating, previousRating), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = band.textColor(), maxLines = 1)
             }
         }
         if (isNight && nightText != null) {

@@ -771,6 +771,10 @@ fun MainScreen(
                                             hoursWithWindMemory(today, groupedByDate).firstOrNull { it.rawTime == closest.rawTime } ?: closest,
                                             idealSwellDirection, viewModel.surferLevel
                                         ),
+                                        previousRating = hoursWithWindMemory(today, groupedByDate).let { mem ->
+                                            val i = mem.indexOfFirst { it.rawTime == closest.rawTime }
+                                            mem.getOrNull(i - 1)?.takeIf { i > 0 }?.let { calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel) }
+                                        },
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
                                     )
                                 }

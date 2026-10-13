@@ -148,7 +148,7 @@ fun DailyTimelineCard(
                             fontWeight = FontWeight.ExtraBold, color = onSurfaceColor, maxLines = 1
                         )
                         Text(
-                            bandLabelWithTrend(shownRating), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
+                            bandLabelWithTrend(shownRating, ratings.getOrNull(selectedIndex - 1)), fontSize = 16.sp, fontWeight = FontWeight.ExtraBold,
                             color = shownBand.textColor(), maxLines = 1
                         )
                         val board = curveHours.getOrNull(selectedIndex)?.let { boardOf?.invoke(it) }
