@@ -58,7 +58,6 @@ private const val SELECTED_WIND_DROP = 9 // la colonne de vent de l'heure choisi
 private const val WIND_ROW_H = 46 + SELECTED_WIND_DROP
 private const val PLOT_TOP = 18      // haut de la zone de courbe (dp)
 private const val PLOT_BOTTOM_MARGIN = 8 // marge sous la courbe (dp) ; la hauteur du graphique vient des réglages (SkyGraphSettings)
-private const val BAND_H = 18
 private const val HOURS_H = 22 // la ligne des heures (les repères de marée sont dans l’eau, sur la courbe)
 private const val SIDE_PAD = 4
 
@@ -440,42 +439,6 @@ private fun DailyTimelineBody(
                         }
                         for (i in labels.indices) {
                             drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + 22.dp.toPx())
-                        }
-                    }
-                }
-
-                // --- Bande jour et nuit, heure par heure ---
-                Canvas(modifier = Modifier.fillMaxWidth().height(BAND_H.dp)) {
-                    val cellDark = if (isDark) Color(0xFF0F1822) else Color(0xFFD3DBE4)
-                    val goldLo = Color(0xFF0B121A)
-                    val ico = 0f
-                    val xr = xOf(sunrise)
-                    val xs = xOf(sunset)
-                    val cellH = 6.dp.toPx()
-                    val top = 7.dp.toPx()
-                    for (h in hours.map { it.rawTime.hour }.let { (it.firstOrNull() ?: 0)..(it.lastOrNull() ?: 0) }) {
-                        val x0 = maxOf(pad, xOf(h - 0.5f))
-                        val x1 = minOf(size.width - pad, xOf(h + 0.5f))
-                        if (x1 - x0 < 1f) continue
-                        drawRoundRect(cellDark, Offset(x0 + 0.75.dp.toPx(), top), Size(x1 - x0 - 1.5.dp.toPx(), cellH), CornerRadius(3.dp.toPx()))
-                        val a0 = maxOf(x0, xr + ico)
-                        val a1 = minOf(x1, xs - ico)
-                        if (a1 - a0 > 1.2.dp.toPx()) {
-                            val mid = sin(PI * ((h - sunrise) / (sunset - sunrise)).coerceIn(0f, 1f).toDouble()).toFloat()
-                            val k = 0.55f + 0.45f * mid
-                            val gold = androidx.compose.ui.graphics.lerp(goldLo, Color(0xFFF6C453), k)
-                            val on = h == selHour
-                            val hh = if (on) 9.dp.toPx() else cellH
-                            drawRoundRect(
-                                gold, Offset(a0 + 0.75.dp.toPx(), if (on) top - 1.5.dp.toPx() else top),
-                                Size(a1 - a0 - 1.5.dp.toPx(), hh), CornerRadius(3.dp.toPx())
-                            )
-                            if (on) {
-                                drawRoundRect(
-                                    nacre, Offset(a0 + 0.75.dp.toPx(), top - 1.5.dp.toPx()), Size(a1 - a0 - 1.5.dp.toPx(), hh),
-                                    CornerRadius(3.dp.toPx()), style = Stroke(1.4.dp.toPx())
-                                )
-                            }
                         }
                     }
                 }
