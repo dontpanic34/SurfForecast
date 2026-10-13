@@ -43,8 +43,8 @@ fun SpotSelectionDialog(
     var searchQuery by remember { mutableStateOf("") }
     val allRegions = SurfDatabase.countries.flatMap { it.regions.flatMap { r -> r.subRegions } }
     var selectedRegion by remember { mutableStateOf(allRegions.firstOrNull()?.name) }
-    // Un spot qu'on veut ajouter alors que les trois places sont prises : on demande lequel remplacer.
-    var pendingReplace by remember { mutableStateOf<String?>(null) }
+    // Le spot dont on choisit la place de favori (menu ouvert sous son étoile).
+    var menuFor by remember { mutableStateOf<String?>(null) }
     val colors = MaterialTheme.colorScheme
     val favoriteCount = currentFavorites.take(FAVORITE_SLOTS).count { it != null }
 
@@ -109,34 +109,9 @@ fun SpotSelectionDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 if (!mandatory) {
                     Text(
-                        "Favoris $favoriteCount sur $FAVORITE_SLOTS · touche ★ pour ajouter ou retirer",
+                        "Favoris $favoriteCount sur $FAVORITE_SLOTS · touche ★ pour choisir la place ou retirer",
                         fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                }
-
-                pendingReplace?.let { spot ->
-                    Column(
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.primary.copy(alpha = 0.12f)).padding(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text("Remplacer quel favori par $spot ?", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            currentFavorites.take(FAVORITE_SLOTS).forEachIndexed { i, name ->
-                                if (name != null) {
-                                    Text(
-                                        name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onPrimaryContainer, maxLines = 1,
-                                        modifier = Modifier.clip(RoundedCornerShape(50)).background(colors.primaryContainer)
-                                            .clickable { onAssignToSlot(spot, i); pendingReplace = null }.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
-                                }
-                            }
-                            Text(
-                                "Annuler", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary,
-                                modifier = Modifier.clip(RoundedCornerShape(50)).clickable { pendingReplace = null }.padding(horizontal = 10.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
                     Spacer(modifier = Modifier.height(6.dp))
                 }
 
@@ -160,17 +135,26 @@ fun SpotSelectionDialog(
                             ) {
                                 Text(text = spot.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
                                 if (!mandatory) {
-                                    Text(
-                                        text = if (isFavorite) "★" else "☆", fontSize = 24.sp,
-                                        color = if (isFavorite) AppColors.WindMid else colors.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable {
-                                            if (isFavorite) onRemoveFromSlot(slot)
-                                            else {
-                                                val free = currentFavorites.take(FAVORITE_SLOTS).indexOfFirst { it == null }
-                                                if (free >= 0) onAssignToSlot(spot.name, free) else pendingReplace = spot.name
+                                    Box {
+                                        Text(
+                                            text = if (isFavorite) "★" else "☆", fontSize = 24.sp,
+                                            color = if (isFavorite) AppColors.WindMid else colors.onSurfaceVariant.copy(alpha = 0.6f),
+                                            modifier = Modifier.clip(RoundedCornerShape(50)).clickable {
+                                                if (isFavorite) onRemoveFromSlot(slot) else menuFor = spot.name
+                                            }.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                        // Le menu des places : « Favori 1 · Hossegor », « Favori 2 · place libre »… ; choisir une place occupée la remplace.
+                                        DropdownMenu(expanded = menuFor == spot.name, onDismissRequest = { menuFor = null }) {
+                                            Text(tr("Mettre en favori"), fontSize = 11.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
+                                            for (i in 0 until FAVORITE_SLOTS) {
+                                                val occupant = currentFavorites.getOrNull(i)
+                                                DropdownMenuItem(
+                                                    text = { Text(tr("Favori") + " " + (i + 1) + " · " + (occupant ?: tr("place libre")), fontSize = 14.sp, fontWeight = if (occupant == null) FontWeight.Bold else FontWeight.Normal) },
+                                                    onClick = { onAssignToSlot(spot.name, i); menuFor = null }
+                                                )
                                             }
-                                        }.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
+                                        }
+                                    }
                                 }
                             }
                         }

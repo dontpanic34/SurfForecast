@@ -574,6 +574,8 @@ fun MainScreen(
                                 .fillMaxSize()
                                 .systemBarsPadding()
                         ) {
+                            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                            Column(modifier = Modifier.fillMaxSize()) {
                             PullToRefreshBox(
                                 isRefreshing = viewModel.isRefreshing,
                                 onRefresh = { viewModel.refreshActiveSpot() },
@@ -782,16 +784,6 @@ fun MainScreen(
                                     }
                                 }
                             }
-                            // Le tiroir de réglages de l'encart dont le ⚙ est ouvert : l'encart reste en haut, entier et en direct.
-                            CompositionLocalProvider(
-                                LocalCardSettings provides CardSettingsControl(
-                                    windUnit = viewModel.windUnit, onWindUnit = { viewModel.changeWindUnit(it) },
-                                    weeklyWindMode = viewModel.weeklyWindMode, onWeeklyWindMode = { viewModel.changeWeeklyWindMode(it) },
-                                    weeklyDensity = viewModel.weeklyDensity, onWeeklyDensity = { viewModel.changeWeeklyDensity(it) }
-                                )
-                            ) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) { CardSettingsSheet() }
-                            }
                             }
 
                             // « Maintenant » + marée + eau : toujours visible, juste au-dessus de la barre du bas.
@@ -839,6 +831,19 @@ fun MainScreen(
                                     )
                                 }
                             }
+                            }
+                            // Le tiroir de réglages de l'encart dont le ⚙ est ouvert : devant la carte Actuellement, l'encart reste en haut, entier et en direct.
+                            CompositionLocalProvider(
+                                LocalCardSettings provides CardSettingsControl(
+                                    windUnit = viewModel.windUnit, onWindUnit = { viewModel.changeWindUnit(it) },
+                                    weeklyWindMode = viewModel.weeklyWindMode, onWeeklyWindMode = { viewModel.changeWeeklyWindMode(it) },
+                                    weeklyDensity = viewModel.weeklyDensity, onWeeklyDensity = { viewModel.changeWeeklyDensity(it) }
+                                )
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) { CardSettingsSheet() }
+                            }
+                            }
+
                             // Barre du bas : Prévisions, Journal, Météo, Réglages (toujours visible, à portée de pouce).
                             // Journal et Météo s'ouvrent depuis le haut de la liste : on y remonte d'abord.
                             BottomNavBar(
@@ -1388,9 +1393,6 @@ private fun BottomNavBar(
                 }
                 Item(tr("Journal"), false, onJournal, Modifier.coachTarget("journal", coachTargets)) {
                     JournalIcon(color = colors.onSurface, modifier = Modifier.size(20.dp))
-                }
-                Item(tr("Comprendre"), false, { ComprendreState.open() }) {
-                    SettingsIcon(SettingsIcons.Book, colors.onSurface, 20.dp)
                 }
                 Item(tr("Réglages"), false, onSettings, Modifier.coachTarget("settings", coachTargets)) {
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
