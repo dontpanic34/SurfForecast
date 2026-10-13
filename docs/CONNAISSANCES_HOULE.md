@@ -52,5 +52,14 @@ Notes prises à partir de vidéos que le propriétaire a envoyées, pour la futu
 - Donc une prévision à plusieurs jours peut se décaler d'une demi-journée ou plus, et sa taille aussi, selon la période réellement formée.
 - Idée pour l'appli : au-delà de J+3, présenter l'arrivée comme une plage d'heures plutôt qu'une heure précise.
 
+## 9. Lire une carte météo pour choisir où et quand surfer
+- **Pressions** : repérer les dépressions (le vent tourne autour d'elles), puis les anticyclones. Le vent est d'autant plus fort que les **isobares sont serrées** entre dépression et anticyclone. Source citée : prévisions de pression sur 16 jours, Atlantique Nord, GFS 27 km.
+- **Carte de la période** plutôt que celle des hauteurs : la période dit mieux la houle (son énergie, qui se dissipe en route).
+- Données d'un point de carte (exemple) : vague 2,6 m à 12 s d'ONO ; vent 0,3 m à 7 s (clapot) ; houle 2 de 2,5 m à 12 s d'ONO ; énergie 1796 kJ.
+- Ensuite le **vent**, et seulement après un **site de prévision** pour le spot choisi.
+- **Bouées** (application « La Bouée ») : mesures réelles de la station la plus proche, à comparer aux prévisions (exemple : bouée 0,3 à 0,5 m, 275° ; prévision 0,5 m, 152°).
+- **Spectre fréquence-direction** : montre si la houle est unidirectionnelle et nette ou mélangée.
+- Idée pour l'appli : afficher la bouée la plus proche à côté de la prévision, pour vérifier la prévision avec le réel.
+
 ## À venir
 Le propriétaire enverra d'autres vidéos sur la houle. Ensuite : pages « Comprendre la houle », « Comprendre les prévisions », « Comprendre la météo ».
