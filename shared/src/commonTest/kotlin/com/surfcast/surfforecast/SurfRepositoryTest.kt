@@ -77,6 +77,28 @@ class SurfRepositoryTest {
     }
 
     @Test
+    fun buoyReadingComesFromTheRelayAndTheNearestReferenceBuoy() = runTest {
+        val engine = MockEngine { request ->
+            assertEquals("surflog.fr", request.url.host)
+            assertEquals("/api/bouee/03302", request.url.encodedPath)
+            respondJson("""{"code":"03302","name":"Cap Ferret","points":[{"t":"2026-10-13T07:00","hs":1.6,"th":9.5},{"t":"2026-10-13T07:30","hs":1.7,"hmax":2.4,"th":9.8,"dir":291},{"t":"2026-10-13T08:00"}]}""")
+        }
+        val r = repository(engine).fetchBuoyReading(45.00, -1.20)!!
+        assertEquals("Cap Ferret", r.buoy.name)
+        assertEquals(1.7, r.significantHeight, 1e-9)
+        assertEquals(2.4, r.maxHeight!!, 1e-9)
+        assertEquals(291, r.direction)
+        assertEquals(LocalDateTime(2026, 10, 13, 7, 30), r.timeUtc)
+        assertTrue(r.distanceKm in 35..50, "distance ${r.distanceKm}")
+    }
+
+    @Test
+    fun noBuoyNearbyMeansNoRequest() = runTest {
+        val engine = MockEngine { error("aucun appel attendu") }
+        assertEquals(null, repository(engine).fetchBuoyReading(37.0, -8.9))
+    }
+
+    @Test
     fun consensusTakesHeightAndPeriodFromTheSameModelsAndIgnoresGfsWaveInShortTerm() = runTest {
         fun marine(h: Double, p: Double) =
             """{"hourly":{"time":["2026-01-01T10:00"],"wave_height":[$h],"wave_period":[$p],"wave_direction":[270.0],"swell_wave_height":[$h],"swell_wave_period":[$p],"swell_wave_peak_period":[$p]}}"""

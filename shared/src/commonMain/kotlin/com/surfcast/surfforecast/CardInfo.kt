@@ -99,96 +99,85 @@ fun CardInfoButton(guideKey: String) {
     )
 }
 
+private val CARD_TITLES = mapOf(
+    "week" to "de la semaine", "day" to "du déroulé de la journée", "swell" to "de la houle", "wind" to "du vent",
+    "weather" to "de la météo", "windsea" to "du vent et de la mer", "hourly" to "de l'heure par heure"
+)
+
 /** Le panneau de réglages de l'encart, à placer sous son titre. N'affiche rien si l'engrenage n'est pas ouvert. */
 @Composable
 fun CardSettingsPanel(key: String) {
     if (CardGear.open != key) return
     val colors = MaterialTheme.colorScheme
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Réglages " + (CARD_TITLES[key] ?: "de l'encart"), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+            Box(modifier = Modifier.size(36.dp).clickable { CardGear.open = null }, contentAlignment = Alignment.Center) {
+                SettingsIcon(SettingsIcons.Close, colors.onSurfaceVariant, 20.dp)
+            }
+        }
         CardGuideSettings(key)
         CARD_HELP[key]?.let { items ->
-            Text("COMPRENDRE", fontSize = 10.5.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp, color = colors.primary)
-            items.forEach { h ->
-                var more by remember { mutableStateOf(false) }
-                Column(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant)
-                        .clickable { more = !more }.padding(horizontal = 10.dp, vertical = 8.dp)
-                ) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(h.title, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-                        Text(if (more) "–" else "+", fontSize = 14.sp, color = colors.primary)
+            SettingsSection("Comprendre") {
+                items.forEachIndexed { i, h ->
+                    var more by remember { mutableStateOf(false) }
+                    if (i > 0) SettingsDivider()
+                    Column(modifier = Modifier.fillMaxWidth().clickable { more = !more }.padding(horizontal = 14.dp, vertical = 11.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(h.title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colors.onSurface, modifier = Modifier.weight(1f))
+                            Text(if (more) "–" else "+", fontSize = 16.sp, color = colors.primary)
+                        }
+                        if (more) Text(h.text, fontSize = 12.5.sp, lineHeight = 17.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                     }
-                    if (more) Text(h.text, fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
-        Text(
-            "Comprendre en détail ›", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.primary,
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { ComprendreState.open(ComprendreState.lessonForCard(key)) }.padding(vertical = 4.dp, horizontal = 2.dp)
-        )
-        Text(
-            "Fermer", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = colors.primary,
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { CardGear.open = null }.padding(vertical = 4.dp, horizontal = 2.dp)
-        )
+        SettingsHelpLink("Comprendre en détail") { ComprendreState.open(ComprendreState.lessonForCard(key)) }
     }
 }
 
-/** Les réglages liés à l'encart, sous sa visite guidée. */
+/** Les réglages liés à l'encart. */
 @Composable
 private fun CardGuideSettings(key: String) {
-    val colors = MaterialTheme.colorScheme
-    @Composable
-    fun Chips(choices: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-            choices.forEach { (k, label) ->
-                val on = k == selected
-                Box(
-                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surfaceVariant)
-                        .clickable { onSelect(k) }.padding(vertical = 7.dp),
-                    contentAlignment = Alignment.Center
-                ) { Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant, maxLines = 1) }
-            }
-        }
-    }
     val c = LocalCardSettings.current
-    @Composable
-    fun Label(t: String) = Text(t, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-    @Composable
-    fun Pct(label: String, value: Int, range: IntRange, set: (Int) -> Unit) {
-        Label(label)
-        Slider(value = value.toFloat(), onValueChange = { set(it.toInt()) }, valueRange = range.first.toFloat()..range.last.toFloat())
-    }
     when (key) {
         "wind" -> if (c != null) {
-            Label("Unité du vent")
-            Chips(listOf("kmh" to "km/h", "knots" to "nœuds", "bft" to "Beaufort"), c.windUnit, c.onWindUnit)
+            SettingsSection("Affichage") {
+                SettingsField("Unité du vent", top = false) {
+                    SettingsSegments(listOf("kmh" to "km/h", "knots" to "nœuds", "bft" to "Beaufort"), c.windUnit, c.onWindUnit)
+                }
+            }
         }
         "week" -> {
-            if (c != null) {
-                Label("Indicateurs du vent")
-                Chips(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun"), c.weeklyWindMode, c.onWeeklyWindMode)
-                Label("Créneaux par jour")
-                Chips(listOf("1" to "1", "2" to "2", "3" to "3"), c.weeklyDensity.toString()) { c.onWeeklyDensity(it.toInt()) }
+            SettingsSection("Affichage") {
+                var first = true
+                if (c != null) {
+                    SettingsField("Indicateurs du vent", top = false) {
+                        SettingsSegments(listOf("arrow" to "Flèche", "text" to "Texte", "both" to "Les deux", "none" to "Aucun"), c.weeklyWindMode, c.onWeeklyWindMode)
+                    }
+                    SettingsField("Créneaux par jour") {
+                        SettingsSegments(listOf("1" to "1", "2" to "2", "3" to "3"), c.weeklyDensity.toString()) { c.onWeeklyDensity(it.toInt()) }
+                    }
+                    first = false
+                }
+                SettingsSliderField("Hauteur de l'encart", "${SkyGraphSettings.weekPct} %", SkyGraphSettings.weekPct.toFloat(), 25f..70f, top = !first) { SkyGraphSettings.setWeek(it.toInt()) }
+                SettingsSliderField("Échelle de la mer", "${SkyGraphSettings.waterWeekPct} %", SkyGraphSettings.waterWeekPct.toFloat(), 20f..60f) { SkyGraphSettings.setWaterWeek(it.toInt()) }
+                SettingsRow("Valeurs par défaut", icon = SettingsIcons.Tune, chevron = false) { SkyGraphSettings.resetWeek() }
             }
-            Pct("Hauteur de l'encart (graphique)", SkyGraphSettings.weekPct, 25..70) { SkyGraphSettings.setWeek(it) }
-            Pct("Échelle de la mer", SkyGraphSettings.waterWeekPct, 20..60) { SkyGraphSettings.setWaterWeek(it) }
         }
         "day" -> {
-            Pct("Hauteur de l'encart (graphique)", SkyGraphSettings.dayPct, 25..70) { SkyGraphSettings.setDay(it) }
-            Pct("Échelle de la mer", SkyGraphSettings.waterPct, 20..60) { SkyGraphSettings.setWater(it) }
-            Pct("Hauteur de la courbe de marée", SkyGraphSettings.tideDp, 24..60) { SkyGraphSettings.setTide(it) }
-            Label("Marées affichées")
-            Chips(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
+            SettingsSection("Affichage") {
+                SettingsSliderField("Hauteur de l'encart", "${SkyGraphSettings.dayPct} %", SkyGraphSettings.dayPct.toFloat(), 25f..70f, top = false) { SkyGraphSettings.setDay(it.toInt()) }
+                SettingsSliderField("Échelle de la mer", "${SkyGraphSettings.waterPct} %", SkyGraphSettings.waterPct.toFloat(), 20f..60f) { SkyGraphSettings.setWater(it.toInt()) }
+                SettingsSliderField("Hauteur de la courbe de marée", "${SkyGraphSettings.tideDp}", SkyGraphSettings.tideDp.toFloat(), 24f..60f) { SkyGraphSettings.setTide(it.toInt()) }
+                SettingsField("Marées affichées") {
+                    SettingsSegments(listOf("sun" to "Journée de soleil", "all" to "Toutes"), if (SkyGraphSettings.tideAll) "all" else "sun") { SkyGraphSettings.chooseTideAll(it == "all") }
+                }
+                SettingsRow("Valeurs par défaut", icon = SettingsIcons.Tune, chevron = false) { SkyGraphSettings.resetDay() }
+            }
         }
     }
-    if (key == "week" || key == "day") {
-        Text(
-            "Valeurs par défaut", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.primary,
-            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { if (key == "week") SkyGraphSettings.resetWeek() else SkyGraphSettings.resetDay() }.padding(vertical = 2.dp)
-        )
-    }
 }
-
