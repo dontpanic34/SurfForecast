@@ -189,9 +189,9 @@ class SurfController(
     var showDailyTimelineCard by mutableStateOf(true) // plus de réglage de visibilité : tous les encarts s'affichent (on les replie)
         private set
 
-    // Taille de l'affichage : "normal", "large" ou "xlarge". Nouveau (introduction pas encore faite) : « large ».
+    // Taille de l'affichage : "small" (départ), "normal", "large" ou "xlarge". Un choix déjà enregistré est conservé.
     var displaySize by mutableStateOf(
-        (prefs.getString("display_size", null) ?: (if (prefs.getBoolean("onboarding_v1_done", false)) "normal" else "large"))
+        (prefs.getString("display_size", null) ?: "small")
             .also { if (prefs.getString("display_size", null) == null) prefs.putString("display_size", it) }
     )
         private set
@@ -643,11 +643,11 @@ class SurfController(
     }
 
     fun changeDisplaySize(size: String) {
-        displaySize = if (size in listOf("normal", "large", "xlarge")) size else "normal"
+        displaySize = if (size in listOf("small", "normal", "large", "xlarge")) size else "small"
         prefs.putString("display_size", displaySize)
     }
 
-    fun cycleDisplaySize() = changeDisplaySize(when (displaySize) { "normal" -> "large"; "large" -> "xlarge"; else -> "normal" })
+    fun cycleDisplaySize() = changeDisplaySize(when (displaySize) { "small" -> "normal"; "normal" -> "large"; "large" -> "xlarge"; else -> "small" })
 
 
     fun changeWeeklyDensity(density: Int) {

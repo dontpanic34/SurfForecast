@@ -892,7 +892,7 @@ fun MainScreen(
                         "weekCard", "Étoiles et couleurs",
                         "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⚙ d'un encart : réglages et explications."
                     ),
-                    CoachStep("journal", "Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
+                    CoachStep("add", "Noter une session", "Appuie sur le + pour noter une session en dix secondes : l'appli garde les conditions. Retrouve-les ensuite dans l'onglet Journal.")
                 ),
                 targets = coachTargets,
                 onFinish = { viewModel.dismissHomeTour() }
@@ -1404,7 +1404,7 @@ private fun BottomNavBar(
                 // Le « + » au centre exact de la barre (deux onglets de chaque côté) : une nouvelle session.
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Box(
-                        modifier = Modifier.size(42.dp).clip(CircleShape).background(colors.primary).clickable(onClick = onAddSession),
+                        modifier = Modifier.coachTarget("add", coachTargets).size(42.dp).clip(CircleShape).background(colors.primary).clickable(onClick = onAddSession),
                         contentAlignment = Alignment.Center
                     ) { Text("+", fontSize = 26.sp, color = colors.onPrimary, fontWeight = FontWeight.Light) }
                 }
