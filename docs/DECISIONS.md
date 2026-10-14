@@ -151,3 +151,7 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 - **En-tête du spot** (13 octobre 2026, soir) : loupe à gauche, favoris en pastilles au centre (pas de titre ni de chevrons), thème à droite ; les favoris se placent par un menu « Favori 1, 2, 3 » depuis l'étoile du choix du spot.
 
 - **Vocabulaire de la marée** (13 octobre 2026, nuit) : partout dans l'appli, on dit « Montant » et « Descendant » (le vocabulaire du surf), avec une majuscule, comme les noms de planche (Xero, Grace). Pas « montante » ni « descendante ».
+
+
+## Statistiques anonymes (14 octobre 2026)
+Le niveau n'est pas une donnée sensible pour le propriétaire : envoi automatique, sans case à accepter, d'un identifiant aléatoire + version + langue + niveau + réponses au questionnaire. Aucune position, aucune identité. La page de statistiques n'est accessible qu'avec une clé secrète (`STATS_KEY`, dans Cloudflare uniquement).
