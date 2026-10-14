@@ -204,6 +204,8 @@ fun MainScreen(
             modelPreview = viewModel.modelPreview,
             onNeedModelPreview = { viewModel.loadModelPreview() },
             appVersion = appVersion,
+            devUnlocked = viewModel.devUnlocked,
+            onDevUnlock = { viewModel.unlockDev() },
             windUnit = viewModel.windUnit,
             onWindUnitSelected = { newUnit -> viewModel.changeWindUnit(newUnit) },
             showLiveOverlay = viewModel.showLiveOverlay,

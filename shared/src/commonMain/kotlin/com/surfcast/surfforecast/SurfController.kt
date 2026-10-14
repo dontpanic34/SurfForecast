@@ -311,6 +311,15 @@ class SurfController(
         }
     }
 
+    /** Entrée « Développeur » (statistiques) : visible seulement après 7 appuis sur le numéro de version. */
+    var devUnlocked by mutableStateOf(prefs.getBoolean("dev_unlocked", false))
+        private set
+
+    fun unlockDev() {
+        devUnlocked = true
+        prefs.putBoolean("dev_unlocked", true)
+    }
+
     private fun loadPreferences() {
         val savedFav0 = prefs.getString("fav_0", "Montalivet")
         val savedFav1 = prefs.getString("fav_1", "Lacanau")

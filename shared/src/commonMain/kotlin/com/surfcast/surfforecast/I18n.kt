@@ -102,6 +102,8 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Marée" to t("Tide", "Gezeiten", "Getij", "Marea"),
     "Mesures en direct" to t("Live measurements", "Live-Messungen", "Live metingen", "Mediciones en directo"),
     "En direct" to t("Live", "Live", "Live", "En directo"),
+    "Développeur" to t("Developer", "Entwickler", "Ontwikkelaar", "Desarrollador"),
+    "Statistiques des utilisateurs (clé demandée)" to t("User statistics (key required)", "Nutzerstatistiken (Schlüssel nötig)", "Gebruikersstatistieken (sleutel nodig)", "Estadísticas de usuarios (se pide clave)"),
     "Prévisions de la semaine" to t("Week forecast", "Wochenvorhersage", "Weekvoorspelling", "Previsión semanal"),
     "Prévision heure par heure" to t("Hour by hour", "Stunde für Stunde", "Uur per uur", "Hora por hora"),
     "Actuellement" to t("Now", "Aktuell", "Nu", "Ahora"),

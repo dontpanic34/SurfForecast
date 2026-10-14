@@ -12,6 +12,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Accès aux statistiques** : 7 appuis sur le numéro de version (en bas des Réglages) font apparaître, dans Aide, une ligne « Développeur » qui ouvre `surflog.fr/api/stats/` (clé demandée, retenue par le navigateur). Secours : taper cette adresse directement.
 - **Statistiques anonymes (en préparation)** : l'appli envoie au plus une fois par jour (et seulement si ça change) un identifiant aléatoire, sa version, sa langue, le niveau et les réponses au questionnaire (aucune position ni identité, décision du propriétaire : pas de case à accepter). Relais `functions/api/stats` (Cloudflare) : `POST /api/stats/report`, page `/api/stats/` (sans donnée, demande la clé) et `GET /api/stats/summary` réservé par la clé secrète `STATS_KEY`. Stockage dans un espace KV lié sous le nom `STATS`. **Ne fonctionne qu'après réglage Cloudflare** (voir A_FAIRE.md).
 
 
