@@ -265,6 +265,7 @@ fun MainScreen(
             onBodyChanged = { viewModel.changeBody(it); viewModel.markProfileReviewed() },
             onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est); viewModel.markProfileReviewed() },
             onDeleteBoard = { viewModel.deleteQuiverBoard(it) },
+            onUpdateBoard = { viewModel.updateQuiverBoard(it) },
             startPage = preferencesStartPage,
             profileReviewed = viewModel.profileReviewed
         )
@@ -658,6 +659,7 @@ fun MainScreen(
                                             onBodyChanged = { viewModel.changeBody(it) },
                                             onAddBoard = { model, family, dims, fins, vol, est -> viewModel.addQuiverBoard(model, family, dims, fins, vol, est) },
                                             onDeleteBoard = { board -> viewModel.deleteQuiverBoard(board) },
+                                            onUpdateBoard = { board -> viewModel.updateQuiverBoard(board) },
                                             onDismiss = { showQuiverDialog = false }
                                         )
                                     }

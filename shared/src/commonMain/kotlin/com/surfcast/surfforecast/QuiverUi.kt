@@ -223,7 +223,8 @@ fun GearContent(
     body: BodyState,
     onBodyChanged: (BodyState) -> Unit,
     onAddBoard: (model: String, family: String, lengthLitrage: String, finSetup: String, volumeL: Double?, volumeEstimated: Boolean) -> Unit,
-    onDeleteBoard: (QuiverBoard) -> Unit
+    onDeleteBoard: (QuiverBoard) -> Unit,
+    onUpdateBoard: (QuiverBoard) -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
     val numeric = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -251,10 +252,25 @@ fun GearContent(
     var exactText by remember { mutableStateOf("") }
     var finSetup by remember { mutableStateOf("") }
     var boardPendingDelete by remember { mutableStateOf<QuiverBoard?>(null) }
+    var editingBoard by remember { mutableStateOf<QuiverBoard?>(null) }
 
     fun resetForm() {
         model = ""; family = "shortboard"; lengthIn = 68; widthEighths = 163; thicknessSixteenths = 40; exactText = ""; finSetup = ""
-        showAddForm = false
+        showAddForm = false; editingBoard = null
+    }
+
+    // Ouvre le formulaire rempli avec une planche déjà renseignée (cotes relues dans « 5'8 x 20 3/8 x 2 1/2 »).
+    fun startEdit(b: QuiverBoard) {
+        model = b.model; family = b.family; finSetup = b.finSetup
+        val parts = b.lengthLitrage.split(" x ").map { it.trim() }
+        parts.getOrNull(0)?.let { l ->
+            val m = Regex("(\\d+)'(\\d+)").find(l)
+            if (m != null) lengthIn = (m.groupValues[1].toInt() * 12 + m.groupValues[2].toInt()).coerceIn(60, 119)
+        }
+        parts.getOrNull(1)?.let { w -> parseInches(w)?.takeIf { it > 0.0 }?.let { widthEighths = (it * 8).roundToInt().coerceIn(136, 192) } }
+        parts.getOrNull(2)?.let { t -> parseInches(t)?.takeIf { it > 0.0 }?.let { thicknessSixteenths = (it * 16).roundToInt().coerceIn(32, 64) } }
+        exactText = if (b.volumeL != null && !b.volumeEstimated) formatFr(b.volumeL) else ""
+        editingBoard = b; showAddForm = true
     }
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -404,6 +420,10 @@ fun GearContent(
                             modifier = Modifier.clip(CircleShape).clickable { GearPrefs.chooseMainFamily(boardMain) }.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                         Text(
+                            text = "Modifier", fontSize = 12.sp, color = colors.primary,
+                            modifier = Modifier.clip(CircleShape).clickable { startEdit(board) }.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                        Text(
                             text = "Supprimer", fontSize = 12.sp, color = AppColors.WindHigh,
                             modifier = Modifier.clip(CircleShape).clickable { boardPendingDelete = board }.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
@@ -483,9 +503,14 @@ fun GearContent(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     SettingsButton("Annuler", primary = false, modifier = Modifier.weight(1f)) { resetForm() }
                     Spacer(modifier = Modifier.width(8.dp))
-                    SettingsButton("Ajouter", enabled = model.isNotBlank(), modifier = Modifier.weight(1f)) {
+                    SettingsButton(if (editingBoard != null) "Enregistrer" else "Ajouter", enabled = model.isNotBlank(), modifier = Modifier.weight(1f)) {
                         val dims = formatSliderDimensions(lengthIn, widthEighths, thicknessSixteenths)
-                        onAddBoard(model.trim(), family, dims, finSetup.trim(), volumeL, isEstimated && volumeL != null)
+                        val editing = editingBoard
+                        if (editing != null) {
+                            onUpdateBoard(editing.copy(model = model.trim(), family = family, lengthLitrage = dims, finSetup = finSetup.trim(), volumeL = volumeL, volumeEstimated = isEstimated && volumeL != null))
+                        } else {
+                            onAddBoard(model.trim(), family, dims, finSetup.trim(), volumeL, isEstimated && volumeL != null)
+                        }
                         resetForm()
                     }
                 }
@@ -518,6 +543,7 @@ fun QuiverScreen(
     onBodyChanged: (BodyState) -> Unit,
     onAddBoard: (model: String, family: String, lengthLitrage: String, finSetup: String, volumeL: Double?, volumeEstimated: Boolean) -> Unit,
     onDeleteBoard: (QuiverBoard) -> Unit,
+    onUpdateBoard: (QuiverBoard) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -540,7 +566,7 @@ fun QuiverScreen(
                     TextButton(onClick = onDismiss) { Text("Fermer") }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                GearContent(quiverBoards, surferLevel, body, onBodyChanged, onAddBoard, onDeleteBoard)
+                GearContent(quiverBoards, surferLevel, body, onBodyChanged, onAddBoard, onDeleteBoard, onUpdateBoard)
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }

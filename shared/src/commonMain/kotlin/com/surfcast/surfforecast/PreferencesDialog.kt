@@ -92,6 +92,7 @@ fun SurfPreferencesDialog(
     onBodyChanged: (BodyState) -> Unit = {},
     onAddBoard: (model: String, family: String, lengthLitrage: String, finSetup: String, volumeL: Double?, volumeEstimated: Boolean) -> Unit = { _, _, _, _, _, _ -> },
     onDeleteBoard: (QuiverBoard) -> Unit = {},
+    onUpdateBoard: (QuiverBoard) -> Unit = {},
     // Page à ouvrir directement (« profile » depuis la visite guidée) et état du badge « Recommandé ».
     startPage: String? = null,
     profileReviewed: Boolean = true,
@@ -386,7 +387,8 @@ fun SurfPreferencesDialog(
                             body = body,
                             onBodyChanged = onBodyChanged,
                             onAddBoard = onAddBoard,
-                            onDeleteBoard = onDeleteBoard
+                            onDeleteBoard = onDeleteBoard,
+                            onUpdateBoard = onUpdateBoard
                         )
                     }
 

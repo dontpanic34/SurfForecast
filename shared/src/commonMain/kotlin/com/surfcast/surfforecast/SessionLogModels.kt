@@ -76,6 +76,8 @@ interface SessionLogStore {
     fun getReferenceSessions(minRating: Int = 4): Flow<List<SurfSessionWithRelations>>
     fun getAllSessions(): Flow<List<SurfSessionWithRelations>>
     suspend fun insertQuiverBoard(board: QuiverBoard): Long
+    /** Modifie une planche (même identifiant : les sessions déjà enregistrées gardent leur lien). */
+    suspend fun updateQuiverBoard(board: QuiverBoard)
     /** Échoue si la planche est utilisée par une session enregistrée. */
     suspend fun deleteQuiverBoard(board: QuiverBoard)
     suspend fun insertMicroSpot(spot: MicroSpot): Long
