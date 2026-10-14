@@ -144,22 +144,22 @@ class SurfController(
     )
         private set
 
-    var showOnboarding by mutableStateOf(!prefs.getBoolean("onboarding_v1_done", false))
+    var showOnboarding by mutableStateOf(!prefs.getBoolean("onboarding_v2_done", false))
         private set
 
     fun dismissOnboarding() {
         showOnboarding = false
-        prefs.putBoolean("onboarding_v1_done", true)
+        prefs.putBoolean("onboarding_v2_done", true)
     }
 
     // Visite guidée de la première utilisation (accueil) et astuces du journal : une seule fois,
     // rouvrable depuis les Paramètres.
-    var showHomeTour by mutableStateOf(!prefs.getBoolean("coach_home_v1_done", false))
+    var showHomeTour by mutableStateOf(!prefs.getBoolean("coach_home_v2_done", false))
         private set
 
     fun dismissHomeTour() {
         showHomeTour = false
-        prefs.putBoolean("coach_home_v1_done", true)
+        prefs.putBoolean("coach_home_v2_done", true)
     }
 
     fun showHomeTourAgain() {
@@ -518,13 +518,13 @@ class SurfController(
     }
 
     // Langue de l'appli (voir APP_LANGUAGES ; seul le français est traduit pour l'instant ; les autres langues viendront).
-    var language by mutableStateOf((prefs.getString("app_language", null) ?: defaultAppLanguage()).also { I18n.language = it })
+    var language by mutableStateOf((prefs.getString("app_language_v2", null) ?: defaultAppLanguage()).also { I18n.language = it })
         private set
 
     fun changeLanguage(code: String) {
         language = code
         I18n.language = code
-        prefs.putString("app_language", code)
+        prefs.putString("app_language_v2", code)
     }
 
     fun changeThemeMode(mode: String) {

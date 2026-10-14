@@ -66,3 +66,10 @@ fun timeFraction(cells: List<TimeCell>, hours: List<HourlyUiModel>, hour: Double
     val inside = ((hour - start) / (end - start)).coerceIn(0.0, 1.0)
     return ((k + inside) / cells.size).toFloat()
 }
+
+/** La cellule de l'heure actuelle si les heures affichées sont celles d'aujourd'hui, sinon null (pour le petit point « maintenant »). */
+fun nowCellIndex(cells: List<TimeCell>, hours: List<HourlyUiModel>): Int? {
+    val now = nowLocalDateTime()
+    val i = hours.indexOfFirst { it.rawTime.date == now.date && it.rawTime.hour == now.hour }
+    return if (i < 0) null else cellIndexOf(cells, i)
+}
