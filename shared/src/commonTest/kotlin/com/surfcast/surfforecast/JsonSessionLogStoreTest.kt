@@ -34,6 +34,23 @@ class JsonSessionLogStoreTest {
     }
 
     @Test
+    fun editedBoardKeepsItsIdAndItsSessions() = runTest {
+        val prefs = InMemoryKeyValueStore()
+        val store = JsonSessionLogStore(prefs)
+        val boardId = store.insertQuiverBoard(QuiverBoard(model = "Fish", family = "fish", lengthLitrage = "5'8 x 20 x 2 1/2", finSetup = "twin"))
+        val spotId = store.insertMicroSpot(MicroSpot(parentSpotName = "Soulac", name = "Nord"))
+        store.logSession(1_000, 2_000, spotId, boardId, condition, 4, null, null)
+        val board = store.getAllQuiverBoards().first().single()
+        store.updateQuiverBoard(board.copy(model = "Fish 2", volumeL = 31.5, volumeEstimated = false))
+        val reloaded = JsonSessionLogStore(prefs)
+        val boards = reloaded.getAllQuiverBoards().first()
+        assertEquals(listOf("Fish 2"), boards.map { it.model })
+        assertEquals(boardId, boards.single().id)
+        assertEquals(31.5, boards.single().volumeL)
+        assertEquals("Fish 2", reloaded.getAllSessions().first().single().quiverBoard.model)
+    }
+
+    @Test
     fun boardUsedBySessionCannotBeDeleted() = runTest {
         val store = JsonSessionLogStore(InMemoryKeyValueStore())
         val boardId = store.insertQuiverBoard(QuiverBoard(model = "Longboard", family = "longboard", lengthLitrage = "9'2", finSetup = "single"))

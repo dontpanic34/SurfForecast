@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Modifier une planche déjà renseignée** (Réglages > Matériel, ou « Mon matériel » du journal) : un lien « Modifier » sur chaque planche rouvre le formulaire rempli (nom, type, longueur, largeur, épaisseur, volume exact, ailerons) ; « Enregistrer » met à jour la planche **en gardant son identifiant**, donc les sessions déjà notées avec cette planche gardent leur lien. Nouveau `updateQuiverBoard` dans les deux stockages (navigateur et Room). Test `editedBoardKeepsItsIdAndItsSessions`.
+
+
 - **Taille du texte : « Normal » par défaut** (et non plus « Grand ») sur une installation neuve ; Grand et Très grand restent au choix dans Réglages > Affichage. Un choix déjà enregistré est conservé (une installation récente qui avait reçu « Grand » automatiquement doit repasser en Normal à la main). **Visite guidée** : l'étape « Le journal » devient « Noter une session » et montre le bouton + (« Appuie sur le + pour noter une session en dix secondes… Retrouve-les ensuite dans l'onglet Journal »).
 
 
