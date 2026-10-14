@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Deuxième fenêtre de profil supprimée** : la visite guidée de l'accueil ne contient plus l'étape « Ton profil » (bouton « Renseigner mon profil »), qui redemandait le questionnaire déjà posé juste avant. Restent deux étapes : « Étoiles et couleurs » et « Le journal ». Le questionnaire reste accessible dans Réglages > Profil.
+
+
 - **Page de statistiques corrigée** : une apostrophe mal échappée cassait tout le script de la page (le bouton « Entrer » ne faisait rien). Corrigé et vérifié dans un navigateur avec de fausses données. Ajouts : bouton « Voir / Masquer » pour afficher la clé, touche Entrée, et vrais messages d'erreur (clé refusée, stockage non relié, réseau).
 
 
