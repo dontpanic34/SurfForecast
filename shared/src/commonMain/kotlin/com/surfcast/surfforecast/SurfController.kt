@@ -806,6 +806,11 @@ class SurfController(
         }
     }
 
+    fun updateQuiverBoard(board: QuiverBoard) {
+        val dao = sessionLogStore ?: return
+        scope.launch { runCatching { dao.updateQuiverBoard(board) } }
+    }
+
     fun deleteQuiverBoard(board: QuiverBoard) {
         val dao = sessionLogStore ?: return
         scope.launch {

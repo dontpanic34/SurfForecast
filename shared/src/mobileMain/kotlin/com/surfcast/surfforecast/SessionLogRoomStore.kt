@@ -19,6 +19,8 @@ class SessionLogRoomStore(private val dao: SessionLogDao) : SessionLogStore {
 
     override suspend fun insertQuiverBoard(board: QuiverBoard): Long = dao.insertQuiverBoard(board.toEntity())
 
+    override suspend fun updateQuiverBoard(board: QuiverBoard) = dao.updateQuiverBoard(board.toEntity())
+
     override suspend fun deleteQuiverBoard(board: QuiverBoard) = dao.deleteQuiverBoard(board.toEntity())
 
     override suspend fun insertMicroSpot(spot: MicroSpot): Long = dao.insertMicroSpot(spot.toEntity())

@@ -38,6 +38,9 @@ interface SessionLogDao {
     @Insert
     suspend fun insertQuiverBoard(board: QuiverBoardEntity): Long
 
+    @androidx.room.Update
+    suspend fun updateQuiverBoard(board: QuiverBoardEntity)
+
     @Delete
     suspend fun deleteQuiverBoard(board: QuiverBoardEntity)
 

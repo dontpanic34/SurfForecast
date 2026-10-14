@@ -59,6 +59,11 @@ class JsonSessionLogStore(private val prefs: KeyValueStore) : SessionLogStore {
         return d.nextId
     }
 
+    override suspend fun updateQuiverBoard(board: QuiverBoard) {
+        val d = state.value
+        save(d.copy(boards = d.boards.map { if (it.id == board.id) board else it }))
+    }
+
     override suspend fun deleteQuiverBoard(board: QuiverBoard) {
         val d = state.value
         check(d.sessions.none { it.quiverId == board.id }) { "Planche utilisée par une session" }
