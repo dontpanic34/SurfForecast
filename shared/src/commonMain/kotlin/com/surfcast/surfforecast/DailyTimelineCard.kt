@@ -132,6 +132,8 @@ fun DailyTimelineCard(
         Row(modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 4.dp)) { CardInfoButton("day"); CollapseChevron(isCollapsed, onToggleCollapse) }
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
             if (selectedIndex in ratings.indices) {
+                var showVoices by remember { mutableStateOf(false) }
+                if (showVoices) ModelVoicesDialog(curveHours[selectedIndex], windUnit) { showVoices = false }
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
                 Column(modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 60.dp, top = 2.dp, bottom = 2.dp)) {
@@ -152,7 +154,10 @@ fun DailyTimelineCard(
                         // Quand les trois modèles de vagues se contredisent nettement sur la journée, on le dit sobrement.
                         val daySpread = curveHours.filter { it.modelSpread > 0.0 }.map { it.modelSpread }.average().takeIf { !it.isNaN() } ?: 0.0
                         if (daySpread >= MODELS_SPLIT_SPREAD) {
-                            Text("Modèles partagés", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9A1F), maxLines = 1)
+                            Text(
+                                "Modèles partagés ›", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9A1F), maxLines = 1,
+                                modifier = Modifier.clickable { showVoices = true }
+                            )
                         }
                         val board = curveHours.getOrNull(selectedIndex)?.let { boardOf?.invoke(it) }
                         if (board != null) {
