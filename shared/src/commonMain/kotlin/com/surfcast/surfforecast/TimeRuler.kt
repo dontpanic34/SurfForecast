@@ -91,6 +91,12 @@ fun TimeRuler(
             if (k == selectedCell) drawRoundRect(nacre, Offset(x0, 0f), Size(cellW, barH), round, style = Stroke(1.5.dp.toPx()))
         }
         val cx = selectedCell * (cellW + gap) + cellW / 2f
+        val nowCell = nowCellIndex(cells, hours)
+        if (nowCell != null && nowCell != selectedCell) {
+            val nx = nowCell * (cellW + gap) + cellW / 2f
+            drawCircle(Color.White, 2.5.dp.toPx(), Offset(nx, barH / 2f))
+            drawCircle(Color(0xFF0B1519), 2.5.dp.toPx(), Offset(nx, barH / 2f), style = Stroke(1.dp.toPx()))
+        }
         drawCircle(Color.White, 4.5.dp.toPx(), Offset(cx, barH / 2f))
         drawCircle(Color(0xFF0B1519), 4.5.dp.toPx(), Offset(cx, barH / 2f), style = Stroke(1.6.dp.toPx()))
 
