@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **« Modèles partagés » devient cliquable** (Houle/déroulé et Vent) : un appui ouvre une feuille « Modèles à H h » avec la prévision de chaque modèle pour l'heure choisie (houle : MF-WAM, ECMWF, GFS en hauteur · période · direction ; vent : ECMWF, GFS, AROME HD, AROME). Lecture seule ; pour changer de modèle, Réglages (décision du propriétaire).
+
+
 - **Marées : copie durable contre les pannes d'api-maree.fr** : à chaque réponse valide, le relais `/api/maree/tide-extrema` range les jours reçus dans le KV Cloudflare (`maree:<site>`, fusionnés, 60 jours, partagés entre tous les centres de données ; avant, la copie de secours n'existait que dans le centre qui l'avait reçue). Si le service tombe, le relais rend les jours demandés qu'il connaît ; pour une date jamais vue, l'appli retombe sur les marées estimées (≈). Utilise la liaison KV `STATS` (clés `maree:`).
 
 
