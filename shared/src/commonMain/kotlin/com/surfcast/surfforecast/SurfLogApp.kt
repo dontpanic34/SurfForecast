@@ -73,15 +73,14 @@ fun SurfLogApp(
     }
 }
 
-/** Facteur de zoom de l'affichage : Petit, Normal, Grand, Très grand. */
+/** Facteur de zoom de l'affichage : Normal, Grand, Très grand. */
 fun displayScaleFor(size: String): Float = when (size) {
-    "small" -> 0.9f
     "large" -> 1.18f
     "xlarge" -> 1.38f
     else -> 1f
 }
 
-val DISPLAY_SIZE_CHOICES = listOf("small" to "Petit", "normal" to "Normal", "large" to "Grand", "xlarge" to "Très grand")
+val DISPLAY_SIZE_CHOICES = listOf("normal" to "Normal", "large" to "Grand", "xlarge" to "Très grand")
 
 /**
  * Zoom « loupe » à deux doigts, où l'on veut : on pince pour agrandir l'écran, on le fait glisser à deux doigts pour
