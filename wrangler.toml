@@ -1,0 +1,10 @@
+# Configuration de la publication sur Cloudflare Pages (projet « surflog »).
+# La liaison KV « STATS » sert aux statistiques anonymes et à la copie des marées. L'identifiant de l'espace n'est pas un secret.
+# Les clés (MAREE_TOKEN, METEOFRANCE_API_KEY, STATS_KEY) restent des secrets réglés dans Cloudflare, jamais ici.
+name = "surflog"
+pages_build_output_dir = "shared/build/dist/wasmJs/productionExecutable"
+compatibility_date = "2026-10-07"
+
+[[kv_namespaces]]
+binding = "STATS"
+id = "dcf3201bda8d4ff49079cd6f280757c5"
