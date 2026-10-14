@@ -57,6 +57,96 @@ def screen_of(fr, sources):
     return "Texte construit ou divers"
 
 
+INSTR = {
+    "fr": ("Consignes de relecture", [
+        "Surf Log est une appli de prévisions de surf (houle, vent, marée) et un journal de sessions. Les textes sont écrits en français ; on te demande de relire leur traduction.",
+        "1. Lis la colonne C (français) et la colonne D (traduction actuelle).",
+        "2. Si la traduction est bonne : ne fais rien.",
+        "3. Si elle est fausse, bancale, trop littérale ou si le terme de surf n'est pas celui qu'on utilise vraiment : écris la bonne version dans la colonne E (jaune).",
+        "4. Un commentaire est possible dans la colonne F (facultatif), par exemple si le sens change selon l'écran.",
+        "Règles : tutoiement (l'appli dit « tu »). Garde tels quels les chiffres, unités, symboles (› · + ≈ %) et les mots entre accolades ou dollars. Ne traduis pas « Surf Log ». Textes courts pour les boutons et titres (peu de place sur un téléphone). Utilise le vocabulaire que les surfeurs utilisent vraiment, pas une traduction mot à mot.",
+        "Une même phrase peut apparaître à plusieurs endroits : la colonne B indique le premier. Merci !"]),
+    "en": ("Review instructions", [
+        "Surf Log is a surf forecast app (swell, wind, tide) with a session log. The texts are written in French; please review their translation.",
+        "1. Read column C (French) and column D (current translation).",
+        "2. If the translation is good: do nothing.",
+        "3. If it is wrong, awkward, too literal, or not the surf term people really use: write the better version in column E (yellow).",
+        "4. You can add a comment in column F (optional), e.g. if the meaning depends on the screen.",
+        "Rules: informal address (the app says « tu »). Keep numbers, units, symbols (› · + ≈ %) and any placeholders unchanged. Do not translate « Surf Log ». Keep buttons and titles short (little room on a phone). Use the vocabulary surfers actually use, not word-for-word translation.",
+        "The same sentence can appear in several places: column B shows the first one. Thank you!"]),
+    "de": ("Hinweise zur Überprüfung", [
+        "Surf Log ist eine App für Surf-Vorhersagen (Dünung, Wind, Gezeiten) mit Session-Logbuch. Die Texte sind auf Französisch geschrieben; bitte prüfe die deutsche Übersetzung.",
+        "1. Lies Spalte C (Französisch) und Spalte D (aktuelle Übersetzung).",
+        "2. Ist die Übersetzung gut: nichts tun.",
+        "3. Ist sie falsch, unnatürlich, zu wörtlich oder nicht der unter Surfern übliche Begriff: schreibe die bessere Version in Spalte E (gelb).",
+        "4. Ein Kommentar in Spalte F ist möglich (optional), z. B. wenn die Bedeutung vom Bildschirm abhängt.",
+        "Regeln: informelle Anrede (die App sagt « tu » = du). Zahlen, Einheiten, Symbole (› · + ≈ %) und Platzhalter unverändert lassen. « Surf Log » nicht übersetzen. Buttons und Titel kurz halten (wenig Platz auf dem Handy). Verwende die Begriffe, die Surfer wirklich benutzen, keine Wort-für-Wort-Übersetzung.",
+        "Derselbe Satz kann an mehreren Stellen vorkommen: Spalte B zeigt die erste. Danke!"]),
+    "nl": ("Instructies voor de controle", [
+        "Surf Log is een app met surfvoorspellingen (deining, wind, getij) en een sessielogboek. De teksten zijn in het Frans geschreven; controleer alsjeblieft de Nederlandse vertaling.",
+        "1. Lees kolom C (Frans) en kolom D (huidige vertaling).",
+        "2. Is de vertaling goed: doe niets.",
+        "3. Is ze fout, onnatuurlijk, te letterlijk of niet de term die surfers echt gebruiken: schrijf de betere versie in kolom E (geel).",
+        "4. Een opmerking in kolom F kan (optioneel), bijvoorbeeld als de betekenis van het scherm afhangt.",
+        "Regels: informele aanspreekvorm (de app zegt « tu » = je). Laat cijfers, eenheden, symbolen (› · + ≈ %) en plaatshouders ongewijzigd. Vertaal « Surf Log » niet. Houd knoppen en titels kort (weinig ruimte op een telefoon). Gebruik de woorden die surfers echt gebruiken, geen woord-voor-woordvertaling.",
+        "Dezelfde zin kan op meerdere plekken staan: kolom B toont de eerste. Bedankt!"]),
+    "es": ("Instrucciones de revisión", [
+        "Surf Log es una app de previsiones de surf (oleaje, viento, marea) con un diario de sesiones. Los textos están escritos en francés; por favor revisa su traducción al español.",
+        "1. Lee la columna C (francés) y la columna D (traducción actual).",
+        "2. Si la traducción es buena: no hagas nada.",
+        "3. Si es incorrecta, poco natural, demasiado literal o no es el término que los surfistas usan de verdad: escribe la versión mejor en la columna E (amarillo).",
+        "4. Puedes añadir un comentario en la columna F (opcional), por ejemplo si el sentido cambia según la pantalla.",
+        "Reglas: trato informal (la app dice « tu » = tú). Deja igual los números, unidades, símbolos (› · + ≈ %) y marcadores. No traduzcas « Surf Log ». Textos cortos en botones y títulos (poco espacio en el móvil). Usa el vocabulario que los surfistas usan de verdad, no una traducción palabra por palabra.",
+        "Una misma frase puede aparecer en varios sitios: la columna B indica el primero. ¡Gracias!"]),
+}
+GLOSSARY = [
+    ("Montant / Descendant", "Marée qui monte / qui descend (rising / falling tide). Toujours avec une majuscule dans l'appli."),
+    ("Houle", "Swell : les vagues formées au large, qui arrivent sur la côte."),
+    ("Clapot / Mer de vent", "Wind chop / wind swell : petites vagues désordonnées créées par le vent local."),
+    ("Période", "Swell period : nombre de secondes entre deux vagues. Plus elle est longue, plus la houle est puissante."),
+    ("Série", "Set : groupe de vagues plus grosses qui arrivent ensemble."),
+    ("Take-off", "Le moment où l'on se lève sur la planche."),
+    ("Passer la barre", "Traverser la zone où les vagues cassent pour aller au large (getting out past the breakers)."),
+    ("Mousse / Reforme / Large", "Whitewater / vague qui a cassé et se reforme / pic au large."),
+    ("Pic", "Peak : l'endroit où la vague commence à casser."),
+    ("Offshore / Onshore / Travers", "Vent qui vient de la terre (lisse la vague) / de la mer (la dégrade) / de côté (cross-shore)."),
+    ("Coefficient", "Indice de marée français (de 20 à 120) : plus il est haut, plus le marnage est grand."),
+    ("Volume / Planche du jour", "Litres de la planche / la planche conseillée selon les conditions."),
+    ("Shortboard, Fish, Mid-length, Longboard", "Types de planches ; on garde ces noms tels quels en général."),
+    ("Prévu / Vécu", "Ce que l'appli annonçait / ce que le surfeur a ressenti sur l'eau (journal de session)."),
+    ("Modèles partagés", "Les modèles de prévision ne sont pas d'accord entre eux."),
+    ("Mesures en direct", "Mesures réelles d'une bouée (houle) et d'une station météo (vent)."),
+]
+
+
+def add_instructions(wb, code):
+    title, lines = INSTR[code]
+    ws = wb.create_sheet(title[:30], 0)
+    ws.column_dimensions["A"].width = 120
+    ws.append([title])
+    ws["A1"].font = Font(bold=True, size=14)
+    for ln in lines:
+        ws.append([ln])
+    if code != "fr":
+        ws.append([""])
+        ws.append(["Français (version d'origine)"])
+        ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+        for ln in INSTR["fr"][1]:
+            ws.append([ln])
+    for row in ws.iter_rows(min_row=2):
+        row[0].alignment = Alignment(wrap_text=True, vertical="top")
+    g = wb.create_sheet("Glossaire", 1)
+    g.append(["Terme (français)", "Sens (aide à la traduction)"])
+    for c in g[1]:
+        c.font = Font(bold=True, color="FFFFFF"); c.fill = PatternFill("solid", fgColor="1F4E79")
+    for a, b in GLOSSARY:
+        g.append([a, b])
+    g.column_dimensions["A"].width = 38; g.column_dimensions["B"].width = 100
+    for row in g.iter_rows(min_row=2):
+        for c in row:
+            c.alignment = Alignment(wrap_text=True, vertical="top")
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "."
     os.makedirs(out, exist_ok=True)
@@ -92,6 +182,8 @@ def main():
             row[4].fill = PatternFill("solid", fgColor="FFF2CC")
         ws.freeze_panes = "A2"
         ws.auto_filter.ref = f"A1:F{len(rows) + 1}"
+        add_instructions(wb, code)
+        wb.active = 0
         path = os.path.join(out, f"traduction-{code}.xlsx")
         wb.save(path)
         print(path, len(rows), "lignes")
