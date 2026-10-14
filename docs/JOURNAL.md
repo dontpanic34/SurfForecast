@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Fichiers de relecture des traductions** : `scripts/traduction/export_xlsx.py` produit un Excel par langue (en, de, nl, es) : écran, français, traduction actuelle, colonne « Correction » à remplir, commentaire. 1 118 textes, environ 6 800 mots en français. Envoyés au propriétaire pour relecture humaine ; les corrections reviendront par ces fichiers (script d'import à écrire à ce moment-là).
+
+
 - **Modifier une planche déjà renseignée** (Réglages > Matériel, ou « Mon matériel » du journal) : un lien « Modifier » sur chaque planche rouvre le formulaire rempli (nom, type, longueur, largeur, épaisseur, volume exact, ailerons) ; « Enregistrer » met à jour la planche **en gardant son identifiant**, donc les sessions déjà notées avec cette planche gardent leur lien. Nouveau `updateQuiverBoard` dans les deux stockages (navigateur et Room). Test `editedBoardKeepsItsIdAndItsSessions`.
 
 
