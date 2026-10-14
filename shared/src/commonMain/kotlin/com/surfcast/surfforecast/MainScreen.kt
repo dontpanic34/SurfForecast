@@ -859,12 +859,6 @@ fun MainScreen(
                         "weekCard", "Étoiles et couleurs",
                         "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⚙ d'un encart : réglages et explications."
                     ),
-                    CoachStep(
-                        "settings", "Ton profil",
-                        "Pour l'instant, les notes sont celles d'un surfeur moyen. Réponds à quelques questions : elles deviennent les tiennes (taille, vent, « gros jour »). Une minute.",
-                        actionLabel = "Renseigner mon profil",
-                        onAction = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true }
-                    ),
                     CoachStep("journal", "Le journal", "Note une session en dix secondes : l'appli garde les conditions.")
                 ),
                 targets = coachTargets,
