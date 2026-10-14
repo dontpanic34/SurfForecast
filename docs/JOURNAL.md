@@ -11,6 +11,12 @@
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
 ## 14 octobre 2026
+
+- **Point « maintenant »** : petit point (plus petit que celui de la sélection) sur la cheminée de l'heure actuelle dans Houle, Vent, Météo et sur la barre de l'encart Actuellement (aujourd'hui seulement, masqué si c'est l'heure sélectionnée).
+
+
+- **Langue et V2 (en préparation, pas encore publié)** : la langue enregistrée passe sur une nouvelle clé (`app_language_v2`) : tout le monde repart sur la langue du système (cause probable du « espagnol » : une préférence restaurée par la sauvegarde Android après réinstallation). Message d'accueil (questionnaire de niveau + visite guidée) rejoué pour tous (`onboarding_v2_done`, `coach_home_v2_done`). Version de l'APK : 2.0.x. À publier avec le nouvel encart « Actuellement ».
+
 - **Journal de session refait** (état : en ligne dès publication, validé par le propriétaire) : nouveau formulaire : jour, début sur la barre du jour (celle d'Actuellement : heures du jour, nuit en blocs), durée de 20 min à 5 h par pas de 20 min (curseur), planche par son nom avec majuscule et « + Planche » (ajout direct au matériel, famille « Autre »), phrase des conditions prévues sur le créneau (« 1,3 m à 10 s · Offshore léger · Montant », moyennes des heures du créneau), « Prévu [note] · Vécu [note] » en couleur, sept pastilles Mauvais à Challengeant (la note prévue cernée), note perso facultative, photo ou vidéo. Le ressenti est enregistré en 10 + rang (`SessionFeel.kt`) ; les anciennes étoiles sont lues comme 1 = Médiocre … 5 = Parfait. La note prévue moyenne est enregistrée avec la session (`forecastScore`) et l'historique affiche « Prévu … · Vécu … » en mots colorés. Le bouton « + Session » quitte la carte Actuellement : un « + » rond au centre exact de la barre du bas (deux onglets de chaque côté) ouvre la saisie. Réglages > Aide > Historique des relevés rouvre l'historique des prévisions relevées en coulisse. Textes traduits (en, de, nl, es).
 - **Cartes : appui long corrigé, ciel réel dans Météo** : le glissement d'un encart ne remonte plus tout seul (la position du doigt n'était pas initialisée au début du geste : la page défilait vers le haut) ; les barres de la carte Météo sont en gris selon la couverture nuageuse (plus foncé quand le ciel se couvre), en jaune, orange puis rouge selon la température quand le ciel est dégagé (bleu sous la pluie).
 

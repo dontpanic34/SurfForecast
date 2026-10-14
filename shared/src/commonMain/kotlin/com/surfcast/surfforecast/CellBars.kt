@@ -66,6 +66,8 @@ fun CellBars(
         val cellW = (size.width - gap * (cells.size - 1)) / cells.size
         val round = CornerRadius(2.dp.toPx())
         var selectedTop = size.height
+        var nowTop: Float? = null
+        val nowCell = nowCellIndex(cells, hours)
         cells.forEachIndexed { k, cell ->
             val group = hours.subList(cell.first, cell.last + 1)
             val x0 = k * (cellW + gap)
@@ -89,10 +91,18 @@ fun CellBars(
             } else {
                 drawRoundRect(colorOf(group, isSel), Offset(x0, top), Size(cellW, h), round)
             }
+            if (k == nowCell) nowTop = top
             if (isSel) {
                 drawRoundRect(outline.copy(alpha = 0.9f), Offset(x0, top), Size(cellW, h), round, style = Stroke(1.3.dp.toPx()))
                 selectedTop = top
             }
+        }
+        // Petit point « maintenant », plus discret que le point de la sélection.
+        if (nowCell != null && nowCell != selectedCell && nowTop != null) {
+            val ny = nowTop!!.coerceAtLeast(3.dp.toPx())
+            val nx = nowCell * (cellW + gap) + cellW / 2f
+            drawCircle(Color.White, 2.5.dp.toPx(), Offset(nx, ny))
+            drawCircle(Color(0xFF0B1519), 2.5.dp.toPx(), Offset(nx, ny), style = Stroke(1.dp.toPx()))
         }
         // Le point blanc, au sommet de la barre choisie.
         val cx = selectedCell * (cellW + gap) + cellW / 2f
