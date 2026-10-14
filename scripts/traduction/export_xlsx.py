@@ -99,24 +99,45 @@ INSTR = {
         "Reglas: trato informal (la app dice « tu » = tú). Deja igual los números, unidades, símbolos (› · + ≈ %) y marcadores. No traduzcas « Surf Log ». Textos cortos en botones y títulos (poco espacio en el móvil). Usa el vocabulario que los surfistas usan de verdad, no una traducción palabra por palabra.",
         "Una misma frase puede aparecer en varios sitios: la columna B indica el primero. ¡Gracias!"]),
 }
-GLOSSARY = [
-    ("Montant / Descendant", "Marée qui monte / qui descend (rising / falling tide). Toujours avec une majuscule dans l'appli."),
-    ("Houle", "Swell : les vagues formées au large, qui arrivent sur la côte."),
-    ("Clapot / Mer de vent", "Wind chop / wind swell : petites vagues désordonnées créées par le vent local."),
-    ("Période", "Swell period : nombre de secondes entre deux vagues. Plus elle est longue, plus la houle est puissante."),
-    ("Série", "Set : groupe de vagues plus grosses qui arrivent ensemble."),
-    ("Take-off", "Le moment où l'on se lève sur la planche."),
-    ("Passer la barre", "Traverser la zone où les vagues cassent pour aller au large (getting out past the breakers)."),
-    ("Mousse / Reforme / Large", "Whitewater / vague qui a cassé et se reforme / pic au large."),
-    ("Pic", "Peak : l'endroit où la vague commence à casser."),
-    ("Offshore / Onshore / Travers", "Vent qui vient de la terre (lisse la vague) / de la mer (la dégrade) / de côté (cross-shore)."),
-    ("Coefficient", "Indice de marée français (de 20 à 120) : plus il est haut, plus le marnage est grand."),
-    ("Volume / Planche du jour", "Litres de la planche / la planche conseillée selon les conditions."),
-    ("Shortboard, Fish, Mid-length, Longboard", "Types de planches ; on garde ces noms tels quels en général."),
-    ("Prévu / Vécu", "Ce que l'appli annonçait / ce que le surfeur a ressenti sur l'eau (journal de session)."),
-    ("Modèles partagés", "Les modèles de prévision ne sont pas d'accord entre eux."),
-    ("Mesures en direct", "Mesures réelles d'une bouée (houle) et d'une station météo (vent)."),
-]
+GLOSS_TERMS = ["Montant / Descendant", "Houle", "Clapot / Mer de vent", "Période", "Série", "Take-off", "Passer la barre", "Mousse / Reforme / Large",
+               "Pic", "Offshore / Onshore / Travers", "Coefficient", "Volume / Planche du jour", "Shortboard, Fish, Mid-length, Longboard",
+               "Prévu / Vécu", "Modèles partagés", "Mesures en direct"]
+GLOSS = {
+    "en": ["Rising tide / falling tide. Always capitalised in the app.", "Swell: waves formed far out at sea that reach the coast.",
+           "Wind chop / wind swell: small messy waves made by the local wind.", "Swell period: seconds between two waves. The longer it is, the more powerful the swell.",
+           "Set: a group of bigger waves arriving together.", "The moment you stand up on the board.", "Getting out through the breaking waves to the line-up.",
+           "Whitewater / a wave that has broken and reforms / the outside peak.", "Peak: the spot where the wave starts to break.",
+           "Wind blowing from land (smooths the wave) / from the sea (spoils it) / from the side (cross-shore).",
+           "French tide index (20 to 120): the higher it is, the bigger the tidal range.", "Litres of the board / the board recommended for the conditions.",
+           "Board types; usually kept as they are.", "What the app forecast / what the surfer felt in the water (session log).",
+           "The forecast models disagree with each other.", "Real measurements from a buoy (swell) and a weather station (wind)."],
+    "de": ["Steigende / fallende Flut (Gezeiten). In der App immer mit Großbuchstaben.", "Dünung: Wellen, die weit draußen auf dem Meer entstehen und die Küste erreichen.",
+           "Windwelle / Windsee: kleine, unruhige Wellen, die der lokale Wind erzeugt.", "Wellenperiode: Sekunden zwischen zwei Wellen. Je länger, desto kraftvoller die Dünung.",
+           "Set: eine Gruppe größerer Wellen, die zusammen ankommen.", "Der Moment, in dem man auf dem Brett aufsteht.", "Durch die brechenden Wellen ins Line-up hinauspaddeln.",
+           "Weißwasser / eine gebrochene Welle, die sich neu formt / der Peak weiter draußen.", "Peak: die Stelle, an der die Welle zu brechen beginnt.",
+           "Wind vom Land (glättet die Welle) / vom Meer (verschlechtert sie) / seitlich (Cross-Shore).",
+           "Französischer Gezeitenindex (20 bis 120): je höher, desto größer der Tidenhub.", "Liter des Bretts / das für die Bedingungen empfohlene Brett.",
+           "Brettarten; werden meist unverändert übernommen.", "Was die App vorhergesagt hat / was der Surfer im Wasser erlebt hat (Session-Logbuch).",
+           "Die Vorhersagemodelle sind sich nicht einig.", "Echte Messungen einer Boje (Dünung) und einer Wetterstation (Wind)."],
+    "nl": ["Opkomend / afgaand tij. In de app altijd met hoofdletter.", "Deining: golven die ver op zee ontstaan en de kust bereiken.",
+           "Windgolven / korte wind-chop: kleine, rommelige golven door de lokale wind.", "Golfperiode: seconden tussen twee golven. Hoe langer, hoe krachtiger de deining.",
+           "Set: een groep grotere golven die samen aankomen.", "Het moment waarop je op de plank gaat staan.", "Door de brekende golven naar buiten peddelen naar de line-up.",
+           "Schuim / een gebroken golf die zich opnieuw vormt / de piek verder buiten.", "Piek: de plek waar de golf begint te breken.",
+           "Wind van het land (maakt de golf glad) / van zee (verpest hem) / zijwaarts (cross-shore).",
+           "Frans getij-index (20 tot 120): hoe hoger, hoe groter het verschil tussen hoog en laag water.", "Liters van de plank / de plank die bij de condities past.",
+           "Plankentypes; meestal ongewijzigd overgenomen.", "Wat de app voorspelde / wat de surfer in het water ervoer (sessielogboek).",
+           "De voorspellingsmodellen zijn het niet eens met elkaar.", "Echte metingen van een boei (deining) en een weerstation (wind)."],
+    "es": ["Marea que sube / que baja. En la app siempre con mayúscula.", "Oleaje: olas formadas lejos en el mar que llegan a la costa.",
+           "Mar de viento / chop: olas pequeñas y desordenadas creadas por el viento local.", "Periodo del oleaje: segundos entre dos olas. Cuanto más largo, más potente el oleaje.",
+           "Serie (set): grupo de olas más grandes que llegan juntas.", "El momento de ponerse de pie en la tabla.", "Salir al pico atravesando las olas que rompen.",
+           "Espuma / ola que ya rompió y se reforma / el pico de fuera.", "Pico: el punto donde la ola empieza a romper.",
+           "Viento que viene de tierra (alisa la ola) / del mar (la estropea) / de lado (cross-shore).",
+           "Índice de marea francés (de 20 a 120): cuanto más alto, mayor la diferencia entre pleamar y bajamar.", "Litros de la tabla / la tabla recomendada para las condiciones.",
+           "Tipos de tabla; normalmente se dejan tal cual.", "Lo que la app pronosticó / lo que el surfista sintió en el agua (diario de sesiones).",
+           "Los modelos de previsión no coinciden entre sí.", "Mediciones reales de una boya (oleaje) y de una estación meteorológica (viento)."],
+}
+GLOSS_HEAD = {"en": ("Term (French)", "Meaning"), "de": ("Begriff (Französisch)", "Bedeutung"), "nl": ("Term (Frans)", "Betekenis"), "es": ("Término (francés)", "Significado")}
+GLOSS_TITLE = {"en": "Glossary", "de": "Glossar", "nl": "Woordenlijst", "es": "Glosario"}
 
 
 def add_instructions(wb, code):
@@ -127,20 +148,14 @@ def add_instructions(wb, code):
     ws["A1"].font = Font(bold=True, size=14)
     for ln in lines:
         ws.append([ln])
-    if code != "fr":
-        ws.append([""])
-        ws.append(["Français (version d'origine)"])
-        ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
-        for ln in INSTR["fr"][1]:
-            ws.append([ln])
     for row in ws.iter_rows(min_row=2):
         row[0].alignment = Alignment(wrap_text=True, vertical="top")
-    g = wb.create_sheet("Glossaire", 1)
-    g.append(["Terme (français)", "Sens (aide à la traduction)"])
+    g = wb.create_sheet(GLOSS_TITLE[code], 1)
+    g.append(list(GLOSS_HEAD[code]))
     for c in g[1]:
         c.font = Font(bold=True, color="FFFFFF"); c.fill = PatternFill("solid", fgColor="1F4E79")
-    for a, b in GLOSSARY:
-        g.append([a, b])
+    for term, meaning in zip(GLOSS_TERMS, GLOSS[code]):
+        g.append([term, meaning])
     g.column_dimensions["A"].width = 38; g.column_dimensions["B"].width = 100
     for row in g.iter_rows(min_row=2):
         for c in row:
