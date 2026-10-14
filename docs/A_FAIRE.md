@@ -53,3 +53,10 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Bouées hors de France** (Espagne, Portugal, Royaume-Uni) pour les spots sans bouée proche.
 - **Bilan de la phase de test** (relevés des prévisions et des bouées) : à faire dans 3 à 4 semaines.
 
+
+
+## Statistiques anonymes : réglage Cloudflare à faire par le propriétaire
+1. Cloudflare > Workers & Pages > KV : créer un espace nommé `surflog-stats`.
+2. Projet Pages `surflog` > Settings > Bindings : ajouter une liaison KV, nom `STATS`, espace `surflog-stats` (production).
+3. Settings > Variables and Secrets : ajouter le secret `STATS_KEY` avec une longue clé de ton choix (ne jamais l'écrire dans le dépôt ni dans le chat).
+4. Redéployer (un nouveau push suffit), puis ouvrir `https://surflog.fr/api/stats/` et entrer la clé.
