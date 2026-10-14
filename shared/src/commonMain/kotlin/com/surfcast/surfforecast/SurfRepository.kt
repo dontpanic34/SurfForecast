@@ -205,7 +205,9 @@ class SurfRepository(
         val spreads: List<Double> = emptyList(),
         // Période la plus courte et la plus longue entre les modèles (consensus) ; vide hors consensus.
         val periodMins: List<Double> = emptyList(),
-        val periodMaxs: List<Double> = emptyList()
+        val periodMaxs: List<Double> = emptyList(),
+        // Ce que dit chaque modèle pour chaque heure (consensus) ; vide hors consensus.
+        val voices: List<List<ModelVoice>> = emptyList()
     )
 
     private class RawWeatherHourly(
@@ -433,6 +435,8 @@ class SurfRepository(
         val sH = ArrayList<Double>(); val sP = ArrayList<Double>(); val sD = ArrayList<Float>()
         val spreads = ArrayList<Double>()
         val periodMins = ArrayList<Double>(); val periodMaxs = ArrayList<Double>()
+        val voices = ArrayList<List<ModelVoice>>()
+        val voiceLabels = listOf("MF-WAM", "ECMWF", "GFS")
         for (t in times) {
             val leadHours = ((t.date.toEpochDays() - today.toEpochDays()) * 24L + t.hour).toDouble()
             val weights = waveConsensusWeights(leadHours)
@@ -440,11 +444,13 @@ class SurfRepository(
             var hMin = Double.MAX_VALUE; var hMax = 0.0; var hCount = 0; var hMean = 0.0
             var pMin = Double.MAX_VALUE; var pMax = 0.0; var pCount = 0
             var best = -1
+            val hourVoices = ArrayList<ModelVoice>()
             for (k in models.indices) {
                 val b = blocks[k] ?: continue
                 val idx = maps[k]?.get(t) ?: continue
                 val h = b.waveHeights.getOrNull(idx) ?: continue
                 if (h.isNaN() || h <= 0.0) continue
+                hourVoices += ModelVoice(voiceLabels[k], h, b.wavePeriods.getOrNull(idx) ?: 0.0, b.waveDirections.getOrNull(idx) ?: Float.NaN)
                 val w = weights[k]
                 if (w > 0.0) {
                     sw += w; hSum += w * h
@@ -466,7 +472,7 @@ class SurfRepository(
                 periods += b?.wavePeriods?.getOrNull(idx ?: -1) ?: 0.0
                 dirs += b?.waveDirections?.getOrNull(idx ?: -1) ?: 0f
                 wwH += 0.0; wwP += 0.0; wwD += 0f; sH += 0.0; sP += 0.0; sD += 0f; spreads += 0.0
-                periodMins += 0.0; periodMaxs += 0.0
+                periodMins += 0.0; periodMaxs += 0.0; voices += emptyList<ModelVoice>()
                 continue
             }
             heights += hSum / sw
@@ -481,8 +487,9 @@ class SurfRepository(
             sH += bs.secHeights.getOrNull(si) ?: 0.0; sP += bs.secPeriods.getOrNull(si) ?: 0.0; sD += bs.secDirections.getOrNull(si) ?: 0f
             spreads += if (hCount >= 2 && hMean > 0.0) (hMax - hMin) / (hMean / hCount) else 0.0
             periodMins += if (pCount >= 2) pMin else 0.0; periodMaxs += if (pCount >= 2) pMax else 0.0
+            voices += hourVoices
         }
-        RawMarineHourly(times, heights, periods, dirs, wwH, wwP, wwD, sH, sP, sD, spreads, periodMins, periodMaxs)
+        RawMarineHourly(times, heights, periods, dirs, wwH, wwP, wwD, sH, sP, sD, spreads, periodMins, periodMaxs, voices)
     }
 
     /**
@@ -847,6 +854,13 @@ class SurfRepository(
                         periodMax = mData.periodMaxs.getOrElse(mIndex) { 0.0 },
                         windMinKmh = if (windVoices.size >= 2) windVoices.min().roundToInt() else 0,
                         windMaxKmh = if (windVoices.size >= 2) windVoices.max().roundToInt() else 0,
+                        waveVoices = mData.voices.getOrElse(mIndex) { emptyList() }.takeIf { it.size >= 2 } ?: emptyList(),
+                        windVoiceList = listOfNotNull(
+                            if (ecmwfOk) ModelVoice("ECMWF", longSpeed, direction = longDir.toFloat()) else null,
+                            gfs?.let { ModelVoice("GFS", it.first, direction = it.second.toFloat()) },
+                            hd?.let { ModelVoice("AROME HD", it.first, direction = it.second.toFloat()) },
+                            if (isShortTerm && wData === shortWeather && !primarySpeed.isNaN()) ModelVoice("AROME", primarySpeed, direction = primaryDir.toFloat()) else null
+                        ).takeIf { it.size >= 2 } ?: emptyList(),
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
                         windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),

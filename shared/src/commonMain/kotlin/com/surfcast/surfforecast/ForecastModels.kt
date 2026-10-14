@@ -7,6 +7,9 @@ import kotlinx.datetime.LocalTime
 // Portage multiplateforme des modèles de app/ (mêmes noms, mêmes champs) :
 // java.time remplacé par kotlinx-datetime pour compiler aussi sur iOS.
 
+/** La prévision d'un modèle pour une heure : hauteur (m) ou vent (km/h) dans [value], période (s) et direction (°, NaN = inconnue). */
+data class ModelVoice(val label: String, val value: Double, val period: Double = 0.0, val direction: Float = Float.NaN)
+
 data class HourlyUiModel(
     val timeFormatted: String,
     val rawTime: LocalDateTime,
@@ -47,7 +50,10 @@ data class HourlyUiModel(
     val periodMax: Double = 0.0,
     // Vent le plus faible et le plus fort annoncés par les modèles (km/h) : 0 = un seul modèle.
     val windMinKmh: Int = 0,
-    val windMaxKmh: Int = 0
+    val windMaxKmh: Int = 0,
+    // Ce que dit chaque modèle pour cette heure (pour la feuille « Modèles partagés ») ; vide = un seul modèle.
+    val waveVoices: List<ModelVoice> = emptyList(),
+    val windVoiceList: List<ModelVoice> = emptyList()
 )
 
 data class DailyTideInfo(
