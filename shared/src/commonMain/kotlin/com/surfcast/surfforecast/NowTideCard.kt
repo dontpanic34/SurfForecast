@@ -25,6 +25,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlin.math.roundToInt
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Les conditions actuelles du spot, écrites comme un titre en haut à gauche : « Maintenant · Montalivet · 14 h », puis
@@ -124,12 +129,7 @@ fun NowTideCard(
                 NowTile(tr("Marée"), (if (next != null) (if (next.first) "▲ " else "▼ ") + next.second.replace(" h ", ":") else ""), Modifier.weight(1f), coef = coef)
             }
         }
-        buoy?.let { b ->
-            Text(buoyLine(b), fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 2, modifier = Modifier.padding(top = 6.dp))
-        }
-        observed?.let { o ->
-            Text(observedLine(o, windUnit), fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 2, modifier = Modifier.padding(top = if (buoy != null) 2.dp else 6.dp))
-        }
+        if (buoy != null || observed != null) MeasuresRow(buoy, observed, windUnit)
     }
 }
 
@@ -176,3 +176,74 @@ private fun NowTile(title: String, value: String, modifier: Modifier = Modifier,
     }
 }
 
+
+private const val WAVE_PATH = "M2 20.5c2.5 0 2.5-1.5 5-1.5s2.5 1.5 5 1.5 2.5-1.5 5-1.5 2.5 1.5 5 1.5"
+
+private fun strokeIcon(name: String, vararg paths: String): androidx.compose.ui.graphics.vector.ImageVector {
+    val b = androidx.compose.ui.graphics.vector.ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f)
+    for (d in paths) b.addPath(
+        pathData = androidx.compose.ui.graphics.vector.addPathNodes(d),
+        stroke = androidx.compose.ui.graphics.SolidColor(Color.Black), strokeLineWidth = 1.7f,
+        strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round, strokeLineJoin = androidx.compose.ui.graphics.StrokeJoin.Round
+    )
+    return b.build()
+}
+
+/** Balise océanique (cône flottant) et parabole inclinée. */
+private val BuoyIcon by lazy {
+    strokeIcon("Buoy", "M10.8 3.5a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0", "M12 5l4.5 11h-9z", "M9.8 11h4.4", WAVE_PATH)
+}
+private val DishIcon by lazy {
+    strokeIcon("Dish", "M5 8a8 8 0 0 0 11 11z", "M5 8l11 11", "M10 14l5-5", "M15 9l1.5-1.5", "M16 7a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M9 21h8", "M13 19v2")
+}
+
+/** « Mesures en direct » : deux pastilles (balise, station) ; un appui montre le détail sur une ligne. */
+@Composable
+private fun MeasuresRow(buoy: BuoyReading?, observed: ObservedNow?, windUnit: String) {
+    val colors = MaterialTheme.colorScheme
+    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
+    fun hm(t: kotlinx.datetime.LocalDateTime) = "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
+    @Composable
+    fun Pill(id: Int, icon: androidx.compose.ui.graphics.vector.ImageVector, value: String) {
+        val on = open == id
+        Row(
+            modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary.copy(alpha = 0.18f) else colors.surfaceVariant)
+                .clickable { open = if (on) 0 else id }.padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            androidx.compose.material3.Icon(icon, null, Modifier.size(15.dp), tint = if (on) colors.primary else colors.onSurface)
+            Text(value, fontSize = 12.5.sp, color = if (on) colors.primary else colors.onSurface, maxLines = 1)
+        }
+    }
+    Column(Modifier.padding(top = 8.dp)) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val label = if (maxWidth >= 340.dp) "Mesures en direct" else "En direct"
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(tr(label).uppercase(), fontSize = 11.sp, color = colors.onSurfaceVariant, maxLines = 1)
+                buoy?.let { b ->
+                    val period = b.period?.let { " · ${it.roundToInt()} s" }.orEmpty()
+                    Pill(1, BuoyIcon, "${formatDecimal(b.significantHeight, 1).replace('.', ',')} m$period")
+                }
+                observed?.let { o ->
+                    val dir = o.directionDeg?.let { " " + SurfUnitsHelper.formatCardinalFr(getCardinalDirection(it.toDouble())) }.orEmpty()
+                    Pill(2, DishIcon, "${SurfUnitsHelper.formatWindValue(o.windKmh, windUnit)} $unit$dir")
+                }
+            }
+        }
+        val line = when {
+            open == 1 && buoy != null -> {
+                val t = buoy.timeUtc.toInstant(kotlinx.datetime.TimeZone.UTC).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                val max = buoy.maxHeight?.let { " · max ${formatDecimal(it, 1).replace('.', ',')} m" }.orEmpty()
+                "${buoy.buoy.name}, à ${buoy.distanceKm} km$max · mesuré à ${hm(t)}"
+            }
+            open == 2 && observed != null -> {
+                val t = observed.timeUtc.toInstant(kotlinx.datetime.TimeZone.UTC).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                val gust = observed.gustKmh?.takeIf { it > observed.windKmh }?.let { " · rafales ${SurfUnitsHelper.formatWindValue(it, windUnit)} $unit" }.orEmpty()
+                "${niceStationName(observed.stationName)}, à ${observed.distanceKm.roundToInt()} km$gust · mesuré à ${hm(t)}"
+            }
+            else -> null
+        }
+        if (line != null) Text(line, fontSize = 11.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+    }
+}

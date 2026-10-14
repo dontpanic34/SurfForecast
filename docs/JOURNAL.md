@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Encart Actuellement : « Mesures en direct »** (ou « En direct » si la place manque) : les deux longues phrases deviennent deux pastilles avec icône (balise océanique en cône 1,5 m · 10 s ; parabole inclinée pour la station 8 km/h E). Un appui affiche une ligne de détail (nom, distance, max ou rafales, heure de mesure) ; un second appui la referme. Traductions ajoutées.
+
+
 - **Point « maintenant »** : petit point (plus petit que celui de la sélection) sur la cheminée de l'heure actuelle dans Houle, Vent, Météo et sur la barre de l'encart Actuellement (aujourd'hui seulement, masqué si c'est l'heure sélectionnée).
 
 
