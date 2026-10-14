@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Liaison KV dans le dépôt** : la liaison `STATS` réglée dans le tableau de bord Cloudflare n'était pas reprise par la publication faite depuis GitHub (le relais répondait 503). Ajout de `wrangler.toml` à la racine (liaison KV avec l'identifiant de l'espace, date de compatibilité 2026-10-07). Les clés restent des secrets Cloudflare. Si les marées ou les mesures cessent de répondre après ce changement, retirer `wrangler.toml` et republier.
+
+
 - **Deuxième fenêtre de profil supprimée** : la visite guidée de l'accueil ne contient plus l'étape « Ton profil » (bouton « Renseigner mon profil »), qui redemandait le questionnaire déjà posé juste avant. Restent deux étapes : « Étoiles et couleurs » et « Le journal ». Le questionnaire reste accessible dans Réglages > Profil.
 
 
