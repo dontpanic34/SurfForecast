@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Marées : copie durable contre les pannes d'api-maree.fr** : à chaque réponse valide, le relais `/api/maree/tide-extrema` range les jours reçus dans le KV Cloudflare (`maree:<site>`, fusionnés, 60 jours, partagés entre tous les centres de données ; avant, la copie de secours n'existait que dans le centre qui l'avait reçue). Si le service tombe, le relais rend les jours demandés qu'il connaît ; pour une date jamais vue, l'appli retombe sur les marées estimées (≈). Utilise la liaison KV `STATS` (clés `maree:`).
+
+
 - **Utilisateurs actifs** dans la page de statistiques : aujourd'hui, 7 jours, 30 jours (identifiants anonymes distincts), courbe des 30 derniers jours et nouveaux du jour. Le suivi commence à la mise en ligne. Après une clé fausse, la réponse est ralentie de 1,5 s. Limite : l'offre gratuite du KV Cloudflare permet environ 1 000 écritures par jour (~500 utilisateurs actifs par jour) ; au-delà, offre payante ou base D1.
 
 
