@@ -60,6 +60,8 @@ fun SurfPreferencesDialog(
     themeMode: String = "system",
     language: String = "fr",
     appVersion: String? = null,
+    devUnlocked: Boolean = false,
+    onDevUnlock: () -> Unit = {},
     onLanguageChanged: (String) -> Unit = {},
     onThemeModeChanged: (String) -> Unit = {},
     customProfile: String = "",
@@ -343,13 +345,21 @@ fun SurfPreferencesDialog(
                         SettingsSection("Aide") {
                             SettingsRow("Comprendre", "Les leçons pour lire les prévisions", SettingsIcons.Book, top = false) { onDismiss(); ComprendreState.open() }
                             SettingsRow("Aide et langue", "Visite guidée et langue", SettingsIcons.Globe) { page = "help" }
+                            if (devUnlocked) {
+                                val devUri = LocalUriHandler.current
+                                SettingsRow("Développeur", "Statistiques des utilisateurs (clé demandée)", SettingsIcons.Layers) { devUri.openUri("https://surflog.fr/api/stats/") }
+                            }
                         }
                         if (!appVersion.isNullOrEmpty()) {
+                            var taps by remember { mutableIntStateOf(0) }
                             Text(
                                 text = "Surf Log v$appVersion",
                                 fontSize = 11.sp,
                                 color = colors.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                modifier = Modifier.fillMaxWidth().clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) {
+                                    taps++
+                                    if (taps >= 7 && !devUnlocked) onDevUnlock()
+                                }.padding(top = 4.dp),
                                 textAlign = TextAlign.Center
                             )
                         }
