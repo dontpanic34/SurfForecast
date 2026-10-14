@@ -753,6 +753,7 @@ fun MainScreen(
                                             listState = mainListState,
                                             selectedHourState = pickedHourState,
                                             onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
+                                            onOpenModelSettings = { preferencesStartPage = "forecast"; showPreferencesDialog = true },
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             boardOfDay = if (GearPrefs.boardDayMode == "header" || GearPrefs.boardDayMode == "both")
@@ -1033,6 +1034,7 @@ fun FavoritesHeaderRow(
 fun DynamicCardsSection(
     afterTimeline: @Composable () -> Unit,
     onOpenProfile: () -> Unit = {},
+    onOpenModelSettings: () -> Unit = {},
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -1228,6 +1230,7 @@ fun DynamicCardsSection(
                         "dailyTimeline" -> {
                             Spacer(modifier = Modifier.height(4.dp))
                             DailyTimelineCard(
+                                onOpenModelSettings = onOpenModelSettings,
                                 selectedDate = selectedDate ?: availableDates.firstOrNull() ?: nowLocalDateTime().date,
                                 groupedByDate = groupedByDate,
                                 dailySunInfo = dailySunInfo,
@@ -1266,6 +1269,7 @@ fun DynamicCardsSection(
                             Spacer(modifier = Modifier.height(4.dp))
                             selectedHourlyItem?.let { hourly ->
                                 WindCardComponent(
+                                    onOpenModelSettings = onOpenModelSettings,
                                     selectedHour = hourly,
                                     allHoursOfDay = hoursForSelectedDay,
                                     windUnit = viewModel.windUnit,

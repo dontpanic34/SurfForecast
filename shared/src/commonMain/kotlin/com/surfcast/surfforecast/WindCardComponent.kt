@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun WindCardComponent(
+    onOpenModelSettings: () -> Unit = {},
     selectedHour: HourlyUiModel,
     allHoursOfDay: List<HourlyUiModel>,
     windUnit: String,
@@ -117,7 +118,7 @@ fun WindCardComponent(
 
             if (windModelsDisagree(selectedHour)) {
                 var showVoices by remember { mutableStateOf(false) }
-                if (showVoices) ModelVoicesDialog(selectedHour, windUnit) { showVoices = false }
+                if (showVoices) ModelVoicesDialog(selectedHour, windUnit, onOpenModelSettings) { showVoices = false }
                 Text(
                     "Modèles partagés : ${SurfUnitsHelper.formatWindValue(selectedHour.windMinKmh, windUnit)} à ${SurfUnitsHelper.formatWindValue(selectedHour.windMaxKmh, windUnit)} $unitSymbol",
                     fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFF2B84B),
