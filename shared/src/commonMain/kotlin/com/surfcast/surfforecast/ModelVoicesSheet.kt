@@ -1,6 +1,7 @@
 package com.surfcast.surfforecast
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +18,7 @@ import kotlin.math.roundToInt
 
 /** « Modèles partagés » : ce que dit chaque modèle pour l'heure choisie (lecture seule ; le choix des modèles est dans Réglages). */
 @Composable
-fun ModelVoicesDialog(hour: HourlyUiModel, windUnit: String, onDismiss: () -> Unit) {
+fun ModelVoicesDialog(hour: HourlyUiModel, windUnit: String, onOpenSettings: (() -> Unit)? = null, onDismiss: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     @Composable
@@ -48,9 +49,12 @@ fun ModelVoicesDialog(hour: HourlyUiModel, windUnit: String, onDismiss: () -> Un
                         Line(v.label, "${SurfUnitsHelper.formatWindValue(v.value, windUnit)} $unit$dir")
                     }
                 }
+                val link = onOpenSettings != null
                 Text(
-                    "Pour changer de modèle : Réglages.", fontSize = 12.sp, color = colors.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 10.dp)
+                    "Pour changer de modèle : Réglages.", fontSize = 13.sp,
+                    color = if (link) colors.primary else colors.onSurfaceVariant,
+                    textDecoration = if (link) androidx.compose.ui.text.style.TextDecoration.Underline else null,
+                    modifier = Modifier.padding(top = 10.dp).let { m -> if (onOpenSettings != null) m.clickable { onDismiss(); onOpenSettings() } else m }
                 )
             }
         }

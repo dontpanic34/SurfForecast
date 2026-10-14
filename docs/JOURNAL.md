@@ -12,6 +12,12 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **« Pour changer de modèle : Réglages. » cliquable** dans la feuille « Modèles à H h » : un appui ferme la feuille et ouvre directement Réglages > Sources et modèles.
+
+
+- **Incident de construction Android corrigé** : les constructions `unified` 391 à 402 échouaient parce que j'avais copié `app/build.gradle.kts` de la branche de travail (ancienne appli, sans la liaison au module `:shared`). **Règle pour publier sur `unified` : ne jamais copier `app/` depuis la branche de travail** ; seule la ligne `versionName` (2.0.x) y est modifiée à la main. Rétabli au commit 96e2642 (compilation `:app:compileDebugKotlin` vérifiée).
+
+
 - **« Modèles partagés » devient cliquable** (Houle/déroulé et Vent) : un appui ouvre une feuille « Modèles à H h » avec la prévision de chaque modèle pour l'heure choisie (houle : MF-WAM, ECMWF, GFS en hauteur · période · direction ; vent : ECMWF, GFS, AROME HD, AROME). Lecture seule ; pour changer de modèle, Réglages (décision du propriétaire).
 
 

@@ -72,6 +72,7 @@ private const val SIDE_PAD = 4
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DailyTimelineCard(
+    onOpenModelSettings: () -> Unit = {},
     selectedDate: LocalDate,
     groupedByDate: Map<LocalDate, List<HourlyUiModel>>,
     dailySunInfo: Map<LocalDate, DailySunInfo>,
@@ -133,7 +134,7 @@ fun DailyTimelineCard(
         Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
             if (selectedIndex in ratings.indices) {
                 var showVoices by remember { mutableStateOf(false) }
-                if (showVoices) ModelVoicesDialog(curveHours[selectedIndex], windUnit) { showVoices = false }
+                if (showVoices) ModelVoicesDialog(curveHours[selectedIndex], windUnit, onOpenModelSettings) { showVoices = false }
                 val shownRating = ratings[selectedIndex]
                 val shownBand = conditionBand(shownRating)
                 Column(modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 60.dp, top = 2.dp, bottom = 2.dp)) {
