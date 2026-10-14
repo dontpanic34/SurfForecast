@@ -7,7 +7,21 @@
 const ANSWER_KEYS = ['what', 'barre', 'tk', 'peak', 'man', 'want', 'feel', 'train'];
 const MULTI_KEYS = ['goal', 'where'];
 
-const emptyAgg = () => ({ users: 0, levels: {}, versions: {}, langs: {}, q: {} });
+const emptyAgg = () => ({ users: 0, levels: {}, versions: {}, langs: {}, q: {}, seen: {}, daily: {}, fresh: {} });
+const today = () => new Date().toISOString().slice(0, 10);
+const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+const prune = (o, min) => { for (const k of Object.keys(o)) if (k < min) delete o[k]; };
+const canon = (v) => Array.isArray(v) ? v.map(canon) : (v && typeof v === 'object') ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canon(v[k])])) : v;
+const core = (r) => { const { first, last, ...x } = r; return JSON.stringify(canon(x)); };
+const same = (a, b) => core(a) === core(b);
+
+/** Utilisateurs actifs : aujourd'hui, 7 derniers jours, 30 derniers jours (identifiants anonymes distincts). */
+export function activity(agg) {
+  const seen = agg.seen || {};
+  const count = (min) => Object.values(seen).filter(d => d >= min).length;
+  const t = today();
+  return { dau: (agg.daily || {})[t] || 0, wau: count(daysAgo(6)), mau: count(daysAgo(29)) };
+}
 const bump = (o, k, d) => { if (k === undefined || k === null || k === '') return; o[k] = (o[k] || 0) + d; if (o[k] <= 0) delete o[k]; };
 
 export function contributions(rec) {
@@ -52,11 +66,23 @@ export async function onRequestPost({ request, env, params }) {
   const c = clean(body);
   if (!c) return new Response('bad request', { status: 400 });
   const old = await env.STATS.get('u:' + c.id, 'json');
-  if (old && JSON.stringify(old) === JSON.stringify(c.rec)) return json({ ok: true, changed: false });
+  const day = today();
+  const changed = !old || !same(old, c.rec);
+  const newDay = !old || old.last !== day;
+  if (!changed && !newDay) return json({ ok: true, changed: false });
   const agg = (await env.STATS.get('agg', 'json')) || emptyAgg();
-  if (old) applyRecord(agg, old, -1);
-  applyRecord(agg, c.rec, +1);
-  await env.STATS.put('u:' + c.id, JSON.stringify(c.rec));
+  agg.seen = agg.seen || {}; agg.daily = agg.daily || {}; agg.fresh = agg.fresh || {};
+  if (changed) {
+    if (old) applyRecord(agg, old, -1);
+    applyRecord(agg, c.rec, +1);
+  }
+  if (newDay) {
+    agg.daily[day] = (agg.daily[day] || 0) + 1;
+    agg.seen[c.id] = day;
+    if (!old) agg.fresh[day] = (agg.fresh[day] || 0) + 1;
+  }
+  prune(agg.daily, daysAgo(90)); prune(agg.fresh, daysAgo(90)); for (const k of Object.keys(agg.seen)) if (agg.seen[k] < daysAgo(35)) delete agg.seen[k];
+  await env.STATS.put('u:' + c.id, JSON.stringify({ ...c.rec, first: old?.first || day, last: day }));
   await env.STATS.put('agg', JSON.stringify(agg));
   return json({ ok: true, changed: true });
 }
@@ -66,9 +92,14 @@ export async function onRequestGet({ request, env, params }) {
   if (path === '') return new Response(PAGE, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
   if (path !== 'summary') return new Response('not found', { status: 404 });
   const key = request.headers.get('x-stats-key') || '';
-  if (!env.STATS_KEY || key.length !== env.STATS_KEY.length || key !== env.STATS_KEY) return new Response('accès refusé', { status: 401 });
+  if (!env.STATS_KEY || key.length !== env.STATS_KEY.length || key !== env.STATS_KEY) {
+    await new Promise(r => setTimeout(r, 1500)); // ralentit les essais de clé
+    return new Response('accès refusé', { status: 401 });
+  }
   if (!env.STATS) return new Response('relais non configuré', { status: 503 });
-  return json((await env.STATS.get('agg', 'json')) || emptyAgg());
+  const agg = (await env.STATS.get('agg', 'json')) || emptyAgg();
+  const { seen, ...rest } = agg; // jamais d'identifiants dans la réponse
+  return json({ ...rest, ...activity(agg) });
 }
 
 const PAGE = `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
@@ -100,6 +131,9 @@ const lv=LEVELS.map(n=>[n,a.levels[n]||0]);const known=lv.reduce((s,x)=>s+x[1],0
 const avgIdx=known?lv.reduce((s,x,i)=>s+i*x[1],0)/known:0;
 const top=(m)=>Object.entries(m||{}).sort((x,y)=>y[1]-x[1])[0];
 let h='<div class="card"><h2>Vue d\\'ensemble</h2><div class="kpis"><div class="kpi"><b>'+a.users+'</b><span>utilisateurs</span></div><div class="kpi"><b>'+(known?LEVELS[Math.round(avgIdx)]:'-')+'</b><span>niveau moyen ('+known+' réponses)</span></div><div class="kpi"><b>'+((top(a.versions)||['-'])[0])+'</b><span>version la plus utilisée</span></div></div></div>';
+const days=[];for(let i=29;i>=0;i--){days.push(new Date(Date.now()-i*864e5).toISOString().slice(0,10))}
+const dmax=Math.max(1,...days.map(d=>(a.daily||{})[d]||0));
+h+='<div class="card"><h2>Utilisateurs actifs</h2><div class="kpis"><div class="kpi"><b>'+a.dau+'</b><span>aujourd\'hui</span></div><div class="kpi"><b>'+a.wau+'</b><span>7 jours</span></div><div class="kpi"><b>'+a.mau+'</b><span>30 jours</span></div></div><div style="display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:12px">'+days.map(d=>'<i title="'+d+' : '+((a.daily||{})[d]||0)+'" style="flex:1;background:var(--bar);height:'+Math.max(2,((a.daily||{})[d]||0)/dmax*100)+'%"></i>').join('')+'</div><small style="color:var(--m)">Actifs par jour, 30 derniers jours · nouveaux aujourd\'hui : '+((a.fresh||{})[days[29]]||0)+'</small></div>';
 h+='<div class="card"><h2>Répartition par niveau</h2>'+bars(lv,known)+'</div>';
 h+='<div class="card"><h2>Réponses à chaque question</h2><select id="q" onchange="showQ()">'+Object.keys(Q).map(k=>'<option value="'+k+'">'+Q[k][0]+'</option>').join('')+'</select><div id="qa"></div></div>';
 const vs=Object.entries(a.versions).sort((x,y)=>y[1]-x[1]);
