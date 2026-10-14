@@ -12,7 +12,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
-- **Taille du texte : « Petit » par défaut** : nouvelle taille « Petit » (zoom 0,9), choisie par défaut sur une installation neuve ; un choix déjà enregistré par l'utilisateur est conservé. **Visite guidée** : l'étape « Le journal » devient « Noter une session » et montre le bouton + (« Appuie sur le + pour noter une session en dix secondes… Retrouve-les ensuite dans l'onglet Journal »).
+- **Taille du texte : « Normal » par défaut** (et non plus « Grand ») sur une installation neuve ; Grand et Très grand restent au choix dans Réglages > Affichage. Un choix déjà enregistré est conservé (une installation récente qui avait reçu « Grand » automatiquement doit repasser en Normal à la main). **Visite guidée** : l'étape « Le journal » devient « Noter une session » et montre le bouton + (« Appuie sur le + pour noter une session en dix secondes… Retrouve-les ensuite dans l'onglet Journal »).
 
 
 - **Liaison KV dans le dépôt** : la liaison `STATS` réglée dans le tableau de bord Cloudflare n'était pas reprise par la publication faite depuis GitHub (le relais répondait 503). Ajout de `wrangler.toml` à la racine (liaison KV avec l'identifiant de l'espace, date de compatibilité 2026-10-07). Les clés restent des secrets Cloudflare. Si les marées ou les mesures cessent de répondre après ce changement, retirer `wrangler.toml` et republier.
