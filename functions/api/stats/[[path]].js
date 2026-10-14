@@ -109,7 +109,7 @@ main{width:min(720px,100%);padding:16px;box-sizing:border-box}h1{font-size:20px}
 h2{font-size:13px;color:var(--m);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}.kpis{display:flex;gap:10px}.kpi{flex:1;background:#1c3340;border-radius:12px;padding:10px}.kpi b{display:block;font-size:22px}.kpi span{color:var(--m);font-size:12px}
 .row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}.row .l{width:46%}.bar{flex:1;background:#1c3340;border-radius:6px;height:14px;overflow:hidden}.bar i{display:block;height:100%;background:var(--bar)}.n{width:76px;text-align:right;color:var(--m);font-size:12px}
 input,select,button{background:#1c3340;color:var(--t);border:1px solid #2a4452;border-radius:10px;padding:8px;font-size:14px}select{width:100%;margin-bottom:8px}</style>
-<main><h1>Surf Log · Statistiques</h1><div id="gate" class="card"><h2>Accès réservé</h2><input id="k" type="password" placeholder="Clé"> <button onclick="go()">Entrer</button> <span id="err" style="color:#e8844a"></span></div><div id="out" hidden></div></main>
+<main><h1>Surf Log · Statistiques</h1><div id="gate" class="card"><h2>Accès réservé</h2><input id="k" type="password" placeholder="Clé" autocomplete="off" style="width:60%"> <button onclick="go()">Entrer</button> <button type="button" onclick="eye()" id="eye">Voir</button> <span id="err" style="color:#e8844a"></span></div><div id="out" hidden></div></main>
 <script>
 const LEVELS=["Débutant","Débutant +","Intermédiaire","Intermédiaire +","Confirmé","Confirmé +","Avancé","Avancé +","Expert"];
 const Q={what:["Tu surfes…",["La mousse","La reforme","Le large"]],
@@ -123,8 +123,12 @@ feel:["À la barre, tu te sens…",["Prêt à surfer","Impressionné","En galèr
 train:["Entraînement hors surf",["Non","De temps en temps","Régulièrement"]],
 where:["Où tu surfes (plusieurs réponses)",["Chez moi, avec du monde","Autour de chez moi","Je me déplace","Surf trips"]]};
 const bars=(rows,tot)=>rows.map(([l,n])=>'<div class="row"><span class="l">'+l+'</span><div class="bar"><i style="width:'+(tot?n/tot*100:0)+'%"></i></div><span class="n">'+n+' · '+(tot?Math.round(n/tot*100):0)+' %</span></div>').join('');
-async function go(){const k=document.getElementById('k').value;const r=await fetch('summary',{headers:{'x-stats-key':k}});
-if(!r.ok){document.getElementById('err').textContent=r.status==401?'Clé refusée':'Erreur '+r.status;return}
+function eye(){const i=document.getElementById('k');const show=i.type==='password';i.type=show?'text':'password';document.getElementById('eye').textContent=show?'Masquer':'Voir'}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!document.getElementById('gate').hidden)go()});
+async function go(){const err=document.getElementById('err');err.textContent='Vérification…';const k=document.getElementById('k').value.trim();
+let r;try{r=await fetch('summary',{headers:{'x-stats-key':k}})}catch(e){err.textContent='Réseau injoignable';return}
+if(!r.ok){err.textContent=r.status==401?'Clé refusée (vérifie les majuscules, les espaces et les accents)':r.status==503?'Le stockage KV n\\'est pas encore relié au site (503)':'Erreur '+r.status;return}
+err.textContent='';
 try{localStorage.setItem('statsKey',k)}catch(e){}
 const a=await r.json();document.getElementById('gate').hidden=true;const o=document.getElementById('out');o.hidden=false;
 const lv=LEVELS.map(n=>[n,a.levels[n]||0]);const known=lv.reduce((s,x)=>s+x[1],0);
@@ -133,7 +137,7 @@ const top=(m)=>Object.entries(m||{}).sort((x,y)=>y[1]-x[1])[0];
 let h='<div class="card"><h2>Vue d\\'ensemble</h2><div class="kpis"><div class="kpi"><b>'+a.users+'</b><span>utilisateurs</span></div><div class="kpi"><b>'+(known?LEVELS[Math.round(avgIdx)]:'-')+'</b><span>niveau moyen ('+known+' réponses)</span></div><div class="kpi"><b>'+((top(a.versions)||['-'])[0])+'</b><span>version la plus utilisée</span></div></div></div>';
 const days=[];for(let i=29;i>=0;i--){days.push(new Date(Date.now()-i*864e5).toISOString().slice(0,10))}
 const dmax=Math.max(1,...days.map(d=>(a.daily||{})[d]||0));
-h+='<div class="card"><h2>Utilisateurs actifs</h2><div class="kpis"><div class="kpi"><b>'+a.dau+'</b><span>aujourd\'hui</span></div><div class="kpi"><b>'+a.wau+'</b><span>7 jours</span></div><div class="kpi"><b>'+a.mau+'</b><span>30 jours</span></div></div><div style="display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:12px">'+days.map(d=>'<i title="'+d+' : '+((a.daily||{})[d]||0)+'" style="flex:1;background:var(--bar);height:'+Math.max(2,((a.daily||{})[d]||0)/dmax*100)+'%"></i>').join('')+'</div><small style="color:var(--m)">Actifs par jour, 30 derniers jours · nouveaux aujourd\'hui : '+((a.fresh||{})[days[29]]||0)+'</small></div>';
+h+='<div class="card"><h2>Utilisateurs actifs</h2><div class="kpis"><div class="kpi"><b>'+a.dau+'</b><span>aujourd\\'hui</span></div><div class="kpi"><b>'+a.wau+'</b><span>7 jours</span></div><div class="kpi"><b>'+a.mau+'</b><span>30 jours</span></div></div><div style="display:flex;align-items:flex-end;gap:2px;height:60px;margin-top:12px">'+days.map(d=>'<i title="'+d+' : '+((a.daily||{})[d]||0)+'" style="flex:1;background:var(--bar);height:'+Math.max(2,((a.daily||{})[d]||0)/dmax*100)+'%"></i>').join('')+'</div><small style="color:var(--m)">Actifs par jour, 30 derniers jours · nouveaux aujourd\\'hui : '+((a.fresh||{})[days[29]]||0)+'</small></div>';
 h+='<div class="card"><h2>Répartition par niveau</h2>'+bars(lv,known)+'</div>';
 h+='<div class="card"><h2>Réponses à chaque question</h2><select id="q" onchange="showQ()">'+Object.keys(Q).map(k=>'<option value="'+k+'">'+Q[k][0]+'</option>').join('')+'</select><div id="qa"></div></div>';
 const vs=Object.entries(a.versions).sort((x,y)=>y[1]-x[1]);
