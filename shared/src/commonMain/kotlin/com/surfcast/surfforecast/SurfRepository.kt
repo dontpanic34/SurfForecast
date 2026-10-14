@@ -6,6 +6,10 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.client.statement.bodyAsText
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CancellationException
@@ -157,6 +161,15 @@ class SurfRepository(
             markStale(cached.first)
             cached.second
         }
+    }
+
+    /** Envoie les statistiques anonymes (niveau, version) au relais surflog.fr/api/stats ; true si bien reçu. */
+    suspend fun postStats(json: String): Boolean {
+        val response = httpClient.post("https://surflog.fr/api/stats/report") {
+            contentType(ContentType.Application.Json)
+            setBody(json)
+        }
+        return response.status.value in 200..299
     }
 
     private suspend fun httpGet(url: String): JsonObject {

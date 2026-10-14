@@ -270,6 +270,44 @@ class SurfController(
         loadActiveSpot(initialLoad = true)
     }
 
+    /**
+     * Statistiques anonymes pour le propriétaire : identifiant aléatoire, version, niveau et réponses au questionnaire
+     * (jamais de position ni d'identité). Envoyées au plus une fois par jour, et seulement si quelque chose a changé.
+     */
+    fun reportStats(version: String?) {
+        val id = prefs.getString("stats_id", null) ?: (kotlin.random.Random.nextLong().toULong().toString(16) + kotlin.random.Random.nextLong().toULong().toString(16))
+            .also { prefs.putString("stats_id", it) }
+        val a = levelAnswers
+        val r = levelResult
+        val json = kotlinx.serialization.json.buildJsonObject {
+            put("id", kotlinx.serialization.json.JsonPrimitive(id))
+            put("v", kotlinx.serialization.json.JsonPrimitive(version.orEmpty()))
+            put("lang", kotlinx.serialization.json.JsonPrimitive(language))
+            if (r != null) put("level", kotlinx.serialization.json.JsonPrimitive(r.name))
+            if (a != null) {
+                fun ints(l: List<Int>) = kotlinx.serialization.json.JsonArray(l.map { kotlinx.serialization.json.JsonPrimitive(it) })
+                put("a", kotlinx.serialization.json.buildJsonObject {
+                    put("what", kotlinx.serialization.json.JsonPrimitive(a.what))
+                    a.barre?.let { put("barre", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    a.takeOff?.let { put("tk", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    a.peak?.let { put("peak", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    put("goal", ints(a.goals))
+                    a.maneuvers?.let { put("man", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    a.wantLarge?.let { put("want", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    a.feel?.let { put("feel", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    a.training?.let { put("train", kotlinx.serialization.json.JsonPrimitive(it)) }
+                    put("where", ints(a.where))
+                })
+            }
+        }.toString()
+        val stamp = nowLocalDateTime().date.toString() + json
+        if (prefs.getString("stats_sent", "") == stamp) return
+        scope.launch {
+            val ok = runCatching { repository.postStats(json) }.getOrDefault(false)
+            if (ok) prefs.putString("stats_sent", stamp)
+        }
+    }
+
     private fun loadPreferences() {
         val savedFav0 = prefs.getString("fav_0", "Montalivet")
         val savedFav1 = prefs.getString("fav_1", "Lacanau")

@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Statistiques anonymes (en préparation)** : l'appli envoie au plus une fois par jour (et seulement si ça change) un identifiant aléatoire, sa version, sa langue, le niveau et les réponses au questionnaire (aucune position ni identité, décision du propriétaire : pas de case à accepter). Relais `functions/api/stats` (Cloudflare) : `POST /api/stats/report`, page `/api/stats/` (sans donnée, demande la clé) et `GET /api/stats/summary` réservé par la clé secrète `STATS_KEY`. Stockage dans un espace KV lié sous le nom `STATS`. **Ne fonctionne qu'après réglage Cloudflare** (voir A_FAIRE.md).
+
+
 - **Encart Actuellement : « Mesures en direct »** (ou « En direct » si la place manque) : les deux longues phrases deviennent deux pastilles avec icône (balise océanique en cône 1,5 m · 10 s ; parabole inclinée pour la station 8 km/h E). Un appui affiche une ligne de détail (nom, distance, max ou rafales, heure de mesure) ; un second appui la referme. Traductions ajoutées.
 
 

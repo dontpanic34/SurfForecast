@@ -72,6 +72,7 @@ fun MainScreen(
     // "clock" = heure pleine la plus proche (10h44 -> 11h), qui avance toute seule : avant,
     // "maintenant" n'était calculé qu'au chargement.
     var clock by remember { mutableStateOf(nearestHourLocalDateTime()) }
+    LaunchedEffect(appVersion, viewModel.levelAnswers, viewModel.levelShift) { viewModel.reportStats(appVersion) }
     LaunchedEffect(Unit) {
         while (true) {
             delay(30_000)

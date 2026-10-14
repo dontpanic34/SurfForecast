@@ -1,0 +1,47 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stats Surf Log (maquette)</title>
+<style>
+:root{--bg:#0b1519;--card:#13222a;--t:#e8f0f3;--m:#8fa6af;--ac:#f6c453;--bar:#3aa6c9}
+body{margin:0;background:var(--bg);color:var(--t);font:15px system-ui,sans-serif;display:flex;justify-content:center}
+main{width:min(720px,100%);padding:16px;box-sizing:border-box}
+h1{font-size:20px;margin:4px 0}.fake{color:var(--ac);font-size:12px;margin-bottom:12px}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}
+h2{font-size:13px;color:var(--m);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;font-weight:600}
+.kpis{display:flex;gap:10px}.kpi{flex:1;background:#1c3340;border-radius:12px;padding:10px}.kpi b{display:block;font-size:24px}.kpi span{color:var(--m);font-size:12px}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13px}.row .l{width:46%;color:var(--t)}
+.bar{flex:1;background:#1c3340;border-radius:6px;height:14px;overflow:hidden}.bar i{display:block;height:100%;background:var(--bar)}
+.n{width:70px;text-align:right;color:var(--m);font-size:12px}
+select{width:100%;background:#1c3340;color:var(--t);border:1px solid #2a4452;border-radius:10px;padding:8px;margin-bottom:8px;font-size:14px}
+.lvl i{background:var(--ac)}small{color:var(--m)}
+</style>
+<main>
+<h1>Surf Log · Statistiques</h1>
+<div class="fake">Maquette : toutes les valeurs sont fictives. Données anonymes, aucune identité.</div>
+
+<div class="card"><h2>Vue d'ensemble</h2>
+<div class="kpis"><div class="kpi"><b>412</b><span>utilisateurs ayant répondu</span></div><div class="kpi"><b>Intermédiaire +</b><span>niveau moyen</span></div><div class="kpi"><b>2.0.391</b><span>version la plus utilisée</span></div></div></div>
+
+<div class="card lvl"><h2>Répartition par niveau</h2><div id="lv"></div></div>
+
+<div class="card"><h2>Réponses à chaque question</h2>
+<select id="q"></select><div id="qa"></div><small id="qn"></small></div>
+
+<div class="card"><h2>Versions de l'appli</h2><div id="ver"></div>
+<small>Part des utilisateurs actifs sur les 30 derniers jours, par version.</small></div>
+
+<div class="card"><h2>Mises à jour</h2><div id="upd"></div></div>
+</main>
+<script>
+const bars=(id,rows,tot)=>{document.getElementById(id).innerHTML=rows.map(([l,n])=>`<div class="row"><span class="l">${l}</span><div class="bar"><i style="width:${n/tot*100}%"></i></div><span class="n">${n} · ${Math.round(n/tot*100)} %</span></div>`).join('')};
+bars('lv',[["Débutant",52],["Débutant +",61],["Intermédiaire",96],["Intermédiaire +",88],["Confirmé",70],["Avancé",33],["Expert",12]],412);
+const Q={
+"Tu surfes…":[["La mousse",74],["La reforme",151],["Le large",187]],
+"Jusqu'à quelle hauteur de vague tu passes la barre ?":[["Je ne passe pas encore la barre",38],["Jusqu'aux genoux",47],["Jusqu'à la taille",92],["Jusqu'à la poitrine",120],["Plus haut",115]],
+"Définis ton take-off":[["Un seul temps, tout le temps",168],["Un seul temps, souvent",141],["Parfois en plusieurs temps",103]],
+"Où tu surfes ?":[["Chez moi, avec du monde",190],["Autour de chez moi, j'évite le monde",166],["Je me déplace pour les conditions",121],["Surf trips à l'étranger",64]],
+"Tu t'entraînes en dehors du surf ?":[["Non",139],["De temps en temps",201],["Régulièrement",72]]};
+const sel=document.getElementById('q');Object.keys(Q).forEach(k=>sel.add(new Option(k,k)));
+const show=()=>{const r=Q[sel.value],t=r.reduce((a,b)=>a+b[1],0);bars('qa',r,t);document.getElementById('qn').textContent=t+' réponses'};sel.onchange=show;show();
+bars('ver',[["2.0.391",238],["2.0.389",84],["1.0.388 (ancienne)",61],["1.0.372 et avant",29]],412);
+document.getElementById('upd').innerHTML=`<div class="row"><span class="l">Sont passés en V2</span><div class="bar"><i style="width:85%"></i></div><span class="n">351 · 85 %</span></div><div class="row"><span class="l">Ont revu le message d'accueil</span><div class="bar"><i style="width:68%"></i></div><span class="n">280 · 68 %</span></div><div class="row"><span class="l">Ont rempli leur niveau</span><div class="bar"><i style="width:57%"></i></div><span class="n">235 · 57 %</span></div>`;
+</script></html>
