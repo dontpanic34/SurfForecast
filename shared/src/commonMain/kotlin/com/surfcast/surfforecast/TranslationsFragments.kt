@@ -60,6 +60,7 @@ internal val FRAGMENT_TRANSLATIONS: Map<String, List<String>> = mapOf(
     "maree:" to listOf("maree:", "maree:", "maree:", "maree:"),
     "orientation plage" to listOf("beach orientation", "Strandausrichtung", "strandoriëntatie", "orientación de la playa"),
     "s · vent" to listOf("s · wind", "s · Wind", "s · wind", "s · viento"),
+    "sera retirée de ton matériel. Si elle a déjà servi dans une session, elle reste visible dans ton journal." to listOf("will be removed from your gear. If it has already been used in a session, it stays visible in your log.", "wird aus deiner Ausrüstung entfernt. Wurde es schon in einer Session benutzt, bleibt es in deinem Logbuch sichtbar.", "wordt uit je spullen verwijderd. Als ze al in een sessie is gebruikt, blijft ze zichtbaar in je logboek.", "se quitará de tu material. Si ya se usó en una sesión, seguirá visible en tu diario."),
     "sera définitivement supprimée de ton matériel." to listOf("will be permanently removed from your gear.", "wird endgültig aus deiner Ausrüstung entfernt.", "wordt definitief uit je spullen verwijderd.", "se eliminará definitivamente de tu material."),
     "° ressentis · nuages" to listOf("° feels like · clouds", "° gefühlt · Wolken", "° gevoelstemperatuur · wolken", "° sensación · nubes"),
     "° · Min. :" to listOf("° · Min:", "° · Min.:", "° · Min.:", "° · Mín.:"),
