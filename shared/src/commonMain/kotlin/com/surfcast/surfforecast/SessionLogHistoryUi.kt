@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlin.math.roundToInt
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
@@ -279,7 +280,7 @@ private fun SessionRecapCard(session: SurfSessionWithRelations, onEdit: () -> Un
                 color = colors.onSurface.copy(alpha = 0.7f)
             )
             Text(
-                text = "Conditions : ${session.condition.energyKj} kJ · vent ${session.condition.windSpeedKmh} km/h · houle ${session.condition.waveHeight}m/${session.condition.wavePeriod}s",
+                text = conditionsLine(session.condition),
                 fontSize = 12.sp,
                 color = colors.onSurface.copy(alpha = 0.7f)
             )
@@ -313,3 +314,11 @@ private fun SessionRecapCard(session: SurfSessionWithRelations, onEdit: () -> Un
 }
 
 private fun hmShort(t: kotlinx.datetime.LocalDateTime): String = t.hour.toString() + " h " + t.minute.toString().padStart(2, '0')
+
+/** « Conditions : 441 kJ · houle 1,4 m · 12 s · WNW · vent 7 km/h ESE » : période arrondie à la seconde, direction de la houle comprise. */
+private fun conditionsLine(c: ConditionSnapshot): String {
+    val height = formatDecimal(c.waveHeight, 1).replace('.', ',')
+    val swellDir = SurfUnitsHelper.formatCardinalFr(getCardinalDirection(c.waveDirection.toDouble()))
+    val windDir = SurfUnitsHelper.formatCardinalFr(getCardinalDirection(c.windDirection.toDouble()))
+    return "Conditions : ${c.energyKj} kJ · houle $height m · ${c.wavePeriod.roundToInt()} s · $swellDir (${c.waveDirection}°) · vent ${c.windSpeedKmh} km/h $windDir"
+}

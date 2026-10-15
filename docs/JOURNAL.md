@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Journal : direction de la houle et chiffres arrondis** : la direction de la houle était déjà enregistrée mais jamais affichée ; l'historique montre maintenant « houle 1,4 m · 12 s · WNW (285°) · vent 7 km/h ESE ». La période s'affiche à la seconde près (fini 12.399999) et les nouvelles sessions enregistrent la hauteur à 2 décimales et la période à 1 décimale.
+
+
 - **Modifier ou supprimer une session du journal** (Historique : sur chaque session, liens « Modifier » et « Supprimer ») : « Modifier » rouvre le ressenti, le début (par pas de 10 min), la durée (20 min à 5 h), la planche et la note personnelle ; les conditions relevées au départ ne changent pas. « Supprimer » demande confirmation, retire la session et ses conditions. Nouveaux `updateSession` et `deleteSession` dans les deux stockages (navigateur et Room). Test `sessionCanBeEditedThenDeleted`.
 
 
