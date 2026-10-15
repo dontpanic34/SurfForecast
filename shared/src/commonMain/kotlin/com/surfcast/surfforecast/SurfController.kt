@@ -867,8 +867,8 @@ class SurfController(
         scope.launch {
             val snapshot = ConditionSnapshot(
                 energyKj = hourlyModel.energyKj,
-                waveHeight = hourlyModel.waveHeight,
-                wavePeriod = hourlyModel.wavePeriod,
+                waveHeight = (hourlyModel.waveHeight * 100).roundToInt() / 100.0,
+                wavePeriod = (hourlyModel.wavePeriod * 10).roundToInt() / 10.0,
                 waveDirection = hourlyModel.waveDirection.roundToInt(),
                 windSpeedKmh = hourlyModel.windSpeedKmh,
                 windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
