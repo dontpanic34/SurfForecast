@@ -19,6 +19,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 - **Encart Marée** (en cours de vérification) : la courbe de marée devient un petit encart repliable (préférence `tide_card_open`) : une ligne « Marée Descendant · 68 · Plein bas dans 3 h 09 ▾ », et dessous la courbe sur 24 h régulières (axe à elle, nuit non comprimée, jour éclairci, point blanc sur l'heure choisie). Sur un spot sans coefficient (Espagne, Portugal) la hauteur d'eau de l'heure remplace le coefficient dans la phrase (relative, « ≈ » si estimée). Maquettes : `encart-maree*.html/png`.
 - **Plus de spots** : Espagne (nord complété, Galice ouest, Andalousie atlantique et détroit, Méditerranée, Baléares, Canaries), Portugal (Aveiro, Peniche, Alentejo, Algarve complétés, Madère, Açores) et **tout le Maroc** par zones (Tanger → Dakhla, Méditerranée). Orientations estimées, à ajuster au besoin dans Réglages. La base compte maintenant 180 spots, France comprise.
 - Hors de France, les heures de marée sont affichées avec « ≈ » et la hauteur d'eau (relative) remplace le coefficient dans la phrase de l'encart Marée ; le coefficient reste celui du port français voisin.
+- Encart Marée : « Plein bas dans 3 h 09 à 14:31 » seulement pour aujourd'hui ; un autre jour : « Plein bas à 14:31 ».
 - Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
 
 ## 14 octobre 2026
