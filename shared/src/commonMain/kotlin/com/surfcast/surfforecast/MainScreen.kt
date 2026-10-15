@@ -7,6 +7,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -1147,7 +1150,7 @@ fun DynamicCardsSection(
     }
 
     fun dragModifierFor(cardKey: String): Modifier = Modifier.pointerInput(cardKey) {
-        detectDragGesturesAfterLongPress(
+        detectLongPressDragFirst(
             onDragStart = { start ->
                 draggedKey = cardKey
                 dragOffsetY = 0f
@@ -1441,6 +1444,46 @@ private fun BottomNavBar(
                     Icon(imageVector = SurfIcons.Settings, contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(20.dp))
                 }
             }
+        }
+    }
+}
+
+/**
+ * Appui long puis glisser, comme [detectDragGesturesAfterLongPress], mais le parent voit le doigt AVANT ses enfants (passe « Initial ») :
+ * l'appui long marche aussi sur un titre, une flèche ou tout ce qui est cliquable dans l'encart, et une fois l'encart pris, les
+ * enfants ne reçoivent plus le geste (pas de pli ni de dépli en lâchant).
+ */
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectLongPressDragFirst(
+    onDragStart: (androidx.compose.ui.geometry.Offset) -> Unit,
+    onDragEnd: () -> Unit,
+    onDragCancel: () -> Unit,
+    onDrag: (androidx.compose.ui.input.pointer.PointerInputChange, androidx.compose.ui.geometry.Offset) -> Unit
+) {
+    val initial = androidx.compose.ui.input.pointer.PointerEventPass.Initial
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = initial)
+        val early = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+            while (true) {
+                val ev = awaitPointerEvent(initial)
+                val c = ev.changes.firstOrNull { it.id == down.id }
+                if (c == null || !c.pressed || (c.position - down.position).getDistance() > viewConfiguration.touchSlop) return@withTimeoutOrNull Unit
+            }
+        }
+        // Le doigt a bougé ou s'est levé avant la fin de l'appui long : ce n'est pas un déplacement.
+        if (early != null) return@awaitEachGesture
+        onDragStart(down.position)
+        var finished = false
+        try {
+            while (true) {
+                val ev = awaitPointerEvent(initial)
+                val c = ev.changes.firstOrNull { it.id == down.id }
+                if (c == null || !c.pressed) { c?.consume(); finished = true; onDragEnd(); return@awaitEachGesture }
+                val delta = c.positionChange()
+                c.consume()
+                onDrag(c, delta)
+            }
+        } finally {
+            if (!finished) onDragCancel()
         }
     }
 }

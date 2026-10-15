@@ -22,6 +22,8 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 - Encart Marée : « Plein bas dans 3 h 09 à 14:31 » (le « à » a une clé à part, sinon le français affichait la clé) seulement pour aujourd'hui ; un autre jour : « Plein bas à 14:31 ».
 - **Choix du spot** : on choisit d'abord le pays (France, Espagne, Portugal, Maroc), puis la région du pays sur la ligne du dessous ; la recherche, elle, cherche dans tous les pays.
 - **Glisser-déposer des encarts** (en cours de vérification) : l'encart déplacé perdait son geste dès qu'il passait la moitié de son voisin (la liste n'identifiait pas les encarts par leur nom, le geste restait accroché à la place et non à l'encart). Chaque encart est maintenant identifié par sa clé : on doit pouvoir continuer le déplacement sur plusieurs encarts d'un seul geste. À vérifier sur téléphone.
+- **Flèches ▾ plus grandes** : la flèche de pli des encarts (Houle, Vent, Météo, Marée, Actuellement…) passe de 16 à 22 sp avec une zone d'appui d'au moins 44 × 40 dp. Les encarts Marée et Actuellement utilisent la même flèche (▾ ouvert, ▸ plié).
+- **Déplacer un encart par un appui long partout** : le geste est maintenant lu avant les éléments cliquables de l'encart (titre, flèche), donc l'appui long sur la flèche ou le titre déplace l'encart sans le plier. À vérifier sur téléphone. Maquette de la visite à quatre étapes (réglages et plier sur le même écran, sans l'étape Réglages) : `visite-guidee-v3.png`.
 - Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
 
 ## 14 octobre 2026
