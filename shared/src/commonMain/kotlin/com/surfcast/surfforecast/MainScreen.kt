@@ -919,6 +919,10 @@ fun MainScreen(
                         "weekCard", "Étoiles et couleurs",
                         "Les étoiles sont les mêmes pour tous. Les segments suivent ton profil. Touche le ⚙ d'un encart : réglages et explications."
                     ),
+                    CoachStep(
+                        "cardHeader", "Régler, plier, déplacer",
+                        "Le ⚙ d'un encart ouvre ses réglages et ses explications. La flèche ▾ le plie ou le déplie. Garde le doigt appuyé sur son titre pour le déplacer."
+                    ),
                     CoachStep("add", "Noter une session", "Appuie sur le + pour noter une session en dix secondes : l'appli garde les conditions. Retrouve-les ensuite dans l'onglet Journal.")
                 ),
                 targets = coachTargets,
@@ -1205,6 +1209,7 @@ fun DynamicCardsSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .onGloballyPositioned { cardCoords[cardKey] = it }
+                    .then(if (coachTargets != null && cardKey == orderedKeys.firstOrNull { it != "weekly" }) Modifier.coachTarget("cardHeader", coachTargets) else Modifier)
                     .then(dragMod)
                     .zIndex(if (isDragging) 1f else 0f)
                     .offset { IntOffset(0, (if (isDragging) dragOffsetY else 0f).roundToInt()) }

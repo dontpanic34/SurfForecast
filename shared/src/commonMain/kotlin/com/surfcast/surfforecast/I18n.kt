@@ -89,6 +89,12 @@ internal fun missingTranslations(): List<String> =
 private fun t(en: String, de: String, nl: String, es: String) = listOf(en, de, nl, es)
 
 private val CORE: Map<String, List<String>> = mapOf(
+    "Régler, plier, déplacer" to t("Adjust, fold, move", "Einstellen, einklappen, verschieben", "Instellen, inklappen, verplaatsen", "Ajustar, plegar, mover"),
+    "Le ⚙ d'un encart ouvre ses réglages et ses explications. La flèche ▾ le plie ou le déplie. Garde le doigt appuyé sur son titre pour le déplacer." to t(
+        "A card's ⚙ opens its settings and explanations. The ▾ arrow folds or unfolds it. Keep your finger pressed on its title to move it.",
+        "Das ⚙ einer Karte öffnet ihre Einstellungen und Erklärungen. Der Pfeil ▾ klappt sie ein oder aus. Halte den Finger auf ihrem Titel gedrückt, um sie zu verschieben.",
+        "De ⚙ van een kaart opent de instellingen en uitleg. De pijl ▾ klapt hem in of uit. Houd je vinger op de titel ingedrukt om hem te verplaatsen.",
+        "El ⚙ de una tarjeta abre sus ajustes y explicaciones. La flecha ▾ la pliega o la despliega. Mantén el dedo pulsado sobre su título para moverla."),
     "Agadir & Taghazout" to listOf("Agadir & Taghazout", "Agadir & Taghazout", "Agadir & Taghazout", "Agadir y Taghazout"),
     "Andalousie méditerranéenne" to listOf("Mediterranean Andalusia", "Mediterranes Andalusien", "Mediterraan Andalusië", "Andalucía mediterránea"),
     "Anti-Atlas" to listOf("Anti-Atlas", "Anti-Atlas", "Anti-Atlas", "Anti-Atlas"),
