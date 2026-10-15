@@ -10,6 +10,13 @@
 
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
+## 15 octobre 2026
+
+- **Encart « Actuellement » repliable** (en cours de vérification) : la barre lumineuse reste toujours visible ; toucher la ligne de titre (« Actuellement 13 h · Très bon ▴/▾ ») plie ou déplie les tuiles Houle/Vent/Marée et la ligne LIVE. Choix mémorisé (préférence `now_card_open`, déplié au premier lancement).
+- L'heure de mise à jour passe à droite du titre, sans mot : « 13:14 ⟳ » (toucher relance les prévisions). Elle devient orange après plus de 30 min.
+- « Mesures en direct » devient simplement « LIVE ».
+- Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
+
 ## 14 octobre 2026
 
 - **Station Météo-France : « Vendays-Montalivet »** : le nom de la station arrive sans son dernier T (« VENDAYS-MONTALIVE ») ; l'appli le remet (table de corrections `STATION_NAME_FIXES`).

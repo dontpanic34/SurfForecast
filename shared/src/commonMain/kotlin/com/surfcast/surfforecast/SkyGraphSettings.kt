@@ -53,6 +53,10 @@ object SkyGraphSettings {
     }
 
     fun loadTide(dp: Int) { tideDp = dp.coerceIn(24, 60) }
+    /** L'encart « Actuellement » est déplié (les tuiles et le LIVE) ; replié, il ne reste que la barre et le titre. */
+    var nowOpen by mutableStateOf(true)
+    fun loadNowOpen(v: Int) { nowOpen = v != 0 }
+    fun chooseNowOpen(v: Boolean) { nowOpen = v; persist("now_card_open", if (v) 1 else 0) }
     fun loadCurve(dp: Int) { curveDp = dp.coerceIn(14, 48) }
     fun setCurve(dp: Int) { curveDp = dp.coerceIn(14, 48); persist("graph_curve_dp", curveDp) }
     fun loadShowChop(v: Boolean) { showChop = v }

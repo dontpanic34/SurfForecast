@@ -833,6 +833,7 @@ fun MainScreen(
                                             ?.let { kotlin.math.round(it).toInt() },
                                         spotName = state.spotName,
                                         updatedText = state.lastUpdatedTime,
+                                        updateStale = isUpdateStale(state.lastUpdatedTime, nowLocalDateTime()),
                                         isNight = isNowNight(clock, state.dailySunInfo[today]),
                                         nightText = nightPhrase(
                                             nightHours(state.hourlyForecast, state.dailySunInfo, clock),
