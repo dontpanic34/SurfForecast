@@ -84,9 +84,9 @@ fun SessionEditDialog(
                         )
                     }
                 }
-                Stepper("Début", startLabel(), { startMs -= 10 * 60_000L }, { startMs += 10 * 60_000L })
+                Stepper("Début", startLabel(), { startMs -= 5 * 60_000L }, { startMs += 5 * 60_000L })
                 Stepper("Durée", "${durationMin / 60} h ${(durationMin % 60).toString().padStart(2, '0')}",
-                    { durationMin = (durationMin - 10).coerceAtLeast(20) }, { durationMin = (durationMin + 10).coerceAtMost(300) })
+                    { durationMin = (durationMin - 5).coerceAtLeast(20) }, { durationMin = (durationMin + 5).coerceAtMost(300) })
                 if (boards.isNotEmpty()) {
                     Text("Planche", fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

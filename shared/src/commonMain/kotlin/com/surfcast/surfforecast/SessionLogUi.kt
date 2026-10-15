@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import kotlinx.datetime.minus
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -207,42 +208,6 @@ private fun durationLabel(min: Int): String = if (min < 60) "$min min" else (min
 
 private fun capital(s: String): String = s.replaceFirstChar { it.uppercase() }
 
-/** La barre du jour (comme celle d'Actuellement) pour choisir l'heure de début : on touche ou on glisse ; la plage de la session est cernée. */
-@Composable
-private fun StartRuler(
-    hours: List<HourlyUiModel>,
-    cells: List<TimeCell>,
-    startMin: Int,
-    endMin: Int,
-    onPick: (Int) -> Unit
-) {
-    val colors = MaterialTheme.colorScheme
-    fun hourAt(c: TimeCell): Int = hours[c.representativeIndex()].rawTime.hour
-    fun pick(x: Float, width: Float) {
-        if (cells.isEmpty() || width <= 0f) return
-        val i = ((x / width) * cells.size).toInt().coerceIn(0, cells.lastIndex)
-        onPick(hourAt(cells[i]))
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth()
-            .pointerInput(cells) { detectTapGestures { pick(it.x, size.width.toFloat()) } }
-            .pointerInput(cells) { detectHorizontalDragGestures { change, _ -> pick(change.position.x, size.width.toFloat()) } },
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        cells.forEach { c ->
-            val first = hours[c.first].rawTime.hour
-            val last = hours[c.last].rawTime.hour
-            val inside = startMin < (last + 1) * 60 && endMin > first * 60
-            val base = if (c.isBlock) colors.onSurface.copy(alpha = 0.18f) else Color(0xFFD9A94A)
-            Box(
-                modifier = Modifier.weight(1f).height(20.dp).clip(RoundedCornerShape(6.dp))
-                    .background(base)
-                    .then(if (inside) Modifier.border(2.dp, Color.White, RoundedCornerShape(6.dp)) else Modifier)
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SessionLogEntryDialog(
@@ -271,7 +236,8 @@ fun SessionLogEntryDialog(
     val colors = MaterialTheme.colorScheme
 
     var dayOffset by remember { mutableStateOf(initialDayOffset) }
-    var startHour by remember { mutableStateOf<Int?>(null) }
+    // Heure de début en minutes depuis minuit (réglable de 5 en 5).
+    var startTotal by remember { mutableStateOf<Int?>(null) }
     var durationMin by remember { mutableStateOf(80) }
     var selectedQuiverId by remember { mutableStateOf<Long?>(null) }
     var feel by remember { mutableStateOf<Int?>(null) }
@@ -289,9 +255,9 @@ fun SessionLogEntryDialog(
 
     // Heure de début par défaut : aujourd'hui, 2 h avant maintenant ; les autres jours, une heure après le lever.
     LaunchedEffect(dayOffset, dayHours.size) {
-        if (startHour == null || startHour !in dayHours.map { it.rawTime.hour }) {
+        if (startTotal == null || (startTotal!! / 60) !in dayHours.map { it.rawTime.hour }) {
             val sunrise = sun?.sunrise?.hour ?: 7
-            startHour = if (dayOffset == 0) (nowHour - 2).coerceIn(sunrise, 22) else (sunrise + 1).coerceIn(0, 22)
+            startTotal = (if (dayOffset == 0) (nowHour - 2).coerceIn(sunrise, 22) else (sunrise + 1).coerceIn(0, 22)) * 60
         }
     }
     // Un seul banc, ou aucun : on ne le demande pas ; on en crée un au nom du spot et on le choisit.
@@ -311,14 +277,14 @@ fun SessionLogEntryDialog(
 
     val openMediaPicker = rememberMediaPicker { mediaUri = it }
 
-    val startMin = (startHour ?: 8) * 60
-    val maxDuration = (minOf(300, 1439 - startMin) / 20 * 20).coerceAtLeast(20)
+    val startMin = startTotal ?: 480
+    val maxDuration = (minOf(300, 1439 - startMin) / 5 * 5).coerceAtLeast(20)
     if (durationMin > maxDuration) durationMin = maxDuration
     val endMin = startMin + durationMin
     val window = sessionWindowHours(dayHours, startMin, endMin)
     val sentence = sessionSentence(window, beachFacing, tidePhaseAt(kotlinx.datetime.LocalTime(((startMin + endMin) / 2 / 60).coerceIn(0, 23), (startMin + endMin) / 2 % 60), tideFor(dayOffset)))
     val forecastScore = windowForecastScore(window, ratingOf)
-    val canSave = startHour != null && selectedMicroSpotId != null && selectedQuiverId != null && feel != null
+    val canSave = startTotal != null && selectedMicroSpotId != null && selectedQuiverId != null && feel != null
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(
@@ -340,7 +306,7 @@ fun SessionLogEntryDialog(
                 SettingsSegments(
                     listOf(2, 1, 0).filter { it in availableDayOffsets }.map { it.toString() to dayOffsetLabel(it) },
                     dayOffset.toString()
-                ) { dayOffset = it.toInt(); startHour = null }
+                ) { dayOffset = it.toInt(); startTotal = null }
                 // Les jours plus anciens (jusqu'à 14 jours), seulement si l'appli en a gardé les conditions.
                 val olderDays = availableDayOffsets.filter { it >= 3 }.sorted()
                 if (olderDays.isNotEmpty()) {
@@ -361,21 +327,22 @@ fun SessionLogEntryDialog(
                                     "${frenchShortDayName(d)} ${d.day}", fontSize = 13.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Normal,
                                     color = if (on) colors.primary else colors.onSurface,
                                     modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary.copy(alpha = 0.15f) else colors.surfaceVariant)
-                                        .clickable { dayOffset = off; startHour = null }.padding(horizontal = 12.dp, vertical = 7.dp)
+                                        .clickable { dayOffset = off; startTotal = null }.padding(horizontal = 12.dp, vertical = 7.dp)
                                 )
                             }
                         }
                     }
                 }
 
-                // Début : la barre du jour
+                // Début : deux compteurs (heure, minutes de 5 en 5) ; on touche ▴ ▾ ou on glisse sur le chiffre.
                 Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(tr("DÉBUT"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant)
-                    Text(hm(startMin), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface)
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(tr("DÉBUT"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant, modifier = Modifier.width(56.dp))
+                    TimeSpinner((startMin / 60).toString()) { d -> startTotal = (startMin + 60 * d).coerceIn(0, 1439 - 20) }
+                    Text(":", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface, modifier = Modifier.padding(horizontal = 6.dp))
+                    TimeSpinner((startMin % 60).toString().padStart(2, '0')) { d -> startTotal = (startMin + 5 * d).coerceIn(0, 1439 - 20) }
+                    Text(tr("Fin") + " " + hm(endMin), fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                if (cells.isNotEmpty()) StartRuler(dayHours, cells, startMin, endMin) { startHour = it }
 
                 // Durée
                 Spacer(modifier = Modifier.height(8.dp))
@@ -386,9 +353,9 @@ fun SessionLogEntryDialog(
                 if (maxDuration > 20) {
                     Slider(
                         value = durationMin.toFloat(),
-                        onValueChange = { durationMin = ((it / 20f).roundToInt() * 20).coerceIn(20, maxDuration) },
+                        onValueChange = { durationMin = ((it / 5f).roundToInt() * 5).coerceIn(20, maxDuration) },
                         valueRange = 20f..maxDuration.toFloat(),
-                        steps = ((maxDuration - 20) / 20 - 1).coerceAtLeast(0),
+                        steps = ((maxDuration - 20) / 5 - 1).coerceAtLeast(0),
                         colors = SliderDefaults.colors(activeTickColor = Color.Transparent, inactiveTickColor = Color.Transparent),
                         modifier = Modifier.height(28.dp)
                     )
@@ -502,4 +469,37 @@ private fun dayOffsetLabel(offset: Int): String = when (offset) {
     0 -> "Aujourd'hui"
     1 -> "Hier"
     else -> "Avant-hier"
+}
+
+/**
+ * Un compteur : le chiffre au milieu, ▴ au-dessus et ▾ en dessous. On touche une flèche (±1) ou on glisse verticalement sur le chiffre
+ * (un cran tous les 14 dp, vers le haut = plus). [onStep] reçoit +1 ou −1 ; l'appelant décide de ce que vaut un cran.
+ */
+@Composable
+internal fun TimeSpinner(text: String, onStep: (Int) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val stepPx = with(density) { 14.dp.toPx() }
+    var acc by remember { mutableStateOf(0f) }
+    Column(
+        modifier = Modifier.width(56.dp).clip(RoundedCornerShape(10.dp)).background(colors.surfaceVariant),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("▴", fontSize = 14.sp, color = colors.primary, modifier = Modifier.fillMaxWidth().clickable { onStep(1) }.padding(vertical = 3.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(
+            text, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface,
+            modifier = Modifier.pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart = { acc = 0f },
+                    onVerticalDrag = { change, dy ->
+                        change.consume()
+                        acc += dy
+                        while (acc <= -stepPx) { onStep(1); acc += stepPx }
+                        while (acc >= stepPx) { onStep(-1); acc -= stepPx }
+                    }
+                )
+            }.padding(horizontal = 6.dp)
+        )
+        Text("▾", fontSize = 14.sp, color = colors.primary, modifier = Modifier.fillMaxWidth().clickable { onStep(-1) }.padding(vertical = 3.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    }
 }
