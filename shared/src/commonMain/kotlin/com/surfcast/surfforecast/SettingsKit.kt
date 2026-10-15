@@ -130,7 +130,7 @@ fun SettingsDivider() {
 @Composable
 fun SettingsRow(
     title: String, subtitle: String? = null, icon: ImageVector? = null, value: String? = null, badge: String? = null,
-    chevron: Boolean = true, top: Boolean = true, onClick: (() -> Unit)? = null
+    chevron: Boolean = true, top: Boolean = true, accentValue: Boolean = false, onClick: (() -> Unit)? = null
 ) {
     val colors = MaterialTheme.colorScheme
     if (top) SettingsDivider()
@@ -152,7 +152,10 @@ fun SettingsRow(
             Text(tr(badge), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = colors.onPrimaryContainer,
                 modifier = Modifier.padding(start = 8.dp).clip(RoundedCornerShape(50)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp))
         }
-        if (value != null) Text(value, fontSize = 13.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+        if (value != null) {
+            if (accentValue) Text(value, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.primary, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+            else Text(value, fontSize = 13.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+        }
         if (onClick != null && chevron) {
             Spacer(Modifier.width(4.dp))
             SettingsIcon(SettingsIcons.Chevron, colors.onSurfaceVariant, 18.dp)
