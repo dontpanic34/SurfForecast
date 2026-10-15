@@ -15,6 +15,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 - **Encart « Actuellement » repliable** (en cours de vérification) : la barre lumineuse reste toujours visible ; toucher la ligne de titre (« Actuellement 13 h · Très bon ▴/▾ ») plie ou déplie les tuiles Houle/Vent/Marée et la ligne LIVE. Choix mémorisé (préférence `now_card_open`, déplié au premier lancement).
 - L'heure de mise à jour passe à droite du titre, sans mot : « 13:14 ⟳ » (toucher relance les prévisions). Elle devient orange après plus de 30 min.
 - « Mesures en direct » devient simplement « LIVE ».
+- **Courbe de marée plus régulière** : la nuit est comprimée sur l'axe des heures, la montée du matin paraissait écrasée et bossue ; la courbe est maintenant calculée sur l'écran (demi-cosinus entre deux marées), donc lisse, avec les points aux bonnes heures.
 - Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
 
 ## 14 octobre 2026
