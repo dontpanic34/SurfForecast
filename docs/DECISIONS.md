@@ -155,3 +155,6 @@ Débutant, Intermédiaire, Confirmé, **Avancé** (nouveau), Expert. Définition
 
 ## Statistiques anonymes (14 octobre 2026)
 Le niveau n'est pas une donnée sensible pour le propriétaire : envoi automatique, sans case à accepter, d'un identifiant aléatoire + version + langue + niveau + réponses au questionnaire. Aucune position, aucune identité. La page de statistiques n'est accessible qu'avec une clé secrète (`STATS_KEY`, dans Cloudflare uniquement).
+
+## Taille au déferlement (14 octobre 2026)
+Pas de taille « estimée au déferlement » affichée, ni de leçon chiffrée, ni de champ « taille observée » dans le journal. La formule théorique de Komar et Gaughan donne des tailles bien trop hautes sur nos côtes (1,3 m à 14 s ≈ 2,2 m, démenti par l'expérience du propriétaire : plutôt 1,6 m). La période compte déjà dans la note via l'énergie (hauteur² × période²).

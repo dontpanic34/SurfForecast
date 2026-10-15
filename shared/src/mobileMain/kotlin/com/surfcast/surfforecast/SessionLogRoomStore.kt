@@ -27,6 +27,10 @@ class SessionLogRoomStore(private val dao: SessionLogDao) : SessionLogStore {
 
     override suspend fun updateMicroSpot(spot: MicroSpot) = dao.updateMicroSpot(spot.toEntity())
 
+    override suspend fun updateSession(session: SurfSession) = dao.updateSession(session.toEntity())
+
+    override suspend fun deleteSession(sessionId: Long) = dao.deleteSession(sessionId)
+
     override suspend fun logSession(
         startTime: Long,
         endTime: Long,

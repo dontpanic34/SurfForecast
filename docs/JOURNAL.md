@@ -12,6 +12,12 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Modifier ou supprimer une session du journal** (Historique : sur chaque session, liens « Modifier » et « Supprimer ») : « Modifier » rouvre le ressenti, le début (par pas de 10 min), la durée (20 min à 5 h), la planche et la note personnelle ; les conditions relevées au départ ne changent pas. « Supprimer » demande confirmation, retire la session et ses conditions. Nouveaux `updateSession` et `deleteSession` dans les deux stockages (navigateur et Room). Test `sessionCanBeEditedThenDeleted`.
+
+
+- **Fichiers de relecture des traductions** : `scripts/traduction/export_xlsx.py` produit un Excel par langue (en, de, nl, es) : écran, français, traduction actuelle, colonne « Correction » à remplir, commentaire. 1 118 textes, environ 6 800 mots en français. Envoyés au propriétaire pour relecture humaine ; les corrections reviendront par ces fichiers (script d'import à écrire à ce moment-là).
+
+
 - **Modifier une planche déjà renseignée** (Réglages > Matériel, ou « Mon matériel » du journal) : un lien « Modifier » sur chaque planche rouvre le formulaire rempli (nom, type, longueur, largeur, épaisseur, volume exact, ailerons) ; « Enregistrer » met à jour la planche **en gardant son identifiant**, donc les sessions déjà notées avec cette planche gardent leur lien. Nouveau `updateQuiverBoard` dans les deux stockages (navigateur et Room). Test `editedBoardKeepsItsIdAndItsSessions`.
 
 

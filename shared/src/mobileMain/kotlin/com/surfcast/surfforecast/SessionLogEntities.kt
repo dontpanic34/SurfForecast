@@ -78,6 +78,7 @@ internal fun ConditionSnapshotEntity.toModel() = ConditionSnapshot(
 internal fun ConditionSnapshot.toEntity() = ConditionSnapshotEntity(
     id, energyKj, waveHeight, wavePeriod, waveDirection, windSpeedKmh, windDirection, tideCoeff, isNearHighTide, tidePhase, forecastScore
 )
+internal fun SurfSession.toEntity() = SurfSessionEntity(id, startTime, endTime, microSpotId, quiverId, conditionId, rating, comment, mediaUri)
 internal fun SurfSessionEntity.toModel() = SurfSession(
     id, startTime, endTime, microSpotId, quiverId, conditionId, rating, comment, mediaUri
 )
