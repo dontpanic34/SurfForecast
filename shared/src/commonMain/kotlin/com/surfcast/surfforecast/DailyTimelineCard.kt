@@ -420,11 +420,18 @@ private fun DailyTimelineBody(
                             val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
                             return tideCurve[i + 1].high
                         }
-                        // Niveau entre 0 (plein bas) et 1 (plein haut) : un demi-cosinus entre deux marées, comme la vraie forme de la marée.
+                        // Niveau entre 0 (plein bas) et 1 (plein haut) : un demi-cosinus entre deux marées, calculé sur l'écran (la nuit est comprimée
+                        // sur l'axe des heures : sur les heures, la montée de la nuit serait écrasée et la courbe bossue).
+                        val real = tideCurve.drop(1).dropLast(1)
+                        val gap0 = if (real.size >= 2) xOf(real[1].hour) - xOf(real[0].hour) else size.width / 2f
+                        val gap1 = if (real.size >= 2) xOf(real[real.size - 1].hour) - xOf(real[real.size - 2].hour) else size.width / 2f
+                        val xs = if (real.isEmpty()) tideCurve.map { xOf(it.hour) }
+                            else listOf(xOf(real.first().hour) - gap0) + real.map { xOf(it.hour) } + (xOf(real.last().hour) + gap1)
                         fun level(h: Float): Float {
-                            val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
-                            val a0 = tideCurve[i]; val b0 = tideCurve[i + 1]
-                            val f = ((h - a0.hour) / (b0.hour - a0.hour).coerceAtLeast(1e-3f)).coerceIn(0f, 1f)
+                            val x = xOf(h)
+                            val i = xs.indexOfLast { it <= x }.coerceIn(0, tideCurve.size - 2)
+                            val b0 = tideCurve[i + 1]
+                            val f = ((x - xs[i]) / (xs[i + 1] - xs[i]).coerceAtLeast(1e-3f)).coerceIn(0f, 1f)
                             val e = ((1.0 - kotlin.math.cos(PI * f)) / 2.0).toFloat()
                             return if (b0.high) e else 1f - e
                         }
