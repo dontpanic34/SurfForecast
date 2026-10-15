@@ -44,9 +44,24 @@ fun SessionLogHistoryScreen(
     allSessions: List<SurfSessionWithRelations>,
     onOpenNewEntry: () -> Unit,
     onOpenQuiver: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    quiverBoards: List<QuiverBoard> = emptyList(),
+    onUpdateSession: (SurfSession) -> Unit = {},
+    onDeleteSession: (Long) -> Unit = {}
 ) {
     val colors = MaterialTheme.colorScheme
+    var editing by remember { mutableStateOf<SurfSessionWithRelations?>(null) }
+    var deleting by remember { mutableStateOf<SurfSessionWithRelations?>(null) }
+    editing?.let { e -> SessionEditDialog(e, quiverBoards, { onUpdateSession(it); editing = null }) { editing = null } }
+    deleting?.let { d ->
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text("Supprimer cette session ?") },
+            text = { Text("Elle sera définitivement retirée de ton journal.") },
+            confirmButton = { TextButton(onClick = { onDeleteSession(d.session.id); deleting = null }) { Text("Supprimer", color = AppColors.WindHigh) } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Annuler") } }
+        )
+    }
     val sessionsByDate = remember(allSessions) {
         allSessions.groupBy { epochMillisToLocalDateTime(it.session.startTime).date }
     }
@@ -196,7 +211,7 @@ fun SessionLogHistoryScreen(
                         )
                     } else {
                         sessionsForSelectedDate.forEach { session ->
-                            SessionRecapCard(session)
+                            SessionRecapCard(session, onEdit = { editing = session }, onDelete = { deleting = session })
                             Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
@@ -218,7 +233,7 @@ fun SessionLogHistoryScreen(
 }
 
 @Composable
-private fun SessionRecapCard(session: SurfSessionWithRelations) {
+private fun SessionRecapCard(session: SurfSessionWithRelations, onEdit: () -> Unit = {}, onDelete: () -> Unit = {}) {
     val colors = MaterialTheme.colorScheme
     val startTime = epochMillisToLocalDateTime(session.session.startTime)
     val endTime = epochMillisToLocalDateTime(session.session.endTime)
@@ -282,6 +297,16 @@ private fun SessionRecapCard(session: SurfSessionWithRelations) {
             if (!mediaUriString.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SessionMediaView(mediaUriString)
+            }
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.End) {
+                Text(
+                    tr("Modifier"), fontSize = 12.sp, color = colors.primary,
+                    modifier = Modifier.clip(CircleShape).clickable(onClick = onEdit).padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+                Text(
+                    tr("Supprimer"), fontSize = 12.sp, color = AppColors.WindHigh,
+                    modifier = Modifier.clip(CircleShape).clickable(onClick = onDelete).padding(horizontal = 10.dp, vertical = 6.dp)
+                )
             }
         }
     }

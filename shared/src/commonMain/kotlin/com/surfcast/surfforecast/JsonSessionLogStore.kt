@@ -115,6 +115,18 @@ class JsonSessionLogStore(private val prefs: KeyValueStore) : SessionLogStore {
         return sessionId
     }
 
+    override suspend fun updateSession(session: SurfSession) {
+        val d = state.value
+        save(d.copy(sessions = d.sessions.map { if (it.id == session.id) session else it }))
+    }
+
+    override suspend fun deleteSession(sessionId: Long) {
+        val d = state.value
+        val gone = d.sessions.firstOrNull { it.id == sessionId } ?: return
+        val rest = d.sessions.filterNot { it.id == sessionId }
+        save(d.copy(sessions = rest, conditions = d.conditions.filterNot { c -> c.id == gone.conditionId && rest.none { it.conditionId == c.id } }))
+    }
+
     /** Copie complète du journal (fichier de sauvegarde). */
     fun exportJson(): String = json.encodeToString(Data.serializer(), state.value)
 

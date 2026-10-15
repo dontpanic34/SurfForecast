@@ -51,6 +51,23 @@ class JsonSessionLogStoreTest {
     }
 
     @Test
+    fun sessionCanBeEditedThenDeleted() = runTest {
+        val prefs = InMemoryKeyValueStore()
+        val store = JsonSessionLogStore(prefs)
+        val boardId = store.insertQuiverBoard(QuiverBoard(model = "Fish", family = "fish", lengthLitrage = "5'8", finSetup = "twin"))
+        val spotId = store.insertMicroSpot(MicroSpot(parentSpotName = "Soulac", name = "Nord"))
+        store.logSession(1_000, 2_000, spotId, boardId, condition, 4, "avant", null)
+        val s = store.getAllSessions().first().single().session
+        store.updateSession(s.copy(rating = 15, comment = "après", endTime = 5_000))
+        val edited = JsonSessionLogStore(prefs).getAllSessions().first().single().session
+        assertEquals("après", edited.comment); assertEquals(15, edited.rating); assertEquals(5_000L, edited.endTime); assertEquals(s.id, edited.id)
+        store.deleteSession(s.id)
+        assertTrue(JsonSessionLogStore(prefs).getAllSessions().first().isEmpty())
+        // La planche, libérée, peut maintenant être supprimée.
+        store.deleteQuiverBoard(store.getAllQuiverBoards().first().single())
+    }
+
+    @Test
     fun boardUsedBySessionCannotBeDeleted() = runTest {
         val store = JsonSessionLogStore(InMemoryKeyValueStore())
         val boardId = store.insertQuiverBoard(QuiverBoard(model = "Longboard", family = "longboard", lengthLitrage = "9'2", finSetup = "single"))
