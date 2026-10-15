@@ -57,6 +57,10 @@ object SkyGraphSettings {
     var nowOpen by mutableStateOf(true)
     fun loadNowOpen(v: Int) { nowOpen = v != 0 }
     fun chooseNowOpen(v: Boolean) { nowOpen = v; persist("now_card_open", if (v) 1 else 0) }
+    /** L'encart Marée du déroulé est déplié (la courbe) ; replié, il ne reste que la phrase. */
+    var tideOpen by mutableStateOf(true)
+    fun loadTideOpen(v: Int) { tideOpen = v != 0 }
+    fun chooseTideOpen(v: Boolean) { tideOpen = v; persist("tide_card_open", if (v) 1 else 0) }
     fun loadCurve(dp: Int) { curveDp = dp.coerceIn(14, 48) }
     fun setCurve(dp: Int) { curveDp = dp.coerceIn(14, 48); persist("graph_curve_dp", curveDp) }
     fun loadShowChop(v: Boolean) { showChop = v }
