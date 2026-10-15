@@ -26,6 +26,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 - **Déplacer un encart par un appui long partout** : le geste est maintenant lu avant les éléments cliquables de l'encart (titre, flèche), donc l'appui long sur la flèche ou le titre déplace l'encart sans le plier. À vérifier sur téléphone. Maquette de la visite à quatre étapes (réglages et plier sur le même écran, sans l'étape Réglages) : `visite-guidee-v3.png`.
 - **Journal : heure de début réglable** (en cours de vérification) : l'heure de début se règle avec deux petits compteurs (heure, minutes de 5 en 5 ; on touche ▴ ▾ ou on glisse sur le chiffre), la fin est calculée à côté, la durée est un curseur de 5 en 5 minutes. La barre du jour n'est plus utilisée pour le début. La page « Modifier » passe aussi à des pas de 5 minutes. Maquette : `journal-session-heure-roues.png`.
 - **Visite guidée à trois étapes** : Étoiles et couleurs, puis « Régler, plier, déplacer » (le ⚙, la flèche ▾ et l'appui long sur le titre, sur le premier encart), puis Noter une session. Pas d'étape sur la loupe (assez intuitive) ni sur les Réglages. Seuls les nouveaux utilisateurs la voient (la clé de la visite n'a pas changé).
+- **Niveau visible dans les Réglages** : la ligne Profil affiche à droite le niveau trouvé par le questionnaire (« Intermédiaire + », en bleu), tant qu'il a été renseigné.
 - Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
 
 ## 14 octobre 2026

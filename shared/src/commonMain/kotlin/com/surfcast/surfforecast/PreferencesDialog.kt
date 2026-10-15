@@ -329,7 +329,7 @@ fun SurfPreferencesDialog(
                 ) {
                     if (page == null) {
                         SettingsSection("Mon surf") {
-                            SettingsRow("Profil", "Ton niveau et ce que tu surfes", SettingsIcons.User, badge = if (profileReviewed) null else "Recommandé", top = false) { page = "profile" }
+                            SettingsRow("Profil", "Ton niveau et ce que tu surfes", SettingsIcons.User, value = levelQuiz?.result?.let { tr(it.name) }, accentValue = true, badge = if (profileReviewed) null else "Recommandé", top = false) { page = "profile" }
                             SettingsRow("Matériel", "Planches et planche du jour", SettingsIcons.Board) { page = "gear" }
                         }
                         SettingsSection("Prévisions") {
