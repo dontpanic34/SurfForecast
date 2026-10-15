@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -83,9 +85,11 @@ fun CardControlsRow(
 fun CollapseChevron(isCollapsed: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Text(
         text = if (isCollapsed) "▸" else "▾",
-        fontSize = 16.sp,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-        modifier = modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onToggle).padding(horizontal = 8.dp, vertical = 2.dp)
+        fontSize = 22.sp,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        // Une grande zone d'appui (au moins 44 × 40 dp), le doigt n'a pas à viser le petit triangle.
+        modifier = modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onToggle)
+            .sizeIn(minWidth = 44.dp, minHeight = 40.dp).wrapContentSize(Alignment.Center)
     )
 }
 

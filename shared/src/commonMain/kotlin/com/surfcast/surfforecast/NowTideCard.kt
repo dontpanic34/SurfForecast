@@ -104,7 +104,7 @@ fun NowTideCard(
                 } else if (rating != null) {
                     Text(" · " + bandLabelWithTrend(rating, previousRating), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = conditionBand(rating).textColor(), maxLines = 1)
                 }
-                Text(if (open) " ▴" else " ▾", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.5f))
+                CollapseChevron(!open, { SkyGraphSettings.chooseNowOpen(!open) })
             }
             if (onAddSession != null) {
                 Text(
