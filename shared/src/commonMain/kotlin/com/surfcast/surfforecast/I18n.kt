@@ -141,7 +141,7 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Plein haut dans" to t("High tide in", "Hochwasser in", "Hoogwater over", "Pleamar en"),
     "Plein haut à" to t("High tide at", "Hochwasser um", "Hoogwater om", "Pleamar a las"),
     "Plein bas à" to t("Low tide at", "Niedrigwasser um", "Laagwater om", "Bajamar a las"),
-    "à (heure)" to t("at", "um", "om", "a las"),
+    " à " to t(" at ", " um ", " om ", " a las "),
     "Plein bas dans" to t("Low tide in", "Niedrigwasser in", "Laagwater over", "Bajamar en"),
     "Modifier la session" to t("Edit session", "Session bearbeiten", "Sessie bewerken", "Editar sesión"),
     "Supprimer cette session ?" to t("Delete this session?", "Diese Session löschen?", "Deze sessie verwijderen?", "¿Eliminar esta sesión?"),

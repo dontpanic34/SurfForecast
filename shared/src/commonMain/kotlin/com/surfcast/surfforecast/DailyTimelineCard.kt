@@ -445,7 +445,7 @@ private fun DailyTimelineBody(
                                 // Aujourd'hui : le temps qui reste, puis l'heure.
                                 val d = next.hour - at
                                 val dh = d.toInt(); val dm = ((d - dh) * 60).roundToInt().coerceAtMost(59)
-                                append(" · " + tr(if (next.high) "Plein haut dans" else "Plein bas dans") + " " + (if (dh == 0) "$dm min" else dh.toString() + " h " + dm.toString().padStart(2, '0')) + " " + tr("à (heure)") + " " + clock)
+                                append(" · " + tr(if (next.high) "Plein haut dans" else "Plein bas dans") + " " + (if (dh == 0) "$dm min" else dh.toString() + " h " + dm.toString().padStart(2, '0')) + tr(" à ") + clock)
                             } else {
                                 // Un autre jour : « dans » n'a pas de sens, on donne seulement l'heure.
                                 append(" · " + tr(if (next.high) "Plein haut à" else "Plein bas à") + " " + clock)
