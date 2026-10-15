@@ -1193,6 +1193,7 @@ fun DynamicCardsSection(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         orderedKeys.forEach { cardKey ->
+          androidx.compose.runtime.key(cardKey) {
             val isCollapsed = viewModel.isCardCollapsed(cardKey)
             val isDragging = draggedKey == cardKey
             val dragMod = dragModifierFor(cardKey)
@@ -1376,7 +1377,8 @@ fun DynamicCardsSection(
                     if (cardKey == afterKey) afterTimeline()
                 }
             }
-        }
+                  }
+}
         if (afterKey == null) afterTimeline()
         Spacer(modifier = Modifier.height(6.dp))
     }

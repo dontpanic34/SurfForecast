@@ -21,6 +21,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 - Hors de France, les heures de marée sont affichées avec « ≈ » et la hauteur d'eau (relative) remplace le coefficient dans la phrase de l'encart Marée ; le coefficient reste celui du port français voisin.
 - Encart Marée : « Plein bas dans 3 h 09 à 14:31 » (le « à » a une clé à part, sinon le français affichait la clé) seulement pour aujourd'hui ; un autre jour : « Plein bas à 14:31 ».
 - **Choix du spot** : on choisit d'abord le pays (France, Espagne, Portugal, Maroc), puis la région du pays sur la ligne du dessous ; la recherche, elle, cherche dans tous les pays.
+- **Glisser-déposer des encarts** (en cours de vérification) : l'encart déplacé perdait son geste dès qu'il passait la moitié de son voisin (la liste n'identifiait pas les encarts par leur nom, le geste restait accroché à la place et non à l'encart). Chaque encart est maintenant identifié par sa clé : on doit pouvoir continuer le déplacement sur plusieurs encarts d'un seul geste. À vérifier sur téléphone.
 - Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
 
 ## 14 octobre 2026
