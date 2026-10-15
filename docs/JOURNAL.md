@@ -16,6 +16,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 - L'heure de mise à jour passe à droite du titre, sans mot : « 13:14 ⟳ » (toucher relance les prévisions). Elle devient orange après plus de 30 min.
 - « Mesures en direct » devient simplement « LIVE ».
 - **Courbe de marée plus régulière** : la nuit est comprimée sur l'axe des heures, la montée du matin paraissait écrasée et bossue ; la courbe est maintenant calculée sur l'écran (demi-cosinus entre deux marées), donc lisse, avec les points aux bonnes heures.
+- **Encart Marée** (en cours de vérification) : la courbe de marée devient un petit encart repliable (préférence `tide_card_open`) : une ligne « Marée Descendant · 68 · Plein bas dans 3 h 09 ▾ », et dessous la courbe sur 24 h régulières (axe à elle, nuit non comprimée, jour éclairci, point blanc sur l'heure choisie). Sur un spot sans coefficient (Espagne, Portugal) la hauteur d'eau de l'heure remplace le coefficient dans la phrase (relative, « ≈ » si estimée). Maquettes : `encart-maree*.html/png`.
 - Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
 
 ## 14 octobre 2026
