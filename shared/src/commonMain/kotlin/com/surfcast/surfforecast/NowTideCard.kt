@@ -47,8 +47,10 @@ fun NowTideCard(
     // La note de l'heure d'avant : elle donne le sens du libellé (« Bon à Correct » si ça baisse).
     previousRating: SlotRating? = null,
     spotName: String = "",
-    // « mis à jour 17:20 ↻ » sous le titre ; toucher relance les prévisions.
+    // « 17:20 ⟳ » à droite du titre ; toucher relance les prévisions.
     updatedText: String = "",
+    // La dernière mise à jour date de plus de 30 min : l'heure passe en orange.
+    updateStale: Boolean = false,
     // Il fait nuit : pas de libellé de qualité (« Nuit »).
     isNight: Boolean = false,
     // La nuit en une phrase (houle, vent, ce qu'on trouvera au lever) ; null = on garde les tuiles.
@@ -89,29 +91,33 @@ fun NowTideCard(
         if (timeHours.isNotEmpty() && pickedHour != null && onPickHour != null) {
             TimeRuler(hours = timeHours, sun = timeSun, selected = pickedHour, onHourSelected = onPickHour)
         }
+        val open = SkyGraphSettings.nowOpen
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f), maxLines = 1)
-                    // L'état de l'heure juste après le titre, sans fond : le mot, dans la couleur de la note.
-                    if (isNight) {
-                        Text(" · " + tr("Nuit"), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
-                    } else if (rating != null) {
-                        Text(" · " + bandLabelWithTrend(rating, previousRating), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = conditionBand(rating).textColor(), maxLines = 1)
-                    }
+            Row(
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).clickable { SkyGraphSettings.chooseNowOpen(!open) },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f), maxLines = 1)
+                // L'état de l'heure juste après le titre, sans fond : le mot, dans la couleur de la note.
+                if (isNight) {
+                    Text(" · " + tr("Nuit"), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = colors.onSurface.copy(alpha = 0.55f), maxLines = 1)
+                } else if (rating != null) {
+                    Text(" · " + bandLabelWithTrend(rating, previousRating), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = conditionBand(rating).textColor(), maxLines = 1)
                 }
-                if (updatedText.isNotEmpty()) {
-                    Text(
-                        "${tr("mis à jour")} $updatedText ↻", fontSize = 10.sp, color = colors.onSurface.copy(alpha = 0.45f), maxLines = 1,
-                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).let { if (onRefresh != null) it.clickable(onClick = onRefresh) else it }
-                    )
-                }
+                Text(if (open) " ▴" else " ▾", fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.5f))
             }
             if (onAddSession != null) {
                 Text(
                     tr("+ Session"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.primary,
-                    modifier = Modifier.padding(end = 6.dp).clip(RoundedCornerShape(50)).background(colors.primary.copy(alpha = 0.15f))
+                    modifier = Modifier.padding(horizontal = 6.dp).clip(RoundedCornerShape(50)).background(colors.primary.copy(alpha = 0.15f))
                         .clickable(onClick = onAddSession).padding(horizontal = 9.dp, vertical = 2.dp)
+                )
+            }
+            if (updatedText.isNotEmpty()) {
+                Text(
+                    "$updatedText ⟳", fontSize = 10.sp, maxLines = 1,
+                    color = if (updateStale) Color(0xFFFF9800) else colors.onSurface.copy(alpha = 0.45f),
+                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).let { if (onRefresh != null) it.clickable(onClick = onRefresh) else it }.padding(horizontal = 2.dp, vertical = 2.dp)
                 )
             }
         }
@@ -119,6 +125,7 @@ fun NowTideCard(
             Text(nightText, fontSize = 13.sp, color = colors.onSurface, modifier = Modifier.padding(top = 2.dp, bottom = 2.dp))
             return@Column
         }
+        if (!open) return@Column
         if (dawnText != null) Text(dawnText, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp))
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient
@@ -197,7 +204,7 @@ private val DishIcon by lazy {
     strokeIcon("Dish", "M5 8a8 8 0 0 0 11 11z", "M5 8l11 11", "M10 14l5-5", "M15 9l1.5-1.5", "M16 7a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M9 21h8", "M13 19v2")
 }
 
-/** « Mesures en direct » : deux pastilles (balise, station) ; un appui montre le détail sur une ligne. */
+/** « LIVE » : deux pastilles (balise, station) ; un appui montre le détail sur une ligne. */
 @Composable
 private fun MeasuresRow(buoy: BuoyReading?, observed: ObservedNow?, windUnit: String) {
     val colors = MaterialTheme.colorScheme
@@ -218,9 +225,8 @@ private fun MeasuresRow(buoy: BuoyReading?, observed: ObservedNow?, windUnit: St
     }
     Column(Modifier.padding(top = 8.dp)) {
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val label = if (maxWidth >= 340.dp) "Mesures en direct" else "En direct"
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(tr(label).uppercase(), fontSize = 11.sp, color = colors.onSurfaceVariant, maxLines = 1)
+                Text("LIVE", fontSize = 11.sp, color = colors.onSurfaceVariant, maxLines = 1)
                 buoy?.let { b ->
                     val period = b.period?.let { " · ${it.roundToInt()} s" }.orEmpty()
                     Pill(1, BuoyIcon, "${formatDecimal(b.significantHeight, 1).replace('.', ',')} m$period")
@@ -246,4 +252,14 @@ private fun MeasuresRow(buoy: BuoyReading?, observed: ObservedNow?, windUnit: St
         }
         if (line != null) Text(line, fontSize = 11.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
     }
+}
+
+/** Vrai si la dernière mise à jour (« HH:mm ») date de plus de 30 min par rapport à [now]. */
+internal fun isUpdateStale(updated: String, now: kotlinx.datetime.LocalDateTime): Boolean {
+    val parts = updated.split(":")
+    val h = parts.getOrNull(0)?.trim()?.toIntOrNull() ?: return false
+    val m = parts.getOrNull(1)?.trim()?.take(2)?.toIntOrNull() ?: return false
+    var diff = now.hour * 60 + now.minute - (h * 60 + m)
+    if (diff < 0) diff += 24 * 60
+    return diff > 30
 }
