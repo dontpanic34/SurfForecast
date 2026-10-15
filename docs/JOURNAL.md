@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Déroulé semaine : 3 créneaux par jour par défaut** (au lieu d'un) : trois encarts et trois icônes par jour à l'ouverture. Ceux qui avaient déjà choisi une densité (1, 2 ou 3) la gardent ; réglable dans l'engrenage de l'encart semaine.
+
+
 - **Marée du déroulé : rampe dégradée** (choix du propriétaire) : à la place de la barre et des flèches, une rampe qui monte (bleu, Montant) ou descend (vert, Descendant), en dégradé, collée sous le graphique. Un point blanc sur la rampe marque l'heure choisie ; un petit point marque l'heure actuelle quand elle est ailleurs. Le mot et les horaires restent dessous. **Hauteur réglable** dans l'engrenage du déroulé (« Hauteur de la rampe de marée », 8 à 28 px, 14 par défaut). Vérifié dans un navigateur.
 
 

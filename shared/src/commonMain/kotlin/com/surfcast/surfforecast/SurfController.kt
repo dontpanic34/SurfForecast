@@ -240,7 +240,7 @@ class SurfController(
         GearPrefs.loadMainFamily(prefs.getString("gear_main_family", "") ?: "")
         GearPrefs.persist = { k, v -> prefs.putString(k, v) }
     }
-    var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 1).coerceIn(1, 3))
+    var weeklyDensity by mutableIntStateOf(prefs.getInt("weekly_density", 3).coerceIn(1, 3))
         private set
 
     var weeklyWindMode by mutableStateOf(prefs.getString("weekly_wind_mode", "both") ?: "both")
