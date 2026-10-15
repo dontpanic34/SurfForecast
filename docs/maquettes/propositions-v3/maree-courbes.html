@@ -13,7 +13,7 @@ text{font-family:system-ui,sans-serif}
 <script>
 const W=400,A0=7,A1=20.9,UP='#4A9BF0',DN='#38C976';
 const EXT=[[1.383,'BM'],[7.583,'PM'],[13.717,'BM'],[19.933,'PM'],[26.1,'BM']];
-const NOW=12.0,COEF=68;
+let NOW=12.0;const COEF=68;let CHOSEN=new Set();
 const X=t=>(t-A0)/(A1-A0)*W;
 const fmt=h=>{const H=Math.floor(h)%24,M=Math.round((h-Math.floor(h))*60);return H+':'+String(M).padStart(2,'0')};
 function lv(t){for(let i=0;i<EXT.length-1;i++){const [a,ta]=EXT[i],[b]=EXT[i+1];if(t>=a&&t<=b){const f=(t-a)/(b-a),e=(1-Math.cos(Math.PI*f))/2;return ta==='BM'?e:1-e}}return 0}
@@ -65,6 +65,15 @@ const V=[
  for(const [t,k] of visibleExt)s+=T(X(t),k==='PM'?y0-h*lv(t)-6:y0-h*lv(t)+16,fmt(t)+(k==='PM'?'':''),{st:1,s:10});
  return [s+T(200,84,dir()+' · coef '+COEF,{c:col(up),s:11,st:1}),92]}]
 ];
-let html='';V.forEach(([n,f])=>{const [body,H]=f();html+=`<div class="card"><h3>${n}</h3><div class="band"><svg viewBox="0 0 ${W} ${H}">${body}</svg></div></div>`});
+function draw(){let html='<div class="card" style="width:min(400px,100%);text-align:center"><b id="pick">Touche une carte pour la choisir · glisse le doigt sur une courbe pour changer l\'heure</b></div>';
+V.forEach(([n,f],i)=>{const [body,H]=f();const on=CHOSEN.has(i);html+=`<div class="card" data-i="${i}" style="${on?'outline:2px solid #f6c453':''}"><h3>${on?'✓ ':''}${n}</h3><div class="band" data-band="1"><svg viewBox="0 0 ${W} ${H}">${body}</svg></div></div>`});
 document.getElementById('app').innerHTML=html;
+document.getElementById('pick').textContent=CHOSEN.size?('Ton choix : '+[...CHOSEN].map(i=>i+1).sort((a,b)=>a-b).join(' + ')+' · il est '+fmt(NOW)):('Touche une carte pour la choisir · glisse sur une courbe pour changer l\'heure (il est '+fmt(NOW)+')');
+document.querySelectorAll('.card[data-i]').forEach(c=>c.onclick=e=>{if(e.target.closest('[data-band]')&&e.detail===0)return;const i=+c.dataset.i;CHOSEN.has(i)?CHOSEN.delete(i):CHOSEN.add(i);draw()});
+document.querySelectorAll('[data-band]').forEach(el=>{const mv=e=>{const r=el.getBoundingClientRect();NOW=A0+Math.min(Math.max((e.clientX-r.left)/r.width,0),1)*(A1-A0);draw2()};
+ el.addEventListener('pointerdown',e=>{el.setPointerCapture&&0;el._d=true;mv(e)});el.addEventListener('pointermove',e=>{if(el._d)mv(e)});el.addEventListener('pointerup',()=>{el._d=false});el.style.touchAction='none'})}
+function draw2(){ // met à jour les courbes sans recréer les cartes (le glissement reste fluide)
+ document.querySelectorAll('.card[data-i]').forEach(c=>{const i=+c.dataset.i;const [body,H]=V[i][1]();c.querySelector('svg').innerHTML=body});
+ const p=document.getElementById('pick');p.textContent=(CHOSEN.size?'Ton choix : '+[...CHOSEN].map(i=>i+1).sort((a,b)=>a-b).join(' + ')+' · ':'')+'il est '+fmt(NOW)}
+draw();
 </script></html>
