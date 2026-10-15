@@ -18,9 +18,14 @@ data class ObservedNow(
     val tempC: Double?
 )
 
-/** « VENDAYS-MONTALIVE » devient « Vendays-Montalive » (le nom de la station chez Météo-France). */
-internal fun niceStationName(raw: String): String =
-    raw.lowercase().split(" ").joinToString(" ") { w -> w.split("-").joinToString("-") { p -> p.replaceFirstChar { it.uppercase() } } }
+/** « VENDAYS-MONTALIVE » devient « Vendays-Montalivet » (Météo-France écrit le nom sans son dernier T). */
+internal fun niceStationName(raw: String): String {
+    val nice = raw.lowercase().split(" ").joinToString(" ") { w -> w.split("-").joinToString("-") { p -> p.replaceFirstChar { it.uppercase() } } }
+    // Météo-France écrit certains noms sans leur dernière lettre : on remet le vrai nom de la commune.
+    return STATION_NAME_FIXES[nice] ?: nice
+}
+
+private val STATION_NAME_FIXES = mapOf("Vendays-Montalive" to "Vendays-Montalivet")
 
 /** Une mesure plus vieille que cela (heures) n'est plus affichée : ce n'est plus ce qui se passe maintenant. */
 const val OBSERVED_MAX_AGE_HOURS = 3

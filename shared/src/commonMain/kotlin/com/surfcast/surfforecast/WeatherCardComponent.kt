@@ -69,9 +69,9 @@ fun WeatherCardComponent(
                 maxValue = 100.0,
                 // Le ciel : bleu et plus haut quand il pleut, sinon la couverture nuageuse en gris (la couverture ne compte pas sous la pluie).
                 valueOf = { g ->
-                    val rain = g.maxOf { it.precipitationMm }
-                    // Ciel dégagé : une barre basse (jaune à rouge selon la température) plutôt que rien.
-                    if (rain >= 0.05) 60.0 + minOf(rain, 1.0) * 40.0 else maxOf(g.map { it.cloudCover }.average(), 14.0)
+                    // La hauteur dit la température (de 5 à 35 °C) : plus il fait chaud, plus la cheminée est haute ; la couleur dit le ciel.
+                    val temp = g.map { it.temperature }.average()
+                    14.0 + 86.0 * ((temp - 5.0) / 30.0).coerceIn(0.0, 1.0)
                 },
                 colorOf = { g, sel ->
                     val raining = g.any { it.precipitationMm >= 0.05 }

@@ -496,6 +496,23 @@ class SurfRepository(
      * Température de la mer par heure (°C), sans modèle de vagues imposé : appel isolé, un échec ou une
      * donnée absente (point trop côtier) laisse simplement la température inconnue.
      */
+    /**
+     * Indice UV par heure. AROME et ECMWF ne le fournissent pas (Open-Meteo renvoie des valeurs vides, d'où un « UV 0 » en plein soleil) :
+     * on le demande à part, au modèle par défaut d'Open-Meteo qui le calcule. Échec ou donnée absente : map vide.
+     */
+    private suspend fun fetchUvIndex(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Double> = runCatching {
+        val url = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&hourly=uv_index&forecast_days=$days&timezone=auto"
+        val hourly = httpGet(url).getValue("hourly").jsonObject
+        val timeArr = hourly.getValue("time").jsonArray
+        val uvArr = hourly.optArray("uv_index")
+        buildMap {
+            for (i in timeArr.indices) {
+                val v = uvArr.doubleAt(i) ?: continue
+                put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), v)
+            }
+        }
+    }.getOrDefault(emptyMap())
+
     private suspend fun fetchSeaTemperature(lat: Double, lon: Double, days: Int): Map<LocalDateTime, Double> = runCatching {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
             "latitude=$lat&longitude=$lon&hourly=sea_surface_temperature&forecast_days=$days&timezone=auto"
@@ -734,6 +751,7 @@ class SurfRepository(
             }
             val gfsWindDeferred = async { fetchGfsWind(lat, lon, 7) }
             val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
+            val uvDeferred = async { fetchUvIndex(lat, lon, 7) }
             val referencePeriodsDeferred = async { if (config.consensus) emptyMap() else fetchReferencePeriods(lat, lon, 7) }
 
             val shortMarine = shortMarineDeferred.await()
@@ -744,6 +762,7 @@ class SurfRepository(
             val aromeHdWind = aromeHdWindDeferred.await()
             val gfsWind = gfsWindDeferred.await()
             val seaTemps = seaTempDeferred.await()
+            val uvByTime = uvDeferred.await()
             val referencePeriods = referencePeriodsDeferred.await()
 
             val marineMapShort = shortMarine.times.indices.associateBy { shortMarine.times[it] }
@@ -871,7 +890,8 @@ class SurfRepository(
                         cloudCover = wxData.cloudCovers.getOrElse(wxIndex) { 0 },
                         // L'indice UV : celui de Météo-France s'il en donne un, sinon celui du long terme.
                         uvIndex = wxData.uvIndexes.getOrElse(wxIndex) { 0.0 }.takeIf { it > 0.0 }
-                            ?: wData.uvIndexes.getOrElse(wIndex) { 0.0 },
+                            ?: wData.uvIndexes.getOrElse(wIndex) { 0.0 }.takeIf { it > 0.0 }
+                            ?: uvByTime[t] ?: 0.0,
                         precipitationMm = wxData.precipitations.getOrElse(wxIndex) { 0.0 },
                         feelsLike = wxData.apparentTemperatures.getOrElse(wxIndex) {
                             wxData.temperatures.getOrElse(wxIndex) { 20.0 }

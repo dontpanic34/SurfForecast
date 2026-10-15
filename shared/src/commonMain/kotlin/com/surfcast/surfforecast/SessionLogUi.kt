@@ -4,6 +4,7 @@ package com.surfcast.surfforecast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import kotlinx.datetime.minus
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -340,6 +341,32 @@ fun SessionLogEntryDialog(
                     listOf(2, 1, 0).filter { it in availableDayOffsets }.map { it.toString() to dayOffsetLabel(it) },
                     dayOffset.toString()
                 ) { dayOffset = it.toInt(); startHour = null }
+                // Les jours plus anciens (jusqu'à 14 jours), seulement si l'appli en a gardé les conditions.
+                val olderDays = availableDayOffsets.filter { it >= 3 }.sorted()
+                if (olderDays.isNotEmpty()) {
+                    var showOlder by remember { mutableStateOf(dayOffset >= 3) }
+                    Text(
+                        tr(if (showOlder) "Jours plus anciens ▴" else "Jours plus anciens ▾"), fontSize = 12.sp, color = colors.primary,
+                        modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(50)).clickable { showOlder = !showOlder }.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                    if (showOlder) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            olderDays.forEach { off ->
+                                val d = nowLocalDateTime().date.minus(off, kotlinx.datetime.DateTimeUnit.DAY)
+                                val on = dayOffset == off
+                                Text(
+                                    "${frenchShortDayName(d)} ${d.day}", fontSize = 13.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Normal,
+                                    color = if (on) colors.primary else colors.onSurface,
+                                    modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary.copy(alpha = 0.15f) else colors.surfaceVariant)
+                                        .clickable { dayOffset = off; startHour = null }.padding(horizontal = 12.dp, vertical = 7.dp)
+                                )
+                            }
+                        }
+                    }
+                }
 
                 // Début : la barre du jour
                 Spacer(modifier = Modifier.height(10.dp))
