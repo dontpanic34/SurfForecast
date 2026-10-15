@@ -1,0 +1,82 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marée : 10 courbes</title>
+<style>
+:root{--bg:#0b1519;--card:#13222a;--t:#e8f0f3;--m:#8fa6af}
+body{margin:0;background:var(--bg);color:var(--t);font:14px system-ui,sans-serif;padding:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.card{background:var(--card);border-radius:14px;padding:8px 10px 6px;width:min(400px,100%)}
+h3{margin:2px 2px 4px;font-size:12px;color:var(--m);font-weight:600}
+.band{background:linear-gradient(#17394a,#10303f);border-radius:8px}
+svg{display:block;width:100%;height:auto}
+text{font-family:system-ui,sans-serif}
+</style>
+<body><div id="app" style="display:contents"></div>
+<script>
+const W=400,A0=7,A1=20.9,UP='#4A9BF0',DN='#38C976';
+const EXT=[[1.383,'BM'],[7.583,'PM'],[13.717,'BM'],[19.933,'PM'],[26.1,'BM']];
+let NOW=12.0;const COEF=68;let CHOSEN=new Set();
+const X=t=>(t-A0)/(A1-A0)*W;
+const fmt=h=>{const H=Math.floor(h)%24,M=Math.round((h-Math.floor(h))*60);return H+':'+String(M).padStart(2,'0')};
+function lv(t){for(let i=0;i<EXT.length-1;i++){const [a,ta]=EXT[i],[b]=EXT[i+1];if(t>=a&&t<=b){const f=(t-a)/(b-a),e=(1-Math.cos(Math.PI*f))/2;return ta==='BM'?e:1-e}}return 0}
+const rising=t=>{for(let i=0;i<EXT.length-1;i++){const [a]=EXT[i],[b]=EXT[i+1];if(t>=a&&t<=b)return EXT[i][1]==='BM'}return true};
+const visibleExt=EXT.filter(e=>e[0]>=A0&&e[0]<=A1);
+function pts(y0,h,n=140){let p=[];for(let i=0;i<=n;i++){const t=A0+(A1-A0)*i/n;p.push([X(t),y0-h*lv(t),t])}return p}
+const path=p=>'M'+p.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' L');
+const T=(x,y,s,o={})=>(o.a==='start'||o.a==='end'||(x=Math.min(Math.max(x,24),W-24)),`<text x="${x}" y="${y}" font-size="${o.s||10}" font-weight="${o.w||700}" fill="${o.c||'#fff'}" text-anchor="${o.a||'middle'}" ${o.st?`stroke="#0b1519" stroke-width="2.5" paint-order="stroke"`:''}>${s}</text>`);
+const dot=(x,y,r=5)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#0b1519" stroke-width="1.6"/>`;
+const segs=(p,w)=>{let s='',i=0;while(i<p.length-1){const up=rising(p[i][2]+.001);let j=i;while(j<p.length-1&&rising(p[j][2]+.001)===up)j++;s+=`<path d="${path(p.slice(i,j+1))}" fill="none" stroke="${up?UP:DN}" stroke-width="${w}" stroke-linecap="round"/>`;i=j}return s};
+const col=up=>up?UP:DN;
+const dir=()=>rising(NOW)?'Montant':'Descendant';
+const ST=(x,y,anchor='middle',extra='')=>{const up=rising(NOW);return `<text x="${x}" y="${y}" font-size="11.5" font-weight="800" text-anchor="${anchor}" stroke="#0b1519" stroke-width="2.5" paint-order="stroke"><tspan fill="${col(up)}">${dir()}</tspan><tspan fill="#fff"> · coef ${COEF}${extra}</tspan></text>`};
+const nextTxt=()=>{const nx=EXT.find(e=>e[0]>NOW),d=nx[0]-NOW,hh=Math.floor(d),mm=Math.round((d-hh)*60);return ` · ${nx[1]==='BM'?'basse':'pleine'} mer dans ${hh} h ${String(mm).padStart(2,'0')}`};
+const TE=(t,k,y)=>{const x=X(t);return x<70?T(4,y,EXL(t,k,1),{a:'start',st:1,s:9.5}):x>W-70?T(W-4,y,EXL(t,k,1),{a:'end',st:1,s:9.5}):T(x,y,EXL(t,k,1),{st:1,s:9.5})};
+const EXL=(t,k,full)=>(full?(k==='PM'?'Pleine mer ':'Basse mer '):(k==='PM'?'PM ':'BM '))+fmt(t);
+const V=[
+['1 · Courbe fine, points aux extrêmes',()=>{const y0=44,h=28,p=pts(y0,h);let s=`<path d="${path(p)}" fill="none" stroke="#9fd3ff" stroke-width="2.4"/>`;
+ for(const [t,k] of visibleExt){const y=y0-h*lv(t);s+=`<circle cx="${X(t)}" cy="${y}" r="3.5" fill="${k==='PM'?UP:DN}" stroke="#fff"/>`+T(X(t),k==='PM'?y-7:y+14,EXL(t,k),{st:1,s:9.5})}
+ return [s+dot(X(NOW),y0-h*lv(NOW),5)+ST(200,y0+32),84]}],
+['2 · Aire : passé foncé, à venir clair',()=>{const y0=46,h=32,p=pts(y0,h);const past=p.filter(q=>q[2]<=NOW),fut=p.filter(q=>q[2]>=NOW);
+ let s=`<path d="${path(fut)} L${X(A1)} ${y0} L${X(NOW)} ${y0}Z" fill="rgba(74,155,240,.2)"/><path d="${path(past)} L${X(NOW)} ${y0} L${X(A0)} ${y0}Z" fill="rgba(74,155,240,.6)"/><path d="${path(p)}" fill="none" stroke="#9fd3ff" stroke-width="2"/>`;
+ for(const [t,k] of visibleExt)s+=TE(t,k,k==='PM'?y0-h*lv(t)-5:y0-5);
+ return [s+dot(X(NOW),y0-h*lv(NOW))+ST(200,y0+20),72]}],
+['3 · Courbe bicolore : montant bleu, descendant vert',()=>{const y0=52,h=28,p=pts(y0,h);let s=segs(p,3.4);
+ for(const [t,k] of visibleExt){const y=y0-h*lv(t);s+=T(X(t),k==='PM'?y-8:y+15,EXL(t,k),{st:1,s:9.5})}
+ return [s+dot(X(NOW),y0-h*lv(NOW))+ST(200,y0+36),92]}],
+['4 · Courbe + phrase : le sens, le coef et la prochaine marée',()=>{const y0=44,h=28,p=pts(y0,h);let s=`<path d="${path(p)}" fill="none" stroke="#9fd3ff" stroke-width="2.4"/>`;
+ const cx=X(NOW),cy=y0-h*lv(NOW);s+=`<line x1="${cx}" x2="${cx}" y1="${cy}" y2="${y0+4}" stroke="#fff" stroke-dasharray="2 3" opacity=".7"/>`+dot(cx,cy);
+ for(const [t,k] of visibleExt)s+=`<circle cx="${X(t)}" cy="${y0-h*lv(t)}" r="3" fill="${k==='PM'?UP:DN}" stroke="#fff"/>`+T(X(t),k==='PM'?y0-h*lv(t)-7:y0-h*lv(t)+14,fmt(t),{st:1,s:9.5});
+ return [s+ST(200,y0+32,'middle',nextTxt()),84]}],
+['5 · Courbe épaisse dégradée (bas vert, haut bleu)',()=>{const y0=52,h=28,p=pts(y0,h);let s='';for(let i=0;i<p.length-1;i++){const m=lv((p[i][2]+p[i+1][2])/2);s+=`<path d="M${p[i][0]} ${p[i][1]} L${p[i+1][0]} ${p[i+1][1]}" stroke="rgb(${56+(74-56)*m|0},${201+(155-201)*m|0},${118+(240-118)*m|0})" stroke-width="5" stroke-linecap="round" fill="none"/>`}
+ for(const [t,k] of visibleExt)s+=T(X(t),k==='PM'?y0-h*lv(t)-8:y0-h*lv(t)+17,EXL(t,k),{st:1,s:9.5});
+ return [s+dot(X(NOW),y0-h*lv(NOW),6)+ST(200,y0+38),92]}],
+['6 · Courbe entre les lignes pleine mer et basse mer',()=>{const y0=52,h=30,p=pts(y0,h);let s=`<line x1="0" x2="${W}" y1="${y0-h}" y2="${y0-h}" stroke="${UP}" stroke-dasharray="3 4" opacity=".6"/><line x1="0" x2="${W}" y1="${y0}" y2="${y0}" stroke="${DN}" stroke-dasharray="3 4" opacity=".6"/>`+
+ T(150,y0-h-3,'PLEINE MER',{a:'start',s:8,c:UP})+T(60,y0+10,'BASSE MER',{a:'start',s:8,c:DN})+`<path d="${path(p)}" fill="none" stroke="#fff" stroke-width="2.4"/>`;
+ for(const [t,k] of visibleExt)s+=T(X(t),k==='PM'?y0-h-3:y0+10,fmt(t),{st:1,s:9.5});
+ return [s+dot(X(NOW),y0-h*lv(NOW))+ST(200,y0+28),84]}],
+['7 · Courbe pleine, mots complets aux extrêmes',()=>{const y0=48,h=28,p=pts(y0,h);let s=`<path d="${path(p)} L${W} ${y0+2} L0 ${y0+2}Z" fill="rgba(74,155,240,.25)"/><path d="${path(p)}" fill="none" stroke="#9fd3ff" stroke-width="2.2"/>`;
+ for(const [t,k] of visibleExt)s+=TE(t,k,k==='PM'?y0-h*lv(t)-5:y0-6);
+ return [s+dot(X(NOW),y0-h*lv(NOW))+ST(200,y0+22),76]}],
+['8 · Curseur vertical, niveau en % et coef',()=>{const y0=48,h=28,p=pts(y0,h);const lvl=Math.round(lv(NOW)*100);let s=`<path d="${path(p)}" fill="none" stroke="#9fd3ff" stroke-width="2.4"/>`;
+ const cx=X(NOW),cy=y0-h*lv(NOW);s+=`<line x1="${cx}" x2="${cx}" y1="20" y2="${y0+2}" stroke="#fff" opacity=".55"/>`+dot(cx,cy);
+ for(const [t,k] of visibleExt)s+=`<circle cx="${X(t)}" cy="${y0-h*lv(t)}" r="3" fill="${k==='PM'?UP:DN}" stroke="#fff"/>`+T(X(t),y0+15,EXL(t,k),{st:1,s:9.5});
+ return [s+ST(Math.min(Math.max(cx,110),W-110),13,'middle',` · ${lvl} %`),66]}],
+['9 · Courbe bicolore + bande de couleur dessous',()=>{const y0=40,h=26,p=pts(y0,h);let s=`<path d="${path(p)}" fill="none" stroke="#dfeaf2" stroke-width="2.4"/>`;
+ for(let i=0;i<p.length-1;i++){const up=rising(p[i][2]+.001);s+=`<rect x="${p[i][0]}" y="${y0+6}" width="${p[i+1][0]-p[i][0]+.6}" height="5" fill="${col(up)}"/>`}
+ for(const [t,k] of visibleExt)s+=`<circle cx="${X(t)}" cy="${y0-h*lv(t)}" r="3" fill="#fff"/>`+T(X(t),y0+23,EXL(t,k),{st:1,s:9.5});
+ return [s+dot(X(NOW),y0-h*lv(NOW))+ST(200,y0+40),88]}],
+['10 · Grand point avec halo, courbe lisse',()=>{const y0=52,h=30,p=pts(y0,h);let s=`<path d="${path(p)} L${W} ${y0+3} L0 ${y0+3}Z" fill="rgba(143,166,175,.18)"/>`+segs(p,3);
+ const cx=X(NOW),cy=y0-h*lv(NOW),up=rising(NOW);s+=`<circle cx="${cx}" cy="${cy}" r="9" fill="${col(up)}" opacity=".35"/>`+dot(cx,cy,5);
+ for(const [t,k] of visibleExt)s+=T(X(t),k==='PM'?y0-h*lv(t)-6:y0-h*lv(t)+16,EXL(t,k),{st:1,s:9.5});
+ return [s+ST(200,y0+36),90]}]
+];
+function draw(){let html='<div class="card" style="width:min(400px,100%);text-align:center"><b id="pick">Touche une carte pour la choisir · glisse le doigt sur une courbe pour changer l\'heure</b></div>';
+V.forEach(([n,f],i)=>{const [body,H]=f();const on=CHOSEN.has(i);html+=`<div class="card" data-i="${i}" style="${on?'outline:2px solid #f6c453':''}"><h3>${on?'✓ ':''}${n}</h3><div class="band" data-band="1"><svg viewBox="0 0 ${W} ${H}">${body}</svg></div></div>`});
+document.getElementById('app').innerHTML=html;
+document.getElementById('pick').textContent=CHOSEN.size?('Ton choix : '+[...CHOSEN].map(i=>i+1).sort((a,b)=>a-b).join(' + ')+' · il est '+fmt(NOW)):('Touche une carte pour la choisir · glisse sur une courbe pour changer l\'heure (il est '+fmt(NOW)+')');
+document.querySelectorAll('.card[data-i]').forEach(c=>c.onclick=e=>{if(e.target.closest('[data-band]')&&e.detail===0)return;const i=+c.dataset.i;CHOSEN.has(i)?CHOSEN.delete(i):CHOSEN.add(i);draw()});
+document.querySelectorAll('[data-band]').forEach(el=>{const mv=e=>{const r=el.getBoundingClientRect();NOW=A0+Math.min(Math.max((e.clientX-r.left)/r.width,0),1)*(A1-A0);draw2()};
+ el.addEventListener('pointerdown',e=>{el.setPointerCapture&&0;el._d=true;mv(e)});el.addEventListener('pointermove',e=>{if(el._d)mv(e)});el.addEventListener('pointerup',()=>{el._d=false});el.style.touchAction='none'})}
+function draw2(){ // met à jour les courbes sans recréer les cartes (le glissement reste fluide)
+ document.querySelectorAll('.card[data-i]').forEach(c=>{const i=+c.dataset.i;const [body,H]=V[i][1]();c.querySelector('svg').innerHTML=body});
+ const p=document.getElementById('pick');p.textContent=(CHOSEN.size?'Ton choix : '+[...CHOSEN].map(i=>i+1).sort((a,b)=>a-b).join(' + ')+' · ':'')+'il est '+fmt(NOW)}
+draw();
+</script></html>

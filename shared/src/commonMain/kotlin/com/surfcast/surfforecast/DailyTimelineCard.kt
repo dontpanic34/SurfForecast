@@ -408,83 +408,77 @@ private fun DailyTimelineBody(
                 if (tideCurve.size >= 2) {
                     val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
-                    Canvas(modifier = Modifier.fillMaxWidth().offset(y = (-7).dp).height((SkyGraphSettings.rampDp + 36).dp)) {
-                        // La rampe est collée au bas du graphique : elle monte (bleu) ou descend (vert) ; le mot juste dessous, puis les horaires.
-                        val rampH = SkyGraphSettings.rampDp.dp.toPx()
-                        val yBase = 3.dp.toPx() + rampH
+                    Canvas(modifier = Modifier.fillMaxWidth().offset(y = (-7).dp).height((SkyGraphSettings.curveDp + 52).dp)) {
+                        // La courbe de marée : une ligne lisse du plein bas au plein haut, le point blanc à l'heure choisie, les heures aux extrêmes,
+                        // puis une phrase : le sens (Montant / Descendant), le coefficient et la prochaine marée.
+                        val curveH = SkyGraphSettings.curveDp.dp.toPx()
+                        val y0 = 12.dp.toPx() + curveH
                         val rising = Color(0xFF4A9BF0)
                         val falling = Color(0xFF38C976)
-                        // La marée monte quand la prochaine marée est haute.
+                        val curveColor = if (isDark) Color(0xFF9FD3FF) else Color(0xFF2F6EA8)
                         fun risingAt(h: Float): Boolean {
                             val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
                             return tideCurve[i + 1].high
                         }
-                        // Niveau de la marée entre 0 (basse) et 1 (haute), en ligne droite entre deux marées.
+                        // Niveau entre 0 (plein bas) et 1 (plein haut) : un demi-cosinus entre deux marées, comme la vraie forme de la marée.
                         fun level(h: Float): Float {
                             val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
                             val a0 = tideCurve[i]; val b0 = tideCurve[i + 1]
                             val f = ((h - a0.hour) / (b0.hour - a0.hour).coerceAtLeast(1e-3f)).coerceIn(0f, 1f)
-                            return if (b0.high) f else 1f - f
+                            val e = ((1.0 - kotlin.math.cos(PI * f)) / 2.0).toFloat()
+                            return if (b0.high) e else 1f - e
                         }
-                        val bounds0 = listOf(ax0) + tideCurve.map { it.hour }.filter { it > ax0 && it < ax1 } + listOf(ax1)
-                        for (k in 0 until bounds0.size - 1) {
-                            val h0 = bounds0[k]; val h1 = bounds0[k + 1]
-                            if (h1 <= h0) continue
-                            val up = risingAt((h0 + h1) / 2f)
-                            val x0 = xOf(h0); val x1 = xOf(h1)
-                            val c = if (up) rising else falling
-                            val path = Path().apply {
-                                moveTo(x0, yBase); lineTo(x0, yBase - rampH * level(h0)); lineTo(x1, yBase - rampH * level(h1)); lineTo(x1, yBase); close()
-                            }
-                            drawPath(path, androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                if (up) listOf(c.copy(alpha = 0.12f), c.copy(alpha = 0.95f)) else listOf(c.copy(alpha = 0.95f), c.copy(alpha = 0.12f)), startX = x0, endX = x1
-                            ))
+                        fun yAt(h: Float) = y0 - curveH * level(h)
+                        val line = Path()
+                        val steps = 120
+                        for (i in 0..steps) {
+                            val h = ax0 + (ax1 - ax0) * i / steps
+                            if (i == 0) line.moveTo(xOf(h), yAt(h)) else line.lineTo(xOf(h), yAt(h))
                         }
-                        // Le point sur la rampe : l'heure choisie (grand) ; l'heure actuelle (petit) quand elle est ailleurs.
-                        fun dotAt(h: Float, r: Float) {
-                            val c = Offset(xOf(h), yBase - rampH * level(h.coerceIn(ax0, ax1)))
+                        drawPath(line, curveColor, style = androidx.compose.ui.graphics.drawscope.Stroke(2.4.dp.toPx(), cap = StrokeCap.Round))
+                        // Les marées : un petit point de couleur (bleu en haut, vert en bas) et l'heure, au-dessus d'un plein haut, en dessous d'un plein bas.
+                        for (m in tideMarks) {
+                            val cx = xOf(m.hour); val cy = yAt(m.hour)
+                            drawCircle(if (m.high) rising else falling, 3.5.dp.toPx(), Offset(cx, cy))
+                            drawCircle(Color.White, 3.5.dp.toPx(), Offset(cx, cy), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+                            val hh = m.hour.toInt()
+                            val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
+                            val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0')
+                            val w = textMeasurer.measure(txt, tideStyle).size.width.toFloat()
+                            val tx = (cx - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx())
+                            drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, tx, if (m.high) cy - 7.dp.toPx() else cy + 14.dp.toPx())
+                        }
+                        // Le point sur la courbe : l'heure choisie (grand) ; l'heure actuelle (petit) quand elle est ailleurs.
+                        fun dotAt(h: Float, r: Float, line: Boolean) {
+                            val c = Offset(xOf(h), yAt(h.coerceIn(ax0, ax1)))
+                            if (line) drawLine(Color.White.copy(alpha = 0.7f), c, Offset(c.x, y0 + 4.dp.toPx()), strokeWidth = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 3.dp.toPx())))
                             drawCircle(Color.White, r, c)
                             drawCircle(Color(0xFF0B1519), r, c, style = androidx.compose.ui.graphics.drawscope.Stroke(1.4.dp.toPx()))
                         }
-                        if (nowHour != null && nowHour >= ax0 && nowHour <= ax1 && (selH == null || kotlin.math.abs(selH + 0.5f - nowHour) > 0.4f)) dotAt(nowHour, 2.5.dp.toPx())
-                        if (selH != null && selH + 0.5f >= ax0 && selH + 0.5f <= ax1) dotAt(selH + 0.5f, 4.5.dp.toPx())
-                        val labels = ArrayList<Pair<Float, String>>()
-                        for (m in tideMarks) {
-                            val hh = m.hour.toInt()
-                            val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
-                            val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · " + (if (tidesEstimated) "≈" else "") + it } ?: "")
-                            labels += xOf(m.hour) to txt
+                        val selAt = selH?.plus(0.5f)
+                        if (nowHour != null && nowHour >= ax0 && nowHour <= ax1 && (selAt == null || kotlin.math.abs(selAt - nowHour) > 0.4f)) dotAt(nowHour, 2.5.dp.toPx(), false)
+                        if (selAt != null && selAt >= ax0 && selAt <= ax1) dotAt(selAt, 4.5.dp.toPx(), true)
+                        // La phrase : « Descendant · 68 · Plein bas dans 1 h 43 », centrée sous la courbe.
+                        val at = (selAt ?: nowHour ?: ((ax0 + ax1) / 2f)).coerceIn(ax0, ax1)
+                        val up = risingAt(at)
+                        val next = tideCurve.firstOrNull { it.hour > at }
+                        val word = tr(if (up) "Montant" else "Descendant")
+                        var rest = ""
+                        coefValue?.let { rest += " · " + (if (tidesEstimated) "≈" else "") + it }
+                        if (next != null) {
+                            val d = next.hour - at
+                            val dh = d.toInt(); val dm = ((d - dh) * 60).roundToInt().coerceAtMost(59)
+                            rest += " · " + tr(if (next.high) "Plein haut dans" else "Plein bas dans") + " " + (if (dh == 0) "$dm min" else dh.toString() + " h " + dm.toString().padStart(2, '0'))
                         }
-                        // Le mot « Montant » ou « Descendant » écrit juste sous le trait, au milieu de chaque tronçon assez long.
-                        val wordStyleUp = TextStyle(color = rising, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-                        val wordStyleDown = TextStyle(color = falling, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
-                        val bounds = listOf(ax0) + tideCurve.map { it.hour }.filter { it > ax0 && it < ax1 } + listOf(ax1)
-                        for (k in 0 until bounds.size - 1) {
-                            val mid = (bounds[k] + bounds[k + 1]) / 2f
-                            val rises = risingAt(mid)
-                            val word = tr(if (rises) "Montant" else "Descendant")
-                            val style = if (rises) wordStyleUp else wordStyleDown
-                            val ww = textMeasurer.measure(word, style).size.width.toFloat()
-                            if (xOf(bounds[k + 1]) - xOf(bounds[k]) < ww + 24.dp.toPx()) continue
-                            drawHaloTextAtBaseline(textMeasurer, word, style, tideHalo, xOf(mid) - ww / 2f, yBase + 13.dp.toPx())
-                        }
-                        // Les heures sont écrites sous le trait, centrées sur leur point ; si deux se touchent, la seconde glisse à droite.
-                        val gap = 6.dp.toPx()
-                        val edge = 2.dp.toPx()
-                        val widths = labels.map { textMeasurer.measure(it.second, tideStyle).size.width.toFloat() }
-                        val lefts = labels.indices.map { (labels[it].first - widths[it] / 2f).coerceIn(edge, maxOf(edge, size.width - widths[it] - edge)) }.toMutableList()
-                        for (i in 1 until lefts.size) {
-                            val minLeft = lefts[i - 1] + widths[i - 1] + gap
-                            if (lefts[i] < minLeft) lefts[i] = minLeft
-                        }
-                        for (i in lefts.indices.reversed()) {
-                            val maxLeft = size.width - widths[i] - edge
-                            if (lefts[i] > maxLeft) lefts[i] = maxLeft
-                            if (i > 0 && lefts[i - 1] + widths[i - 1] + gap > lefts[i]) lefts[i - 1] = lefts[i] - widths[i - 1] - gap
-                        }
-                        for (i in labels.indices) {
-                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yBase + 27.dp.toPx())
-                        }
+                        val wordStyle = TextStyle(color = if (up) rising else falling, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                        val restStyle = TextStyle(color = onSurfaceColor, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                        val w1 = textMeasurer.measure(word, wordStyle).size.width.toFloat()
+                        val w2 = textMeasurer.measure(rest, restStyle).size.width.toFloat()
+                        val sx = ((size.width - w1 - w2) / 2f).coerceAtLeast(2.dp.toPx())
+                        val sy = y0 + 34.dp.toPx()
+                        drawHaloTextAtBaseline(textMeasurer, word, wordStyle, tideHalo, sx, sy)
+                        drawHaloTextAtBaseline(textMeasurer, rest, restStyle, tideHalo, sx + w1, sy)
                     }
                 }
             }

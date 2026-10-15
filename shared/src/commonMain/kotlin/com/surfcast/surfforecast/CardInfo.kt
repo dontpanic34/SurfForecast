@@ -197,7 +197,7 @@ private fun CardGuideSettings(key: String) {
                 SettingsDivider()
                 GearSlider("Échelle de la mer", "${SkyGraphSettings.waterPct} %", SkyGraphSettings.waterPct.toFloat(), 20f..60f) { SkyGraphSettings.setWater(it.toInt()) }
                 SettingsDivider()
-                GearSlider("Hauteur de la rampe de marée", "${SkyGraphSettings.rampDp} px", SkyGraphSettings.rampDp.toFloat(), 8f..28f) { SkyGraphSettings.setRamp(it.toInt()) }
+                GearSlider("Hauteur de la courbe de marée", "${SkyGraphSettings.curveDp} px", SkyGraphSettings.curveDp.toFloat(), 14f..48f) { SkyGraphSettings.setCurve(it.toInt()) }
                 SettingsRow("Valeurs par défaut", icon = SettingsIcons.Tune, chevron = false) { SkyGraphSettings.resetDay() }
             }
         }

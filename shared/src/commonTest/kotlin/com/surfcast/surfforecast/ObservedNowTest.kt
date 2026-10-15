@@ -15,7 +15,7 @@ class ObservedNowTest {
     @Test
     fun lineGivesWindGustsAndRainInLocalTime() {
         assertEquals(
-            "Mesuré à 14 h 00, Vendays-Montalive (4 km) : vent 7 km/h OSO, rafales 12 km/h · pluie 0,4 mm",
+            "Mesuré à 14 h 00, Vendays-Montalivet (4 km) : vent 7 km/h OSO, rafales 12 km/h · pluie 0,4 mm",
             observedLine(vendays, "kmh", paris)
         )
     }
@@ -23,6 +23,6 @@ class ObservedNowTest {
     @Test
     fun lineSkipsGustsAndRainWhenTheyAddNothing() {
         val calm = vendays.copy(gustKmh = 7, rainMm = 0.0, directionDeg = null)
-        assertEquals("Mesuré à 14 h 00, Vendays-Montalive (4 km) : vent 7 km/h", observedLine(calm, "kmh", paris))
+        assertEquals("Mesuré à 14 h 00, Vendays-Montalivet (4 km) : vent 7 km/h", observedLine(calm, "kmh", paris))
     }
 }

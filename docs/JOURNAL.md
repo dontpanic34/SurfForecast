@@ -12,6 +12,18 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Station Météo-France : « Vendays-Montalivet »** : le nom de la station arrive sans son dernier T (« VENDAYS-MONTALIVE ») ; l'appli le remet (table de corrections `STATION_NAME_FIXES`).
+
+
+- **Mémoire du journal : 14 jours, une copie par jour** : `ForecastHistoryStore` garde maintenant une seule copie par jour et par spot (aujourd'hui et demain, au lieu de 60 copies de 3 jours) pendant 14 jours au lieu de 2. Le formulaire de session propose « Jours plus anciens » (jusqu'à 14 jours) quand l'appli en a gardé les conditions.
+- **« Tu as surfé ? » à heures fixes** : le matin dès le lever du soleil (2 h) et vers midi (12 h à 14 h), on parle d'hier ; le soir dès le coucher du soleil (3 h), on parle d'aujourd'hui. Hors de ces créneaux le bandeau est caché. « Non » ou « Noter ma session » le cache pour le jour concerné.
+- **Météo : UV réels et cheminées à la température** : AROME et ECMWF ne fournissent pas l'indice UV (d'où « UV 0 » en plein soleil) : il est demandé à part au modèle par défaut d'Open-Meteo. La hauteur des cheminées de l'encart Météo suit la température (5 à 35 °C), la couleur dit toujours le ciel.
+- **Marée du déroulé : la courbe (choix n°4)** à la place de la rampe : courbe lisse, points aux marées avec leur heure, point blanc à l'heure choisie, phrase « Descendant · 68 · Plein bas dans 1 h 43 » (« Plein haut », « Plein bas », sans le mot coef). Hauteur réglable dans l'engrenage du déroulé (« Hauteur de la courbe de marée », 14 à 48 px, 28 par défaut).
+
+
+- **« Ressemble à ta session » : seulement de jour** : la phrase du jour ne propose plus une heure de nuit (minuit…) ; seules les heures entre le lever et le coucher du soleil sont retenues pour la ressemblance.
+
+
 - **Déroulé semaine : 3 créneaux par jour par défaut** (au lieu d'un) : trois encarts et trois icônes par jour à l'ouverture. Ceux qui avaient déjà choisi une densité (1, 2 ou 3) la gardent ; réglable dans l'engrenage de l'encart semaine.
 
 
