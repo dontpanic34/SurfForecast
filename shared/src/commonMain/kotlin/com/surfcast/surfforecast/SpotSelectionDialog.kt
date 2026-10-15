@@ -42,7 +42,10 @@ fun SpotSelectionDialog(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val allRegions = SurfDatabase.countries.flatMap { it.regions.flatMap { r -> r.subRegions } }
-    var selectedRegion by remember { mutableStateOf(allRegions.firstOrNull()?.name) }
+    // Un pays d'abord (France, Espagne, Portugal, Maroc), puis ses régions.
+    var selectedCountry by remember { mutableStateOf(SurfDatabase.countries.firstOrNull()?.name) }
+    val countryRegions = SurfDatabase.countries.firstOrNull { it.name == selectedCountry }?.regions?.flatMap { it.subRegions } ?: emptyList()
+    var selectedRegion by remember { mutableStateOf(countryRegions.firstOrNull()?.name) }
     // Le spot dont on choisit la place de favori (menu ouvert sous son étoile).
     var menuFor by remember { mutableStateOf<String?>(null) }
     val colors = MaterialTheme.colorScheme
@@ -51,7 +54,7 @@ fun SpotSelectionDialog(
     val filteredSpots = if (searchQuery.isNotBlank()) {
         SurfDatabase.getAllSpots().filter { it.name.contains(searchQuery, ignoreCase = true) }
     } else {
-        allRegions.firstOrNull { it.name == selectedRegion }?.spots ?: emptyList()
+        countryRegions.firstOrNull { it.name == selectedRegion }?.spots ?: emptyList()
     }
 
     Dialog(
@@ -92,12 +95,29 @@ fun SpotSelectionDialog(
 
                 if (searchQuery.isBlank()) {
                     Spacer(modifier = Modifier.height(10.dp))
-                    // Les régions de tous les pays sur une seule ligne qui défile.
+                    // Les pays, puis les régions du pays choisi, chacun sur une ligne qui défile.
                     Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        allRegions.forEach { region ->
+                        SurfDatabase.countries.forEach { country ->
+                            val on = selectedCountry == country.name
+                            Text(
+                                text = tr(country.name), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1,
+                                color = if (on) colors.onPrimary else colors.onSurfaceVariant,
+                                modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                                    .clickable {
+                                        if (!on) {
+                                            selectedCountry = country.name
+                                            selectedRegion = country.regions.flatMap { it.subRegions }.firstOrNull()?.name
+                                        }
+                                    }.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        countryRegions.forEach { region ->
                             val on = selectedRegion == region.name
                             Text(
-                                text = region.name, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1,
+                                text = tr(region.name), fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1,
                                 color = if (on) colors.onPrimaryContainer else colors.onSurfaceVariant,
                                 modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primaryContainer else colors.surfaceVariant)
                                     .clickable { selectedRegion = region.name }.padding(horizontal = 12.dp, vertical = 6.dp)
