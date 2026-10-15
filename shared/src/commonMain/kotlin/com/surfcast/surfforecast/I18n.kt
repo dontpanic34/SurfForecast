@@ -100,6 +100,7 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Vent" to t("Wind", "Wind", "Wind", "Viento"),
     "Météo" to t("Weather", "Wetter", "Weer", "Tiempo"),
     "Marée" to t("Tide", "Gezeiten", "Getij", "Marea"),
+    "Hauteur de la rampe de marée" to t("Tide ramp height", "Höhe der Gezeitenrampe", "Hoogte van de getijdehelling", "Altura de la rampa de marea"),
     "Modifier la session" to t("Edit session", "Session bearbeiten", "Sessie bewerken", "Editar sesión"),
     "Supprimer cette session ?" to t("Delete this session?", "Diese Session löschen?", "Deze sessie verwijderen?", "¿Eliminar esta sesión?"),
     "Elle sera définitivement retirée de ton journal." to t("It will be permanently removed from your log.", "Sie wird endgültig aus deinem Logbuch entfernt.", "Ze wordt definitief uit je logboek verwijderd.", "Se eliminará definitivamente de tu diario."),

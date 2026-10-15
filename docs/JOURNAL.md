@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Marée du déroulé : rampe dégradée** (choix du propriétaire) : à la place de la barre et des flèches, une rampe qui monte (bleu, Montant) ou descend (vert, Descendant), en dégradé, collée sous le graphique. Un point blanc sur la rampe marque l'heure choisie ; un petit point marque l'heure actuelle quand elle est ailleurs. Le mot et les horaires restent dessous. **Hauteur réglable** dans l'engrenage du déroulé (« Hauteur de la rampe de marée », 8 à 28 px, 14 par défaut). Vérifié dans un navigateur.
+
+
 - **Retirer une planche du matériel sans toucher au journal** : « Supprimer » une planche qui a déjà servi dans une session ne l'efface plus de force (ce qui était refusé) : elle est retirée de la liste du matériel, du choix d'une nouvelle session et de la planche du jour, mais **reste dans les sessions anciennes** (décision du propriétaire : on garde la trace d'une planche cassée ou vendue). Une planche jamais utilisée est toujours supprimée pour de bon. Les identifiants retirés sont gardés dans les préférences (`archived_boards`), sans changer la base Room.
 
 
