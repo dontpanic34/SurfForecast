@@ -1,0 +1,53 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marée : rampes</title>
+<style>
+:root{--bg:#0b1519;--card:#13222a;--t:#e8f0f3;--m:#8fa6af;--up:#37b6d9;--down:#f09a52}
+body{margin:0;background:var(--bg);color:var(--t);font:14px system-ui,sans-serif;padding:14px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.card{background:var(--card);border-radius:16px;padding:12px 14px;width:330px}
+h3{margin:0 0 8px;font-size:13px;color:var(--m);font-weight:600}
+.row{margin-bottom:12px}.cap{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-top:3px;color:var(--m)}
+.cap b{color:var(--t);font-size:13px}.up b.w{color:var(--up)}.down b.w{color:var(--down)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.times{font-size:11px;fill:#8fa6af}
+</style>
+<body>
+<div id="app" style="display:contents"></div>
+<script>
+const UP='#37b6d9',DOWN='#f09a52',FAINT='rgba(143,166,175,.28)';
+const W=300;
+const col=d=>d==='up'?UP:DOWN;
+const V={
+ 1:{n:'1 · Rampe pleine',f:(d,p)=>{const h=34,c=col(d);const pts=d==='up'?`0,${h} ${W},${h} ${W},2`:`0,2 0,${h} ${W},${h}`;
+   return `<svg viewBox="0 0 ${W} ${h}" height="${h}"><defs><clipPath id="c1${d}"><rect x="0" y="0" width="${W*p}" height="${h}"/></clipPath></defs>
+   <polygon points="${pts}" fill="${FAINT}"/><polygon points="${pts}" fill="${c}" clip-path="url(#c1${d})"/>
+   <line x1="${W*p}" x2="${W*p}" y1="0" y2="${h}" stroke="#fff" stroke-width="2"/></svg>`}},
+ 2:{n:'2 · Rampe dégradée',f:(d,p)=>{const h=34,c=col(d);const pts=d==='up'?`0,${h} ${W},${h} ${W},2`:`0,2 0,${h} ${W},${h}`;
+   const x1=d==='up'?0:W,x2=d==='up'?W:0;
+   return `<svg viewBox="0 0 ${W} ${h}" height="${h}"><defs><linearGradient id="g2${d}" x1="${x1}" x2="${x2}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${c}" stop-opacity=".08"/><stop offset="1" stop-color="${c}" stop-opacity=".95"/></linearGradient></defs>
+   <polygon points="${pts}" fill="url(#g2${d})"/><circle cx="${W*p}" cy="${d==='up'?h-(h-2)*p:2+(h-2)*p}" r="5.5" fill="#fff" stroke="#0b1519" stroke-width="1.6"/></svg>`}},
+ 3:{n:'3 · Barre de progression + pente',f:(d,p)=>{const c=col(d);const h=26;
+   const ramp=d==='up'?`M0 ${h-4} L26 ${h-18} L26 ${h-4} Z`:`M0 ${h-18} L26 ${h-4} L0 ${h-4} Z`;
+   return `<svg viewBox="0 0 ${W} ${h}" height="${h}"><path d="${ramp}" fill="${c}"/><rect x="36" y="${h-14}" width="${W-36}" height="10" rx="5" fill="${FAINT}"/>
+   <rect x="36" y="${h-14}" width="${(W-36)*p}" height="10" rx="5" fill="${c}"/></svg>`}},
+ 4:{n:'4 · Marches',f:(d,p)=>{const h=34,c=col(d),n=10,g=4,bw=(W-g*(n-1))/n;let s='';
+   for(let i=0;i<n;i++){const hh=4+(h-4)*((d==='up'?i:n-1-i)+1)/n;const lit=(i+.5)/n<=p;s+=`<rect x="${i*(bw+g)}" y="${h-hh}" width="${bw}" height="${hh}" rx="2" fill="${lit?c:FAINT}"/>`}
+   return `<svg viewBox="0 0 ${W} ${h}" height="${h}">${s}</svg>`}},
+ 5:{n:'5 · Trait en pente + point',f:(d,p)=>{const h=34,c=col(d);const y=t=>d==='up'?h-4-(h-10)*t:6+(h-10)*t;
+   return `<svg viewBox="0 0 ${W} ${h+14}" height="${h+14}"><line x1="6" y1="${y(0)}" x2="${W-6}" y2="${y(1)}" stroke="${FAINT}" stroke-width="5" stroke-linecap="round"/>
+   <line x1="6" y1="${y(0)}" x2="${6+(W-12)*p}" y2="${y(p)}" stroke="${c}" stroke-width="5" stroke-linecap="round"/>
+   <circle cx="${6+(W-12)*p}" cy="${y(p)}" r="6" fill="#fff" stroke="#0b1519" stroke-width="1.6"/>
+   <text class="times" x="6" y="${h+12}">${d==='up'?'BM 07:28':'PM 13:54'}</text><text class="times" x="${W-6}" y="${h+12}" text-anchor="end">${d==='up'?'PM 13:54':'BM 20:12'}</text></svg>`}},
+ 6:{n:'6 · Morceau de courbe en rampe',f:(d,p)=>{const h=34,c=col(d);const N=40;let pts=[];
+   for(let i=0;i<=N;i++){const t=i/N;const e=(1-Math.cos(Math.PI*t))/2;pts.push([t*W,d==='up'?h-2-(h-6)*e:4+(h-6)*e])}
+   const line=pts.map(q=>q.join(',')).join(' ');const k=Math.round(N*p);const done=pts.slice(0,k+1).map(q=>q.join(',')).join(' ');
+   const area=pts.slice(0,k+1);const ar=`0,${h} `+area.map(q=>q.join(',')).join(' ')+` ${area[area.length-1][0]},${h}`;
+   return `<svg viewBox="0 0 ${W} ${h}" height="${h}"><polyline points="${line}" fill="none" stroke="${FAINT}" stroke-width="3"/><polygon points="${ar}" fill="${c}" opacity=".28"/>
+   <polyline points="${done}" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/><circle cx="${area[area.length-1][0]}" cy="${area[area.length-1][1]}" r="5.5" fill="#fff" stroke="#0b1519" stroke-width="1.6"/></svg>`}}
+};
+let html='';
+for(const k in V){const v=V[k];html+=`<div class="card"><h3>${v.n}</h3>`;
+ for(const [d,p,word,next] of [['up',.42,'Montant','PM 13:54'],['down',.58,'Descendant','BM 20:12']]){
+  html+=`<div class="row ${d}">${v.f(d,p)}<div class="cap"><span><b class="w">${word}</b> · coef 79</span><span>${next}</span></div></div>`}
+ html+='</div>'}
+document.getElementById('app').innerHTML=html;
+</script></body></html>

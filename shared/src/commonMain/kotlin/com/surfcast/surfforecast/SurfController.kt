@@ -62,8 +62,16 @@ class SurfController(
     private val sessionLogStore: SessionLogStore? = null
 ) {
 
-    val quiverBoards: StateFlow<List<QuiverBoard>> = (sessionLogStore?.getAllQuiverBoards() ?: flowOf(emptyList()))
-        .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // Planches retirées du matériel mais gardées dans le journal (elles ont servi dans des sessions) : leurs identifiants.
+    private val archivedBoardIds = MutableStateFlow(
+        (prefs.getString("archived_boards", "") ?: "").split(",").mapNotNull { it.toLongOrNull() }.toSet()
+    )
+
+    /** Le matériel visible : les planches non retirées. Les sessions anciennes gardent la leur, même retirée. */
+    val quiverBoards: StateFlow<List<QuiverBoard>> =
+        kotlinx.coroutines.flow.combine((sessionLogStore?.getAllQuiverBoards() ?: flowOf(emptyList())), archivedBoardIds) { boards, hidden ->
+            boards.filter { it.id !in hidden }
+        }.stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val referenceSessions: StateFlow<List<SurfSessionWithRelations>> =
         (sessionLogStore?.getAllSessions() ?: flowOf(emptyList()))
@@ -869,6 +877,7 @@ class SurfController(
         scope.launch { runCatching { dao.updateQuiverBoard(board) } }
     }
 
+    /** Retire une planche du matériel. Jamais utilisée : supprimée pour de bon ; déjà utilisée : cachée, et gardée dans le journal. */
     fun deleteQuiverBoard(board: QuiverBoard) {
         val dao = sessionLogStore ?: return
         scope.launch {
@@ -876,14 +885,11 @@ class SurfController(
                 dao.deleteQuiverBoard(board)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                // Le plus souvent la contrainte de clé étrangère : planche utilisée par une session.
-                val current = _uiState.value
-                if (current is SurfUiState.Success) {
-                    _uiState.value = current.copy(
-                        popupError = "Impossible de supprimer cette planche : elle est utilisee dans une session enregistree."
-                    )
-                }
+            } catch (e: Throwable) {
+                // Planche utilisée par une session (clé étrangère) : on la retire du matériel sans toucher au journal.
+                val hidden = archivedBoardIds.value + board.id
+                archivedBoardIds.value = hidden
+                prefs.putString("archived_boards", hidden.joinToString(","))
             }
         }
     }

@@ -525,7 +525,7 @@ fun GearContent(
         AlertDialog(
             onDismissRequest = { boardPendingDelete = null },
             title = { Text("Supprimer cette planche ?") },
-            text = { Text("${board.model} sera définitivement supprimée de ton matériel.") },
+            text = { Text("${board.model} sera retirée de ton matériel. Si elle a déjà servi dans une session, elle reste visible dans ton journal.") },
             confirmButton = {
                 TextButton(onClick = { onDeleteBoard(board); boardPendingDelete = null }) { Text("Supprimer", color = AppColors.WindHigh) }
             },

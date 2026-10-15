@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **Retirer une planche du matériel sans toucher au journal** : « Supprimer » une planche qui a déjà servi dans une session ne l'efface plus de force (ce qui était refusé) : elle est retirée de la liste du matériel, du choix d'une nouvelle session et de la planche du jour, mais **reste dans les sessions anciennes** (décision du propriétaire : on garde la trace d'une planche cassée ou vendue). Une planche jamais utilisée est toujours supprimée pour de bon. Les identifiants retirés sont gardés dans les préférences (`archived_boards`), sans changer la base Room.
+
+
 - **Journal : direction de la houle et chiffres arrondis** : la direction de la houle était déjà enregistrée mais jamais affichée ; l'historique montre maintenant « houle 1,4 m · 12 s · WNW (285°) · vent 7 km/h ESE ». La période s'affiche à la seconde près (fini 12.399999) et les nouvelles sessions enregistrent la hauteur à 2 décimales et la période à 1 décimale.
 
 
