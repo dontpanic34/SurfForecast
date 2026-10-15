@@ -62,6 +62,25 @@ interface SessionLogDao {
     @Query("SELECT * FROM micro_spots WHERE parentSpotName = :parentSpotName ORDER BY name")
     fun getMicroSpotsForSpot(parentSpotName: String): Flow<List<MicroSpotEntity>>
 
+    @androidx.room.Update
+    suspend fun updateSession(session: SurfSessionEntity)
+
+    @Query("DELETE FROM sessions WHERE id = :id")
+    suspend fun deleteSessionById(id: Long)
+
+    @Query("DELETE FROM condition_snapshots WHERE id = :id AND id NOT IN (SELECT conditionId FROM sessions)")
+    suspend fun deleteOrphanCondition(id: Long)
+
+    @Query("SELECT conditionId FROM sessions WHERE id = :id")
+    suspend fun conditionIdOfSession(id: Long): Long?
+
+    @Transaction
+    suspend fun deleteSession(id: Long) {
+        val conditionId = conditionIdOfSession(id)
+        deleteSessionById(id)
+        if (conditionId != null) deleteOrphanCondition(conditionId)
+    }
+
     @Transaction
     suspend fun logSession(
         startTime: Long,

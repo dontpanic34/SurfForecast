@@ -83,6 +83,10 @@ interface SessionLogStore {
     suspend fun insertMicroSpot(spot: MicroSpot): Long
     /** Met à jour la fiche d'un banc (marée, hauteur, notes). */
     suspend fun updateMicroSpot(spot: MicroSpot)
+    /** Modifie une session (même identifiant ; les conditions relevées au départ restent celles d'origine). */
+    suspend fun updateSession(session: SurfSession)
+    /** Supprime une session (et les conditions qu'elle avait relevées). */
+    suspend fun deleteSession(sessionId: Long)
     suspend fun logSession(
         startTime: Long,
         endTime: Long,

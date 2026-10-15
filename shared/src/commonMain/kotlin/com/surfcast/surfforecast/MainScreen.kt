@@ -635,7 +635,10 @@ fun MainScreen(
                                             allSessions = allSessions,
                                             onOpenNewEntry = { showSessionLogEntry = true },
                                             onOpenQuiver = { showQuiverDialog = true },
-                                            onDismiss = { showSessionLogDialog = false }
+                                            onDismiss = { showSessionLogDialog = false },
+                                            quiverBoards = viewModel.quiverBoards.collectAsState().value,
+                                            onUpdateSession = { viewModel.updateSession(it) },
+                                            onDeleteSession = { viewModel.deleteSession(it) }
                                         )
                                     }
 

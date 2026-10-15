@@ -854,6 +854,16 @@ class SurfController(
         }
     }
 
+    fun updateSession(session: SurfSession) {
+        val dao = sessionLogStore ?: return
+        scope.launch { runCatching { dao.updateSession(session) } }
+    }
+
+    fun deleteSession(sessionId: Long) {
+        val dao = sessionLogStore ?: return
+        scope.launch { runCatching { dao.deleteSession(sessionId) } }
+    }
+
     fun updateQuiverBoard(board: QuiverBoard) {
         val dao = sessionLogStore ?: return
         scope.launch { runCatching { dao.updateQuiverBoard(board) } }
