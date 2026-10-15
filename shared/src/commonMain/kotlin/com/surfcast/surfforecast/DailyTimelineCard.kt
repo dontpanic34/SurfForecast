@@ -219,7 +219,7 @@ fun DailyTimelineCard(
                     DailyTimelineBody(
                         hours = curveHours, ratings = ratings, selectedIndex = selectedIndex, onHourSelected = onHourSelected,
                         sunrise = sunrise, sunset = sunset, sunInfo = sun, ax0 = ax0, ax1 = ax1, windUnit = windUnit,
-                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve, coefValue = dailyTides[selectedDate]?.coefficient, tidesEstimated = dailyTides[selectedDate]?.estimated == true,
+                        isDark = isDark, onSurfaceColor = onSurfaceColor, tideMarks = tideMarks(dayTides, ax0, ax1), tideCurve = tideCurve, coefValue = dailyTides[selectedDate]?.coefficient, tidesEstimated = dailyTides[selectedDate]?.estimated == true, tidesAbroad = dailyTides[selectedDate]?.abroad == true,
                         beachFacing = idealSwellDirection, surferLevel = surferLevel
                     )
                 }
@@ -262,6 +262,7 @@ private fun DailyTimelineBody(
     tideCurve: List<TideMark> = emptyList(),
     coefValue: Int? = null,
     tidesEstimated: Boolean = false,
+    tidesAbroad: Boolean = false,
     beachFacing: Int?,
     surferLevel: String
 ) {
@@ -429,14 +430,14 @@ private fun DailyTimelineBody(
                     val up = tideCurve[seg(at) + 1].high
                     val next = tideCurve.firstOrNull { it.hour > at }
                     // La hauteur d'eau, seulement quand il n'y a pas de coefficient (Espagne, Portugal).
-                    val waterM: Double? = if (coefValue == null) {
+                    val waterM: Double? = if (coefValue == null || tidesAbroad) {
                         val i = seg(at); val a0 = tideCurve[i].height; val b0 = tideCurve[i + 1].height
                         if (a0 != null && b0 != null) a0 + (b0 - a0) * ease(frac(at)) else null
                     } else null
                     val sentence = buildAnnotatedString {
                         withStyle(SpanStyle(color = if (up) rising else falling)) { append(tr(if (up) "Montant" else "Descendant")) }
                         coefValue?.let { append(" · " + (if (tidesEstimated) "≈" else "") + it) }
-                        waterM?.let { append(" · " + (if (tidesEstimated) "≈" else "") + formatDecimal(it, 1).replace('.', ',') + " m") }
+                        waterM?.let { append(" · " + (if (tidesEstimated || tidesAbroad) "≈" else "") + formatDecimal(it, 1).replace('.', ',') + " m") }
                         if (next != null) {
                             val d = next.hour - at
                             val dh = d.toInt(); val dm = ((d - dh) * 60).roundToInt().coerceAtMost(59)
@@ -475,7 +476,7 @@ private fun DailyTimelineBody(
                                 drawCircle(Color.White, 3.dp.toPx(), Offset(cx, cy), style = androidx.compose.ui.graphics.drawscope.Stroke(0.8.dp.toPx()))
                                 val hh = m.hour.toInt()
                                 val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
-                                val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0')
+                                val txt = (if (tidesEstimated || tidesAbroad) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0')
                                 val w = textMeasurer.measure(txt, tideStyle).size.width.toFloat()
                                 val tx = (cx - w / 2f).coerceIn(2.dp.toPx(), size.width - w - 2.dp.toPx())
                                 drawHaloTextAtBaseline(textMeasurer, txt, tideStyle, tideHalo, tx, if (m.high) cy - 6.dp.toPx() else cy + 13.dp.toPx())
