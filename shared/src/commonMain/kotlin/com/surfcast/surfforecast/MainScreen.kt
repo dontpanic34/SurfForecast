@@ -379,8 +379,13 @@ fun MainScreen(
                 // Journal de session : meilleur "Pattern repere" dans les previsions a 7 jours
                 // par rapport aux sessions passees notees >= 4/5.
                 val referenceSessions by viewModel.referenceSessions.collectAsState()
-                val bestPatternMatch = remember(state.hourlyForecast, state.dailyTides, idealSwellDirection, referenceSessions) {
+                val bestPatternMatch = remember(state.hourlyForecast, state.dailyTides, state.dailySunInfo, idealSwellDirection, referenceSessions) {
                     viewModel.computePatternMatches(state.hourlyForecast, state.dailyTides, idealSwellDirection)
+                        // Seulement les heures où l'on peut surfer : entre le lever et le coucher du soleil (pas à minuit).
+                        .filter { m ->
+                            val sun = state.dailySunInfo[m.hourlyModel.rawTime.date]
+                            sun == null || m.hourlyModel.rawTime.hour in sun.sunrise.hour..sun.sunset.hour
+                        }
                         .maxByOrNull { it.score }
                 }
 

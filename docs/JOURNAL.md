@@ -12,6 +12,9 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 14 octobre 2026
 
+- **« Ressemble à ta session » : seulement de jour** : la phrase du jour ne propose plus une heure de nuit (minuit…) ; seules les heures entre le lever et le coucher du soleil sont retenues pour la ressemblance.
+
+
 - **Déroulé semaine : 3 créneaux par jour par défaut** (au lieu d'un) : trois encarts et trois icônes par jour à l'ouverture. Ceux qui avaient déjà choisi une densité (1, 2 ou 3) la gardent ; réglable dans l'engrenage de l'encart semaine.
 
 
