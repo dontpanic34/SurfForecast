@@ -1,0 +1,65 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marée : rampe dans le déroulé</title>
+<style>
+:root{--bg:#0b1519;--card:#13222a;--t:#e8f0f3;--m:#8fa6af}
+body{margin:0;background:var(--bg);color:var(--t);font:14px system-ui,sans-serif;display:flex;justify-content:center;padding:14px}
+main{width:min(420px,100%)}
+.card{background:var(--card);border-radius:16px;padding:10px 10px 6px;margin-bottom:12px}
+h3{margin:2px 4px 8px;font-size:13px;color:var(--m);font-weight:600}
+.sea{position:relative;border-radius:10px;overflow:hidden;background:linear-gradient(#2a5a6e,#17394a 55%,#10303f)}
+svg{display:block;width:100%;height:auto}
+.ctrl{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--m);margin:8px 4px}
+.ctrl input{flex:1}
+.times{font:700 10px system-ui}.word{font:800 12px system-ui}
+</style>
+<main>
+<div class="card"><h3>Déroulé de la journée · rampe dégradée (nouvelle marée)</h3><div class="sea" id="new"></div></div>
+<div class="card"><h3>Aujourd'hui dans l'appli (trait + flèches), pour comparer</h3><div class="sea" id="old"></div></div>
+<div class="card"><div class="ctrl"><span>Hauteur de la rampe</span><input id="hs" type="range" min="6" max="26" value="12"><b id="hv">12 px</b></div>
+<div class="ctrl"><span>Heure</span><input id="ts" type="range" min="6.3" max="21.4" step="0.05"><b id="tv"></b></div>
+<div class="ctrl"><label><input type="checkbox" id="w" checked> Mot Montant / Descendant</label> <label><input type="checkbox" id="live" checked> Heure réelle</label></div></div>
+</main>
+<script>
+const W=400,A0=6.3,A1=21.4,UP='#4A9BF0',DN='#38C976';
+const x=h=>(h-A0)/(A1-A0)*W;
+const ext=[[1.2,'PM'],[7.47,'BM'],[13.9,'PM'],[20.2,'BM']]; // heures décimales
+const fmt=h=>{const H=Math.floor(h),M=Math.round((h-H)*60);return H+':'+String(M).padStart(2,'0')};
+function level(t){for(let i=0;i<ext.length-1;i++){const [a,ta]=ext[i],[b,tb]=ext[i+1];if(t>=a&&t<=b){const f=(t-a)/(b-a);return ta==='BM'?f:1-f}}
+ return t<ext[0][0]?1:0}
+function sky(){ // faux graphique de houle + ligne des heures pour situer la bande
+ let p='M0 70';for(let h=A0;h<=A1;h+=.5){p+=` L${x(h)} ${70-30*Math.exp(-Math.pow((h-12)/3.2,2))-6*Math.sin(h*1.7)}`}
+ return `<path d="${p} L${W} 100 L0 100Z" fill="rgba(90,170,200,.35)"/><path d="${p}" fill="none" stroke="#6fd3a0" stroke-width="2"/>
+ <text x="8" y="14" fill="#fff" font-size="10" font-weight="700">1,5</text><text x="8" y="44" fill="#fff" font-size="10" font-weight="700">1</text>`}
+function ruler(){let s='';for(let h=7;h<=21;h+=2){s+=`<text x="${x(h)}" y="112" fill="#fff" opacity=".85" font-size="9" text-anchor="middle" font-weight="700">${h}h</text>`}return s}
+function render(now,rh,withWord){
+ const base=sky()+ruler();const y0=132, seg=[]; // y0 = bas de la bande marée
+ let s='',words='',tms='';
+ for(let i=0;i<ext.length-1;i++){const [a,ta]=ext[i],[b]=ext[i+1];const rising=ta==='BM';
+  const xa=Math.max(x(a),0),xb=Math.min(x(b),W);if(xb<=0||xa>=W)continue;
+  const p0=rising?0:1,p1=rising?1:0;const hA=rh*(1-(1-Math.max(A0,a)/1)*0)* 1;
+  const ya=y0-rh*level(Math.max(a,A0)),yb=y0-rh*level(Math.min(b,A1));
+  const id='g'+i;const c=rising?UP:DN;
+  s+=`<defs><linearGradient id="${id}" x1="${xa}" x2="${xb}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${c}" stop-opacity="${rising?.12:.95}"/><stop offset="1" stop-color="${c}" stop-opacity="${rising?.95:.12}"/></linearGradient></defs>
+  <polygon points="${xa},${y0} ${xa},${ya} ${xb},${yb} ${xb},${y0}" fill="url(#${id})"/>`;
+  if(withWord){const mid=(Math.max(a,A0)+Math.min(b,A1))/2;if(x(Math.min(b,A1))-x(Math.max(a,A0))>90)words+=`<text class="word" x="${x(mid)}" y="${y0+16}" fill="${c}" text-anchor="middle">${rising?'Montant':'Descendant'}</text>`}}
+ for(const [t,k] of ext){if(t<A0||t>A1)continue;tms+=`<text class="times" x="${Math.min(Math.max(x(t),26),W-26)}" y="${y0+(withWord?30:16)}" fill="#fff" text-anchor="middle">${fmt(t)} · 79</text>`}
+ // point maintenant sur le bord de la rampe
+ const yn=y0-rh*level(now);const dot=`<circle cx="${x(now)}" cy="${yn}" r="5" fill="#fff" stroke="#0b1519" stroke-width="1.5"/>`;
+ const H=y0+(withWord?38:24);
+ return `<svg viewBox="0 0 ${W} ${H}">${base}${s}${words}${tms}${dot}</svg>`}
+function renderOld(now){
+ const y0=116,sk=sky()+ruler();let s='',words='',tms='';
+ for(let i=0;i<ext.length-1;i++){const [a,ta]=ext[i],[b]=ext[i+1];const rising=ta==='BM';const xa=Math.max(x(a),0),xb=Math.min(x(b),W);if(xb<=0||xa>=W)continue;
+  s+=`<line x1="${xa}" x2="${xb}" y1="${y0}" y2="${y0}" stroke="${rising?UP:DN}" stroke-width="3"/>`;
+  const mid=(Math.max(a,A0)+Math.min(b,A1))/2;if(x(Math.min(b,A1))-x(Math.max(a,A0))>90)words+=`<text class="word" x="${x(mid)}" y="${y0+16}" fill="${rising?UP:DN}" text-anchor="middle">${rising?'Montant':'Descendant'}</text>`}
+ for(const [t,k] of ext){if(t<A0||t>A1)continue;const up=k==='BM';const cx=x(t),d=up?-1:1,r=5;
+  s+=`<path d="M${cx} ${y0+d*r*1.6} L${cx+r*1.1} ${y0-d*r*.2} L${cx+r*.35} ${y0-d*r*.2} L${cx+r*.35} ${y0-d*r*1.5} L${cx-r*.35} ${y0-d*r*1.5} L${cx-r*.35} ${y0-d*r*.2} L${cx-r*1.1} ${y0-d*r*.2}Z" fill="${up?UP:DN}" stroke="#fff"/>`;
+  tms+=`<text class="times" x="${Math.min(Math.max(cx,26),W-26)}" y="${y0+30}" fill="#fff" text-anchor="middle">${fmt(t)} · 79</text>`}
+ return `<svg viewBox="0 0 ${W} ${y0+38}">${sk}${s}${words}${tms}</svg>`}
+const hs=document.getElementById('hs'),ts=document.getElementById('ts'),live=document.getElementById('live'),wd=document.getElementById('w');
+function nowH(){const d=new Date();return d.getHours()+d.getMinutes()/60}
+function draw(){const n=live.checked?Math.min(Math.max(nowH(),A0),A1):+ts.value;if(live.checked)ts.value=n;
+ document.getElementById('hv').textContent=hs.value+' px';document.getElementById('tv').textContent=fmt(n);
+ document.getElementById('new').innerHTML=render(n,+hs.value,wd.checked);document.getElementById('old').innerHTML=renderOld(n)}
+[hs,ts,wd,live].forEach(e=>e.oninput=()=>{if(e===ts)live.checked=false;draw()});draw();setInterval(draw,30000);
+</script></html>
