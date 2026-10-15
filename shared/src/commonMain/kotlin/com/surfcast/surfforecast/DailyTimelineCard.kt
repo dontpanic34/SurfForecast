@@ -408,48 +408,52 @@ private fun DailyTimelineBody(
                 if (tideCurve.size >= 2) {
                     val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     val tideHalo = if (isDark) Color(0xCC0B121A) else Color(0xCCFFFFFF)
-                    Canvas(modifier = Modifier.fillMaxWidth().offset(y = (-7).dp).height(44.dp)) {
-                        // Le trait épais est collé au bas du graphique ; le mot juste dessous, puis les horaires.
-                        val lineW = 3.dp.toPx()
-                        val yLine = 3.dp.toPx() + lineW / 2f
+                    Canvas(modifier = Modifier.fillMaxWidth().offset(y = (-7).dp).height((SkyGraphSettings.rampDp + 36).dp)) {
+                        // La rampe est collée au bas du graphique : elle monte (bleu) ou descend (vert) ; le mot juste dessous, puis les horaires.
+                        val rampH = SkyGraphSettings.rampDp.dp.toPx()
+                        val yBase = 3.dp.toPx() + rampH
                         val rising = Color(0xFF4A9BF0)
                         val falling = Color(0xFF38C976)
-                        // Le trait est vert quand la marée descend, bleu quand elle monte (la prochaine marée est haute = elle monte).
+                        // La marée monte quand la prochaine marée est haute.
                         fun risingAt(h: Float): Boolean {
                             val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
                             return tideCurve[i + 1].high
                         }
-                        val step = 0.25f
-                        var h = ax0
-                        while (h < ax1) {
-                            val h2 = minOf(h + step, ax1)
-                            drawLine(if (risingAt((h + h2) / 2f)) rising else falling, Offset(xOf(h), yLine), Offset(xOf(h2), yLine), strokeWidth = lineW)
-                            h = h2
+                        // Niveau de la marée entre 0 (basse) et 1 (haute), en ligne droite entre deux marées.
+                        fun level(h: Float): Float {
+                            val i = tideCurve.indexOfLast { it.hour <= h }.coerceIn(0, tideCurve.size - 2)
+                            val a0 = tideCurve[i]; val b0 = tideCurve[i + 1]
+                            val f = ((h - a0.hour) / (b0.hour - a0.hour).coerceAtLeast(1e-3f)).coerceIn(0f, 1f)
+                            return if (b0.high) f else 1f - f
                         }
-                        // Un gros point à chaque marée : de la couleur de ce qui suit (basse : ça monte, haute : ça descend).
+                        val bounds0 = listOf(ax0) + tideCurve.map { it.hour }.filter { it > ax0 && it < ax1 } + listOf(ax1)
+                        for (k in 0 until bounds0.size - 1) {
+                            val h0 = bounds0[k]; val h1 = bounds0[k + 1]
+                            if (h1 <= h0) continue
+                            val up = risingAt((h0 + h1) / 2f)
+                            val x0 = xOf(h0); val x1 = xOf(h1)
+                            val c = if (up) rising else falling
+                            val path = Path().apply {
+                                moveTo(x0, yBase); lineTo(x0, yBase - rampH * level(h0)); lineTo(x1, yBase - rampH * level(h1)); lineTo(x1, yBase); close()
+                            }
+                            drawPath(path, androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                if (up) listOf(c.copy(alpha = 0.12f), c.copy(alpha = 0.95f)) else listOf(c.copy(alpha = 0.95f), c.copy(alpha = 0.12f)), startX = x0, endX = x1
+                            ))
+                        }
+                        // Le point sur la rampe : l'heure choisie (grand) ; l'heure actuelle (petit) quand elle est ailleurs.
+                        fun dotAt(h: Float, r: Float) {
+                            val c = Offset(xOf(h), yBase - rampH * level(h.coerceIn(ax0, ax1)))
+                            drawCircle(Color.White, r, c)
+                            drawCircle(Color(0xFF0B1519), r, c, style = androidx.compose.ui.graphics.drawscope.Stroke(1.4.dp.toPx()))
+                        }
+                        if (nowHour != null && nowHour >= ax0 && nowHour <= ax1 && (selH == null || kotlin.math.abs(selH + 0.5f - nowHour) > 0.4f)) dotAt(nowHour, 2.5.dp.toPx())
+                        if (selH != null && selH + 0.5f >= ax0 && selH + 0.5f <= ax1) dotAt(selH + 0.5f, 4.5.dp.toPx())
                         val labels = ArrayList<Pair<Float, String>>()
                         for (m in tideMarks) {
-                            val cx = xOf(m.hour)
-                            // Une flèche posée sur le trait : vers le haut, au-dessus, si la marée monte (après une basse) ; vers le bas, en dessous, si elle descend (après une haute).
-                            val up = !m.high
-                            val r = 5.dp.toPx()
-                            val dir = if (up) -1f else 1f // pointe vers le haut après une basse (ça monte), vers le bas après une haute
-                            val arrow = Path().apply {
-                                moveTo(cx, yLine + dir * r * 1.6f)
-                                lineTo(cx + r * 1.1f, yLine - dir * r * 0.2f)
-                                lineTo(cx + r * 0.35f, yLine - dir * r * 0.2f)
-                                lineTo(cx + r * 0.35f, yLine - dir * r * 1.5f)
-                                lineTo(cx - r * 0.35f, yLine - dir * r * 1.5f)
-                                lineTo(cx - r * 0.35f, yLine - dir * r * 0.2f)
-                                lineTo(cx - r * 1.1f, yLine - dir * r * 0.2f)
-                                close()
-                            }
-                            drawPath(arrow, if (up) rising else falling)
-                            drawPath(arrow, Color.White, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
                             val hh = m.hour.toInt()
                             val mm = ((m.hour - hh) * 60).roundToInt().coerceAtMost(59)
                             val txt = (if (tidesEstimated) "≈" else "") + hh.toString() + ":" + mm.toString().padStart(2, '0') + (coefValue?.let { " · " + (if (tidesEstimated) "≈" else "") + it } ?: "")
-                            labels += cx to txt
+                            labels += xOf(m.hour) to txt
                         }
                         // Le mot « Montant » ou « Descendant » écrit juste sous le trait, au milieu de chaque tronçon assez long.
                         val wordStyleUp = TextStyle(color = rising, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
@@ -462,7 +466,7 @@ private fun DailyTimelineBody(
                             val style = if (rises) wordStyleUp else wordStyleDown
                             val ww = textMeasurer.measure(word, style).size.width.toFloat()
                             if (xOf(bounds[k + 1]) - xOf(bounds[k]) < ww + 24.dp.toPx()) continue
-                            drawHaloTextAtBaseline(textMeasurer, word, style, tideHalo, xOf(mid) - ww / 2f, yLine + lineW / 2f + 13.dp.toPx())
+                            drawHaloTextAtBaseline(textMeasurer, word, style, tideHalo, xOf(mid) - ww / 2f, yBase + 13.dp.toPx())
                         }
                         // Les heures sont écrites sous le trait, centrées sur leur point ; si deux se touchent, la seconde glisse à droite.
                         val gap = 6.dp.toPx()
@@ -479,7 +483,7 @@ private fun DailyTimelineBody(
                             if (i > 0 && lefts[i - 1] + widths[i - 1] + gap > lefts[i]) lefts[i - 1] = lefts[i] - widths[i - 1] - gap
                         }
                         for (i in labels.indices) {
-                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yLine + lineW / 2f + 27.dp.toPx())
+                            drawHaloTextAtBaseline(textMeasurer, labels[i].second, tideStyle, tideHalo, lefts[i], yBase + 27.dp.toPx())
                         }
                     }
                 }

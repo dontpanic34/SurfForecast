@@ -14,6 +14,7 @@ object SkyGraphSettings {
     const val DEFAULT_DAY = 43
     const val DEFAULT_WATER = 40
     const val DEFAULT_TIDE = 30
+    const val DEFAULT_RAMP = 14
 
     var weekPct by mutableIntStateOf(DEFAULT_WEEK)
         private set
@@ -37,6 +38,10 @@ object SkyGraphSettings {
     var tideDp by mutableIntStateOf(DEFAULT_TIDE)
         private set
 
+    /** Hauteur de la rampe de marée du déroulé (dp). */
+    var rampDp by mutableIntStateOf(DEFAULT_RAMP)
+        private set
+
     /** Branchée par le contrôleur : enregistre un réglage (clé, valeur). */
     var persist: (String, Int) -> Unit = { _, _ -> }
 
@@ -48,6 +53,8 @@ object SkyGraphSettings {
     }
 
     fun loadTide(dp: Int) { tideDp = dp.coerceIn(24, 60) }
+    fun loadRamp(dp: Int) { rampDp = dp.coerceIn(8, 28) }
+    fun setRamp(dp: Int) { rampDp = dp.coerceIn(8, 28); persist("graph_ramp_dp", rampDp) }
     fun loadShowChop(v: Boolean) { showChop = v }
     fun chooseShowChop(v: Boolean) { showChop = v; persist("show_chop", if (v) 1 else 0) }
     fun loadTideAll(v: Boolean) { tideAll = v }
@@ -58,7 +65,7 @@ object SkyGraphSettings {
     fun setWater(p: Int) { waterPct = p.coerceIn(20, 60); persist("graph_water_pct", waterPct) }
     fun setWaterWeek(p: Int) { waterWeekPct = p.coerceIn(20, 60); persist("graph_water_week_pct", waterWeekPct) }
     /** Remet à zéro les réglages du jour (hauteur, échelle de la mer, marée). */
-    fun resetDay() { setDay(DEFAULT_DAY); setWater(DEFAULT_WATER); setTide(DEFAULT_TIDE) }
+    fun resetDay() { setDay(DEFAULT_DAY); setWater(DEFAULT_WATER); setTide(DEFAULT_TIDE); setRamp(DEFAULT_RAMP) }
     /** Remet à zéro les réglages de la semaine (hauteur, échelle de la mer). */
     fun resetWeek() { setWeek(DEFAULT_WEEK); setWaterWeek(DEFAULT_WATER) }
     fun reset() { resetDay(); resetWeek() }
