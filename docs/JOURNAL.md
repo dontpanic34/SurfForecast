@@ -20,6 +20,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 - **Plus de spots** : Espagne (nord complété, Galice ouest, Andalousie atlantique et détroit, Méditerranée, Baléares, Canaries), Portugal (Aveiro, Peniche, Alentejo, Algarve complétés, Madère, Açores) et **tout le Maroc** par zones (Tanger → Dakhla, Méditerranée). Orientations estimées, à ajuster au besoin dans Réglages. La base compte maintenant 180 spots, France comprise.
 - Hors de France, les heures de marée sont affichées avec « ≈ » et la hauteur d'eau (relative) remplace le coefficient dans la phrase de l'encart Marée ; le coefficient reste celui du port français voisin.
 - Encart Marée : « Plein bas dans 3 h 09 à 14:31 » seulement pour aujourd'hui ; un autre jour : « Plein bas à 14:31 ».
+- **Choix du spot** : on choisit d'abord le pays (France, Espagne, Portugal, Maroc), puis la région du pays sur la ligne du dessous ; la recherche, elle, cherche dans tous les pays.
 - Cheminées de la carte Météo : la température va maintenant de 5 à 45 °C (au lieu de 5 à 35).
 
 ## 14 octobre 2026
