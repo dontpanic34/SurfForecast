@@ -41,12 +41,26 @@ class ForecastHistoryStoreTest {
     }
 
     @Test
-    fun snapshotsOlderThanTwoDaysAreDropped() {
+    fun snapshotsOlderThanTwoWeeksAreDropped() {
         val store = ForecastHistoryStore(InMemoryKeyValueStore())
         store.record("Soulac", ForecastEngineConfig(), listOf(hour(1, 10, 8)), emptyMap(), now = LocalDateTime(2026, 10, 1, 8, 0))
         store.record("Soulac", ForecastEngineConfig(), listOf(hour(4, 10, 8)), emptyMap(), now = LocalDateTime(2026, 10, 4, 8, 0))
-        val kept = store.load(now = LocalDateTime(2026, 10, 4, 9, 0))
-        assertEquals(1, kept.size)
-        assertTrue(kept.single().loadedAt.date == LocalDate(2026, 10, 4))
+        // Trois jours plus tard, les deux copies sont encore là (14 jours de mémoire).
+        assertEquals(2, store.load(now = LocalDateTime(2026, 10, 4, 9, 0)).size)
+        // Seize jours plus tard, la première a disparu.
+        val later = store.load(now = LocalDateTime(2026, 10, 17, 9, 0))
+        assertEquals(1, later.size)
+        assertTrue(later.single().loadedAt.date == LocalDate(2026, 10, 4))
+    }
+
+    @Test
+    fun onlyOneCopyIsKeptPerDayAndSpot() {
+        val store = ForecastHistoryStore(InMemoryKeyValueStore())
+        store.record("Soulac", ForecastEngineConfig(), listOf(hour(1, 10, 8)), emptyMap(), now = LocalDateTime(2026, 10, 1, 8, 0))
+        store.record("Soulac", ForecastEngineConfig(), listOf(hour(1, 10, 5)), emptyMap(), now = LocalDateTime(2026, 10, 1, 12, 0))
+        store.record("Lacanau", ForecastEngineConfig(), listOf(hour(1, 10, 9)), emptyMap(), now = LocalDateTime(2026, 10, 1, 12, 5))
+        val kept = store.load(now = LocalDateTime(2026, 10, 1, 13, 0))
+        assertEquals(2, kept.size)
+        assertEquals(5, kept.first { it.spotName == "Soulac" }.hours.single().windKmh)
     }
 }

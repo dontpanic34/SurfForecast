@@ -12,8 +12,8 @@ import kotlin.math.roundToInt
 
 /**
  * Journal des prévisions (portage de ForecastHistoryStore d'app/) : à chaque chargement
- * réussi, on garde ce qui était annoncé (vent + modèle source, houle, marées), 2 jours,
- * pour comparer après coup avec la réalité et pour le journal de bord (J-1/J-2).
+ * réussi, on garde ce qui était annoncé (vent + modèle source, houle, marées) : une copie par jour et par spot
+ * (aujourd'hui et demain), 14 jours, pour comparer après coup avec la réalité et pour le journal de bord (jusqu'à J-14).
  * Stocké en JSON dans le KeyValueStore (NSUserDefaults sur iOS).
  */
 class ForecastHistoryStore(private val prefs: KeyValueStore) {
@@ -53,7 +53,8 @@ class ForecastHistoryStore(private val prefs: KeyValueStore) {
         now: LocalDateTime = nowLocalDateTime()
     ) {
         val firstDay = now.date
-        val lastDay = firstDay.plus(2, DateTimeUnit.DAY)
+        // On garde aujourd'hui et demain seulement : une copie par jour et par spot suffit pour noter une session passée.
+        val lastDay = firstDay.plus(1, DateTimeUnit.DAY)
         val snapshot = Snapshot(
             spotName = spotName,
             loadedAt = now,
@@ -75,7 +76,7 @@ class ForecastHistoryStore(private val prefs: KeyValueStore) {
             tides = tides.filterKeys { it in firstDay..lastDay }
                 .entries.associate { (date, t) -> date.toString() to TideEntry(t.highTideTime, t.lowTideTime, t.coefficient) }
         )
-        val kept = (loadAll() + snapshot)
+        val kept = (loadAll().filterNot { it.spotName == spotName && it.loadedAt.date == now.date } + snapshot)
             .filter { isRecent(it.loadedAt, now) }
             .takeLast(MAX_SNAPSHOTS)
         prefs.putString(KEY, json.encodeToString(snapshotsSerializer, kept))
@@ -126,7 +127,7 @@ class ForecastHistoryStore(private val prefs: KeyValueStore) {
 
     private companion object {
         const val KEY = "forecast_history_json"
-        const val RETENTION_DAYS = 2
-        const val MAX_SNAPSHOTS = 60
+        const val RETENTION_DAYS = 14
+        const val MAX_SNAPSHOTS = 120
     }
 }

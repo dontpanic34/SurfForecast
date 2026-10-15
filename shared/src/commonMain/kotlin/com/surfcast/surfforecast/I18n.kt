@@ -100,6 +100,8 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Vent" to t("Wind", "Wind", "Wind", "Viento"),
     "Météo" to t("Weather", "Wetter", "Weer", "Tiempo"),
     "Marée" to t("Tide", "Gezeiten", "Getij", "Marea"),
+    "Jours plus anciens ▾" to t("Older days ▾", "Ältere Tage ▾", "Oudere dagen ▾", "Días anteriores ▾"),
+    "Jours plus anciens ▴" to t("Older days ▴", "Ältere Tage ▴", "Oudere dagen ▴", "Días anteriores ▴"),
     "Hauteur de la courbe de marée" to t("Tide curve height", "Höhe der Gezeitenkurve", "Hoogte van de getijdenkromme", "Altura de la curva de marea"),
     "Plein haut dans" to t("High tide in", "Hochwasser in", "Hoogwater over", "Pleamar en"),
     "Plein bas dans" to t("Low tide in", "Niedrigwasser in", "Laagwater over", "Bajamar en"),

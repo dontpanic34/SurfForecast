@@ -469,7 +469,7 @@ private fun DailyTimelineBody(
                         if (next != null) {
                             val d = next.hour - at
                             val dh = d.toInt(); val dm = ((d - dh) * 60).roundToInt().coerceAtMost(59)
-                            rest += " · " + tr(if (next.high) "Plein haut dans" else "Plein bas dans") + " " + dh + " h " + dm.toString().padStart(2, '0')
+                            rest += " · " + tr(if (next.high) "Plein haut dans" else "Plein bas dans") + " " + (if (dh == 0) "$dm min" else dh.toString() + " h " + dm.toString().padStart(2, '0'))
                         }
                         val wordStyle = TextStyle(color = if (up) rising else falling, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         val restStyle = TextStyle(color = onSurfaceColor, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)

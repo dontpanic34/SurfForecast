@@ -435,33 +435,46 @@ fun MainScreen(
                                         }
                                     }
 
-                                    // Journal : le lendemain d'une bonne journée prévue, on demande « Tu as surfé ? ».
+                                    // Journal : « Tu as surfé ? » à trois moments fixes : le matin à partir du lever du soleil et vers midi (on parle d'hier),
+                                    // puis le soir à partir du coucher du soleil (on parle d'aujourd'hui). Hors de ces créneaux, il reste caché.
                                     run {
-                                        val yesterday = today.minus(1, DateTimeUnit.DAY)
+                                        val nowT = remember(clock) { nowLocalDateTime().time }
+                                        val sun = state.dailySunInfo[today]
+                                        val sunriseMin = (sun?.sunrise?.let { it.hour * 60 + it.minute }) ?: (8 * 60)
+                                        val sunsetMin = (sun?.sunset?.let { it.hour * 60 + it.minute }) ?: (19 * 60)
+                                        val nowMin = nowT.hour * 60 + nowT.minute
+                                        val slot = when {
+                                            nowMin in sunriseMin until (sunriseMin + 120) -> 0
+                                            nowMin in (12 * 60) until (14 * 60) -> 1
+                                            nowMin in sunsetMin until (sunsetMin + 180) -> 2
+                                            else -> -1
+                                        }
+                                        val evening = slot == 2
+                                        val target = if (evening) today else today.minus(1, DateTimeUnit.DAY)
                                         val sessions by viewModel.allSessions.collectAsState()
-                                        val alreadyLogged = sessions.any { epochMillisToLocalDateTime(it.session.startTime).date == yesterday }
-                                        val past = remember(state.spotName, yesterday) { viewModel.pastConditions(state.spotName, yesterday) }
-                                        val bestYesterday = past?.first?.takeIf { it.isNotEmpty() }?.let { hrs ->
+                                        val alreadyLogged = sessions.any { epochMillisToLocalDateTime(it.session.startTime).date == target }
+                                        val past = remember(state.spotName, target) { viewModel.pastConditions(state.spotName, target) }
+                                        val bestTarget = past?.first?.takeIf { it.isNotEmpty() }?.let { hrs ->
                                             hrs.maxOf { calculateSlotRating(it, idealSwellDirection, viewModel.surferLevel).let { r -> if (r.tooBig) -1 else r.score } }
                                         }
-                                        if (!alreadyLogged && viewModel.surfedAskDismissed != yesterday.toString() && bestYesterday != null && bestYesterday >= 40) {
+                                        if (slot >= 0 && !alreadyLogged && viewModel.surfedAskDismissed != target.toString() && bestTarget != null && bestTarget >= 40) {
                                             val top = past!!.first.maxByOrNull { it.waveHeight }!!
                                             Column(
                                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp)
                                                     .clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).padding(12.dp),
                                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
-                                                Text("Hier, ${state.spotName} · ${formatDecimal(top.waveHeight, 1).replace('.', ',')} m", fontSize = 12.sp, color = onSurfaceColor.copy(alpha = 0.65f))
+                                                Text((if (evening) tr("Aujourd'hui") else tr("Hier")) + ", ${state.spotName} · ${formatDecimal(top.waveHeight, 1).replace('.', ',')} m", fontSize = 12.sp, color = onSurfaceColor.copy(alpha = 0.65f))
                                                 Text("Tu as surfé ?", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = onSurfaceColor)
                                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                     Text(
                                                         "Noter ma session", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer,
                                                         modifier = Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.primaryContainer)
-                                                            .clickable { viewModel.dismissSurfedAsk(yesterday); entryInitialOffset = 1; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } }.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                            .clickable { viewModel.dismissSurfedAsk(target); entryInitialOffset = if (evening) 0 else 1; navScope.launch { mainListState.scrollToItem(0); showSessionLogEntry = true } }.padding(horizontal = 14.dp, vertical = 7.dp)
                                                     )
                                                     Text(
                                                         "Non", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable { viewModel.dismissSurfedAsk(yesterday) }.padding(horizontal = 14.dp, vertical = 7.dp)
+                                                        modifier = Modifier.clip(RoundedCornerShape(50)).clickable { viewModel.dismissSurfedAsk(target) }.padding(horizontal = 14.dp, vertical = 7.dp)
                                                     )
                                                 }
                                             }
@@ -666,7 +679,7 @@ fun MainScreen(
                                         // J-1 / J-2 : conditions gardees par le journal des previsions
                                         // (la derniere prevision faite pour ce jour-la).
                                         val pastConditions = remember(state.spotName, today) {
-                                            (1..2).associateWith { offset ->
+                                            (1..14).associateWith { offset ->
                                                 viewModel.pastConditions(state.spotName, today.minus(offset, DateTimeUnit.DAY))
                                             }.filterValues { it != null && it.first.isNotEmpty() }
                                         }
