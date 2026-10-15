@@ -63,7 +63,9 @@ data class DailyTideInfo(
     // Toutes les marées du jour, nuit comprise : le déroulé en retient les deux qui tombent le mieux dans la journée.
     val extrema: List<MareeExtremum> = emptyList(),
     // Horaires estimés (hauteur d'eau Open-Meteo) parce que le service des marées ne répond pas : à afficher avec « ≈ ».
-    val estimated: Boolean = false
+    val estimated: Boolean = false,
+    // Spot hors de France : horaires et hauteurs estimés d'après la hauteur d'eau, coefficient repris du port français voisin.
+    val abroad: Boolean = false
 )
 
 data class DailySunInfo(
