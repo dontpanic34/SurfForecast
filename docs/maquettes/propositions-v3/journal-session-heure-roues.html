@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><style>
+body{margin:0;background:#0b1519;font-family:system-ui,sans-serif;color:#e6eef2;padding:14px;width:760px}
+h4{margin:14px 0 6px;font-size:12px;color:#8fa4ad;font-weight:600}
+.card{background:#132229;border-radius:12px;padding:10px 14px;width:360px;box-sizing:border-box}
+.row{display:flex;align-items:center;gap:10px}
+.lab{font-size:11px;color:#8fa4ad;font-weight:700;width:46px}
+.spin{background:#1c3340;border-radius:10px;width:56px;text-align:center;font-size:22px;font-weight:800;padding:0 0 2px;line-height:1.1}
+.spin s{display:block;text-decoration:none;font-size:11px;color:#7fc4ef;line-height:14px}
+.dots{font-size:20px;font-weight:800}
+.fin{margin-left:auto;font-size:11px;color:#8fa4ad;text-align:right}
+.sl{height:6px;border-radius:3px;background:#2c4d5f;position:relative;margin:10px 2px 4px 56px}.sl u{position:absolute;left:0;width:45%;height:6px;border-radius:3px;background:#7fc4ef}.sl s{position:absolute;left:45%;top:-6px;width:18px;height:18px;border-radius:50%;background:#fff}
+.chip{background:#1c3340;border-radius:10px;padding:8px 12px;font-size:20px;font-weight:800}
+.wrap{display:flex;gap:18px}
+.pop{background:#1c3340;border-radius:12px;padding:8px 14px;width:200px;margin-top:8px}.pop .w{display:flex;justify-content:center;gap:14px;text-align:center;line-height:26px;font-size:17px;color:#5d7782}.pop b{display:block;color:#fff;background:#2c4d5f;border-radius:6px}
+</style>
+<h4>B1 · Deux petits compteurs : on touche ▴ ▾ ou on glisse sur le chiffre (heure, minutes par 5)</h4>
+<div class="card"><div class="row"><span class="lab">Début</span>
+<div class="spin"><s>▴</s>8<s>▾</s></div><span class="dots">:</span><div class="spin"><s>▴</s>15<s>▾</s></div>
+<span class="fin">Fin 9:35</span></div>
+<div class="row" style="margin-top:6px"><span class="lab">Durée</span><span style="font-weight:800;font-size:14px">1 h 20</span></div>
+<div class="sl"><u></u><s></s></div></div>
+<h4>B2 · Une seule ligne : on touche l'heure, une roue s'ouvre</h4>
+<div class="wrap"><div class="card"><div class="row"><span class="lab">Début</span><span class="chip">8:15</span><span class="lab" style="width:auto;margin-left:6px">Durée</span><span class="chip">1 h 20</span><span class="fin">→ 9:35</span></div></div>
+<div class="pop"><div class="w"><div>7<b>8</b>9</div><div>10<b>15</b>20</div></div></div></div>
