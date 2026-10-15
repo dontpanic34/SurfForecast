@@ -453,12 +453,12 @@ private fun DailyTimelineBody(
                         }
                     }
                     Row(
-                        modifier = Modifier.fillMaxWidth().clickable { SkyGraphSettings.chooseTideOpen(!open) }.padding(horizontal = SIDE_PAD.dp, vertical = 5.dp),
+                        modifier = Modifier.fillMaxWidth().clickable { SkyGraphSettings.chooseTideOpen(!open) }.padding(start = SIDE_PAD.dp, end = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(tr("Marée") + " ", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onSurfaceColor.copy(alpha = 0.6f), maxLines = 1)
                         Text(sentence, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = onSurfaceColor, maxLines = 1, modifier = Modifier.weight(1f))
-                        Text(if (open) "▴" else "▾", fontSize = 12.sp, color = onSurfaceColor.copy(alpha = 0.5f))
+                        CollapseChevron(!open, { SkyGraphSettings.chooseTideOpen(!open) })
                     }
                     if (open) {
                         val tideStyle = TextStyle(color = onSurfaceColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
