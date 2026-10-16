@@ -214,6 +214,9 @@ fun SessionLogEntryDialog(
     spotName: String,
     // Par jour (0 = aujourd'hui, 1 = hier, 2 = avant-hier) : les heures prévues, la marée et le soleil.
     hoursFor: (Int) -> List<HourlyUiModel>,
+    // Un jour sans prévision gardée : demande les conditions passées (réseau) ; en attendant, on affiche « chargement ».
+    onNeedConditions: (Int) -> Unit = {},
+    conditionsLoading: (Int) -> Boolean = { false },
     tideFor: (Int) -> DailyTideInfo?,
     sunFor: (Int) -> DailySunInfo?,
     ratingOf: (HourlyUiModel) -> SlotRating,
@@ -250,6 +253,7 @@ fun SessionLogEntryDialog(
     var askedDefaultSpot by remember { mutableStateOf(false) }
 
     val dayHours = hoursFor(dayOffset)
+    LaunchedEffect(dayOffset, dayHours.isEmpty()) { if (dayHours.isEmpty() && dayOffset > 0) onNeedConditions(dayOffset) }
     val sun = sunFor(dayOffset)
     val cells = remember(dayHours, sun) { buildTimeCells(dayHours, sun) }
 
@@ -405,7 +409,8 @@ fun SessionLogEntryDialog(
                 // Conditions prévues sur le créneau, puis Prévu / Vécu
                 if (dayHours.isEmpty()) {
                     Text(
-                        tr("Les conditions de ce jour n'ont pas été gardées : la session est enregistrée sans houle ni vent."),
+                        if (conditionsLoading(dayOffset)) tr("Chargement des conditions de ce jour…")
+                        else tr("Les conditions de ce jour n'ont pas été gardées : la session est enregistrée sans houle ni vent."),
                         fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp)
                     )
                 }

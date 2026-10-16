@@ -921,6 +921,68 @@ class SurfRepository(
     )
 
     /**
+     * Les conditions d'un jour PASSÉ (jusqu'à 92 jours) quand l'appli n'en a pas gardé la prévision : houle et vent d'Open-Meteo,
+     * heure par heure, et la marée du jour. Version simple (un seul modèle, celui par défaut du service) : ce sont les valeurs
+     * d'analyse, proches de ce que l'appli affichait mais pas identiques. null si le réseau ne répond pas.
+     */
+    suspend fun fetchPastDay(lat: Double, lon: Double, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
+        withContext(Dispatchers.Default) {
+            runCatching {
+                val d = date.toString()
+                val marine = httpGet(
+                    "https://marine-api.open-meteo.com/v1/marine?latitude=$lat&longitude=$lon" +
+                        "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_peak_period,swell_wave_direction," +
+                        "wave_peak_period,wind_wave_height,secondary_swell_wave_height,secondary_swell_wave_period,secondary_swell_wave_direction" +
+                        "&start_date=$d&end_date=$d&timezone=auto"
+                ).getValue("hourly").jsonObject
+                val wx = httpGet(
+                    "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon" +
+                        "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover" +
+                        "&start_date=$d&end_date=$d&timezone=auto"
+                ).getValue("hourly").jsonObject
+                val times = marine.getValue("time").jsonArray
+                fun arr(o: JsonObject, k: String) = o.optArray(k)
+                val hours = times.indices.mapNotNull { i ->
+                    val t = LocalDateTime.parse(times[i].jsonPrimitive.content)
+                    val swellH = arr(marine, "swell_wave_height").doubleAt(i)
+                    val totalH = arr(marine, "wave_height").doubleAt(i) ?: return@mapNotNull null
+                    val h = if (swellH != null && swellH > 0.0) swellH else totalH
+                    val swellPeak = arr(marine, "swell_wave_peak_period").doubleAt(i)
+                    val totalPeak = arr(marine, "wave_peak_period").doubleAt(i)
+                    val swellP = arr(marine, "swell_wave_period").doubleAt(i)
+                    val totalP = arr(marine, "wave_period").doubleAt(i) ?: 0.0
+                    // Même règle que les prévisions : la période de pic, sinon la moyenne convertie en pic.
+                    val p = when {
+                        swellPeak != null && swellPeak > 0.0 -> swellPeak
+                        totalPeak != null && totalPeak > 0.0 -> maxOf(totalPeak, swellP ?: 0.0)
+                        swellP != null && swellP > 0.0 -> swellP * MEAN_TO_PEAK_PERIOD
+                        else -> totalP * MEAN_TO_PEAK_PERIOD
+                    }
+                    val dir = arr(marine, "swell_wave_direction").doubleAt(i)?.toFloat() ?: arr(marine, "wave_direction").doubleAt(i)?.toFloat() ?: 0f
+                    val speed = arr(wx, "wind_speed_10m").doubleAt(i) ?: 0.0
+                    val gust = arr(wx, "wind_gusts_10m").doubleAt(i) ?: speed
+                    HourlyUiModel(
+                        timeFormatted = formatHour(t), rawTime = t, waveHeight = h, wavePeriod = p, waveDirection = dir,
+                        windWaveHeight = arr(marine, "wind_wave_height").doubleAt(i) ?: 0.0,
+                        secondaryHeight = arr(marine, "secondary_swell_wave_height").doubleAt(i) ?: 0.0,
+                        secondaryPeriod = arr(marine, "secondary_swell_wave_period").doubleAt(i) ?: 0.0,
+                        secondaryDirection = arr(marine, "secondary_swell_wave_direction").doubleAt(i)?.toFloat() ?: 0f,
+                        energyKj = calculateWaveEnergyReal(h, p),
+                        windSpeedKmh = speed.roundToInt(),
+                        windDirectionStr = getCardinalDirection(arr(wx, "wind_direction_10m").doubleAt(i) ?: 0.0),
+                        weatherCode = arr(wx, "weather_code").doubleAt(i)?.roundToInt() ?: 0,
+                        temperature = arr(wx, "temperature_2m").doubleAt(i)?.roundToInt() ?: 0,
+                        cloudCover = arr(wx, "cloudcover").doubleAt(i)?.roundToInt() ?: 0,
+                        windGustKmh = gust.roundToInt(), windSource = "Open-Meteo"
+                    )
+                }
+                if (hours.isEmpty()) return@runCatching null
+                val tide = runCatching { getTides(lat, lon, d, d).dailyByDate[date] }.getOrNull()
+                hours to tide
+            }.getOrNull()
+        }
+
+    /**
      * Dates au format ISO (yyyy-MM-dd). Erreur réseau -> bundle vide, comme côté Android.
      *
      * France (site de marée à moins de [MAX_FRENCH_TIDE_KM]) : horaires, hauteurs et coefficients de
