@@ -159,6 +159,7 @@ fun SessionLogHistoryScreen(
                                 val best = day.mapNotNull { feelIndexOf(it.session.rating) }.minByOrNull { FEEL_QUALITY_ORDER.indexOf(it) }
                                 val isSelected = date != null && date == selectedDate
                                 val isFuture = date != null && date > today
+                                val isToday = date != null && date == today
                                 val cellColor = if (best != null) bandWordColor(SESSION_FEELS[best].second) else colors.surfaceVariant
                                 Box(
                                     modifier = Modifier
@@ -167,14 +168,16 @@ fun SessionLogHistoryScreen(
                                         .padding(2.5.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(if (date == null) Color.Transparent else cellColor.copy(alpha = if (isFuture) 0.35f else 1f))
-                                        .then(if (isSelected) Modifier.border(2.5.dp, colors.primary, RoundedCornerShape(10.dp)) else Modifier)
+                                        // Aujourd'hui est toujours entouré (c'est le repère de départ) ; le jour choisi pour filtrer la liste a un trait plus épais.
+                                        .then(if (isSelected) Modifier.border(3.dp, colors.primary, RoundedCornerShape(10.dp))
+                                            else if (isToday) Modifier.border(2.dp, colors.primary, RoundedCornerShape(10.dp)) else Modifier)
                                         .then(if (date != null) Modifier.clickable { selectedDate = if (selectedDate == date) null else date; if (selectedDate != null) listOpen = true } else Modifier),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (date != null) Text(
                                         text = date.day.toString(), fontSize = 12.sp,
-                                        fontWeight = if (best != null || date == today) FontWeight.ExtraBold else FontWeight.Normal,
-                                        color = if (best != null) Color.White else colors.onBackground.copy(alpha = if (isFuture) 0.4f else 1f)
+                                        fontWeight = if (best != null || isToday) FontWeight.ExtraBold else FontWeight.Normal,
+                                        color = if (best != null) Color.White else if (isToday) colors.primary else colors.onBackground.copy(alpha = if (isFuture) 0.4f else 1f)
                                     )
                                 }
                             }
