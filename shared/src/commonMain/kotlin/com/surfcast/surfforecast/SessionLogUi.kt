@@ -403,6 +403,12 @@ fun SessionLogEntryDialog(
                 }
 
                 // Conditions prévues sur le créneau, puis Prévu / Vécu
+                if (dayHours.isEmpty()) {
+                    Text(
+                        tr("Les conditions de ce jour n'ont pas été gardées : la session est enregistrée sans houle ni vent."),
+                        fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
                 if (sentence != null) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
