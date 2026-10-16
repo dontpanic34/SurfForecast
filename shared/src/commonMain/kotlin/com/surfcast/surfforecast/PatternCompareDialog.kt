@@ -76,7 +76,8 @@ fun PatternCompareDialog(
 
     val swellGap = abs(f.energyKj - c.energyKj).let { d -> val base = maxOf(f.energyKj, c.energyKj).coerceAtLeast(1); if (d * 4 < base) Gap.Close else if (d * 2 < base) Gap.Near else Gap.Far }
     val dirGap = abs(fDir - rDir).let { if (it < 20) Gap.Close else if (it < 45) Gap.Near else Gap.Far }
-    val windDiff = abs(f.windSpeedKmh - c.windSpeedKmh)
+    val fWind = effectiveWindKmh(f).roundToInt()
+    val windDiff = abs(fWind - c.windSpeedKmh)
     val windGap = when {
         fCat == rCat && windDiff < 5 -> Gap.Close
         windCatClose(fCat, rCat) && windDiff < 8 -> Gap.Near
@@ -121,7 +122,7 @@ fun PatternCompareDialog(
                 Spacer6()
                 CompareRow(
                     tr("Vent"), windGap,
-                    "${f.windSpeedKmh} km/h ${SurfUnitsHelper.formatCardinalFr(f.windDirectionStr)}", categoryWord(fCat),
+                    "$fWind km/h ${SurfUnitsHelper.formatCardinalFr(f.windDirectionStr)}", categoryWord(fCat) + " · " + tr("ressenti"),
                     "${c.windSpeedKmh} km/h ${SurfUnitsHelper.formatCardinalFr(getCardinalDirection(c.windDirection.toDouble()))}", categoryWord(rCat)
                 )
                 if (tideGap != null || fPhase != null || rPhase != null) {

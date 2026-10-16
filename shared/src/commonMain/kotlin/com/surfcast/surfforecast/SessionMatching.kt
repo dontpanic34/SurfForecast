@@ -43,7 +43,7 @@ fun sessionVectorFromForecast(hourlyModel: HourlyUiModel, idealSwellDirection: I
     } ?: 0.0
     return SessionVector(
         energyKj = hourlyModel.energyKj,
-        windSpeedKmh = hourlyModel.windSpeedKmh,
+        windSpeedKmh = kotlin.math.round(effectiveWindKmh(hourlyModel)).toInt(),
         windCategory = windCategoryFor(hourlyModel.windDirectionStr, idealSwellDirection),
         waveDirDelta = waveDirDelta,
         tideCoeff = tideCoeff

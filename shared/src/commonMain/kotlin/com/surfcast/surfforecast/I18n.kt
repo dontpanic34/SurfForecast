@@ -89,6 +89,7 @@ internal fun missingTranslations(): List<String> =
 private fun t(en: String, de: String, nl: String, es: String) = listOf(en, de, nl, es)
 
 private val CORE: Map<String, List<String>> = mapOf(
+    "ressenti" to t("felt", "gefühlt", "gevoeld", "sensación"),
     "Comparer" to t("Compare", "Vergleichen", "Vergelijken", "Comparar"),
     "Prévision à gauche, ta session à droite" to t("Forecast on the left, your session on the right", "Vorhersage links, deine Session rechts", "Voorspelling links, jouw sessie rechts", "Previsión a la izquierda, tu sesión a la derecha"),
     "Prévision" to t("Forecast", "Vorhersage", "Voorspelling", "Previsión"),
