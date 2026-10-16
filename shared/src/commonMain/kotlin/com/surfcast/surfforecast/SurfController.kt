@@ -795,6 +795,12 @@ class SurfController(
         prefs.putString("surfed_ask_dismissed", surfedAskDismissed)
     }
 
+    /** Les conditions d'un jour passé que l'appli n'a pas gardées : cherchées chez Open-Meteo (spot du catalogue). */
+    suspend fun fetchPastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? {
+        val spot = SurfDatabase.findSpotByName(spotName) ?: return null
+        return repository.fetchPastDay(spot.latitude, spot.longitude, date)
+    }
+
     fun pastConditions(spotName: String, date: LocalDate): Pair<List<HourlyUiModel>, DailyTideInfo?>? =
         runCatching { history.conditionsFor(spotName, date) }.getOrNull()
 
