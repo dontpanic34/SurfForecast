@@ -723,7 +723,8 @@ fun MainScreen(
                                             onUpdateMicroSpot = { viewModel.updateMicroSpot(it) },
                                             showTips = viewModel.showJournalTips,
                                             onDismissTips = { viewModel.dismissJournalTips() },
-                                            availableDayOffsets = listOf(0) + pastConditions.keys.sorted(),
+                                            // Toute la période des 14 derniers jours : sans prévision gardée pour un jour, la session s'enregistre sans conditions.
+                                            availableDayOffsets = (0..14).toList(),
                                             initialDayOffset = entryInitialOffset,
                                             onSave = { dayOffset, startMin, endMin, microSpotId, quiverId, rating, comment, mediaUri, forecastScore ->
                                                 val past = pastConditions[dayOffset]
@@ -731,7 +732,7 @@ fun MainScreen(
                                                 val dayTide = if (dayOffset == 0) todayTide else past?.second
                                                 val midpointHour = (startMin + endMin) / 2 / 60
                                                 val hourlyModel = dayHours.minByOrNull { abs(it.rawTime.hour - midpointHour) }
-                                                if (hourlyModel != null) {
+                                                run {
                                                     viewModel.logSurfSession(
                                                         date = today.minus(dayOffset, DateTimeUnit.DAY),
                                                         startMinutes = startMin,
