@@ -20,7 +20,8 @@ private const val WEIGHT_WAVE_DIR = 0.15
 private const val WEIGHT_TIDE = 0.05
 
 private const val ENERGY_RANGE_KJ = 600.0
-private const val WIND_SPEED_RANGE_KMH = 40.0
+// Entre 8 et 17 km/h, la mer passe de lisse à froissée : l'écart de force pèse sur une échelle de 20 km/h.
+private const val WIND_SPEED_RANGE_KMH = 20.0
 private const val TIDE_COEFF_RANGE = 120.0
 
 fun sessionVectorFromCondition(condition: ConditionSnapshot, idealSwellDirection: Int?): SessionVector {
@@ -83,7 +84,13 @@ fun matchScore(reference: SessionVector, candidate: SessionVector): Double {
     val totalWeight = dimensions.sumOf { it.first }
     val weightedDistance = dimensions.sumOf { (weight, distance) -> weight * distance } / totalWeight
 
-    return ((1.0 - weightedDistance) * 100.0).coerceIn(0.0, 100.0)
+    var score = ((1.0 - weightedDistance) * 100.0).coerceIn(0.0, 100.0)
+    // Une bonne houle ne rattrape pas un vent différent : un vent d'une autre famille (offshore contre onshore, etc.) ou un vent
+    // plus fort de 8 km/h ou plus, ou d'un autre type avec 6 km/h d'écart, ne passe jamais le seuil de la phrase « ressemble à ».
+    val windGap = abs(reference.windSpeedKmh - candidate.windSpeedKmh)
+    if (dWindCategory >= 0.5) score = minOf(score, PATTERN_MATCH_THRESHOLD - 5.0)
+    else if (windGap >= 8 || (dWindCategory > 0.0 && windGap >= 6)) score = minOf(score, PATTERN_MATCH_THRESHOLD - 1.0)
+    return score
 }
 
 data class PatternMatch(

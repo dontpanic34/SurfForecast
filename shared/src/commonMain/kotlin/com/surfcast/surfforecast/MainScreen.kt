@@ -489,11 +489,14 @@ fun MainScreen(
                                     if (bestPatternMatch != null) {
                                         val refDate = epochMillisToLocalDateTime(bestPatternMatch.referenceSession.session.startTime).date
                                         val refDateFormatted = "${refDate.day} ${frenchMonthName(refDate)}"
+                                        var showCompare by remember { mutableStateOf(false) }
                                         val matchDate = bestPatternMatch.hourlyModel.rawTime.date
                                         val matchDateFormatted = "${frenchShortDayName(matchDate)} ${matchDate.day}"
+                                        if (showCompare) PatternCompareDialog(bestPatternMatch, idealSwellDirection, state.dailyTides[bestPatternMatch.hourlyModel.rawTime.date]) { showCompare = false }
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .clickable { showCompare = true }
                                                 .padding(horizontal = 10.dp, vertical = 2.dp)
                                                 .padding(bottom = 6.dp),
                                             verticalAlignment = Alignment.CenterVertically
@@ -504,8 +507,8 @@ fun MainScreen(
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
                                                 text = "$matchDateFormatted ${bestPatternMatch.hourlyModel.rawTime.hour} h ressemble à ta session du $refDateFormatted " +
-                                                    "à ${bestPatternMatch.referenceSession.microSpot.name} (${bestPatternMatch.referenceSession.quiverBoard.model}), " +
-                                                    "ressemblance ${bestPatternMatch.score} %",
+                                                    "(${sessionHoursLabel(bestPatternMatch.referenceSession.session)}, ${bestPatternMatch.referenceSession.microSpot.name}, ${bestPatternMatch.referenceSession.quiverBoard.model}), " +
+                                                    "ressemblance ${bestPatternMatch.score} % · " + tr("Comparer") + " ›",
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = onSurfaceColor.copy(alpha = 0.75f),
