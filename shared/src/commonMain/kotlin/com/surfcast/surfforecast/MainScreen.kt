@@ -690,10 +690,25 @@ fun MainScreen(
                                             }.filterValues { it != null && it.first.isNotEmpty() }
                                         }
 
+                                        // Jours sans prévision gardée : conditions cherchées chez Open-Meteo à la demande.
+                                        val fetchedPast = remember(state.spotName) { mutableStateMapOf<Int, Pair<List<HourlyUiModel>, DailyTideInfo?>>() }
+                                        val loadingPast = remember(state.spotName) { mutableStateMapOf<Int, Boolean>() }
+                                        val pastScope = rememberCoroutineScope()
+                                        fun pastFor(offset: Int) = pastConditions[offset] ?: fetchedPast[offset]
                                         SessionLogEntryDialog(
                                             spotName = state.spotName,
-                                            hoursFor = { offset -> if (offset == 0) todayHours else pastConditions[offset]?.first.orEmpty() },
-                                            tideFor = { offset -> if (offset == 0) todayTide else pastConditions[offset]?.second },
+                                            hoursFor = { offset -> if (offset == 0) todayHours else pastFor(offset)?.first.orEmpty() },
+                                            onNeedConditions = { offset ->
+                                                if (pastFor(offset) == null && loadingPast[offset] != true && loadingPast[offset] != false) {
+                                                    loadingPast[offset] = true
+                                                    pastScope.launch {
+                                                        viewModel.fetchPastConditions(state.spotName, today.minus(offset, DateTimeUnit.DAY))?.let { fetchedPast[offset] = it }
+                                                        loadingPast[offset] = false
+                                                    }
+                                                }
+                                            },
+                                            conditionsLoading = { offset -> loadingPast[offset] == true },
+                                            tideFor = { offset -> if (offset == 0) todayTide else pastFor(offset)?.second },
                                             sunFor = { offset ->
                                                 state.dailySunInfo[today.minus(offset, DateTimeUnit.DAY)] ?: state.dailySunInfo[today]
                                             },
@@ -711,7 +726,7 @@ fun MainScreen(
                                             availableDayOffsets = (0..14).toList(),
                                             initialDayOffset = entryInitialOffset,
                                             onSave = { dayOffset, startMin, endMin, microSpotId, quiverId, rating, comment, mediaUri, forecastScore ->
-                                                val past = pastConditions[dayOffset]
+                                                val past = pastFor(dayOffset)
                                                 val dayHours = if (dayOffset == 0) todayHours else past?.first.orEmpty()
                                                 val dayTide = if (dayOffset == 0) todayTide else past?.second
                                                 val midpointHour = (startMin + endMin) / 2 / 60
