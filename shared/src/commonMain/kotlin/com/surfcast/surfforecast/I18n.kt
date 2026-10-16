@@ -89,6 +89,19 @@ internal fun missingTranslations(): List<String> =
 private fun t(en: String, de: String, nl: String, es: String) = listOf(en, de, nl, es)
 
 private val CORE: Map<String, List<String>> = mapOf(
+    "Comparer" to t("Compare", "Vergleichen", "Vergelijken", "Comparar"),
+    "Prévision à gauche, ta session à droite" to t("Forecast on the left, your session on the right", "Vorhersage links, deine Session rechts", "Voorspelling links, jouw sessie rechts", "Previsión a la izquierda, tu sesión a la derecha"),
+    "Prévision" to t("Forecast", "Vorhersage", "Voorspelling", "Previsión"),
+    "Ta session" to t("Your session", "Deine Session", "Jouw sessie", "Tu sesión"),
+    "Direction" to t("Direction", "Richtung", "Richting", "Dirección"),
+    "de la plage" to t("from the beach", "vom Strand", "van het strand", "de la playa"),
+    "la houle" to t("the swell", "die Dünung", "de deining", "el oleaje"),
+    "sa direction" to t("its direction", "ihre Richtung", "de richting", "su dirección"),
+    "le vent" to t("the wind", "der Wind", "de wind", "el viento"),
+    "la marée" to t("the tide", "die Gezeiten", "het tij", "la marea"),
+    "Les conditions sont proches sur tous les points." to t("Conditions are close on every point.", "Die Bedingungen sind in allen Punkten ähnlich.", "De omstandigheden lijken op alle punten op elkaar.", "Las condiciones son parecidas en todos los puntos."),
+    "L'écart principal :" to t("Main difference:", "Hauptunterschied:", "Belangrijkste verschil:", "Diferencia principal:"),
+    "Barre colorée : vert = proche, jaune = un peu différent, rouge = différent." to t("Colored bar: green = close, yellow = slightly different, red = different.", "Farbbalken: grün = ähnlich, gelb = etwas anders, rot = anders.", "Gekleurde balk: groen = dichtbij, geel = een beetje anders, rood = anders.", "Barra de color: verde = parecido, amarillo = algo distinto, rojo = distinto."),
     "Régler, plier, déplacer" to t("Adjust, fold, move", "Einstellen, einklappen, verschieben", "Instellen, inklappen, verplaatsen", "Ajustar, plegar, mover"),
     "Le ⚙ d'un encart ouvre ses réglages et ses explications. La flèche ▾ le plie ou le déplie. Garde le doigt appuyé sur son titre pour le déplacer." to t(
         "A card's ⚙ opens its settings and explanations. The ▾ arrow folds or unfolds it. Keep your finger pressed on its title to move it.",
