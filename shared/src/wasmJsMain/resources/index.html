@@ -52,12 +52,23 @@
                 .catch(function () { return null; });
         }
         function reloadOnce(version) {
-            // Garde-fou : jamais deux rechargements pour la même version (pas de boucle).
+            // Garde-fou : pas de boucle de rechargements pour la même version (un nouvel essai seulement après 5 minutes).
             try {
-                if (sessionStorage.getItem("surflog_reloaded_for") === version) return;
-                sessionStorage.setItem("surflog_reloaded_for", version);
+                var last = JSON.parse(sessionStorage.getItem("surflog_reloaded_for") || "null");
+                if (last && last.v === version && Date.now() - last.t < 5 * 60 * 1000) return;
+                sessionStorage.setItem("surflog_reloaded_for", JSON.stringify({ v: version, t: Date.now() }));
             } catch (e) {}
             location.reload();
+        }
+        // On ne coupe jamais quelqu'un en pleine saisie : rechargement seulement si le doigt n'a rien touché depuis 25 secondes
+        // et qu'aucune zone de texte n'est active.
+        var lastTouch = Date.now();
+        ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) {
+            window.addEventListener(ev, function () { lastTouch = Date.now(); }, { passive: true, capture: true });
+        });
+        function typing() {
+            var el = document.activeElement;
+            return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
         }
         function showBanner(version) {
             if (document.getElementById("update-banner")) return;
@@ -70,10 +81,20 @@
             b.onclick = function () { reloadOnce(version); };
             document.body.appendChild(b);
         }
+        // Une version plus récente existe : page cachée ou au repos, on recharge toute seule ; sinon la bannière attend le bon moment.
+        function applyUpdate(version) {
+            var quiet = document.visibilityState === "hidden" || (Date.now() - lastTouch > 25000 && !typing());
+            if (quiet) reloadOnce(version); else showBanner(version);
+        }
+        function check() { newerVersion().then(function (v) { if (v) applyUpdate(v); }); }
         document.addEventListener("visibilitychange", function () {
             if (document.visibilityState === "visible") newerVersion().then(function (v) { if (v) reloadOnce(v); });
+            else check();
         });
-        setInterval(function () { newerVersion().then(function (v) { if (v) showBanner(v); }); }, 10 * 60 * 1000);
+        window.addEventListener("pageshow", check);
+        window.addEventListener("online", check);
+        check();
+        setInterval(check, 2 * 60 * 1000);
     })();
     // Zoom : l'appli est dessinée dans un canvas qui garde les gestes pour elle. Quand la page est zoomée (pincement), on
     // rend le geste au navigateur pour qu'un doigt déplace la vue zoomée dans tous les sens ; au zoom normal, rien ne change.
