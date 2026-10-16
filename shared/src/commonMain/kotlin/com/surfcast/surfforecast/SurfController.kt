@@ -927,7 +927,8 @@ class SurfController(
                 waveHeight = (hourlyModel.waveHeight * 100).roundToInt() / 100.0,
                 wavePeriod = (hourlyModel.wavePeriod * 10).roundToInt() / 10.0,
                 waveDirection = hourlyModel.waveDirection.roundToInt(),
-                windSpeedKmh = hourlyModel.windSpeedKmh,
+                // Le vent ressenti (rafales comprises), comme partout dans l'appli ; les sessions d'avant gardent le vent moyen.
+                windSpeedKmh = effectiveWindKmh(hourlyModel).roundToInt(),
                 windDirection = SurfUnitsHelper.cardinalToDegrees(hourlyModel.windDirectionStr).roundToInt(),
                 tideCoeff = tideInfo?.coefficient,
                 isNearHighTide = isNearHighTide(hourlyModel, tideInfo),
