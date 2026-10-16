@@ -89,6 +89,8 @@ internal fun missingTranslations(): List<String> =
 private fun t(en: String, de: String, nl: String, es: String) = listOf(en, de, nl, es)
 
 private val CORE: Map<String, List<String>> = mapOf(
+    "Les conditions de ce jour n'ont pas été gardées : la session est enregistrée sans houle ni vent." to t("The conditions for that day were not kept: the session is saved without swell or wind.", "Die Bedingungen dieses Tages wurden nicht gespeichert: Die Session wird ohne Dünung und Wind gespeichert.", "De omstandigheden van die dag zijn niet bewaard: de sessie wordt zonder deining en wind opgeslagen.", "Las condiciones de ese día no se guardaron: la sesión se guarda sin oleaje ni viento."),
+    "Conditions non gardées (saisie à la main)." to t("Conditions not kept (entered by hand).", "Bedingungen nicht gespeichert (manuell erfasst).", "Omstandigheden niet bewaard (handmatig ingevoerd).", "Condiciones no guardadas (introducida a mano)."),
     "Cette semaine" to t("This week", "Diese Woche", "Deze week", "Esta semana"),
     "Ce mois-ci" to t("This month", "Diesen Monat", "Deze maand", "Este mes"),
     "Répartition" to t("Breakdown", "Verteilung", "Verdeling", "Reparto"),

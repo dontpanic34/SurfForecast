@@ -49,6 +49,9 @@ data class ConditionSnapshot(
     val forecastScore: Int? = null
 )
 
+/** Vrai si les conditions ont été relevées ; une session saisie à la main pour un jour sans prévision gardée n'en a pas (tout à zéro). */
+val ConditionSnapshot.hasConditions: Boolean get() = energyKj > 0 || waveHeight > 0.0
+
 @Serializable
 data class SurfSession(
     val id: Long = 0,

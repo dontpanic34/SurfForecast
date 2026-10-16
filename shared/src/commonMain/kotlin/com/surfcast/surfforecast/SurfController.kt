@@ -72,7 +72,7 @@ class SurfController(
 
     val referenceSessions: StateFlow<List<SurfSessionWithRelations>> =
         (sessionLogStore?.getAllSessions() ?: flowOf(emptyList()))
-            .map { list -> list.filter { isReferenceFeel(it.session.rating) } }
+            .map { list -> list.filter { isReferenceFeel(it.session.rating) && it.condition.hasConditions } }
             .stateIn(scope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val allSessions: StateFlow<List<SurfSessionWithRelations>> = (sessionLogStore?.getAllSessions() ?: flowOf(emptyList()))
@@ -868,13 +868,17 @@ class SurfController(
         rating: Int,
         comment: String?,
         mediaUri: String?,
-        hourlyModel: HourlyUiModel,
+        // null : jour sans prévision gardée, la session est enregistrée sans conditions.
+        hourlyModel: HourlyUiModel?,
         tideInfo: DailyTideInfo?,
         forecastScore: Int? = null
     ) {
         val dao = sessionLogStore ?: return
         scope.launch {
-            val snapshot = ConditionSnapshot(
+            val snapshot = if (hourlyModel == null) ConditionSnapshot(
+                energyKj = 0, waveHeight = 0.0, wavePeriod = 0.0, waveDirection = 0, windSpeedKmh = 0, windDirection = 0,
+                tideCoeff = null, isNearHighTide = false, tidePhase = null, forecastScore = null
+            ) else ConditionSnapshot(
                 energyKj = hourlyModel.energyKj,
                 waveHeight = (hourlyModel.waveHeight * 100).roundToInt() / 100.0,
                 wavePeriod = (hourlyModel.wavePeriod * 10).roundToInt() / 10.0,

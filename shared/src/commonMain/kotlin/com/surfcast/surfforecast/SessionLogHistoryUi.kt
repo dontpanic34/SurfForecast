@@ -312,7 +312,7 @@ private fun SessionRecapCard(session: SurfSessionWithRelations, onEdit: () -> Un
                 color = colors.onSurface.copy(alpha = 0.7f)
             )
             Text(
-                text = conditionsLine(session.condition),
+                text = if (session.condition.hasConditions) conditionsLine(session.condition) else tr("Conditions non gardées (saisie à la main)."),
                 fontSize = 12.sp,
                 color = colors.onSurface.copy(alpha = 0.7f)
             )
@@ -405,7 +405,7 @@ private fun JournalSummary(
                 }
                 val motiv = month.filter { feelIndexOf(it.session.rating).let { f -> f != null && f <= 2 } }.sumOf { sessionMinutes(it) }
                 if (motiv > 0) Text("💪 " + tr("Motivation") + " : " + durationHm(motiv) + " " + tr("dans l'eau alors que les vagues n'étaient pas terribles."), fontSize = 12.5.sp, color = colors.onSurface, modifier = Modifier.padding(top = 10.dp))
-                val good = month.filter { feelIndexOf(it.session.rating) in 3..5 }
+                val good = month.filter { feelIndexOf(it.session.rating) in 3..5 && it.condition.hasConditions }
                 if (good.isNotEmpty()) {
                     Text(tr("Ton idéal").uppercase() + " · " + tr("sessions Bon et mieux"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
                     val hs = good.map { it.condition.waveHeight }; val ps = good.map { it.condition.wavePeriod.roundToInt() }
