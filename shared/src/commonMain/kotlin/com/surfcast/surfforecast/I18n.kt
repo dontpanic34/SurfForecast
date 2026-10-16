@@ -89,6 +89,22 @@ internal fun missingTranslations(): List<String> =
 private fun t(en: String, de: String, nl: String, es: String) = listOf(en, de, nl, es)
 
 private val CORE: Map<String, List<String>> = mapOf(
+    "Cette semaine" to t("This week", "Diese Woche", "Deze week", "Esta semana"),
+    "Ce mois-ci" to t("This month", "Diesen Monat", "Deze maand", "Este mes"),
+    "Répartition" to t("Breakdown", "Verteilung", "Verdeling", "Reparto"),
+    "Ton idéal" to t("Your ideal", "Dein Ideal", "Jouw ideaal", "Tu ideal"),
+    "sessions Bon et mieux" to t("Good and better sessions", "Sessions ab Gut", "Sessies vanaf Goed", "sesiones Buenas o mejores"),
+    "Tout" to t("All", "Alle", "Alles", "Todo"),
+    "Bon et mieux" to t("Good and better", "Gut und besser", "Goed en beter", "Bueno y mejor"),
+    "Tout voir" to t("Show all", "Alle anzeigen", "Alles tonen", "Ver todo"),
+    "Aucune session ce jour-là avec ce filtre." to t("No session that day with this filter.", "Keine Session an diesem Tag mit diesem Filter.", "Geen sessie die dag met dit filter.", "Ninguna sesión ese día con este filtro."),
+    "Aucune session avec ce filtre." to t("No session with this filter.", "Keine Session mit diesem Filter.", "Geen sessie met dit filter.", "Ninguna sesión con este filtro."),
+    "Pas encore de session ce mois-ci." to t("No session yet this month.", "Noch keine Session in diesem Monat.", "Nog geen sessie deze maand.", "Aún no hay sesiones este mes."),
+    "dans l'eau alors que les vagues n'étaient pas terribles." to t("in the water even though the waves were not great.", "im Wasser, obwohl die Wellen nicht toll waren.", "in het water terwijl de golven niet geweldig waren.", "en el agua aunque las olas no eran geniales."),
+    "Sessions" to t("Sessions", "Sessions", "Sessies", "Sesiones"),
+    "ce mois-ci" to t("this month", "diesen Monat", "deze maand", "este mes"),
+    "ce mois" to t("that month", "in diesem Monat", "die maand", "ese mes"),
+    "cette semaine" to t("this week", "diese Woche", "deze week", "esta semana"),
     "ressenti" to t("felt", "gefühlt", "gevoeld", "sensación"),
     "Comparer" to t("Compare", "Vergleichen", "Vergelijken", "Comparar"),
     "Prévision à gauche, ta session à droite" to t("Forecast on the left, your session on the right", "Vorhersage links, deine Session rechts", "Voorspelling links, jouw sessie rechts", "Previsión a la izquierda, tu sesión a la derecha"),
