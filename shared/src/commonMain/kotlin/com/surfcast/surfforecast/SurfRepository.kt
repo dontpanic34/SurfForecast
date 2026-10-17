@@ -16,6 +16,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -149,7 +150,7 @@ class SurfRepository(
     }
 
     /** Texte d'une réponse : réseau d'abord, sinon dernière réponse en cache (marquée périmée). */
-    private suspend fun getTextWithFallback(url: String, fetch: suspend () -> String): String {
+    private suspend fun getTextWithFallback(url: String, essential: Boolean = true, fetch: suspend () -> String): String {
         return try {
             val text = fetch()
             writeCached(url, text)
@@ -158,7 +159,9 @@ class SurfRepository(
             throw e
         } catch (e: Exception) {
             val cached = readCached(url) ?: throw e
-            markStale(cached.first)
+            // Seules les réponses qui portent la prévision (houle, météo) déclenchent « Pas de réseau » ; UV, température de l'eau,
+            // vents annexes… se rabattent sur leur copie sans rien afficher.
+            if (essential) markStale(cached.first)
             cached.second
         }
     }
@@ -172,18 +175,32 @@ class SurfRepository(
         return response.status.value in 200..299
     }
 
-    private suspend fun httpGet(url: String): JsonObject {
-        val text = getTextWithFallback(url) {
-            val response = httpClient.get(url)
-            val body = response.bodyAsText()
-            val code = response.status.value
-            if (code !in 200..299) {
-                val reason = runCatching {
-                    Json.parseToJsonElement(body).jsonObject["reason"]?.jsonPrimitive?.contentOrNull
-                }.getOrNull() ?: body
-                throw IllegalStateException("API Open-Meteo ($code): $reason")
+    private suspend fun httpGet(url: String, essential: Boolean = false): JsonObject {
+        val text = getTextWithFallback(url, essential) {
+            // Open-Meteo répond parfois « trop de requêtes » (429) ou une erreur passagère (5xx) : on réessaie une fois avant de se rabattre sur la copie.
+            var attempt = 0
+            while (true) {
+                attempt++
+                try {
+                    val response = httpClient.get(url)
+                    val body = response.bodyAsText()
+                    val code = response.status.value
+                    if (code in 200..299) return@getTextWithFallback body
+                    if (attempt < 2 && (code == 429 || code >= 500)) { delay(700); continue }
+                    val reason = runCatching {
+                        Json.parseToJsonElement(body).jsonObject["reason"]?.jsonPrimitive?.contentOrNull
+                    }.getOrNull() ?: body
+                    throw IllegalStateException("API Open-Meteo ($code): $reason")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: IllegalStateException) {
+                    throw e
+                } catch (e: Throwable) {
+                    if (attempt < 2) { delay(700); continue }
+                    throw e
+                }
             }
-            body
+            @Suppress("UNREACHABLE_CODE") ""
         }
         return Json.parseToJsonElement(text).jsonObject
     }
@@ -225,7 +242,7 @@ class SurfRepository(
         val precipitations: List<Double> = emptyList()
     )
 
-    private suspend fun fetchMarineBlock(lat: Double, lon: Double, waveModel: WaveModel, days: Int): RawMarineHourly {
+    private suspend fun fetchMarineBlock(lat: Double, lon: Double, waveModel: WaveModel, days: Int, essential: Boolean = true): RawMarineHourly {
         val url = "https://marine-api.open-meteo.com/v1/marine?" +
             "latitude=$lat&longitude=$lon" +
             "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_direction,swell_wave_peak_period,wave_peak_period,wind_wave_height,wind_wave_direction,wind_wave_peak_period,wind_wave_period,secondary_swell_wave_height,secondary_swell_wave_period,secondary_swell_wave_direction" +
@@ -233,7 +250,7 @@ class SurfRepository(
             "&forecast_days=$days" +
             "&timezone=auto"
 
-        val hourly = httpGet(url).getValue("hourly").jsonObject
+        val hourly = httpGet(url, essential).getValue("hourly").jsonObject
         val timeArr = hourly.getValue("time").jsonArray
         val meanToPeak = if (waveModel == WaveModel.GFS_WAVE) 1.0 else MEAN_TO_PEAK_PERIOD
 
@@ -324,10 +341,10 @@ class SurfRepository(
      */
     suspend fun fetchModelPreview(latitude: Double, longitude: Double, today: LocalDate): ModelPreview = coroutineScope {
         val waveJobs = listOf("MF-WAM" to WaveModel.MFWAM, "ECMWF Wave" to WaveModel.ECMWF_WAM, "GFS Wave" to WaveModel.GFS_WAVE).map { (label, m) ->
-            async { label to runCatching { fetchMarineBlock(latitude, longitude, m, 4) }.getOrNull() }
+            async { label to runCatching { fetchMarineBlock(latitude, longitude, m, 4, essential = false) }.getOrNull() }
         }
         val windJobs = listOf("AROME" to WeatherModel.AROME, "ARPEGE" to WeatherModel.ARPEGE, "ECMWF" to WeatherModel.ECMWF_IFS, "GFS" to WeatherModel.GFS).map { (label, m) ->
-            async { label to runCatching { fetchWeatherBlock(latitude, longitude, m, 4) }.getOrNull() }
+            async { label to runCatching { fetchWeatherBlock(latitude, longitude, m, 4, essential = false) }.getOrNull() }
         }
         val waves = HashMap<String, Map<Int, PreviewWave>>()
         waveJobs.forEach { j ->
@@ -553,7 +570,8 @@ class SurfRepository(
         lon: Double,
         weatherModel: WeatherModel,
         days: Int,
-        includeDailySun: Boolean = false
+        includeDailySun: Boolean = false,
+        essential: Boolean = true
     ): RawWeatherHourly {
         val safeDays = if (weatherModel == WeatherModel.AROME) days.coerceAtMost(2) else days
         val modelParam = if (weatherModel.apiParam.isNotEmpty()) "&models=${weatherModel.apiParam}" else ""
@@ -567,7 +585,7 @@ class SurfRepository(
             "&forecast_days=$safeDays" +
             "&timezone=auto"
 
-        val root = httpGet(url)
+        val root = httpGet(url, essential)
         val hourly = root.getValue("hourly").jsonObject
         val timeArr = hourly.getValue("time").jsonArray
 
@@ -735,7 +753,8 @@ class SurfRepository(
             val consensusDeferred = if (config.consensus) async { buildConsensusMarine(lat, lon, today) } else null
             val shortMarineDeferred = async { consensusDeferred?.await() ?: fetchMarineBlock(lat, lon, config.shortTermWave, 2) }
             val longMarineDeferred = async { consensusDeferred?.await() ?: fetchMarineBlock(lat, lon, config.longTermWave, 7) }
-            val shortWeatherDeferred = async { fetchWeatherBlock(lat, lon, config.shortTermWeather, 2) }
+            // AROME ne couvre que la France et ses abords : ailleurs (Portugal, Maroc…) Open-Meteo répond « pas de données » ; on se rabat alors sur le modèle long terme.
+            val shortWeatherDeferred = async { runCatching { fetchWeatherBlock(lat, lon, config.shortTermWeather, 2) }.getOrNull() }
             val aromeHdWindDeferred = async {
                 if (config.shortTermWeather == WeatherModel.AROME) fetchAromeHdWind(lat, lon) else emptyMap()
             }
@@ -747,7 +766,7 @@ class SurfRepository(
             // Le ciel, la température, la pluie et les nuages viennent de Météo-France : AROME en court terme, puis ARPEGE aussi loin qu'il va
             // (environ 4 jours) ; au-delà, ECMWF prend le relais. Le vent reste la moyenne ECMWF + GFS.
             val mfWeatherDeferred = async {
-                runCatching { fetchWeatherBlock(lat, lon, WeatherModel.ARPEGE, 7) }.getOrNull()
+                runCatching { fetchWeatherBlock(lat, lon, WeatherModel.ARPEGE, 7, essential = false) }.getOrNull()
             }
             val gfsWindDeferred = async { fetchGfsWind(lat, lon, 7) }
             val seaTempDeferred = async { fetchSeaTemperature(lat, lon, 7) }
@@ -756,8 +775,10 @@ class SurfRepository(
 
             val shortMarine = shortMarineDeferred.await()
             val longMarine = longMarineDeferred.await()
-            val shortWeather = shortWeatherDeferred.await()
             val longWeather = longWeatherDeferred.await()
+            val shortWeatherOrNull = shortWeatherDeferred.await()
+            val shortWeather = shortWeatherOrNull ?: longWeather
+            val shortModelAvailable = shortWeatherOrNull != null
             val mfWeather = mfWeatherDeferred.await()
             val aromeHdWind = aromeHdWindDeferred.await()
             val gfsWind = gfsWindDeferred.await()
@@ -878,7 +899,7 @@ class SurfRepository(
                             if (ecmwfOk) ModelVoice("ECMWF", longSpeed, direction = longDir.toFloat()) else null,
                             gfs?.let { ModelVoice("GFS", it.first, direction = it.second.toFloat()) },
                             hd?.let { ModelVoice("AROME HD", it.first, direction = it.second.toFloat()) },
-                            if (isShortTerm && wData === shortWeather && !primarySpeed.isNaN()) ModelVoice("AROME", primarySpeed, direction = primaryDir.toFloat()) else null
+                            if (shortModelAvailable && isShortTerm && wData === shortWeather && !primarySpeed.isNaN()) ModelVoice("AROME", primarySpeed, direction = primaryDir.toFloat()) else null
                         ).takeIf { it.size >= 2 } ?: emptyList(),
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
@@ -1131,7 +1152,7 @@ class SurfRepository(
     private suspend fun cachedText(id: String, ttlMillis: Long, fetch: suspend () -> String): String {
         val cached = readCached(id)
         if (cached != null && Clock.System.now().toEpochMilliseconds() - cached.first < ttlMillis) return cached.second
-        return getTextWithFallback(id, fetch)
+        return getTextWithFallback(id, fetch = fetch)
     }
 
     companion object {
