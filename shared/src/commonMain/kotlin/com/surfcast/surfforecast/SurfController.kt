@@ -211,6 +211,7 @@ class SurfController(
         SkyGraphSettings.loadTide(prefs.getInt("graph_tide_dp", SkyGraphSettings.DEFAULT_TIDE))
         SkyGraphSettings.loadNowOpen(prefs.getInt("now_card_open", 1))
         SkyGraphSettings.loadTideOpen(prefs.getInt("tide_card_open", 1))
+        SkyGraphSettings.loadCamBrave(prefs.getInt("cam_brave", 0))
         SkyGraphSettings.loadCurve(prefs.getInt("graph_curve_dp", SkyGraphSettings.DEFAULT_CURVE))
         SkyGraphSettings.loadShowChop(prefs.getInt("show_chop", 1) == 1)
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }

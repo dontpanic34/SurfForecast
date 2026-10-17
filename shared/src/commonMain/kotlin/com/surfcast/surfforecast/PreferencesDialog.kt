@@ -343,6 +343,12 @@ fun SurfPreferencesDialog(
                                 SettingsRow("Widget, installation et journal", "Installer l'appli, épingler le widget, sauvegarder le journal", SettingsIcons.Widget, top = false) { page = "app" }
                             }
                         }
+                        SettingsSection("Webcams") {
+                            SettingsSwitchRow(
+                                "Ouvrir dans Brave", "Android : la webcam s'ouvre dans Brave s'il est installé (sans pubs ni cookies), sinon dans ton navigateur.",
+                                checked = SkyGraphSettings.camBrave, top = false
+                            ) { SkyGraphSettings.chooseCamBrave(it) }
+                        }
                         SettingsSection("Aide") {
                             SettingsRow("Comprendre", "Les leçons pour lire les prévisions", SettingsIcons.Book, top = false) { onDismiss(); ComprendreState.open() }
                             SettingsRow("Aide et langue", "Visite guidée et langue", SettingsIcons.Globe) { page = "help" }
