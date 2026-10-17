@@ -89,6 +89,9 @@ internal fun missingTranslations(): List<String> =
 private fun t(en: String, de: String, nl: String, es: String) = listOf(en, de, nl, es)
 
 private val CORE: Map<String, List<String>> = mapOf(
+    "Webcams" to t("Webcams", "Webcams", "Webcams", "Webcams"),
+    "Ouvrir dans Brave" to t("Open in Brave", "In Brave öffnen", "Openen in Brave", "Abrir en Brave"),
+    "Android : la webcam s'ouvre dans Brave s'il est installé (sans pubs ni cookies), sinon dans ton navigateur." to t("Android: the webcam opens in Brave if installed (no ads or cookies), otherwise in your browser.", "Android: Die Webcam öffnet sich in Brave, falls installiert (ohne Werbung und Cookies), sonst in deinem Browser.", "Android: de webcam opent in Brave als die is geïnstalleerd (zonder reclame en cookies), anders in je browser.", "Android: la webcam se abre en Brave si está instalado (sin anuncios ni cookies), si no, en tu navegador."),
     "Chargement des conditions de ce jour…" to t("Loading that day's conditions…", "Bedingungen dieses Tages werden geladen…", "Omstandigheden van die dag laden…", "Cargando las condiciones de ese día…"),
     "Les conditions de ce jour n'ont pas été gardées : la session est enregistrée sans houle ni vent." to t("The conditions for that day were not kept: the session is saved without swell or wind.", "Die Bedingungen dieses Tages wurden nicht gespeichert: Die Session wird ohne Dünung und Wind gespeichert.", "De omstandigheden van die dag zijn niet bewaard: de sessie wordt zonder deining en wind opgeslagen.", "Las condiciones de ese día no se guardaron: la sesión se guarda sin oleaje ni viento."),
     "Conditions non gardées (saisie à la main)." to t("Conditions not kept (entered by hand).", "Bedingungen nicht gespeichert (manuell erfasst).", "Omstandigheden niet bewaard (handmatig ingevoerd).", "Condiciones no guardadas (introducida a mano)."),

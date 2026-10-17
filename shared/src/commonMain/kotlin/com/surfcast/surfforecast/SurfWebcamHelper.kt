@@ -180,12 +180,18 @@ object SurfWebcamHelper {
     }
 
     /**
-     * Lien webcam d'une caméra du catalogue : recherche « !ducky » (jamais périmée). Le nom de la
-     * caméra n'est ajouté que si le spot en a plusieurs.
+     * Lien webcam d'une caméra du catalogue : le relais surflog.fr/api/cam vérifie l'adresse GoSurf du catalogue et y envoie
+     * tout droit (plus de page de résultats à choisir) ; si GoSurf a changé son numéro, il retombe sur la recherche « !ducky ».
+     * Avec « Webcams dans Brave » (Android), le lien est une adresse « intent » : Chrome lance Brave s'il est installé
+     * (sans pubs ni cookies), sinon ouvre la même page dans le navigateur courant.
      */
     fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String {
         val multiple = (catalog[spotName]?.cameras?.size ?: 0) > 1
-        return liveCamUrl(spotName, if (multiple) camera.camName else null)
+        val search = listOfNotNull("webcam", "gosurf", spotName, if (multiple) camera.camName.substringBefore(" (") else null).joinToString(" ")
+        val relay = "https://surflog.fr/api/cam?u=" + percentEncode(camera.pageUrl) + "&q=" + percentEncode(search)
+        return if (SkyGraphSettings.camBrave) {
+            "intent://" + relay.removePrefix("https://") + "#Intent;scheme=https;package=com.brave.browser;S.browser_fallback_url=" + percentEncode(relay) + ";end"
+        } else relay
     }
 
     internal fun percentEncode(text: String): String = buildString {
