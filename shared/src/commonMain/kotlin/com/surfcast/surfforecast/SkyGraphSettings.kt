@@ -61,6 +61,10 @@ object SkyGraphSettings {
     var tideOpen by mutableStateOf(true)
     fun loadTideOpen(v: Int) { tideOpen = v != 0 }
     fun chooseTideOpen(v: Boolean) { tideOpen = v; persist("tide_card_open", if (v) 1 else 0) }
+    /** Ouvrir les webcams dans Brave (Android) quand il est installé. */
+    var camBrave by mutableStateOf(false)
+    fun loadCamBrave(v: Int) { camBrave = v != 0 }
+    fun chooseCamBrave(v: Boolean) { camBrave = v; persist("cam_brave", if (v) 1 else 0) }
     fun loadCurve(dp: Int) { curveDp = dp.coerceIn(14, 48) }
     fun setCurve(dp: Int) { curveDp = dp.coerceIn(14, 48); persist("graph_curve_dp", curveDp) }
     fun loadShowChop(v: Boolean) { showChop = v }
