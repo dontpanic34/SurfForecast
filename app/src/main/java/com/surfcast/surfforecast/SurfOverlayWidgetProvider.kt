@@ -107,7 +107,11 @@ class SurfOverlayWidgetProvider : AppWidgetProvider() {
                     clickIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
+                // Les trois lignes (et le reste du widget) ouvrent l'appli : on pose le même toucher sur chaque élément.
+                for (id in intArrayOf(
+                    R.id.widget_root, R.id.widget_inner, R.id.widget_row_top,
+                    R.id.widget_text_tide, R.id.widget_text_wave, R.id.widget_text_wind, R.id.widget_text_updated
+                )) views.setOnClickPendingIntent(id, pendingIntent)
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             }

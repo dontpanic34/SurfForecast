@@ -34,6 +34,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -507,179 +511,101 @@ fun LiveCamOverlayScreen(
             }
         }
 
-        // Panneau gauche : nom du spot + bouton de liaison + liste des cameras
+        // Barre du haut, une seule ligne : le spot, les favoris (un toucher change de spot, appui long = placer le spot ici),
+        // « Spots ▾ » pour les spots proches, « ⋯ » pour lier la page. Les caméras du spot sont dessous si le spot en a plusieurs.
+        val nearbySpots = remember(currentSpotName) { SurfWebcamHelper.nearbyCameraSpots(currentSpotName) }
+        var favSlotsVersion by remember { mutableIntStateOf(0) }
+        val favorites = remember(currentSpotName, favSlotsVersion) {
+            SurfWebcamHelper.getWebcamFavorites(SharedPreferencesStore(context))
+        }
+        var spotsMenuOpen by remember { mutableStateOf(false) }
+        var moreMenuOpen by remember { mutableStateOf(false) }
+
         if (!manualNavigation) {
             Column(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 28.dp, top = 16.dp, end = 16.dp)
+                    .padding(start = 28.dp, top = 12.dp, end = 64.dp)
             ) {
-                Surface(
-                    modifier = Modifier.clip(RoundedCornerShape(20.dp)),
-                    color = Color.Black.copy(alpha = 0.75f)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Surface(modifier = Modifier.clip(RoundedCornerShape(20.dp)), color = Color.Black.copy(alpha = 0.75f)) {
+                        Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(Color(0xFFE53935)))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = spotWebcams.spotDisplayName, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                        }
+                    }
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1f, fill = false).horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFE53935))
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "DIRECT • ${spotWebcams.spotDisplayName}",
-                            color = Color.White,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // BOUTON LIER CETTE PAGE
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            val activeUrl = webViewRef?.url
-                            if (!activeUrl.isNullOrBlank() && !activeUrl.startsWith("data:") && !activeUrl.contains("about:blank")) {
-                                SurfWebcamHelper.saveOverride(
-                                    SharedPreferencesStore(context),
-                                    currentSpotNameState.value,
-                                    activeCamera.camName,
-                                    activeUrl
-                                )
-                                showLinkSuccess = true
-                                refreshTrigger++
-                                scope.launch {
-                                    delay(3000)
-                                    showLinkSuccess = false
+                        for (slot in 0..3) {
+                            val favName = favorites.getOrNull(slot)
+                            CamChip(
+                                text = favName ?: "＋",
+                                active = favName?.equals(currentSpotName, ignoreCase = true) == true,
+                                dim = favName == null,
+                                onClick = { if (favName != null) onSwitchSpot(favName) },
+                                onLongClick = {
+                                    SurfWebcamHelper.setWebcamFavorite(SharedPreferencesStore(context), slot, currentSpotNameState.value)
+                                    favSlotsVersion++
                                 }
-                            }
-                        },
-                    color = if (showLinkSuccess) Color(0xDD2E7D32) else AppColors.WindMid.copy(alpha = 0.25f),
-                    border = BorderStroke(1.dp, if (showLinkSuccess) Color(0xFF66BB6A) else AppColors.WindMid)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
-                    ) {
-                        if (showLinkSuccess) {
-                            Icon(SurfIcons.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
+                            )
                         }
-                        Text(
-                            text = if (showLinkSuccess) "Lien enregistré !" else "🔗 Lier cette page à ${activeCamera.camName}",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (showLinkSuccess) Color.White else AppColors.WindMid
-                        )
-                    }
-                }
-
-                realPageTitle?.let { title ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        modifier = Modifier.clip(RoundedCornerShape(10.dp)),
-                        color = Color.Black.copy(alpha = 0.7f)
-                    ) {
-                        Text(
-                            text = "Source : $title",
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.6f),
-                            maxLines = 1,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-
-                if (spotWebcams.cameras.size > 1) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Surface(
-                        modifier = Modifier.widthIn(max = 150.dp).clip(RoundedCornerShape(12.dp)),
-                        color = Color.Black.copy(alpha = 0.75f)
-                    ) {
-                        Column(modifier = Modifier.padding(4.dp)) {
-                            spotWebcams.cameras.forEachIndexed { index, cam ->
-                                val isActive = index == selectedCamIndex
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 1.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable {
-                                            selectedCamIndex = index
-                                            isLoading = true
-                                            loadError = false
-                                            manualNavigation = false
-                                        },
-                                    color = if (isActive) AppColors.WindMid.copy(alpha = 0.22f) else Color.Transparent,
-                                    border = if (isActive) BorderStroke(1.dp, AppColors.WindMid) else null
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(5.dp)
-                                                .clip(CircleShape)
-                                                .background(if (isActive) AppColors.WindMid else Color.White.copy(alpha = 0.35f))
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = cam.camName,
-                                            fontSize = 12.sp,
-                                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                                            color = Color.White,
-                                            maxLines = 1
+                        if (nearbySpots.size > 1) {
+                            Box {
+                                CamChip(text = "Spots ▾", active = false, onClick = { spotsMenuOpen = true })
+                                DropdownMenu(expanded = spotsMenuOpen, onDismissRequest = { spotsMenuOpen = false }) {
+                                    nearbySpots.forEach { name ->
+                                        DropdownMenuItem(
+                                            text = { Text(name, fontWeight = if (name.equals(currentSpotName, ignoreCase = true)) FontWeight.Bold else FontWeight.Normal) },
+                                            onClick = {
+                                                spotsMenuOpen = false
+                                                if (!name.equals(currentSpotName, ignoreCase = true)) onSwitchSpot(name)
+                                            }
                                         )
                                     }
                                 }
                             }
                         }
+                        Box {
+                            CamChip(text = "⋯", active = showLinkSuccess, onClick = { moreMenuOpen = true })
+                            DropdownMenu(expanded = moreMenuOpen, onDismissRequest = { moreMenuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(if (showLinkSuccess) "Lien enregistré !" else "Lier cette page à ${activeCamera.camName}") },
+                                    onClick = {
+                                        moreMenuOpen = false
+                                        val activeUrl = webViewRef?.url
+                                        if (!activeUrl.isNullOrBlank() && !activeUrl.startsWith("data:") && !activeUrl.contains("about:blank")) {
+                                            SurfWebcamHelper.saveOverride(SharedPreferencesStore(context), currentSpotNameState.value, activeCamera.camName, activeUrl)
+                                            showLinkSuccess = true
+                                            refreshTrigger++
+                                            scope.launch { delay(3000); showLinkSuccess = false }
+                                        }
+                                    }
+                                )
+                                realPageTitle?.let { title -> DropdownMenuItem(text = { Text("Source : $title", fontSize = 11.sp) }, enabled = false, onClick = {}) }
+                            }
+                        }
                     }
                 }
-            } // ===> C'ÉTAIENT CES ACCOLADES QUI MANQUAIENT ! <===
-        } // ===> FIN DU BLOC if (!manualNavigation) <===
-
-        // Bande basse : uniquement les spots proches
-        val nearbySpots = remember(currentSpotName) {
-            SurfWebcamHelper.nearbyCameraSpots(currentSpotName)
-        }
-
-        if (nearbySpots.size > 1 && !manualNavigation) {
-            LazyRow(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(bottom = 48.dp),
-                horizontalArrangement = Arrangement.Center,
-                contentPadding = PaddingValues(horizontal = 12.dp)
-            ) {
-                items(nearbySpots) { name ->
-                    val isActive = name.equals(currentSpotName, ignoreCase = true)
-                    Surface(
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable(enabled = !isActive) { onSwitchSpot(name) },
-                        color = if (isActive) AppColors.WindMid.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.7f),
-                        border = if (isActive) BorderStroke(1.5.dp, AppColors.WindMid) else null
+                if (spotWebcams.cameras.size > 1) {
+                    Row(
+                        modifier = Modifier.padding(top = 6.dp).horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = name,
-                            fontSize = 12.sp,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.SemiBold,
-                            color = if (isActive) AppColors.WindMid else Color.White,
-                            maxLines = 1,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                        )
+                        spotWebcams.cameras.forEachIndexed { index, cam ->
+                            CamChip(
+                                text = cam.camName, active = index == selectedCamIndex,
+                                onClick = {
+                                    selectedCamIndex = index
+                                    isLoading = true
+                                    loadError = false
+                                    manualNavigation = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -700,7 +626,7 @@ fun LiveCamOverlayScreen(
                     onOpenCam = {},
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 92.dp)
+                        .padding(bottom = 16.dp)
                         .fillMaxWidth(0.7f)
                         .widthIn(max = 460.dp)
                 )
@@ -725,58 +651,21 @@ fun LiveCamOverlayScreen(
             )
         }
 
-        // Favoris
-        var favSlotsVersion by remember { mutableIntStateOf(0) }
-        val favorites = remember(currentSpotName, favSlotsVersion) {
-            SurfWebcamHelper.getWebcamFavorites(SharedPreferencesStore(context))
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 70.dp, end = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            if (!manualNavigation) {
-                Text(
-                    text = "FAVORIS",
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(bottom = 2.dp, end = 4.dp)
-                )
-                for (slot in 0..3) {
-                    val favName = favorites.getOrNull(slot)
-                    Surface(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .combinedClickable(
-                                onClick = {
-                                    if (favName != null) onSwitchSpot(favName)
-                                },
-                                onLongClick = {
-                                    SurfWebcamHelper.setWebcamFavorite(SharedPreferencesStore(context), slot, currentSpotNameState.value)
-                                    favSlotsVersion++
-                                }
-                            ),
-                        color = if (favName != null) Color.Black.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.35f),
-                        border = if (favName?.equals(currentSpotName, ignoreCase = true) == true)
-                            BorderStroke(1.5.dp, AppColors.WindMid) else null
-                    ) {
-                        Text(
-                            text = favName ?: "＋",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (favName != null) Color.White else Color.White.copy(alpha = 0.4f),
-                            maxLines = 1,
-                            modifier = Modifier
-                                .widthIn(min = 56.dp)
-                                .padding(horizontal = 10.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-            }
-        }
+    }
+}
+/** Une pastille de la barre du haut : fond sombre, bordure claire quand elle est active ; l'appui long est facultatif. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CamChip(text: String, active: Boolean, onClick: () -> Unit, onLongClick: (() -> Unit)? = null, dim: Boolean = false) {
+    Surface(
+        modifier = Modifier.clip(RoundedCornerShape(16.dp)).combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        color = if (active) AppColors.WindMid.copy(alpha = 0.3f) else Color.Black.copy(alpha = if (dim) 0.4f else 0.7f),
+        border = if (active) BorderStroke(1.5.dp, AppColors.WindMid) else null
+    ) {
+        Text(
+            text = text, fontSize = 12.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.SemiBold, maxLines = 1,
+            color = if (active) AppColors.WindMid else Color.White.copy(alpha = if (dim) 0.5f else 1f),
+            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
+        )
     }
 }
