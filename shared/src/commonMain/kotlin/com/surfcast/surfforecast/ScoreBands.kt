@@ -114,6 +114,8 @@ private val BOUNDS = listOf(POOR_MIN, FAIR_MIN, GOOD_MIN, VERY_GOOD_MIN, PERFECT
  */
 fun bandLabelWithTrend(rating: SlotRating, previous: SlotRating? = null): String {
     val band = conditionBand(rating)
+    if (rating.why == WHY_MASSIVE) return tr("Massif")
+    if (rating.why == WHY_FLAT) return tr("Flat")
     if (band !in BAND_ORDER) return tr(band.label)
     for ((i, bound) in BOUNDS.withIndex()) {
         if (kotlin.math.abs(rating.score - bound) <= TREND_ZONE) {
