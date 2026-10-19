@@ -38,7 +38,14 @@ data class DayPick(
     val hours: List<HourPick>
 )
 
-data class WhereResult(val radiusKm: Int, val days: List<DayPick>, val spotsScanned: Int)
+/** [scans] : les spots du rayon avec leurs heures (pour la carte) ; [home] : le spot de départ avec les heures de l'appli. */
+data class WhereResult(
+    val radiusKm: Int,
+    val days: List<DayPick>,
+    val spotsScanned: Int,
+    val scans: List<Pair<ScanSpot, List<HourlyUiModel>>> = emptyList(),
+    val home: Pair<ScanSpot, List<HourlyUiModel>>? = null
+)
 
 /** État de l'écran « Où surfer ? ». */
 sealed class WhereState {
@@ -107,7 +114,12 @@ object WhereToSurf {
      * Rassemble le tout : pour chaque jour de [homeStars] (les étoiles de la vue semaine), le meilleur spot du rayon, ce que ça vaut par rapport
      * à ici, les cinq meilleurs et le meilleur spot de chaque heure.
      */
-    fun analyse(radiusKm: Int, homeStars: Map<LocalDate, Float?>, scans: List<Pair<ScanSpot, List<HourlyUiModel>>>): WhereResult {
+    fun analyse(
+        radiusKm: Int,
+        homeStars: Map<LocalDate, Float?>,
+        scans: List<Pair<ScanSpot, List<HourlyUiModel>>>,
+        home: Pair<ScanSpot, List<HourlyUiModel>>? = null
+    ): WhereResult {
         val days = homeStars.keys.sorted().take(7).map { date ->
             val perSpot = scans.mapNotNull { (spot, hours) -> spotDay(spot, hours, date) }.sortedByDescending { it.score }
             val best = perSpot.firstOrNull()
@@ -122,7 +134,7 @@ object WhereToSurf {
             }
             DayPick(date, here, best, worth, perSpot.take(5), hours)
         }
-        return WhereResult(radiusKm, days, scans.size)
+        return WhereResult(radiusKm, days, scans.size, scans, home)
     }
 
     /** Le sens à prendre pour aller de [fromLat],[fromLon] à [toLat],[toLon], en deux mots (« au sud », « au nord-est »). */
