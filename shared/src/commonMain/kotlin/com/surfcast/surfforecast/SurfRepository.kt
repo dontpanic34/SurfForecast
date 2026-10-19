@@ -94,6 +94,9 @@ const val WIND_SOURCE_MISSING = "manquant"
 /** Rapport approximatif période de pic / période moyenne d'une houle (spectre type). */
 private const val MEAN_TO_PEAK_PERIOD = 1.2
 
+/** Nombre de points par appel Open-Meteo pour « Où surfer ? ». */
+private const val SCAN_BATCH = 25
+
 /** Modèle de vagues dont on affiche la période (même source que Windguru, Windy, Surf-Forecast). */
 private const val REFERENCE_WAVE_MODEL = "ncep_gfswave016"
 
@@ -962,46 +965,111 @@ class SurfRepository(
                         "&start_date=$d&end_date=$d&timezone=auto"
                 ).getValue("hourly").jsonObject
                 val times = marine.getValue("time").jsonArray
-                fun arr(o: JsonObject, k: String) = o.optArray(k)
-                val hours = times.indices.mapNotNull { i ->
-                    val t = LocalDateTime.parse(times[i].jsonPrimitive.content)
-                    val swellH = arr(marine, "swell_wave_height").doubleAt(i)
-                    val totalH = arr(marine, "wave_height").doubleAt(i) ?: return@mapNotNull null
-                    val h = if (swellH != null && swellH > 0.0) swellH else totalH
-                    val swellPeak = arr(marine, "swell_wave_peak_period").doubleAt(i)
-                    val totalPeak = arr(marine, "wave_peak_period").doubleAt(i)
-                    val swellP = arr(marine, "swell_wave_period").doubleAt(i)
-                    val totalP = arr(marine, "wave_period").doubleAt(i) ?: 0.0
-                    // Même règle que les prévisions : la période de pic, sinon la moyenne convertie en pic.
-                    val p = when {
-                        swellPeak != null && swellPeak > 0.0 -> swellPeak
-                        totalPeak != null && totalPeak > 0.0 -> maxOf(totalPeak, swellP ?: 0.0)
-                        swellP != null && swellP > 0.0 -> swellP * MEAN_TO_PEAK_PERIOD
-                        else -> totalP * MEAN_TO_PEAK_PERIOD
-                    }
-                    val dir = arr(marine, "swell_wave_direction").doubleAt(i)?.toFloat() ?: arr(marine, "wave_direction").doubleAt(i)?.toFloat() ?: 0f
-                    val speed = arr(wx, "wind_speed_10m").doubleAt(i) ?: 0.0
-                    val gust = arr(wx, "wind_gusts_10m").doubleAt(i) ?: speed
-                    HourlyUiModel(
-                        timeFormatted = formatHour(t), rawTime = t, waveHeight = h, wavePeriod = p, waveDirection = dir,
-                        windWaveHeight = arr(marine, "wind_wave_height").doubleAt(i) ?: 0.0,
-                        secondaryHeight = arr(marine, "secondary_swell_wave_height").doubleAt(i) ?: 0.0,
-                        secondaryPeriod = arr(marine, "secondary_swell_wave_period").doubleAt(i) ?: 0.0,
-                        secondaryDirection = arr(marine, "secondary_swell_wave_direction").doubleAt(i)?.toFloat() ?: 0f,
-                        energyKj = calculateWaveEnergyReal(h, p),
-                        windSpeedKmh = speed.roundToInt(),
-                        windDirectionStr = getCardinalDirection(arr(wx, "wind_direction_10m").doubleAt(i) ?: 0.0),
-                        weatherCode = arr(wx, "weather_code").doubleAt(i)?.roundToInt() ?: 0,
-                        temperature = arr(wx, "temperature_2m").doubleAt(i)?.roundToInt() ?: 0,
-                        cloudCover = arr(wx, "cloudcover").doubleAt(i)?.roundToInt() ?: 0,
-                        windGustKmh = gust.roundToInt(), windSource = "Open-Meteo"
-                    )
-                }
+                val hours = times.indices.mapNotNull { i -> openMeteoHour(marine, wx, i, LocalDateTime.parse(times[i].jsonPrimitive.content)) }
                 if (hours.isEmpty()) return@runCatching null
                 val tide = runCatching { getTides(lat, lon, d, d).dailyByDate[date] }.getOrNull()
                 hours to tide
             }.getOrNull()
         }
+
+    /** Une heure d'après les blocs « hourly » de la houle et du vent d'Open-Meteo (un seul modèle) ; null sans hauteur de vague. */
+    private fun openMeteoHour(marine: JsonObject, wx: JsonObject, i: Int, t: LocalDateTime): HourlyUiModel? {
+        fun arr(o: JsonObject, k: String) = o.optArray(k)
+        val swellH = arr(marine, "swell_wave_height").doubleAt(i)
+        val totalH = arr(marine, "wave_height").doubleAt(i) ?: return null
+        val h = if (swellH != null && swellH > 0.0) swellH else totalH
+        val swellPeak = arr(marine, "swell_wave_peak_period").doubleAt(i)
+        val totalPeak = arr(marine, "wave_peak_period").doubleAt(i)
+        val swellP = arr(marine, "swell_wave_period").doubleAt(i)
+        val totalP = arr(marine, "wave_period").doubleAt(i) ?: 0.0
+        // Même règle que les prévisions : la période de pic, sinon la moyenne convertie en pic.
+        val p = when {
+            swellPeak != null && swellPeak > 0.0 -> swellPeak
+            totalPeak != null && totalPeak > 0.0 -> maxOf(totalPeak, swellP ?: 0.0)
+            swellP != null && swellP > 0.0 -> swellP * MEAN_TO_PEAK_PERIOD
+            else -> totalP * MEAN_TO_PEAK_PERIOD
+        }
+        val dir = arr(marine, "swell_wave_direction").doubleAt(i)?.toFloat() ?: arr(marine, "wave_direction").doubleAt(i)?.toFloat() ?: 0f
+        val speed = arr(wx, "wind_speed_10m").doubleAt(i) ?: 0.0
+        val gust = arr(wx, "wind_gusts_10m").doubleAt(i) ?: speed
+        return HourlyUiModel(
+            timeFormatted = formatHour(t), rawTime = t, waveHeight = h, wavePeriod = p, waveDirection = dir,
+            windWaveHeight = arr(marine, "wind_wave_height").doubleAt(i) ?: 0.0,
+            secondaryHeight = arr(marine, "secondary_swell_wave_height").doubleAt(i) ?: 0.0,
+            secondaryPeriod = arr(marine, "secondary_swell_wave_period").doubleAt(i) ?: 0.0,
+            secondaryDirection = arr(marine, "secondary_swell_wave_direction").doubleAt(i)?.toFloat() ?: 0f,
+            energyKj = calculateWaveEnergyReal(h, p),
+            windSpeedKmh = speed.roundToInt(),
+            windDirectionStr = getCardinalDirection(arr(wx, "wind_direction_10m").doubleAt(i) ?: 0.0),
+            weatherCode = arr(wx, "weather_code").doubleAt(i)?.roundToInt() ?: 0,
+            temperature = arr(wx, "temperature_2m").doubleAt(i)?.roundToInt() ?: 0,
+            cloudCover = arr(wx, "cloudcover").doubleAt(i)?.roundToInt() ?: 0,
+            windGustKmh = gust.roundToInt(), windSource = "Open-Meteo"
+        )
+    }
+
+    /** Réponse d'Open-Meteo pour plusieurs points : une liste de réponses (une seule réponse, non listée, quand il n'y a qu'un point). Une panne donne null. */
+    private suspend fun scanGet(url: String): List<JsonObject>? {
+        repeat(2) { attempt ->
+            try {
+                val response = httpClient.get(url)
+                val body = response.bodyAsText()
+                if (response.status.value in 200..299) {
+                    return when (val e = Json.parseToJsonElement(body)) {
+                        is JsonArray -> e.map { it.jsonObject }
+                        is JsonObject -> listOf(e)
+                        else -> null
+                    }
+                }
+                if (attempt == 0 && (response.status.value == 429 || response.status.value >= 500)) delay(700) else return null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                if (attempt == 0) delay(700) else return null
+            }
+        }
+        return null
+    }
+
+    /**
+     * Les prévisions de plusieurs points (spots autour de soi) pour « Où surfer ? » : un seul appel de houle et un seul de vent par
+     * lot de [SCAN_BATCH] points, un seul modèle chacun (celui par défaut d'Open-Meteo, qui marche partout). Résultat dans l'ordre des
+     * points ; null pour un point sans réponse. Rien n'est gardé en cache : ce sont des relevés de passage.
+     */
+    suspend fun fetchRegionScan(points: List<Pair<Double, Double>>, days: Int = 7): List<List<HourlyUiModel>?> = withContext(Dispatchers.Default) {
+        points.chunked(SCAN_BATCH).flatMap { batch ->
+            val lats = batch.joinToString(",") { it.first.toString() }
+            val lons = batch.joinToString(",") { it.second.toString() }
+            val (marineList, wxList) = coroutineScope {
+                val m = async {
+                    scanGet(
+                        "https://marine-api.open-meteo.com/v1/marine?latitude=$lats&longitude=$lons" +
+                            "&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,swell_wave_peak_period,swell_wave_direction," +
+                            "wave_peak_period,wind_wave_height,secondary_swell_wave_height,secondary_swell_wave_period,secondary_swell_wave_direction" +
+                            "&forecast_days=$days&timezone=auto"
+                    )
+                }
+                val w = async {
+                    scanGet(
+                        "https://api.open-meteo.com/v1/forecast?latitude=$lats&longitude=$lons" +
+                            "&hourly=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloudcover" +
+                            "&forecast_days=$days&timezone=auto"
+                    )
+                }
+                m.await() to w.await()
+            }
+            batch.indices.map { k ->
+                val marine = marineList?.getOrNull(k)?.get("hourly") as? JsonObject
+                val wx = wxList?.getOrNull(k)?.get("hourly") as? JsonObject
+                if (marine == null || wx == null) null
+                else runCatching {
+                    val times = marine.getValue("time").jsonArray
+                    times.indices.mapNotNull { i -> openMeteoHour(marine, wx, i, LocalDateTime.parse(times[i].jsonPrimitive.content)) }
+                        .takeIf { it.isNotEmpty() }
+                }.getOrNull()
+            }
+        }
+    }
 
     /**
      * Dates au format ISO (yyyy-MM-dd). Erreur réseau -> bundle vide, comme côté Android.
