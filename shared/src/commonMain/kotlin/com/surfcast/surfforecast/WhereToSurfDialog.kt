@@ -60,6 +60,7 @@ fun WhereToSurfDialog(
 ) {
     val colors = MaterialTheme.colorScheme
     var openDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showMap by remember { mutableStateOf(false) }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(modifier = Modifier.fillMaxWidth(0.96f).clip(RoundedCornerShape(16.dp)), color = colors.surface) {
             Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 12.dp)) {
@@ -95,7 +96,7 @@ fun WhereToSurfDialog(
                             modifier = Modifier.padding(top = 10.dp).clip(RoundedCornerShape(50)).clickable(onClick = onRetry).padding(horizontal = 14.dp, vertical = 8.dp)
                         )
                     }
-                    is WhereState.Ready -> ReadyContent(state.result, homeLat, homeLon, openDate, { openDate = if (openDate == it) null else it }, onPickSpot)
+                    is WhereState.Ready -> ReadyContent(state.result, homeLat, homeLon, openDate, { openDate = if (openDate == it) null else it }, showMap, { showMap = it }, onPickSpot)
                 }
             }
         }
@@ -109,6 +110,8 @@ private fun ReadyContent(
     homeLon: Double,
     openDate: LocalDate?,
     onToggle: (LocalDate) -> Unit,
+    showMap: Boolean,
+    onShowMap: (Boolean) -> Unit,
     onPickSpot: (String) -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -122,7 +125,22 @@ private fun ReadyContent(
         Text(tr("Le meilleur coin de la semaine"), fontSize = 11.5.sp, color = colors.onSurfaceVariant)
         Text(headline, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
     }
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+        listOf(false to tr("Liste"), true to tr("Carte")).forEach { (isMap, label) ->
+            val on = showMap == isMap
+            Box(
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                    .clickable { onShowMap(isMap) }.padding(vertical = 7.dp),
+                contentAlignment = Alignment.Center
+            ) { Text(label, fontSize = 13.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, color = if (on) colors.onPrimary else colors.onSurface) }
+        }
+    }
     Spacer(Modifier.height(6.dp))
+    if (showMap) {
+        WhereToSurfMap(result, homeLat, homeLon, onPickSpot)
+        return
+    }
     result.days.forEach { day ->
         val open = openDate == day.date
         Column(modifier = Modifier.fillMaxWidth().clickable { onToggle(day.date) }.padding(vertical = 9.dp)) {
