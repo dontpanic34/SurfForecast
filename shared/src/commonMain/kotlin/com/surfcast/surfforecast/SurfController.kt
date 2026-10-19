@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -794,6 +796,36 @@ class SurfController(
     fun dismissSurfedAsk(date: LocalDate) {
         surfedAskDismissed = date.toString()
         prefs.putString("surfed_ask_dismissed", surfedAskDismissed)
+    }
+
+    // « Où surfer ? » : le rayon choisi, l'état du dernier calcul et le calcul en cours.
+    var whereRadius by mutableStateOf(prefs.getInt("where_radius", WhereToSurf.DEFAULT_RADIUS))
+        private set
+    var whereState by mutableStateOf<WhereState>(WhereState.Idle)
+        private set
+    private var whereJob: Job? = null
+
+    /**
+     * Cherche où surfer autour de [spotName] dans [radiusKm] : les prévisions de spots du catalogue (un appel groupé), notées comme les
+     * étoiles de la vue semaine. [homeStars] = les étoiles d'ici, celles de la vue semaine, pour savoir si ailleurs vaut le déplacement.
+     */
+    fun loadWhereToSurf(radiusKm: Int, spotName: String, homeStars: Map<LocalDate, Float?>) {
+        val home = SurfDatabase.findSpotByName(spotName) ?: return
+        whereRadius = radiusKm
+        prefs.putInt("where_radius", radiusKm)
+        whereJob?.cancel()
+        whereState = WhereState.Loading(radiusKm)
+        whereJob = scope.launch {
+            val spots = WhereToSurf.spotsAround(home.latitude, home.longitude, radiusKm, home.name).map { it.copy(facing = facingFor(it.name)) }
+            val fetched = runCatching { repository.fetchRegionScan(spots.map { it.lat to it.lon }) }.getOrNull()
+            ensureActive()
+            val scans = spots.zip(fetched ?: emptyList()).mapNotNull { (spot, hours) -> hours?.let { spot to it } }
+            if (scans.isEmpty() && spots.isNotEmpty()) {
+                whereState = WhereState.Failed("Pas de réseau : impossible de comparer les spots pour le moment.")
+                return@launch
+            }
+            whereState = WhereState.Ready(WhereToSurf.analyse(radiusKm, homeStars, scans))
+        }
     }
 
     /** Les conditions d'un jour passé que l'appli n'a pas gardées : cherchées chez Open-Meteo (spot du catalogue). */
