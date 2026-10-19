@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Où surfer ? maquette</title>
+<style>
+/* Maquette interactive : où ouvrir « Où surfer ? » (3 entrées) et l'écran lui-même. Données d'exemple, rien de réel. */
+:root{--bg:#0b1620;--card:#13232f;--card2:#1a2f3e;--txt:#e8f1f6;--mut:#8aa3b3;--acc:#3fd0b0;--org:#ff9a1f;--red:#ff5a55;--grn:#2bd47a}
+*{box-sizing:border-box}body{margin:0;background:#050b10;color:var(--txt);font:14px/1.4 system-ui,sans-serif;padding:16px}
+h1{font-size:18px;margin:0 0 4px}.mut{color:var(--mut)}
+.wrap{max-width:900px;margin:0 auto}
+.tabs{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.tab{padding:8px 12px;border-radius:999px;background:var(--card);color:var(--mut);border:1px solid #243845;cursor:pointer}
+.tab.on{background:var(--acc);color:#061018;font-weight:700;border-color:var(--acc)}
+.stage{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:340px;min-height:620px;background:var(--bg);border-radius:28px;border:6px solid #22333f;padding:14px;position:relative;overflow:hidden}
+.card{background:var(--card);border-radius:14px;padding:12px;margin:10px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chip{display:inline-block;padding:6px 10px;border-radius:999px;background:var(--card2);color:var(--txt);border:1px solid #2a4150;cursor:pointer;font-size:13px}
+.chip.on{background:var(--acc);color:#061018;font-weight:700;border-color:var(--acc)}
+.btn{background:var(--card2);border:1px solid #2a4150;color:var(--txt);border-radius:12px;padding:10px 12px;width:100%;text-align:left;cursor:pointer;font-size:14px}
+.hot{outline:2px dashed var(--org);outline-offset:2px}
+.note{background:#2b2210;border:1px solid #6b5217;border-radius:12px;padding:10px;font-size:13px;max-width:360px}
+.pill{font-weight:800;border-radius:8px;padding:2px 8px;font-size:12px;color:#061018}
+.zone{cursor:pointer}.zone .det{display:none;margin-top:8px;border-top:1px solid #2a4150;padding-top:8px}.zone.open .det{display:block}
+.spot{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1d3140}
+.hide{display:none}
+.big{font-size:15px;font-weight:700}
+.bar{height:6px;border-radius:3px;background:#243845;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%}
+</style></head><body><div class="wrap">
+<h1>Où surfer ? maquette interactive</h1>
+<p class="mut">Rien n'est codé. 1) choisis où se trouve l'entrée (3 propositions), 2) clique dans l'écran pour voir le résultat. Exemple : tu es à Montalivet, grosse houle de nord-ouest de 4 m à venir.</p>
+<div class="tabs" id="tabs">
+ <div class="tab on" data-e="A">Entrée A · dans les réglages</div>
+ <div class="tab" data-e="B">Entrée B · bouton dans le choix du spot</div>
+ <div class="tab" data-e="C">Entrée C · pastille sur l'écran principal</div>
+</div>
+<div class="stage">
+ <div class="phone" id="phone"></div>
+ <div>
+  <div class="note" id="why"></div>
+  <p class="mut" style="max-width:360px">Ma préférence : <b>B</b>. Tu y penses quand tu cherches un autre spot, c'est discret, et ça ne charge pas l'écran principal. A est le plus discret, C trop visible pour un usage rare.</p>
+ </div>
+</div>
+</div>
+<script>
+var entry='A',screen='home',day=1,radius=300,openZone=null;
+var DAYS=['Aujourd\'hui','Demain','Mercredi','Jeudi','Ce week-end'];
+// zone : nom, distance (km), sens, note par jour (0-100), phrase, spots [nom, houle, vent, note]
+var Z=[
+ {n:'Pays basque sud (Espagne)',km:340,dir:'Descends',s:[40,86,90,70,55],txt:'Abrité de la houle de nord-ouest, vent de sud-est offshore',spots:[['Mundaka','1,8 m · 13 s','5 km/h SE offshore',88],['Zarautz','1,5 m · 13 s','8 km/h S offshore',82],['Getaria','1,3 m · 12 s','6 km/h SE',74]]},
+ {n:'Pays basque nord',km:225,dir:'Descends',s:[35,64,72,58,50],txt:'Houle réduite, vent de côté',spots:[['Biarritz Grande Plage','2,0 m · 13 s','10 km/h E',68],['Anglet La Barre','2,4 m · 13 s','12 km/h NE',60]]},
+ {n:'Landes',km:140,dir:'Descends',s:[30,28,55,45,40],txt:'4 m de nord-ouest en plein, vent onshore fort',spots:[['Hossegor','3,6 m · 14 s','28 km/h NO onshore',24],['Capbreton','3,3 m · 14 s','26 km/h NO onshore',29]]},
+ {n:'Gironde',km:0,dir:'Reste ici',s:[20,12,40,38,35],txt:'Gros jour, onshore, démonté',spots:[['Montalivet','4,2 m · 14 s','22 km/h ONO onshore',10],['Lacanau','4,0 m · 14 s','24 km/h O onshore',12]]},
+ {n:'Vendée',km:240,dir:'Monte',s:[38,31,48,44,42],txt:'Houle plus petite, vent encore onshore',spots:[['Les Sables','2,6 m · 12 s','20 km/h NO',32],['La Sauzaie','2,4 m · 12 s','18 km/h NO',35]]},
+ {n:'Asturies (Espagne)',km:620,dir:'Descends',s:[45,78,80,66,52],txt:'Côte nord abritée du NO, vent offshore',spots:[['Rodiles','2,0 m · 13 s','8 km/h S',78],['Salinas','1,8 m · 13 s','6 km/h S',74]]}
+];
+function col(v){return v>=80?'var(--grn)':v>=62?'#3fd0b0':v>=45?'#ffd21f':v>=25?'var(--red)':'#9b1c31'}
+function lab(v){return v>=94?'Parfait':v>=80?'Très bon':v>=62?'Bon':v>=45?'Correct':v>=25?'Médiocre':'Mauvais'}
+function pill(v){return '<span class="pill" style="background:'+col(v)+'">'+lab(v)+'</span>'}
+function head(t,back){return '<div class="row" style="margin-bottom:6px"><b class="big">'+t+'</b>'+(back?'<span class="chip" onclick="go(\''+back+'\')">‹ Retour</span>':'')+'</div>'}
+function home(){
+ var c=entry==='C'?'<div class="chip hot" style="margin-top:6px" onclick="go(\'ou\')">🧭 Où surfer ?</div>':'';
+ return head('Montalivet')+'<div class="mut">Mardi · 14 h</div>'+c+
+ '<div class="card"><div class="row"><span>Actuellement 14 h</span><span class="pill" style="background:#ff9a1f">Massif</span></div><div class="mut">Massif, sors le jet !</div></div>'+
+ '<div class="card"><div class="row"><b>Spot</b><span class="chip '+(entry==='B'?'hot':'')+'" onclick="go(\'spot\')">Changer ▾</span></div><div class="mut">Montalivet, Gironde</div></div>'+
+ '<div class="card"><div class="row"><b>Réglages</b><span class="chip '+(entry==='A'?'hot':'')+'" onclick="go(\'reg\')">⚙ Ouvrir</span></div></div>';
+}
+function reg(){return head('Réglages','home')+
+ '<div class="card"><div class="mut">Profil · Prévisions · Matériel</div></div>'+
+ '<div class="card"><div class="mut">Webcams</div></div>'+
+ '<div class="card hot" onclick="go(\'ou\')" style="cursor:pointer"><b>🧭 Où surfer ?</b><div class="mut">Trouve le meilleur spot dans un rayon autour de toi</div></div>'+
+ '<div class="card"><div class="mut">Langue · À propos</div></div>';}
+function spot(){return head('Choisir un spot','home')+
+ '<div class="card"><div class="mut">France › Nouvelle-Aquitaine › Gironde</div><div class="spot"><span>Montalivet</span><span class="mut">✓</span></div><div class="spot"><span>Lacanau</span></div></div>'+
+ '<button class="btn hot" onclick="go(\'ou\')">🧭 <b>Où surfer ?</b> <span class="mut">trouve le meilleur spot autour de toi</span></button>';}
+function ou(){
+ var chips=DAYS.map(function(d,i){return '<span class="chip '+(i===day?'on':'')+'" onclick="day='+i+';render()">'+d+'</span>'}).join(' ');
+ var rad=[100,300,500].map(function(r){return '<span class="chip '+(r===radius?'on':'')+'" onclick="radius='+r+';render()">'+r+' km</span>'}).join(' ');
+ var list=Z.filter(function(z){return z.km<=radius}).sort(function(a,b){return b.s[day]-a.s[day]});
+ var best=list[0];
+ var h=head('Où surfer ?','home')+'<div class="mut">Depuis Montalivet · modèle consensus</div>'+
+ '<div style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap">'+chips+'</div><div style="margin:8px 0">Rayon : '+rad+'</div>';
+ if(!best||best.s[day]<45){h+='<div class="card"><b>Rien de bon ce jour-là dans ce rayon.</b><div class="mut">Essaie un autre jour ou élargis le rayon.</div></div>'}
+ else{h+='<div class="card" style="border:1px solid var(--acc)"><div class="mut">Le meilleur coin</div><div class="big">'+best.dir+(best.km?' vers '+best.n:' : '+best.n)+'</div><div>'+pill(best.s[day])+' <span class="mut">'+best.km+' km · '+best.spots[0][0]+' '+best.spots[0][1]+'</span></div></div>'}
+ list.forEach(function(z,i){
+  var o=openZone===z.n;
+  h+='<div class="card zone '+(o?'open':'')+'" onclick="openZone=(openZone===\''+z.n.replace(/'/g,"\\'")+'\'?null:\''+z.n.replace(/'/g,"\\'")+'\');render()">'+
+  '<div class="row"><b>'+(i+1)+'. '+z.n+'</b>'+pill(z.s[day])+'</div>'+
+  '<div class="mut">'+z.txt+' · '+(z.km?z.km+' km':'ici')+'</div>'+
+  '<div class="bar"><i style="width:'+z.s[day]+'%;background:'+col(z.s[day])+'"></i></div>'+
+  '<div class="det">'+z.spots.map(function(s){return '<div class="spot"><span>'+s[0]+'<br><span class="mut">'+s[1]+' · '+s[2]+'</span></span>'+pill(s[3])+'</div>'}).join('')+
+  '<div class="mut" style="margin-top:6px">Appuie sur un spot pour l\'ouvrir dans l\'appli.</div></div></div>';
+ });
+ return h+'<div class="mut" style="font-size:12px">Au-delà de 3 jours, les prévisions sont moins sûres : un indicateur de confiance s\'affiche.</div>';
+}
+var WHY={A:'<b>A · Réglages.</b> Une ligne « Où surfer ? » dans les réglages. Très discret, mais on ne le trouve que si on sait qu\'il existe.',B:'<b>B · Choix du spot.</b> Un bouton sous la liste des spots. Tu y penses au moment où tu cherches ailleurs.',C:'<b>C · Pastille.</b> Sous le nom du spot, sur l\'écran principal. Toujours à portée, mais ajoute un élément à l\'écran.'};
+function go(s){screen=s;render()}
+function render(){
+ var h={home:home,reg:reg,spot:spot,ou:ou}[screen]();
+ document.getElementById('phone').innerHTML=h;
+ document.getElementById('why').innerHTML=WHY[entry]+'<br><span class="mut">Les contours orange montrent où cliquer.</span>';
+ document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.e===entry)});
+}
+document.getElementById('tabs').onclick=function(e){var t=e.target.closest('.tab');if(t){entry=t.dataset.e;screen='home';render()}};
+render();
+</script></body></html>
