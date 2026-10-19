@@ -425,3 +425,5 @@ Voir l'historique Git. Résumé : déroulé du jour refait (fenêtre lever-couch
 - « Comprendre » : onglet dans la barre du bas (Prévisions, Webcam, Journal, Comprendre, Réglages) ; la carte du milieu de l'écran et les liens « Comprendre en détail » des ⚙ sont retirés. Test ajouté : la houle secondaire du modèle fin passe bien dans le consensus. Pas encore en ligne (avec les flèches de marée).
 
 - Bouée déplacée de la carte « Houle » vers l'encart « Actuellement » (une ligne sous les tuiles) : la mesure est celle du moment, elle ne doit pas suivre le jour choisi. Vérifié à l'écran. Pas encore en ligne.
+
+- **Libellés « Massif » et « Flat » sur les heures** (état : en ligne dès publication sur `web` et `unified`) : une heure trop grosse avec une houle de 3 m ou plus dit « Massif » et « Massif, sors le jet ! » (au lieu de « Gros jour, à jauger sur place ») ; sous 0,4 m, « Flat » et « Flat, va pêcher ! » (au lieu de « Petit jour »). Les mêmes mots que le résumé du jour. Entre ton maximum et 3 m, « Gros jour » reste. À vérifier : le « Petit jour » vu dans Actuellement à côté d'un « Gros jour » (cause non trouvée).

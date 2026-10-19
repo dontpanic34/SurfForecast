@@ -265,7 +265,7 @@ fun calculateSlotRating(
     val h = hourlyModel.waveHeight
     val t = hourlyModel.wavePeriod
     val profile = profileFor(surferLevel)
-    if (h < 0.4) return SlotRating(0, false, ConditionKind.TOO_SMALL, WHY_TOO_SMALL)
+    if (h < 0.4) return SlotRating(0, false, ConditionKind.TOO_SMALL, WHY_FLAT)
 
     // idealSwellDirection = orientation de la plage : elle définit aussi offshore / onshore.
     val windCategory = windCategoryFor(hourlyModel.windDirectionStr, idealSwellDirection)
@@ -290,7 +290,7 @@ fun calculateSlotRating(
     }
     val felt = energyKj * powerFactor
     val capEnd = profile.cap * SurfProfile.TOO_BIG_MARGIN
-    if (profile.hasCap && energyKj > capEnd) return SlotRating(0, true, ConditionKind.TOO_BIG, WHY_TOO_BIG)
+    if (profile.hasCap && energyKj > capEnd) return SlotRating(0, true, ConditionKind.TOO_BIG, if (h >= MASSIVE_SWELL_M) WHY_MASSIVE else WHY_TOO_BIG)
     // Pas plus gros que le maximum, mais l'offshore le rend trop creux pour ce profil : médiocre et challengeant.
     if (profile.hasCap && felt > capEnd) return SlotRating(30, false, ConditionKind.CHALLENGING, WHY_TOO_HOLLOW, hollow = true)
 
@@ -376,6 +376,10 @@ private const val TOO_SMALL_RATIO = 0.85
 private const val TOO_WINDY_FACTOR = 0.4
 const val WHY_TOO_SMALL = "Taille limite"
 const val WHY_TOO_BIG = "Gros jour, à jauger sur place"
+/** Houle de 3 m ou plus : le libellé dit « Massif » (comme le résumé du jour). Sous 0,4 m : « Flat ». */
+const val MASSIVE_SWELL_M = 3.0
+const val WHY_MASSIVE = "Massif, sors le jet !"
+const val WHY_FLAT = "Flat, va pêcher !"
 const val WHY_TOO_HOLLOW = "Creux et puissant"
 const val WHY_WIND_MEMORY = "Mer encore marquée par le vent d'avant"
 
