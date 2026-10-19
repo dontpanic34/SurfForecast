@@ -824,7 +824,9 @@ class SurfController(
                 whereState = WhereState.Failed("Pas de réseau : impossible de comparer les spots pour le moment.")
                 return@launch
             }
-            whereState = WhereState.Ready(WhereToSurf.analyse(radiusKm, homeStars, scans))
+            val homeHours = (_uiState.value as? SurfUiState.Success)?.hourlyForecast.orEmpty()
+            val homeSpot = ScanSpot(home.name, "ici", "", home.latitude, home.longitude, facingFor(home.name), 0)
+            whereState = WhereState.Ready(WhereToSurf.analyse(radiusKm, homeStars, scans, if (homeHours.isEmpty()) null else homeSpot to homeHours))
         }
     }
 
