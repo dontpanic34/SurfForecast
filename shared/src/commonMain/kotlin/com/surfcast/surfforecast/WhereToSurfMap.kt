@@ -43,7 +43,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -115,6 +118,8 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
     var selected by remember(result) { mutableStateOf<String?>(null) }
     val date = dates.getOrNull(dateIndex.roundToInt())
     val h = hour.roundToInt()
+    // Les étoiles du jour de chaque spot, calculées une fois par jour choisi (pas à chaque dessin).
+    val starsByName = remember(result, date) { spots.associate { ms -> ms.spot.name to date?.let { d -> WhereToSurf.spotDay(ms.spot, ms.hours, d)?.stars } } }
 
     var size by remember { mutableStateOf(IntSize.Zero) }
     var cLon by remember(result) { mutableFloatStateOf(homeLon.toFloat()) }
@@ -226,24 +231,34 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                     val px = sx(ms.spot.lon)
                     val py = sy(ms.spot.lat)
                     if (px < -40 || py < -40 || px > size.width + 40 || py > size.height + 40) return@forEach
-                    val rating = calculateSlotRating(hr, ms.spot.facing, NEUTRAL_LEVEL, bandShift = 0)
-                    val fill = if (rating.tooBig) ScoreBand.TOO_BIG.color() else scoreGradientColor(rating.score)
                     val center = Offset(px, py)
-                    val r = (if (ms.isHome) 10.dp else 8.dp).toPx()
-                    if (showSwell) arrowOn(center, (hr.waveDirection + 180f) % 360f, 15.dp.toPx(), Color.White, 2.dp.toPx())
-                    drawCircle(fill, radius = r, center = center)
-                    drawCircle(Color.White, radius = r, center = center, style = Stroke(2.dp.toPx()))
-                    if (ms.isHome) drawCircle(Color.White, radius = 14.dp.toPx(), center = center, style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))))
+                    if (showSwell) arrowOn(center, (hr.waveDirection + 180f) % 360f, 17.dp.toPx(), Color.White, 2.dp.toPx())
+                    // Le spot : ses étoiles du jour avec le chiffre (les mêmes que dans la liste).
+                    val stars = starsByName[ms.spot.name]
+                    val label = buildAnnotatedString {
+                        withStyle(SpanStyle(color = Color(0xFFFFC107))) { append("★ ") }
+                        append(if (stars == null) "–" else starsText(stars))
+                    }
+                    val pill = measurer.measure(label, TextStyle(fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.White))
+                    val pw = pill.size.width + 12.dp.toPx()
+                    val ph = pill.size.height + 4.dp.toPx()
+                    val pillTopLeft = Offset(px - pw / 2f, py - ph / 2f)
+                    drawRoundRect(Color(0xE608121C), topLeft = pillTopLeft, size = Size(pw, ph), cornerRadius = CornerRadius(ph / 2f))
+                    drawRoundRect(
+                        if (ms.isHome || ms.spot.name == selected) Color.White else Color(0x99FFFFFF), topLeft = pillTopLeft, size = Size(pw, ph),
+                        cornerRadius = CornerRadius(ph / 2f), style = Stroke(if (ms.isHome || ms.spot.name == selected) 2.5.dp.toPx() else 1.dp.toPx())
+                    )
+                    drawText(pill, topLeft = Offset(pillTopLeft.x + 6.dp.toPx(), pillTopLeft.y + 2.dp.toPx()))
                     if (showWind) {
                         val wdeg = (SurfUnitsHelper.cardinalToDegrees(SurfUnitsHelper.formatCardinalFr(hr.windDirectionStr)).toFloat() + 180f) % 360f
-                        arrowOn(Offset(px, py - 24.dp.toPx()), wdeg, 12.dp.toPx(), windColor(hr.windSpeedKmh), 2.5.dp.toPx())
+                        arrowOn(Offset(px, py - 26.dp.toPx()), wdeg, 12.dp.toPx(), windColor(hr.windSpeedKmh), 2.5.dp.toPx())
                     }
                     if (detail || ms.spot.name == selected) {
                         val txt = (if (showSwell) formatDecimal(hr.waveHeight, 1).replace('.', ',') + " m" else "") +
                             (if (showSwell && showWind) " · " else "") + (if (showWind) "${hr.windSpeedKmh}" else "")
                         if (txt.isNotEmpty()) {
                             val m = measurer.measure(txt, TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White))
-                            val tl = Offset(px - m.size.width / 2f, py + 11.dp.toPx())
+                            val tl = Offset(px - m.size.width / 2f, py + 14.dp.toPx())
                             drawRoundRect(
                                 Color(0xCC08121C), topLeft = Offset(tl.x - 4.dp.toPx(), tl.y - 1.dp.toPx()),
                                 size = Size(m.size.width + 8.dp.toPx(), m.size.height + 2.dp.toPx()), cornerRadius = CornerRadius(8.dp.toPx())
@@ -251,7 +266,6 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                             drawText(m, topLeft = tl)
                         }
                     }
-                    if (ms.spot.name == selected) drawCircle(Color.White, radius = 15.dp.toPx(), center = center, style = Stroke(2.5.dp.toPx()))
                 }
             }
             Text("NASA Blue Marble", fontSize = 9.sp, color = Color(0xCCFFFFFF), modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp))
