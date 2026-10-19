@@ -10,13 +10,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -65,6 +65,7 @@ import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -88,6 +89,29 @@ private fun windWord(kmh: Int) = when { kmh < 12 -> "faible"; kmh < 25 -> "modé
 private class MapSpot(val spot: ScanSpot, val hours: List<HourlyUiModel>, val isHome: Boolean)
 
 private fun hourOf(hours: List<HourlyUiModel>, date: LocalDate, hour: Int) = hours.firstOrNull { it.rawTime.date == date && it.rawTime.hour == hour }
+
+/** Une zone de la carte : les spots proches regroupés, montrés par leur meilleur (étoiles du jour). Un spot seul est une zone d'un spot. */
+private class Cluster(val members: List<MapSpot>, val stars: Float?) {
+    val best: MapSpot get() = members.first()
+}
+
+/**
+ * Regroupe les spots en zones : la taille d'une zone suit le rayon choisi (un huitième du rayon : 50 km donne des zones de 6 km, 300 km
+ * de 37 km) et rétrécit quand on zoome ([zoomBucket] : deux crans par doublement du zoom). Le spot de départ reste seul.
+ */
+private fun buildClusters(spots: List<MapSpot>, stars: Map<String, Float?>, homeLat: Double, radiusKm: Int, zoomBucket: Int): List<Cluster> {
+    val cell = (maxOf(radiusKm / 8.0, 6.0) / 2.0.pow(zoomBucket / 2.0)).coerceAtLeast(1.0)
+    val kmLon = 111.32 * cos(homeLat * PI / 180)
+    val groups = LinkedHashMap<String, MutableList<MapSpot>>()
+    spots.forEach { ms ->
+        val key = if (ms.isHome) "home" else "${floor(ms.spot.lat * 111.32 / cell)}/${floor(ms.spot.lon * kmLon / cell)}"
+        groups.getOrPut(key) { mutableListOf() }.add(ms)
+    }
+    return groups.values.map { members ->
+        val sorted = members.sortedByDescending { stars[it.spot.name] ?: -1f }
+        Cluster(sorted, stars[sorted.first().spot.name])
+    }.sortedBy { it.stars ?: -1f }
+}
 
 /** Le point (latitude, longitude) à [km] km de ([lat], [lon]) dans la direction [bearing]° (pour tracer le cercle du rayon). */
 private fun destination(lat: Double, lon: Double, bearing: Double, km: Double): Pair<Double, Double> {
@@ -113,9 +137,12 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
     val spots = remember(result) { result.scans.map { MapSpot(it.first, it.second, false) } + listOfNotNull(result.home?.let { MapSpot(it.first, it.second, true) }) }
     var dateIndex by remember(result) { mutableFloatStateOf(result.days.indexOfFirst { it.worthMoving }.coerceAtLeast(0).toFloat()) }
     var hour by remember(result) { mutableFloatStateOf(13f) }
-    var showSwell by remember { mutableStateOf(true) }
-    var showWind by remember { mutableStateOf(true) }
+    // Étoiles seules par défaut : la houle et le vent s'ajoutent à la demande.
+    var showSwell by remember { mutableStateOf(false) }
+    var showWind by remember { mutableStateOf(false) }
     var selected by remember(result) { mutableStateOf<String?>(null) }
+    // La zone touchée : les noms de ses spots (plusieurs), pour en montrer la sélection.
+    var zoneNames by remember(result) { mutableStateOf<List<String>?>(null) }
     val date = dates.getOrNull(dateIndex.roundToInt())
     val h = hour.roundToInt()
     // Les étoiles du jour de chaque spot, calculées une fois par jour choisi (pas à chaque dessin).
@@ -126,6 +153,9 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
     var cMy by remember(result) { mutableFloatStateOf(mercY(homeLat).toFloat()) }
     var scale by remember(result) { mutableFloatStateOf(0f) }
     var fitScale by remember(result) { mutableFloatStateOf(1f) }
+    // Les zones : recalculées au changement de jour, de rayon ou de cran de zoom (pas à chaque doigt posé).
+    val zoomBucket = if (fitScale > 0f && scale > 0f) (ln((scale / fitScale).toDouble()) / ln(2.0) * 2).roundToInt() else 0
+    val clusters = remember(spots, starsByName, zoomBucket, result.radiusKm) { buildClusters(spots, starsByName, homeLat, result.radiusKm, zoomBucket) }
     LaunchedEffect(size, result) {
         if (size.width > 0) {
             val radiusDeg = result.radiusKm / (111.32 * cos(homeLat * PI / 180))
@@ -191,12 +221,15 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                         detectTapGestures { tap ->
                             if (scale <= 0f) return@detectTapGestures
                             val limit = with(density) { 42.dp.toPx() }
-                            fun gap(ms: MapSpot): Float {
-                                val px = size.width / 2f + (ms.spot.lon - cLon) * scale
-                                val py = size.height / 2f - (mercY(ms.spot.lat) - cMy) * scale
+                            fun gap(c: Cluster): Float {
+                                val px = size.width / 2f + (c.best.spot.lon - cLon) * scale
+                                val py = size.height / 2f - (mercY(c.best.spot.lat) - cMy) * scale
                                 return (abs(px - tap.x) + abs(py - tap.y)).toFloat()
                             }
-                            selected = spots.minByOrNull { gap(it) }?.takeIf { gap(it) < limit }?.spot?.name
+                            val hit = clusters.minByOrNull { gap(it) }?.takeIf { gap(it) < limit }
+                            // Une zone de plusieurs spots montre sa sélection ; un spot seul, sa fiche.
+                            if (hit != null && hit.members.size > 1) { zoneNames = hit.members.map { it.spot.name }; selected = null }
+                            else { selected = hit?.best?.spot?.name; zoneNames = null }
                         }
                     }
             ) {
@@ -225,19 +258,23 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                 ring.close()
                 drawPath(ring, Color(0x143FD0B0))
                 drawPath(ring, Color(0xE63FD0B0), style = Stroke(width = 2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f))))
-                val detail = scale >= fitScale * 1.3f || result.radiusKm <= 100
-                if (date != null) spots.forEach { ms ->
+                val detail = showSwell || showWind
+                if (date != null) clusters.forEach { cl ->
+                    val ms = cl.best
                     val hr = hourOf(ms.hours, date, h) ?: return@forEach
+                    val inZone = zoneNames?.let { ms.spot.name in it || cl.members.any { m -> m.spot.name in it } } == true
+                    val isSel = ms.spot.name == selected || inZone
                     val px = sx(ms.spot.lon)
                     val py = sy(ms.spot.lat)
                     if (px < -40 || py < -40 || px > size.width + 40 || py > size.height + 40) return@forEach
                     val center = Offset(px, py)
                     if (showSwell) arrowOn(center, (hr.waveDirection + 180f) % 360f, 17.dp.toPx(), Color.White, 2.dp.toPx())
                     // Le spot : ses étoiles du jour avec le chiffre (les mêmes que dans la liste).
-                    val stars = starsByName[ms.spot.name]
+                    val stars = cl.stars
                     val label = buildAnnotatedString {
                         withStyle(SpanStyle(color = Color(0xFFFFC107))) { append("★ ") }
                         append(if (stars == null) "–" else starsText(stars))
+                        if (cl.members.size > 1) withStyle(SpanStyle(color = Color(0xFFB8C7D1), fontSize = 10.sp)) { append("  +${cl.members.size - 1}") }
                     }
                     val pill = measurer.measure(label, TextStyle(fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = Color.White))
                     val pw = pill.size.width + 12.dp.toPx()
@@ -245,15 +282,15 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                     val pillTopLeft = Offset(px - pw / 2f, py - ph / 2f)
                     drawRoundRect(Color(0xE608121C), topLeft = pillTopLeft, size = Size(pw, ph), cornerRadius = CornerRadius(ph / 2f))
                     drawRoundRect(
-                        if (ms.isHome || ms.spot.name == selected) Color.White else Color(0x99FFFFFF), topLeft = pillTopLeft, size = Size(pw, ph),
-                        cornerRadius = CornerRadius(ph / 2f), style = Stroke(if (ms.isHome || ms.spot.name == selected) 2.5.dp.toPx() else 1.dp.toPx())
+                        if (ms.isHome || isSel) Color.White else Color(0x99FFFFFF), topLeft = pillTopLeft, size = Size(pw, ph),
+                        cornerRadius = CornerRadius(ph / 2f), style = Stroke(if (ms.isHome || isSel) 2.5.dp.toPx() else 1.dp.toPx())
                     )
                     drawText(pill, topLeft = Offset(pillTopLeft.x + 6.dp.toPx(), pillTopLeft.y + 2.dp.toPx()))
                     if (showWind) {
                         val wdeg = (SurfUnitsHelper.cardinalToDegrees(SurfUnitsHelper.formatCardinalFr(hr.windDirectionStr)).toFloat() + 180f) % 360f
                         arrowOn(Offset(px, py - 26.dp.toPx()), wdeg, 12.dp.toPx(), windColor(hr.windSpeedKmh), 2.5.dp.toPx())
                     }
-                    if (detail || ms.spot.name == selected) {
+                    if (detail) {
                         val txt = (if (showSwell) formatDecimal(hr.waveHeight, 1).replace('.', ',') + " m" else "") +
                             (if (showSwell && showWind) " · " else "") + (if (showWind) "${hr.windSpeedKmh}" else "")
                         if (txt.isNotEmpty()) {
@@ -274,7 +311,7 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
             LayerChip(tr("Houle"), showSwell) { showSwell = !showSwell }
             LayerChip(tr("Vent"), showWind) { showWind = !showWind }
             Text(
-                tr("flèche blanche : d'où va la houle · flèche de couleur : le vent (km/h)"),
+                tr("flèche blanche : où va la houle · flèche de couleur : le vent (km/h)"),
                 fontSize = 10.sp, color = colors.onSurfaceVariant, modifier = Modifier.weight(1f).padding(start = 4.dp)
             )
         }
@@ -289,9 +326,39 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                 }
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("$h h", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, modifier = Modifier.padding(end = 10.dp))
-            Slider(value = hour, onValueChange = { hour = it }, valueRange = 6f..21f, steps = 14, modifier = Modifier.weight(1f))
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(7, 10, 13, 16, 19).forEach { hh ->
+                val on = h == hh
+                Box(
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(50)).background(if (on) colors.primary else colors.surfaceVariant)
+                        .clickable { hour = hh.toFloat() }.padding(vertical = 7.dp),
+                    contentAlignment = Alignment.Center
+                ) { Text("$hh h", fontSize = 12.5.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, color = if (on) colors.onPrimary else colors.onSurface) }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        val zoneSpots = zoneNames?.let { names -> names.mapNotNull { n -> spots.firstOrNull { it.spot.name == n } } }.orEmpty()
+        if (zoneSpots.isNotEmpty() && date != null) {
+            Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceVariant).padding(12.dp)) {
+                Text(zoneSpots.first().spot.zone + " · " + zoneSpots.size + " " + tr("spots"), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+                Text(tr("Les spots de la zone, du meilleur au moins bon"), fontSize = 11.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                zoneSpots.sortedByDescending { starsByName[it.spot.name] ?: -1f }.forEach { ms ->
+                    val hr = hourOf(ms.hours, date, h)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { selected = ms.spot.name; zoneNames = null }.padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(ms.spot.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurface)
+                            if (hr != null) Text(
+                                "${formatDecimal(hr.waveHeight, 1).replace('.', ',')} m · ${hr.wavePeriod.roundToInt()} s · ${tr("vent")} ${hr.windSpeedKmh} km/h ${SurfUnitsHelper.formatCardinalFr(hr.windDirectionStr)}",
+                                fontSize = 11.5.sp, color = colors.onSurfaceVariant
+                            )
+                        }
+                        starsByName[ms.spot.name]?.let { StarsRow(it) }
+                    }
+                }
+            }
         }
         val sel = spots.firstOrNull { it.spot.name == selected }
         val selHour = if (sel != null && date != null) hourOf(sel.hours, date, h) else null
@@ -315,8 +382,8 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                     modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(50)).clickable { onPickSpot(sel.spot.name) }.padding(vertical = 4.dp, horizontal = 2.dp)
                 )
             }
-        } else {
-            Text(tr("Touche un spot pour voir ses conditions."), fontSize = 11.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+        } else if (zoneSpots.isEmpty()) {
+            Text(tr("Touche une zone ou un spot pour voir ce qu'il y a dedans."), fontSize = 11.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
