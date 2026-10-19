@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Où surfer ? carte (maquette)</title>
+<style>
+/* Maquette interactive : carte « Où surfer ? » avec fond dessiné (côte simplifiée, relief factice), calques houle et vent, curseur d'heures, rayon, spots notés. Toutes les valeurs sont inventées. */
+:root{--bg:#0b1620;--card:#13232f;--card2:#1a2f3e;--txt:#e8f1f6;--mut:#8aa3b3;--acc:#3fd0b0}
+*{box-sizing:border-box}body{margin:0;background:#050b10;color:var(--txt);font:14px/1.4 system-ui,sans-serif;padding:12px}
+.wrap{max-width:400px;margin:0 auto}h1{font-size:17px;margin:0 0 2px}.mut{color:var(--mut)}
+.mapbox{position:relative;border-radius:16px;overflow:hidden;border:1px solid #243845;margin:8px 0;touch-action:none}
+canvas{display:block;width:100%;height:440px;cursor:grab}
+.zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+.zoom button{width:36px;height:36px;border-radius:10px;border:1px solid #2a4150;background:rgba(19,35,47,.9);color:var(--txt);font-size:20px}
+.legend{position:absolute;left:8px;bottom:8px;background:rgba(11,22,32,.82);border-radius:10px;padding:6px 8px;font-size:11px;min-width:130px}
+.legend .g{height:8px;border-radius:4px;margin:3px 0}
+.chip{display:inline-block;padding:6px 10px;border-radius:999px;background:var(--card2);border:1px solid #2a4150;cursor:pointer;font-size:13px;margin:2px 2px 2px 0;user-select:none}
+.chip.on{background:var(--acc);color:#061018;font-weight:700;border-color:var(--acc)}
+.card{background:var(--card);border-radius:14px;padding:10px 12px;margin:8px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pill{font-weight:800;border-radius:8px;padding:2px 8px;font-size:12px;color:#061018;white-space:nowrap}
+input[type=range]{width:100%}
+.spot{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1d3140;cursor:pointer}
+.big{font-size:15px;font-weight:700}
+</style></head><body><div class="wrap">
+<h1>Où surfer ? la carte</h1>
+<div class="mut">Depuis Montalivet · données d'exemple · glisse, zoome (molette, + − ou deux doigts)</div>
+<div class="mapbox"><canvas id="c"></canvas>
+ <div class="zoom"><button id="zi">+</button><button id="zo">−</button></div>
+ <div class="legend" id="leg"></div></div>
+<div class="card">
+ <div class="row"><b id="tl">Mer. 12 h</b><span class="chip" id="play">▶ Lecture</span></div>
+ <input type="range" id="t" min="0" max="119" value="36">
+ <div id="days"></div>
+</div>
+<div class="card">
+ <div>Calques : <span class="chip on" data-l="swell">Houle</span><span class="chip on" data-l="wind">Vent</span><span class="chip on" data-l="spots">Spots</span></div>
+ <div style="margin-top:4px">Rayon : <span id="rads"></span></div>
+</div>
+<div class="card" id="best"></div>
+<div class="card" id="sel" style="display:none"></div>
+<div class="card"><div class="mut" style="margin-bottom:4px">Dans le rayon, du meilleur au moins bon</div><div id="list"></div></div>
+<div class="mut" style="font-size:12px">Maquette : le trait de côte sera plus fin dans la vraie version, la houle et le vent viendront d'Open-Meteo sur une grille de points, la note est celle de l'appli (ton niveau, l'orientation de chaque plage).</div>
+</div>
+<script>
+var LAND=[[-1.3,49.7],[0,49.4],[3,50.2],[6,50.2],[6,36.2],[-5.4,36.1],[-6.3,36.8],[-7.4,37.2],[-8,37],[-8.9,37],[-8.95,37.9],[-9.2,38.7],[-9.5,38.8],[-9.4,39.35],[-8.95,40.15],[-8.7,41.15],[-8.85,41.9],[-8.9,42.2],[-9.3,43],[-8.9,43.3],[-8.2,43.7],[-7,43.55],[-6,43.6],[-5,43.4],[-4,43.45],[-3,43.4],[-2.7,43.4],[-1.98,43.32],[-1.55,43.48],[-1.4,43.7],[-1.25,44.5],[-1.2,45],[-1.15,45.37],[-1.05,45.55],[-1.1,46.2],[-1.9,46.7],[-2.4,47.3],[-3,47.5],[-4.5,47.9],[-4.7,48.5],[-3,48.8],[-1.6,48.6]];
+var SPOTS=[
+ ['Montalivet',-1.16,45.38,280],['Lacanau',-1.19,45.0,280],['Hossegor',-1.44,43.67,275],['Biarritz',-1.56,43.48,290],
+ ['Zarautz',-2.17,43.29,350],['Mundaka',-2.7,43.41,350],['Somo',-3.74,43.45,350],['Rodiles',-5.37,43.53,345],
+ ['Pantín',-7.65,43.65,10],['Razo',-8.7,43.3,330],['Sauzaie',-2.0,46.7,250],['Quiberon',-3.1,47.5,230],['La Palue',-4.6,48.2,270],
+ ['Aguçadoura',-8.8,41.4,270],['Peniche',-9.36,39.34,280],['Ericeira',-9.42,38.99,270],['Sagres',-8.95,37.0,255]];
+var HOME=SPOTS[0], DAYS=['Mar.','Mer.','Jeu.','Ven.','Sam.'];
+var cv=document.getElementById('c'),ctx=cv.getContext('2d'),W=0,H=0,DPR=window.devicePixelRatio||1;
+var view={cx:-3.5,cy:0,s:21},t=36,radius=300,layers={swell:1,wind:1,spots:1},sel=null,playing=null;
+function my(lat){return Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))*180/Math.PI}
+function unmy(y){return (2*Math.atan(Math.exp(y*Math.PI/180))-Math.PI/2)*180/Math.PI}
+view.cy=my(44.3);
+function sx(lon){return W/2+(lon-view.cx)*view.s}function sy(lat){return H/2-(my(lat)-view.cy)*view.s}
+function lonAt(x){return view.cx+(x-W/2)/view.s}function latAt(y){return unmy(view.cy-(y-H/2)/view.s)}
+function pip(lon,lat){var c=false;for(var i=0,j=LAND.length-1;i<LAND.length;j=i++){var a=LAND[i],b=LAND[j];if((a[1]>lat)!=(b[1]>lat)&&lon<(b[0]-a[0])*(lat-a[1])/(b[1]-a[1])+a[0])c=!c}return c}
+function rnd(seed){return function(){seed=(seed*16807)%2147483647;return seed/2147483647}}
+var R=rnd(7),TEX=[];for(var i=0;i<2600;i++){var lo=-10+R()*16,la=36.2+R()*14;if(pip(lo,la))TEX.push([lo,la,R(),R()])}
+function smooth(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)}
+// Champs inventés : une grosse houle de nord-ouest qui arrive (pic vers mercredi midi), un vent d'ouest-nord-ouest fort au nord, de sud-est faible au sud.
+function amp(t){return 1+3.2*Math.exp(-Math.pow((t-36)/20,2))+1.4*Math.exp(-Math.pow((t-96)/14,2))}
+function swell(lon,lat,t){
+ var a=amp(t),sh=1-0.55*Math.exp(-Math.pow((lon+2.6)/1.7,2)-Math.pow((lat-43.7)/1.0,2));
+ var lf=1-0.03*Math.max(0,45-lat),w=1+0.06*Math.sin(lon*1.7+lat*1.3+t/9);
+ var h=a*sh*lf*w*1;
+ return{h:h,per:11+3*Math.min(1,a/4.5),dir:305+(lat-45)*0.8}}
+function wind(lon,lat,t){
+ var a=(amp(t)-1)/3.2,s=smooth((lat-44.0)/1.6);
+ var n={sp:14+22*a,d:290},so={sp:5+5*a,d:165};
+ var nu=-n.sp*Math.sin(n.d*Math.PI/180),nv=-n.sp*Math.cos(n.d*Math.PI/180);
+ var su=-so.sp*Math.sin(so.d*Math.PI/180),sv=-so.sp*Math.cos(so.d*Math.PI/180);
+ var wk=lon<-8?1.15:1,u=(su+(nu-su)*s)*wk,v=(sv+(nv-sv)*s)*wk;
+ var sp=Math.sqrt(u*u+v*v);return{sp:sp,d:(Math.atan2(-u,-v)*180/Math.PI+360)%360,u:u,v:v}}
+function ad(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d}
+function score(sp,t){
+ var s=swell(sp[1],sp[2],t),w=wind(sp[1],sp[2],t),h=s.h,size;
+ size=h<0.6?15:h<1?15+(h-0.6)/0.4*45:h<=1.8?60+(h-1)/0.8*40:h<=2.6?100:h<=3.4?100-(h-2.6)/0.8*50:Math.max(0,50-(h-3.4)*50);
+ var df=Math.max(0.2,Math.cos(Math.min(90,ad(s.dir,sp[3]))*Math.PI/180));
+ var wd=ad(w.d,sp[3]),k=Math.min(30,w.sp)/30,wf=wd<50?1-k*0.75:wd>130?1:1-k*0.3;
+ return{sc:Math.round(size*(0.4+0.6*df)*wf),h:h,per:s.per,wsp:w.sp,wd:w.d,sdir:s.dir}}
+function band(v){return v>=94?['Parfait','#0f8a52']:v>=80?['Très bon','#2bd47a']:v>=62?['Bon','#3fd0b0']:v>=45?['Correct','#ffd21f']:v>=25?['Médiocre','#ff5a55']:['Mauvais','#9b1c31']}
+function pill(v){var b=band(v);return '<span class="pill" style="background:'+b[1]+'">'+b[0]+'</span>'}
+var SW=[[0,[20,50,130,40]],[0.8,[30,100,200,110]],[1.6,[40,190,210,150]],[2.6,[120,220,100,170]],[3.4,[255,210,40,185]],[4.2,[255,130,30,200]],[5.2,[230,40,90,215]]];
+function ramp(stops,v){if(v<=stops[0][0])return stops[0][1];for(var i=1;i<stops.length;i++)if(v<=stops[i][0]){var a=stops[i-1],b=stops[i],f=(v-a[0])/(b[0]-a[0]);return a[1].map(function(x,k){return x+(b[1][k]-x)*f})}return stops[stops.length-1][1]}
+var WC=[[0,[63,208,176,255]],[10,[255,210,31,255]],[20,[255,154,31,255]],[32,[255,90,85,255]]];
+function resize(){var r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);if(!view.init){view.s=W/16;view.init=1}draw()}
+function km(a,b){var dl=(b[0]-a[0])*Math.PI/180,la=a[1]*Math.PI/180,lb=b[1]*Math.PI/180;var x=dl*Math.cos((la+lb)/2),y=lb-la;return 6371*Math.sqrt(x*x+y*y)}
+function bearing(a,b){var la=a[1]*Math.PI/180,lb=b[1]*Math.PI/180,dl=(b[0]-a[0])*Math.PI/180;return(Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI+360)%360}
+function dest(a,brg,d){var R=6371,la=a[1]*Math.PI/180,lo=a[0]*Math.PI/180,b=brg*Math.PI/180,l2=Math.asin(Math.sin(la)*Math.cos(d/R)+Math.cos(la)*Math.sin(d/R)*Math.cos(b));var o2=lo+Math.atan2(Math.sin(b)*Math.sin(d/R)*Math.cos(la),Math.cos(d/R)-Math.sin(la)*Math.sin(l2));return[o2*180/Math.PI,l2*180/Math.PI]}
+function arrow(x,y,deg,len,w,col){var r=deg*Math.PI/180,dx=Math.sin(r),dy=-Math.cos(r),x2=x+dx*len/2,y2=y+dy*len/2,x1=x-dx*len/2,y1=y-dy*len/2;ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-dx*5-dy*3.2,y2-dy*5+dx*3.2);ctx.lineTo(x2-dx*5+dy*3.2,y2-dy*5-dx*3.2);ctx.closePath();ctx.fill()}
+var off=document.createElement('canvas');
+function landPath(){ctx.beginPath();LAND.forEach(function(p,i){var x=sx(p[0]),y=sy(p[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath()}
+function draw(){
+ if(!W)return;
+ var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0e2c44');g.addColorStop(1,'#08182a');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ if(layers.swell){var cw=Math.ceil(W/6),ch=Math.ceil(H/6);off.width=cw;off.height=ch;var oc=off.getContext('2d'),im=oc.createImageData(cw,ch);
+  for(var j=0;j<ch;j++)for(var i=0;i<cw;i++){var c=ramp(SW,swell(lonAt(i*6+3),latAt(j*6+3),t).h),k=(j*cw+i)*4;im.data[k]=c[0];im.data[k+1]=c[1];im.data[k+2]=c[2];im.data[k+3]=c[3]}
+  oc.putImageData(im,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(off,0,0,cw*6,ch*6)}
+ landPath();ctx.strokeStyle='rgba(110,190,230,.22)';ctx.lineWidth=Math.max(6,view.s*0.35);ctx.lineJoin='round';ctx.stroke();
+ landPath();var lg=ctx.createLinearGradient(0,0,W,H);lg.addColorStop(0,'#2d3f2c');lg.addColorStop(1,'#3a3d2b');ctx.fillStyle=lg;ctx.fill();
+ ctx.save();landPath();ctx.clip();
+ [[[-1.6,43.05],[3,42.6]],[[-5.8,43.05],[-1.8,42.95]],[[-9,42.4],[-7,42.9]],[[-8,40.3],[-6.5,40.6]],[[-3.8,37.3],[-2,37.1]]].forEach(function(r){ctx.strokeStyle='rgba(150,130,95,.35)';ctx.lineWidth=Math.max(8,view.s*0.5);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(sx(r[0][0]),sy(r[0][1]));ctx.lineTo(sx(r[1][0]),sy(r[1][1]));ctx.stroke()});
+ TEX.forEach(function(p){var x=sx(p[0]),y=sy(p[1]);if(x<-4||y<-4||x>W+4||y>H+4)return;ctx.fillStyle=p[2]<.5?'rgba(70,100,60,.28)':'rgba(120,105,75,.22)';ctx.beginPath();ctx.arc(x,y,1+p[3]*Math.max(1.5,view.s*0.12),0,6.3);ctx.fill()});
+ ctx.restore();
+ landPath();ctx.strokeStyle='rgba(150,215,240,.7)';ctx.lineWidth=1.4;ctx.stroke();
+ // rayon
+ ctx.beginPath();for(var b=0;b<=360;b+=6){var q=dest([HOME[1],HOME[2]],b,radius),x=sx(q[0]),y=sy(q[1]);b?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath();ctx.fillStyle='rgba(63,208,176,.06)';ctx.fill();ctx.setLineDash([6,5]);ctx.strokeStyle='rgba(63,208,176,.9)';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
+ // flèches houle (sur la mer) et vent
+ var step=44;
+ if(layers.swell)for(var x=step/2;x<W;x+=step)for(var y=step/2;y<H;y+=step){var lo=lonAt(x),la=latAt(y);if(pip(lo,la))continue;var s=swell(lo,la,t);arrow(x,y,(s.dir+180)%360,9+s.per*1.0,1.6,'rgba(255,255,255,.88)')}
+ if(layers.wind)for(var x=step;x<W;x+=step)for(var y=step;y<H;y+=step){var w=wind(lonAt(x),latAt(y),t);var c=ramp(WC,w.sp);arrow(x,y,(w.d+180)%360,6+w.sp*0.55,2.2,'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+',.95)')}
+ if(layers.spots)SPOTS.forEach(function(sp){var x=sx(sp[1]),y=sy(sp[2]);if(x<-10||y<-10||x>W+10||y>H+10)return;var inr=km([HOME[1],HOME[2]],[sp[1],sp[2]])<=radius,r=score(sp,t),b=band(r.sc);
+  ctx.globalAlpha=inr?1:.4;ctx.beginPath();ctx.arc(x,y,sel===sp?10:7,0,6.3);ctx.fillStyle=b[1];ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
+  if(sp===HOME){ctx.beginPath();ctx.arc(x,y,13,0,6.3);ctx.setLineDash([3,3]);ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();ctx.setLineDash([])}ctx.globalAlpha=1});
+ legend();
+}
+function legend(){var h='';if(layers.swell){h+='Houle (m)<div class="g" style="background:linear-gradient(90deg,rgb(30,100,200),rgb(40,190,210),rgb(120,220,100),rgb(255,210,40),rgb(255,130,30),rgb(230,40,90))"></div><div class="row"><span>0</span><span>2</span><span>4</span><span>5+</span></div>'}
+ if(layers.wind){h+='Vent (km/h)<div class="g" style="background:linear-gradient(90deg,#3fd0b0,#ffd21f,#ff9a1f,#ff5a55)"></div><div class="row"><span>0</span><span>10</span><span>20</span><span>30+</span></div>'}
+ var el=document.getElementById('leg');el.style.display=h?'block':'none';el.innerHTML=h}
+function lab(){var d=Math.floor(t/24),hh=t%24;document.getElementById('tl').textContent=DAYS[d]+' '+hh+' h · houle '+swell(HOME[1],HOME[2],t).h.toFixed(1).replace('.',',')+' m à Montalivet'}
+var DIRS=['nord','nord-est','est','sud-est','sud','sud-ouest','ouest','nord-ouest'];
+function side(b){var i=Math.round(b/45)%8;return['Monte','Va vers l\'est (nord-est)','Va vers l\'est','Descends (sud-est)','Descends','Descends (sud-ouest)','Va vers l\'ouest','Monte (nord-ouest)'][i]}
+function lists(){
+ lab();var inr=SPOTS.map(function(sp){return{sp:sp,r:score(sp,t),d:km([HOME[1],HOME[2]],[sp[1],sp[2]])}}).filter(function(o){return o.d<=radius}).sort(function(a,b){return b.r.sc-a.r.sc});
+ var el=document.getElementById('list'),be=document.getElementById('best');
+ el.innerHTML=inr.map(function(o){return '<div class="spot" data-n="'+o.sp[0]+'"><span><b>'+o.sp[0]+'</b><br><span class="mut">'+o.r.h.toFixed(1).replace('.',',')+' m · '+o.r.per.toFixed(0)+' s · vent '+Math.round(o.r.wsp)+' km/h · '+Math.round(o.d)+' km</span></span>'+pill(o.r.sc)+'</div>'}).join('');
+ var b=inr[0];
+ if(!b||b.r.sc<45){be.innerHTML='<b>Rien de bon à cette heure dans ce rayon.</b><div class="mut">Fais défiler les heures, change de jour ou élargis le rayon.</div>'}
+ else{var home=b.sp===HOME;be.innerHTML='<div class="mut">Le meilleur coin à cette heure</div><div class="big">'+(home?'Reste à '+b.sp[0]:side(bearing([HOME[1],HOME[2]],[b.sp[1],b.sp[2]]))+' : '+b.sp[0])+'</div><div>'+pill(b.r.sc)+' <span class="mut">'+(home?'ici':Math.round(b.d)+' km')+' · houle '+b.r.h.toFixed(1).replace('.',',')+' m, vent '+Math.round(b.r.wsp)+' km/h</span></div>'}
+ el.querySelectorAll('.spot').forEach(function(e){e.onclick=function(){var sp=SPOTS.filter(function(s){return s[0]===e.dataset.n})[0];pick(sp,true)}});
+ var s=document.getElementById('sel');if(sel){var r=score(sel,t);s.style.display='block';s.innerHTML='<div class="row"><b class="big">'+sel[0]+'</b>'+pill(r.sc)+'</div><div class="mut">Houle '+r.h.toFixed(1).replace('.',',')+' m, '+r.per.toFixed(0)+' s, de '+Math.round(r.sdir)+'° · vent '+Math.round(r.wsp)+' km/h de '+Math.round(r.wd)+'° · plage orientée '+sel[3]+'°</div>'}else s.style.display='none'}
+function pick(sp,center){sel=sp;if(center){view.cx=sp[1];view.cy=my(sp[2]);view.s=Math.max(view.s,W/6)}render()}
+function render(){draw();lists()}
+// interactions
+var ptrs={},last=null,moved=0;
+cv.addEventListener('pointerdown',function(e){cv.setPointerCapture(e.pointerId);ptrs[e.pointerId]=[e.offsetX,e.offsetY];moved=0;last=null});
+cv.addEventListener('pointermove',function(e){if(!ptrs[e.pointerId])return;var o=ptrs[e.pointerId],ids=Object.keys(ptrs);
+ if(ids.length===1){var dx=e.offsetX-o[0],dy=e.offsetY-o[1];moved+=Math.abs(dx)+Math.abs(dy);view.cx-=dx/view.s;view.cy+=dy/view.s;ptrs[e.pointerId]=[e.offsetX,e.offsetY];draw()}
+ else{var other=ids.filter(function(i){return i!=e.pointerId})[0],p=ptrs[other];var d0=Math.hypot(o[0]-p[0],o[1]-p[1]),d1=Math.hypot(e.offsetX-p[0],e.offsetY-p[1]);ptrs[e.pointerId]=[e.offsetX,e.offsetY];moved+=9;if(d0>0)zoomAt((e.offsetX+p[0])/2,(e.offsetY+p[1])/2,d1/d0)}});
+function up(e){var was=ptrs[e.pointerId];delete ptrs[e.pointerId];if(was&&moved<6&&Object.keys(ptrs).length===0)tap(e.offsetX,e.offsetY)}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',function(e){delete ptrs[e.pointerId]});
+cv.addEventListener('wheel',function(e){e.preventDefault();zoomAt(e.offsetX,e.offsetY,e.deltaY<0?1.2:1/1.2)},{passive:false});
+function zoomAt(x,y,f){var lo=lonAt(x),la=my(latAt(y));view.s=Math.max(W/40,Math.min(W*5,view.s*f));view.cx=lo-(x-W/2)/view.s;view.cy=la+(y-H/2)/view.s;draw()}
+function tap(x,y){var best=null,bd=18;SPOTS.forEach(function(sp){var d=Math.hypot(sx(sp[1])-x,sy(sp[2])-y);if(d<bd){bd=d;best=sp}});sel=best;render()}
+document.getElementById('zi').onclick=function(){zoomAt(W/2,H/2,1.5)};document.getElementById('zo').onclick=function(){zoomAt(W/2,H/2,1/1.5)};
+var tr=document.getElementById('t');tr.oninput=function(){t=+tr.value;dayChips();render()};
+function dayChips(){document.getElementById('days').innerHTML=DAYS.map(function(d,i){return '<span class="chip '+(Math.floor(t/24)===i?'on':'')+'" data-d="'+i+'">'+d+'</span>'}).join('');document.querySelectorAll('#days .chip').forEach(function(c){c.onclick=function(){t=+c.dataset.d*24+12;tr.value=t;dayChips();render()}})}
+document.getElementById('play').onclick=function(){var b=this;if(playing){clearInterval(playing);playing=null;b.textContent='▶ Lecture';return}b.textContent='⏸ Pause';playing=setInterval(function(){t=(t+1)%120;tr.value=t;dayChips();render()},180)};
+document.querySelectorAll('[data-l]').forEach(function(c){c.onclick=function(){var k=c.dataset.l;layers[k]=!layers[k];c.classList.toggle('on',layers[k]);render()}});
+document.getElementById('rads').innerHTML=[50,100,300,500].map(function(r){return '<span class="chip '+(r===radius?'on':'')+'" data-r="'+r+'">'+r+' km</span>'}).join('');
+document.querySelectorAll('[data-r]').forEach(function(c){c.onclick=function(){radius=+c.dataset.r;document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',x===c)});var k=radius>=500?W/17:radius>=300?W/10:radius>=100?W/4:W/1.6;view.cx=HOME[1];view.cy=my(HOME[2]);if(radius>=300){view.cx=-3.5;view.cy=my(44.2)}view.s=k;render()}});
+window.addEventListener('resize',resize);dayChips();resize();lists();
+</script></body></html>
