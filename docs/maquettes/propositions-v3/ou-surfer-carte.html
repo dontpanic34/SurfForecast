@@ -28,8 +28,9 @@ input[type=range]{width:100%}
  <div class="legend" id="leg"></div></div>
 <div class="card">
  <div class="row"><b id="tl">Mer. 12 h</b><span class="chip" id="play">▶ Lecture</span></div>
- <input type="range" id="t" min="0" max="119" value="36">
- <div id="days"></div>
+ <div id="strip" style="margin-top:8px"></div>
+ <div class="mut" style="font-size:12px;margin:4px 0">Chaque case = le meilleur spot du rayon (houle en m), par tranche de 3 h. Touche un jour pour le détail heure par heure, une case pour voir la carte à ce moment.</div>
+ <div id="dayhr"></div>
 </div>
 <div class="card">
  <div>Calques : <span class="chip on" data-l="swell">Houle</span><span class="chip on" data-l="wind">Vent</span><span class="chip on" data-l="spots">Spots</span></div>
@@ -47,7 +48,7 @@ var SPOTS=[
  ['Zarautz',-2.17,43.29,350],['Mundaka',-2.7,43.41,350],['Somo',-3.74,43.45,350],['Rodiles',-5.37,43.53,345],
  ['Pantín',-7.65,43.65,10],['Razo',-8.7,43.3,330],['Sauzaie',-2.0,46.7,250],['Quiberon',-3.1,47.5,230],['La Palue',-4.6,48.2,270],
  ['Aguçadoura',-8.8,41.4,270],['Peniche',-9.36,39.34,280],['Ericeira',-9.42,38.99,270],['Sagres',-8.95,37.0,255]];
-var HOME=SPOTS[0], DAYS=['Mar.','Mer.','Jeu.','Ven.','Sam.'];
+var HOME=SPOTS[0], DAYS=['Mar.','Mer.','Jeu.','Ven.','Sam.','Dim.','Lun.'];
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),W=0,H=0,DPR=window.devicePixelRatio||1;
 var view={cx:-3.5,cy:0,s:21},t=36,radius=300,layers={swell:1,wind:1,spots:1},sel=null,playing=null;
 function my(lat){return Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))*180/Math.PI}
@@ -161,11 +162,28 @@ cv.addEventListener('wheel',function(e){e.preventDefault();zoomAt(e.offsetX,e.of
 function zoomAt(x,y,f){var lo=lonAt(x),la=my(latAt(y));view.s=Math.max(W/40,Math.min(W*5,view.s*f));view.cx=lo-(x-W/2)/view.s;view.cy=la+(y-H/2)/view.s;draw()}
 function tap(x,y){var best=null,bd=18;SPOTS.forEach(function(sp){var d=Math.hypot(sx(sp[1])-x,sy(sp[2])-y);if(d<bd){bd=d;best=sp}});sel=best;probe=best?null:[lonAt(x),latAt(y)];render()}
 document.getElementById('zi').onclick=function(){zoomAt(W/2,H/2,1.5)};document.getElementById('zo').onclick=function(){zoomAt(W/2,H/2,1/1.5)};
-var tr=document.getElementById('t');tr.oninput=function(){t=+tr.value;dayChips();render()};
-function dayChips(){document.getElementById('days').innerHTML=DAYS.map(function(d,i){return '<span class="chip '+(Math.floor(t/24)===i?'on':'')+'" data-d="'+i+'">'+d+'</span>'}).join('');document.querySelectorAll('#days .chip').forEach(function(c){c.onclick=function(){t=+c.dataset.d*24+12;tr.value=t;dayChips();render()}})}
-document.getElementById('play').onclick=function(){var b=this;if(playing){clearInterval(playing);playing=null;b.textContent='▶ Lecture';return}b.textContent='⏸ Pause';playing=setInterval(function(){t=(t+1)%120;tr.value=t;dayChips();render()},180)};
+var tr={value:0},openDay=1;
+var bestCache={};
+function bestAt(tt){var k=radius+'/'+tt;if(bestCache[k])return bestCache[k];var b=null;SPOTS.forEach(function(sp){if(km([HOME[1],HOME[2]],[sp[1],sp[2]])>radius)return;var r=score(sp,tt);if(!b||r.sc>b.r.sc)b={sp:sp,r:r}});return bestCache[k]=b}
+function cellCol(b){return b?band(b.r.sc)[1]:'#243845'}
+function dayChips(){
+ var h='<div style="display:grid;grid-template-columns:24px repeat(7,1fr);gap:2px;font-size:10px">',d,r;
+ h+='<div></div>';for(d=0;d<7;d++){var best=null;for(var q=0;q<24;q+=3){var b=bestAt(d*24+q);if(b&&(!best||b.r.sc>best.r.sc))best=b}
+  h+='<div data-day="'+d+'" style="cursor:pointer;text-align:center;padding:4px 0;border-radius:8px;font-weight:700;'+(openDay===d?'background:#3fd0b0;color:#061018':'background:#1a2f3e')+'">'+DAYS[d]+'</div>'}
+ for(r=0;r<8;r++){h+='<div class="mut" style="text-align:right;padding-right:2px;line-height:22px">'+(r*3)+'h</div>';
+  for(d=0;d<7;d++){var tt=d*24+r*3,b2=bestAt(tt),on=(t>=tt&&t<tt+3);
+   h+='<div data-t="'+tt+'" style="cursor:pointer;height:22px;border-radius:5px;text-align:center;line-height:22px;color:#061018;font-weight:700;background:'+cellCol(b2)+';'+(on?'outline:2px solid #fff;':'')+'">'+(b2?fr(b2.r.h):'')+'</div>'}}
+ h+='</div>';document.getElementById('strip').innerHTML=h;
+ var dh=document.getElementById('dayhr');
+ if(openDay!==null){var x='<div class="mut" style="margin:6px 0 2px">Détail de '+DAYS[openDay]+', heure par heure</div><div style="display:flex;gap:3px;overflow-x:auto;padding-bottom:6px">';
+  for(var hh=0;hh<24;hh++){var t3=openDay*24+hh,bb=bestAt(t3),on2=(t===t3);
+   x+='<div data-t="'+t3+'" style="cursor:pointer;flex:0 0 54px;text-align:center;border-radius:8px;padding:4px 2px;background:'+cellCol(bb)+';color:#061018;font-size:11px;font-weight:700;'+(on2?'outline:2px solid #fff;':'')+'"><div>'+hh+' h</div><div>'+(bb?fr(bb.r.h)+' m':'')+'</div><div style="font-weight:600;font-size:10px">'+(bb?bb.sp[0].slice(0,9):'—')+'</div></div>'}
+  dh.innerHTML=x+'</div>'}else dh.innerHTML='';
+ document.querySelectorAll('[data-day]').forEach(function(e){e.onclick=function(){var d2=+e.dataset.day;openDay=openDay===d2?null:d2;if(openDay!==null){t=openDay*24+12}dayChips();render()}});
+ document.querySelectorAll('#strip [data-t],#dayhr [data-t]').forEach(function(e){e.onclick=function(){t=+e.dataset.t;openDay=Math.floor(t/24);dayChips();render()}})}
+document.getElementById('play').onclick=function(){var b=this;if(playing){clearInterval(playing);playing=null;b.textContent='▶ Lecture';return}b.textContent='⏸ Pause';playing=setInterval(function(){t=(t+1)%168;openDay=Math.floor(t/24);dayChips();render()},300)};
 document.querySelectorAll('[data-l]').forEach(function(c){c.onclick=function(){var k=c.dataset.l;layers[k]=!layers[k];c.classList.toggle('on',layers[k]);render()}});
 document.getElementById('rads').innerHTML=[50,100,300,500].map(function(r){return '<span class="chip '+(r===radius?'on':'')+'" data-r="'+r+'">'+r+' km</span>'}).join('');
-document.querySelectorAll('[data-r]').forEach(function(c){c.onclick=function(){radius=+c.dataset.r;document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',x===c)});var k=radius>=500?W/17:radius>=300?W/10:radius>=100?W/4:W/1.6;view.cx=HOME[1];view.cy=my(HOME[2]);if(radius>=300){view.cx=-3.5;view.cy=my(44.2)}view.s=k;render()}});
+document.querySelectorAll('[data-r]').forEach(function(c){c.onclick=function(){radius=+c.dataset.r;dayChips();document.querySelectorAll('[data-r]').forEach(function(x){x.classList.toggle('on',x===c)});var k=radius>=500?W/17:radius>=300?W/10:radius>=100?W/4:W/1.6;view.cx=HOME[1];view.cy=my(HOME[2]);if(radius>=300){view.cx=-3.5;view.cy=my(44.2)}view.s=k;render()}});
 window.addEventListener('resize',resize);dayChips();resize();lists();
 </script></body></html>
