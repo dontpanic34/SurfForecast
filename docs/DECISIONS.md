@@ -158,3 +158,7 @@ Le niveau n'est pas une donnée sensible pour le propriétaire : envoi automatiq
 
 ## Taille au déferlement (14 octobre 2026)
 Pas de taille « estimée au déferlement » affichée, ni de leçon chiffrée, ni de champ « taille observée » dans le journal. La formule théorique de Komar et Gaughan donne des tailles bien trop hautes sur nos côtes (1,3 m à 14 s ≈ 2,2 m, démenti par l'expérience du propriétaire : plutôt 1,6 m). La période compte déjà dans la note via l'énergie (hauteur² × période²).
+
+
+## Où surfer ? et mode surf trip (19 octobre 2026)
+Tendance sur 7 jours : option B de la maquette `ou-surfer-tendance.html` (une ligne par jour, étoiles ici, « → zone » quand ça vaut le déplacement, détail heure par heure au toucher). Rayons 50, 100, 300, 500 km ; fond de carte libre de droit (NASA Blue Marble). L'entrée « Où surfer ? » n'apparaît d'elle-même (sous la vue semaine et sous le nom du spot) que si la semaine est mauvaise ici (règle proposée : au moins 3 jours sur 7 à moins de 2 étoiles, à valider) ; la ligne des réglages est toujours là. Le mode surf trip complet (décision monter / attendre / changer, météo du séjour, conseils de van) se développe dans `docs/CAHIER_SURF_TRIP.md`.

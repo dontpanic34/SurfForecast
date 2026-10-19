@@ -13,6 +13,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
+- **Où surfer ? et mode surf trip** (19 octobre) : option B choisie ; à coder (calcul par zones dans le rayon, liste jour par jour, carte) quand le propriétaire donne le go ; règle d'apparition de l'entrée à valider ; cahier à développer ensemble dans `docs/CAHIER_SURF_TRIP.md`.
 - **Vérifier sur téléphone le journal de session refait** (14 octobre) : barre de début, durée, « + Planche », « Prévu · Vécu » en couleur, « + » central de la barre du bas, anciennes sessions (étoiles lues comme des libellés), historique des relevés (Réglages > Aide). Le glisser des encarts (appui long) et les couleurs de la carte Météo aussi.
 - **Journal de session, restes** : la photo qui remplit l'heure (idée de la maquette `journal-session-idees.html`, pas faite). Décidé le 14 octobre : pas de « Je pars surfer » ; le bandeau « Tu as surfé hier ? » existe déjà, on n'y touche pas.
 - **Loupe de spot dans l'en-tête** (maquette `entete-spot-favoris.html` : 5 en-têtes et 5 façons de placer les favoris, à valider ; la première maquette `loupe-spot.html` est abandonnée : « 1 2 3 » pas compris) : loupe à gauche du nom, ouvre le choix du spot avec recherche active, pastilles 1 2 3 par spot pour choisir la place de favori.
