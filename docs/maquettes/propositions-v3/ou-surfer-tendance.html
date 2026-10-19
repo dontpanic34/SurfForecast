@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Où surfer ? tendance et entrée</title>
+<style>
+/* Maquette : 3 façons légères de montrer la tendance sur 7 jours, et quand l'entrée « Où surfer ? » apparaît. Valeurs inventées, rien de réel. */
+:root{--bg:#0b1620;--card:#13232f;--card2:#1a2f3e;--txt:#e8f1f6;--mut:#8aa3b3;--acc:#3fd0b0}
+*{box-sizing:border-box}body{margin:0;background:#050b10;color:var(--txt);font:14px/1.4 system-ui,sans-serif;padding:12px}
+.wrap{max-width:400px;margin:0 auto}h1{font-size:17px;margin:0 0 2px}h2{font-size:15px;margin:22px 0 6px}.mut{color:var(--mut)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chip{display:inline-block;padding:7px 11px;border-radius:999px;background:var(--card2);border:1px solid #2a4150;cursor:pointer;font-size:13px;user-select:none}
+.chip.on{background:var(--acc);color:#061018;font-weight:700;border-color:var(--acc)}
+.card{background:var(--card);border-radius:14px;padding:12px;margin:8px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pill{font-weight:800;border-radius:8px;padding:2px 8px;font-size:12px;color:#061018;white-space:nowrap}
+.big{font-size:15px;font-weight:700}
+.day{padding:10px 0;border-bottom:1px solid #1d3140;cursor:pointer}
+.day:last-child{border:0}
+.star{color:#ffd21f;letter-spacing:1px}.star i{color:#35505f;font-style:normal}
+.win{border-left:4px solid var(--acc);padding-left:10px;margin:10px 0}
+.enc{background:#1f2c1f;border:1px solid #3a5a3a;border-radius:12px;padding:10px;margin:8px 0;cursor:pointer}
+.tile{flex:1;text-align:center;background:var(--card2);border-radius:10px;padding:6px 0;font-size:11px}
+.hot{outline:2px dashed #ff9a1f;outline-offset:2px}
+svg text{fill:#8aa3b3;font-size:10px}
+</style></head><body><div class="wrap">
+<h1>Où surfer ? · tendance et entrée</h1>
+<div class="mut">Trois façons légères de voir la semaine, puis quand l'entrée apparaît. Valeurs inventées.</div>
+
+<h2>1. La tendance sur 7 jours</h2>
+<div class="tabs" id="tt">
+ <span class="chip on" data-v="A">A · Courbe ici / ailleurs</span>
+ <span class="chip" data-v="B">B · Jour par jour</span>
+ <span class="chip" data-v="C">C · Les bons créneaux</span>
+</div>
+<div class="mut" style="font-size:12px">Rayon 300 km depuis Montalivet. Touche un jour pour le détail heure par heure.</div>
+<div class="card" id="trend"></div>
+<div class="card" id="detail"></div>
+
+<h2>2. Quand l'entrée apparaît</h2>
+<div class="tabs" id="te">
+ <span class="chip" data-w="bon">Semaine bonne ici</span>
+ <span class="chip on" data-w="mauvais">Semaine mauvaise ici</span>
+</div>
+<div class="mut" style="font-size:12px">Règle proposée : l'entrée n'apparaît que s'il y a au moins 3 jours sur 7 à moins de 2 étoiles. Sinon, rien de plus à l'écran.</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+ <div class="card" style="flex:1;min-width:300px" id="home"></div>
+</div>
+<div class="card" id="settings"></div>
+</div>
+<script>
+var DAYS=['Mar.','Mer.','Jeu.','Ven.','Sam.','Dim.','Lun.'];
+// score ici (Montalivet) et meilleur ailleurs dans 300 km, toutes les 3 h sur 7 jours (inventés mais cohérents : grosse houle mercredi)
+function here(t){return Math.max(8,62-52*Math.exp(-Math.pow((t-38)/20,2))-24*Math.exp(-Math.pow((t-98)/12,2))+8*Math.sin(t/7))}
+function away(t){return Math.min(96,Math.max(here(t),66+24*Math.exp(-Math.pow((t-44)/30,2))+10*Math.exp(-Math.pow((t-100)/16,2))+6*Math.sin(t/5)))}
+var ZONE=['Pays basque sud','Pays basque sud','Pays basque nord','Landes','Gironde','Pays basque nord','Landes'];
+function band(v){return v>=94?['Parfait','#0f8a52']:v>=80?['Très bon','#2bd47a']:v>=62?['Bon','#3fd0b0']:v>=45?['Correct','#ffd21f']:v>=25?['Médiocre','#ff5a55']:['Mauvais','#9b1c31']}
+function stars(v){return v>=80?5:v>=62?4:v>=45?3:v>=25?2:1}
+function starHtml(n){return '<span class="star">'+'★'.repeat(n)+'<i>'+'★'.repeat(5-n)+'</i></span>'}
+function pill(v){var b=band(v);return '<span class="pill" style="background:'+b[1]+'">'+b[0]+'</span>'}
+function dayStat(d){var h=0,a=0,hb=0,ab=0;for(var q=6;q<=18;q+=3){h+=here(d*24+q);a+=away(d*24+q);hb=Math.max(hb,here(d*24+q));ab=Math.max(ab,away(d*24+q))}return{h:Math.round(h/5),a:Math.round(a/5),hb:Math.round(hb),ab:Math.round(ab)}}
+var DS=DAYS.map(function(_,d){return dayStat(d)});
+var view='A',openD=1,week='mauvais';
+function curve(){
+ var W=360,H=150,pad=22,N=168;function X(t){return pad+t/N*(W-pad-6)}function Y(v){return 12+(100-v)/100*(H-34)}
+ var line=function(f){var p='';for(var t=0;t<N;t+=3)p+=(t?'L':'M')+X(t).toFixed(1)+','+Y(f(t)).toFixed(1);return p};
+ var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block">';
+ [[80,'Très bon'],[62,'Bon'],[45,'Correct'],[25,'Médiocre']].forEach(function(l){s+='<line x1="'+pad+'" x2="'+(W-6)+'" y1="'+Y(l[0])+'" y2="'+Y(l[0])+'" stroke="#243845" stroke-dasharray="3 4"/><text x="0" y="'+(Y(l[0])+3)+'">'+l[1].slice(0,3)+'</text>'});
+ DAYS.forEach(function(d,i){var x=X(i*24+12);s+='<rect data-d="'+i+'" x="'+X(i*24)+'" y="0" width="'+((W-pad-6)/7)+'" height="'+(H-18)+'" fill="'+(openD===i?'rgba(63,208,176,.14)':'transparent')+'" style="cursor:pointer"/><text x="'+x+'" y="'+(H-4)+'" text-anchor="middle" style="fill:'+(openD===i?'#3fd0b0':'#8aa3b3')+';font-weight:700">'+d+'</text>'});
+ s+='<path d="'+line(away)+'" fill="none" stroke="#2bd47a" stroke-width="3" stroke-linejoin="round" pointer-events="none"/>';
+ s+='<path d="'+line(here)+'" fill="none" stroke="#ff9a1f" stroke-width="2.5" stroke-dasharray="5 4" pointer-events="none"/></svg>';
+ return '<div class="row" style="margin-bottom:6px"><span><b style="color:#2bd47a">━</b> Meilleur spot du rayon</span><span><b style="color:#ff9a1f">╍</b> Montalivet</span></div>'+s+
+ '<div class="mut" style="font-size:12px">Plus la ligne verte est au-dessus de l\'orange, plus ça vaut le déplacement.</div>'}
+function byday(){return DAYS.map(function(d,i){var o=DS[i],gain=o.ab-o.hb;
+ return '<div class="day" data-d="'+i+'"><div class="row"><b>'+d+'</b><span>'+starHtml(stars(o.hb))+' <span class="mut">ici</span></span></div>'+
+ (gain>=15?'<div class="row" style="margin-top:3px"><span>→ <b>'+ZONE[i]+'</b></span><span>'+starHtml(stars(o.ab))+'</span></div>':'<div class="mut" style="margin-top:3px">Reste ici, ça va</div>')+'</div>'}).join('')}
+function slots(){
+ var L=[];DAYS.forEach(function(_,d){for(var q=0;q<24;q+=3){var t=d*24+q;L.push({t:t,v:away(t),h:here(t)})}});
+ var out=[],used={};L.sort(function(a,b){return b.v-a.v}).forEach(function(o){var d=Math.floor(o.t/24);if(used[d]||out.length>=3)return;used[d]=1;
+  var from=o.t%24;out.push({d:d,from:from,to:from+6,v:o.v,h:o.h})});
+ return out.sort(function(a,b){return a.d-b.d}).map(function(o){var b=band(o.v);
+  return '<div class="win" style="border-color:'+b[1]+'"><div class="big">'+DAYS[o.d]+' de '+o.from+' h à '+o.to+' h</div><div class="mut">'+ZONE[o.d]+' · '+pill(o.v)+(o.v-o.h>=15?' · ici seulement '+band(o.h)[0].toLowerCase():' · ici aussi')+'</div></div>'}).join('')}
+function detail(){if(openD===null){return ''}
+ var h='<div class="mut" style="margin-bottom:6px">'+DAYS[openD]+' heure par heure · meilleur spot du rayon</div><div style="display:flex;align-items:flex-end;gap:2px;height:70px">';
+ for(var hh=0;hh<24;hh++){var v=away(openD*24+hh),hv=here(openD*24+hh);h+='<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:'+Math.round(v*0.7)+'px;background:'+band(v)[1]+';border-radius:3px 3px 0 0"></div></div>'}
+ h+='</div><div class="row mut" style="font-size:10px"><span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>23 h</span></div>';
+ var o=DS[openD];h+='<div style="margin-top:8px">Meilleur coin : <b>'+ZONE[openD]+'</b> '+pill(o.ab)+'</div><div class="mut">Ici : '+band(o.hb)[0].toLowerCase()+'. Touche « Ouvrir la carte » pour voir la houle et le vent à cette heure.</div><div class="chip" style="margin-top:8px">🗺 Ouvrir la carte à cette heure</div>';return h}
+function renderTrend(){document.getElementById('trend').innerHTML=view==='A'?curve():view==='B'?byday():slots();
+ document.getElementById('detail').innerHTML=detail();document.getElementById('detail').style.display=openD===null?'none':'block';
+ document.querySelectorAll('[data-d]').forEach(function(e){e.onclick=function(){openD=+e.dataset.d;renderTrend()}})}
+document.getElementById('tt').onclick=function(e){var c=e.target.closest('.chip');if(!c)return;view=c.dataset.v;document.querySelectorAll('#tt .chip').forEach(function(x){x.classList.toggle('on',x===c)});renderTrend()};
+// entrée
+var HW={bon:[4,5,4,3,4,3,2],mauvais:[1,1,1,2,3,2,1]};
+function renderHome(){var st=HW[week],low=st.filter(function(n){return n<2}).length,need=low>=3;
+ var h='<div class="row"><b class="big">Montalivet</b><span class="chip" style="padding:4px 9px">Changer ▾</span></div>';
+ h+=need?'<div class="chip hot" style="margin-top:6px;padding:4px 10px;font-size:12px">🧭 Mieux ailleurs cette semaine</div>':'';
+ h+='<div class="mut" style="margin:8px 0 4px">Semaine</div><div style="display:flex;gap:4px">'+st.map(function(n,i){return '<div class="tile"><div class="mut">'+DAYS[i]+'</div>'+starHtml(n).replace('letter-spacing:1px','')+'</div>'}).join('')+'</div>';
+ h+=need?'<div class="enc hot"><div class="row"><span><b>'+low+' jours sur 7 à 1 étoile ici</b><br><span class="mut" style="font-size:12px">Il y a mieux à moins de 300 km.</span></span><b style="color:#3fd0b0">Où surfer ? ›</b></div></div>':'<div class="mut" style="margin-top:8px;font-size:12px">Rien de plus à l\'écran : la semaine est bonne ici.</div>';
+ document.getElementById('home').innerHTML=h;
+ document.getElementById('settings').innerHTML='<div class="mut" style="margin-bottom:4px">Réglages (toujours là)</div><div class="row"><span>Profil · Prévisions · Matériel · Webcams</span></div><div class="row" style="margin-top:6px;padding:8px;background:#1a2f3e;border-radius:10px"><b>🧭 Où surfer ?</b><span class="mut">›</span></div>'}
+document.getElementById('te').onclick=function(e){var c=e.target.closest('.chip');if(!c)return;week=c.dataset.w;document.querySelectorAll('#te .chip').forEach(function(x){x.classList.toggle('on',x===c)});renderHome()};
+renderTrend();renderHome();
+</script></body></html>

@@ -77,6 +77,8 @@ fun SurfPreferencesDialog(
     onPinWidget: (() -> Unit)? = null,
     // Rouvre l'écran de bienvenue (unités, niveau, origine des prévisions).
     onShowTour: (() -> Unit)? = null,
+    // Ouvre « Où surfer ? » (compare les spots autour de soi) ; null = pas de ligne.
+    onOpenWhereToSurf: (() -> Unit)? = null,
     // Orientation du spot affiché (null = pas de spot chargé : la carte est masquée).
     spotName: String = "",
     beachFacing: Int? = null,
@@ -331,6 +333,9 @@ fun SurfPreferencesDialog(
                         SettingsSection("Mon surf") {
                             SettingsRow("Profil", "Ton niveau et ce que tu surfes", SettingsIcons.User, value = levelQuiz?.result?.let { tr(it.name) }, accentValue = true, badge = if (profileReviewed) null else "Recommandé", top = false) { page = "profile" }
                             SettingsRow("Matériel", "Planches et planche du jour", SettingsIcons.Board) { page = "gear" }
+                        }
+                        if (onOpenWhereToSurf != null) SettingsSection("Voyage") {
+                            SettingsRow("Où surfer ?", "Compare les spots autour de toi, jour par jour", SettingsIcons.Compass, top = false) { onOpenWhereToSurf() }
                         }
                         SettingsSection("Prévisions") {
                             SettingsRow("Sources et modèles", "D'où viennent la houle, le vent et la météo", SettingsIcons.Layers, value = if (autoModels) "Auto" else "Manuel", top = false) { page = "forecast" }

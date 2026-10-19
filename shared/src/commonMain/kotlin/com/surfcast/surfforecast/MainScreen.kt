@@ -99,6 +99,9 @@ fun MainScreen(
     var showSpotDialog by remember { mutableStateOf(false) }
     var showPreferencesDialog by remember { mutableStateOf(false) }
     var showSessionLogDialog by remember { mutableStateOf(false) }
+    // « Où surfer ? » : l'écran ouvert, et les étoiles de la vue semaine d'ici (posées à chaque dessin, lues à l'ouverture).
+    var showWhereToSurf by remember { mutableStateOf(false) }
+    val weekStarsHolder = remember { arrayOf<Map<LocalDate, Float?>>(emptyMap()) }
     var showSessionLogEntry by remember { mutableStateOf(false) }
     // Jour proposé à l'ouverture de la saisie : 1 quand on répond « Noter ma session » à « Tu as surfé ? » (hier).
     var entryInitialOffset by remember { mutableStateOf(0) }
@@ -199,6 +202,24 @@ fun MainScreen(
         )
     }
 
+    if (showWhereToSurf) {
+        val whereName = (uiState as? SurfUiState.Success)?.spotName
+        val whereHome = whereName?.let { SurfDatabase.findSpotByName(it) }
+        if (whereName == null || whereHome == null) {
+            showWhereToSurf = false
+        } else {
+            LaunchedEffect(whereName) { viewModel.loadWhereToSurf(viewModel.whereRadius, whereName, weekStarsHolder[0]) }
+            WhereToSurfDialog(
+                homeName = whereName, homeLat = whereHome.latitude, homeLon = whereHome.longitude,
+                radiusKm = viewModel.whereRadius, state = viewModel.whereState,
+                onRadius = { viewModel.loadWhereToSurf(it, whereName, weekStarsHolder[0]) },
+                onRetry = { viewModel.loadWhereToSurf(viewModel.whereRadius, whereName, weekStarsHolder[0]) },
+                onPickSpot = { viewModel.updateActiveSpotFavorite(it); showWhereToSurf = false },
+                onDismiss = { showWhereToSurf = false }
+            )
+        }
+    }
+
     // La section « Comprendre » s'ouvre de partout (accueil, ⚙ des encarts, Réglages) par ComprendreState.open.
     ComprendreState.request?.let { start -> ComprendreDialog(startLesson = start, onDismiss = { ComprendreState.close() }) }
 
@@ -259,6 +280,7 @@ fun MainScreen(
                 showPreferencesDialog = false
                 viewModel.showHomeTourAgain()
             },
+            onOpenWhereToSurf = { showPreferencesDialog = false; showWhereToSurf = true },
             onDismiss = { showPreferencesDialog = false; preferencesStartPage = null },
             onPinWidget = onPinWidget,
             backup = backup,
@@ -576,6 +598,8 @@ fun MainScreen(
                             )?.let { sc -> starsForScore(sc, 0) }
                         }
 
+                        weekStarsHolder[0] = availableDates.zip(dailyStars).toMap()
+
                         // Libellé du jour : celui de la note du jour. Les cas à part (trop gros, trop petit, challengeant, trop de
                         // vent) gardent leur nom quand c'est le cas de la meilleure heure.
                         val dailyLabels: List<SlotRating?> = availableDates.mapIndexed { i, date ->
@@ -799,6 +823,7 @@ fun MainScreen(
                                             selectedHourState = pickedHourState,
                                             onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             onOpenModelSettings = { preferencesStartPage = "forecast"; showPreferencesDialog = true },
+                                            onOpenWhereToSurf = { showWhereToSurf = true },
                                             afterTimeline = bestInfo,
                                             hoursForSelectedDay = hoursForSelectedDay,
                                             boardOfDay = if (GearPrefs.boardDayMode == "header" || GearPrefs.boardDayMode == "both")
@@ -1079,6 +1104,7 @@ fun DynamicCardsSection(
     afterTimeline: @Composable () -> Unit,
     onOpenProfile: () -> Unit = {},
     onOpenModelSettings: () -> Unit = {},
+    onOpenWhereToSurf: (() -> Unit)? = null,
     hoursForSelectedDay: List<HourlyUiModel>,
     dailyTideInfo: DailyTideInfo?,
     isToday: Boolean,
@@ -1272,6 +1298,10 @@ fun DynamicCardsSection(
                                 boardOfDay = boardOfDay,
                                 toleranceLabel = null
                             )
+                            // La semaine est mauvaise ici : l'entrée « Où surfer ? » apparaît d'elle-même (sinon elle reste dans les réglages).
+                            if (onOpenWhereToSurf != null && WhereToSurf.needsWhereToSurf(dailyStars)) {
+                                WhereToSurfEncart(dailyStars.count { it != null && it < WhereToSurf.LOW_STARS }, dailyStars.size, onOpenWhereToSurf)
+                            }
                         }
                         "dailyTimeline" -> {
                             Spacer(modifier = Modifier.height(4.dp))

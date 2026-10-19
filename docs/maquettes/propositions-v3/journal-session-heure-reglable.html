@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><style>
+body{margin:0;background:#0b1519;font-family:system-ui,sans-serif;color:#e6eef2;padding:14px;display:grid;grid-template-columns:repeat(3,300px);gap:14px;width:940px}
+h4{margin:0 0 6px;font-size:12px;color:#8fa4ad;font-weight:600}
+.card{background:#132229;border-radius:12px;padding:12px;height:300px;box-sizing:border-box;position:relative}
+.lab{font-size:11px;color:#8fa4ad;font-weight:700;margin:8px 0 4px}
+.ruler{display:flex;gap:2px}.ruler i{flex:1;height:26px;border-radius:4px;background:#2c4d5f}.ruler i.on{background:#7fc4ef}
+.big{font-size:30px;font-weight:800;text-align:center;margin:8px 0}.big small{font-size:13px;color:#8fa4ad;font-weight:600}
+.row{display:flex;align-items:center;justify-content:center;gap:10px}
+.b{background:#1c3340;border-radius:20px;padding:8px 14px;font-weight:800;font-size:13px}
+.sl{height:6px;border-radius:3px;background:#2c4d5f;position:relative;margin:12px 4px}.sl u{position:absolute;left:0;width:45%;height:6px;border-radius:3px;background:#7fc4ef}.sl s{position:absolute;left:45%;top:-6px;width:18px;height:18px;border-radius:50%;background:#fff}
+.wheel{display:flex;justify-content:center;gap:18px;margin-top:8px}.col{width:70px;text-align:center;line-height:30px;font-size:18px;color:#5d7782;border-radius:10px;height:120px;overflow:hidden}.col b{display:block;color:#fff;background:#1c3340;border-radius:8px}
+.tag{position:absolute;right:10px;top:10px;font-size:10px;background:#7fc4ef;color:#06222f;border-radius:10px;padding:2px 8px;font-weight:800}
+</style>
+<div><h4>A · Heure réglable au doigt et en chiffres</h4><div class="card"><span class="tag">conseillée</span>
+<div class="lab">Début</div><div class="ruler"><i></i><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="big">8:15</div><div class="row"><span class="b">− 5 min</span><span class="b">+ 5 min</span></div>
+<div class="lab">Durée · 1 h 20 · fin 9:35</div><div class="sl"><u></u><s></s></div></div></div>
+<div><h4>B · Roues heure et minutes</h4><div class="card"><div class="lab">Début</div>
+<div class="wheel"><div class="col">6<br>7<b>8</b>9<br>10</div><div class="col">00<br>10<b>15</b>20<br>25</div></div>
+<div class="lab">Durée · 1 h 20 · fin 9:35</div><div class="sl"><u></u><s></s></div></div></div>
+<div><h4>C · Barre seulement, avec minutes</h4><div class="card"><div class="lab">Début · glisse sur la barre</div><div class="ruler"><i></i><i></i><i></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="big">8:15 <small>→ 9:35</small></div><div class="lab">Durée · 1 h 20</div><div class="sl"><u></u><s></s></div></div></div>
