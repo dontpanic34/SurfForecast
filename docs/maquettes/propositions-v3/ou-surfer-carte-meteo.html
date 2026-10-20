@@ -28,7 +28,8 @@ canvas{display:block;width:100%;height:440px}
 <h1>Où surfer ? la carte météo</h1>
 <div class="mut">Depuis Montalivet · valeurs inventées · une note à la place de la température</div>
 <div class="chips" id="styles">
- <span class="chip on" data-s="A">A · Ruban de côte</span>
+ <span class="chip on" data-s="D">D · Ruban + pastilles</span>
+ <span class="chip" data-s="A">A · Ruban</span>
  <span class="chip" data-s="B">B · Pastilles</span>
  <span class="chip" data-s="C">C · Nappe et chiffres</span>
 </div>
@@ -38,6 +39,7 @@ canvas{display:block;width:100%;height:440px}
 <div class="scroll" id="days"></div>
 <div class="chips" id="hours"></div>
 <div class="chips" id="rads"></div>
+<div class="card" id="local"></div>
 <div class="card" id="panel"><span class="mut">Touche un chiffre sur la carte : tu vois les spots qu'il résume. Zoome : les chiffres se détaillent, jusqu'au spot.</span></div>
 <div class="note" id="explain"></div>
 </div>
@@ -45,7 +47,7 @@ canvas{display:block;width:100%;height:440px}
 var CHAIN=[["Porspoder", 48.508, -4.769, 290, "Bretagne"], ["Morgat", 48.225, -4.502, 160, "Bretagne"], ["La Torche", 47.838, -4.354, 260, "Bretagne"], ["Gâvres", 47.691, -3.351, 200, "Bretagne"], ["Quiberon", 47.518, -3.155, 250, "Bretagne"], ["Saint-Gilles-Croix-de-Vie", 46.697, -1.951, 250, "Vendée"], ["Les Sables-d'Olonne", 46.483, -1.768, 200, "Vendée"], ["Jard-sur-Mer", 46.412, -1.579, 210, "Vendée"], ["Longeville", 46.417, -1.503, 220, "Vendée"], ["La Tranche-sur-Mer", 46.34, -1.438, 195, "Vendée"], ["Le Verdon", 45.548, -1.096, 285, "Gironde"], ["Soulac", 45.514, -1.13, 275, "Gironde"], ["L'Amélie", 45.495, -1.144, 275, "Gironde"], ["Le Gurp", 45.437, -1.155, 275, "Gironde"], ["Montalivet", 45.38, -1.159, 275, "Gironde"], ["Hourtin", 45.185, -1.177, 275, "Gironde"], ["Carcans", 45.083, -1.196, 275, "Gironde"], ["Lacanau", 44.998, -1.205, 275, "Gironde"], ["Le Porge", 44.887, -1.218, 275, "Gironde"], ["La Jenny", 44.835, -1.229, 275, "Gironde"], ["Le Grand Crohot", 44.795, -1.24, 275, "Gironde"], ["Le Truc Vert", 44.715, -1.247, 275, "Gironde"], ["Le Cap Ferret", 44.628, -1.248, 280, "Gironde"], ["La Salie", 44.52, -1.251, 265, "Gironde"], ["Biscarrosse", 44.448, -1.254, 270, "Landes"], ["Mimizan", 44.208, -1.298, 270, "Landes"], ["Contis", 44.093, -1.325, 270, "Landes"], ["Vielle-Saint-Girons", 43.953, -1.365, 265, "Landes"], ["Moliets", 43.854, -1.393, 265, "Landes"], ["Messanges", 43.816, -1.405, 265, "Landes"], ["Seignosse", 43.698, -1.436, 262, "Landes"], ["Hossegor", 43.665, -1.442, 260, "Landes"], ["Capbreton", 43.642, -1.445, 260, "Landes"], ["Tarnos", 43.535, -1.517, 265, "Pays Basque"], ["Boucau", 43.528, -1.522, 270, "Pays Basque"], ["Anglet", 43.504, -1.536, 285, "Pays Basque"], ["Biarritz", 43.483, -1.56, 290, "Pays Basque"], ["Bidart", 43.438, -1.595, 290, "Pays Basque"], ["Guéthary", 43.424, -1.611, 300, "Pays Basque"], ["Saint-Jean-de-Luz", 43.407, -1.637, 310, "Pays Basque"], ["Hendaye", 43.373, -1.774, 320, "Pays Basque"], ["Hondarribia", 43.385, -1.792, 330, "Pays Basque Espagnol"], ["San Sebastián", 43.324, -1.975, 350, "Pays Basque Espagnol"], ["Zarautz", 43.287, -2.164, 350, "Pays Basque Espagnol"], ["Mundaka", 43.407, -2.698, 350, "Pays Basque Espagnol"], ["Sopelana", 43.385, -2.997, 330, "Pays Basque Espagnol"], ["Laredo", 43.415, -3.428, 10, "Cantabrie & Asturies"], ["Berria", 43.465, -3.464, 350, "Cantabrie & Asturies"], ["Somo", 43.456, -3.743, 20, "Cantabrie & Asturies"], ["Santander", 43.473, -3.785, 30, "Cantabrie & Asturies"], ["Oyambre", 43.387, -4.323, 345, "Cantabrie & Asturies"], ["Rodiles", 43.5365, -5.367, 350, "Cantabrie & Asturies"], ["Gijón", 43.541, -5.656, 0, "Cantabrie & Asturies"], ["Xagó", 43.589, -5.835, 350, "Cantabrie & Asturies"], ["Salinas", 43.58, -5.956, 350, "Cantabrie & Asturies"], ["Navia", 43.547, -6.727, 350, "Cantabrie & Asturies"], ["Ribadeo", 43.551, -7.039, 350, "Galice"], ["Pantín", 43.639, -8.113, 330, "Galice"], ["Doniños", 43.487, -8.328, 350, "Galice"], ["A Coruña", 43.371, -8.411, 320, "Galice"], ["Razo", 43.292, -8.706, 320, "Galice"], ["Malpica", 43.324, -8.813, 330, "Galice"], ["Laxe", 43.222, -9.012, 320, "Galice"], ["Fisterra", 42.906, -9.262, 280, "Costa da Morte"], ["Carnota", 42.832, -9.1, 270, "Costa da Morte"], ["A Lanzada", 42.443, -8.877, 280, "Rías Baixas"], ["Montalvo", 42.379, -8.871, 250, "Rías Baixas"], ["Patos", 42.138, -8.823, 260, "Rías Baixas"], ["Baiona", 42.122, -8.845, 250, "Rías Baixas"], ["Viana do Castelo", 41.688, -8.841, 270, "Portugal Nord"], ["Esposende", 41.534, -8.786, 270, "Portugal Nord"], ["Póvoa de Varzim", 41.373, -8.769, 270, "Portugal Nord"], ["Vila do Conde", 41.354, -8.743, 270, "Portugal Nord"], ["Matosinhos", 41.183, -8.7, 270, "Portugal Nord"], ["Porto", 41.161, -8.687, 270, "Portugal Nord"], ["Espinho", 41.008, -8.646, 270, "Portugal Nord"], ["Furadouro", 40.867, -8.657, 270, "Aveiro & Figueira"], ["Costa Nova", 40.643, -8.75, 270, "Aveiro & Figueira"], ["Vagueira", 40.552, -8.771, 270, "Aveiro & Figueira"], ["Figueira da Foz", 40.155, -8.872, 270, "Aveiro & Figueira"], ["São Pedro de Moel", 39.757, -9.03, 270, "Portugal Centre"], ["Nazaré", 39.605, -9.077, 300, "Portugal Centre"], ["Foz do Arelho", 39.435, -9.227, 270, "Portugal Centre"], ["Baleal", 39.373, -9.34, 350, "Portugal Centre"], ["Peniche", 39.355, -9.378, 270, "Portugal Centre"], ["Consolação", 39.331, -9.333, 270, "Portugal Centre"], ["Santa Cruz", 39.133, -9.383, 270, "Portugal Centre"], ["Ribeira d'Ilhas", 38.998, -9.421, 290, "Portugal Centre"], ["Ericeira", 38.963, -9.418, 290, "Portugal Centre"], ["Praia Grande", 38.823, -9.475, 270, "Lisbonne & Alentejo"], ["Guincho", 38.732, -9.473, 280, "Lisbonne & Alentejo"], ["Cascais", 38.694, -9.422, 190, "Lisbonne & Alentejo"], ["Carcavelos", 38.678, -9.334, 190, "Lisbonne & Alentejo"], ["Costa da Caparica", 38.643, -9.245, 260, "Lisbonne & Alentejo"], ["Comporta", 38.38, -8.79, 270, "Lisbonne & Alentejo"], ["Sines", 37.956, -8.87, 270, "Lisbonne & Alentejo"], ["Porto Covo", 37.856, -8.792, 270, "Lisbonne & Alentejo"], ["Vila Nova de Milfontes", 37.724, -8.783, 270, "Lisbonne & Alentejo"], ["Zambujeira do Mar", 37.523, -8.787, 270, "Lisbonne & Alentejo"], ["Odeceixe", 37.437, -8.796, 270, "Lisbonne & Alentejo"], ["Arrifana", 37.299, -8.871, 260, "Algarve"], ["Carrapateira", 37.192, -8.903, 270, "Algarve"], ["Amado", 37.166, -8.905, 260, "Algarve"], ["Zavial", 37.046, -8.887, 190, "Algarve"], ["Sagres", 37.009, -8.94, 230, "Algarve"], ["Lagos", 37.113, -8.671, 190, "Algarve"], ["Albufeira", 37.078, -8.158, 180, "Algarve"], ["Faro", 37.0, -7.998, 180, "Algarve"], ["Tavira", 37.117, -7.633, 180, "Algarve"], ["Isla Canela", 37.185, -7.334, 190, "Huelva"], ["Mazagón", 37.135, -6.825, 200, "Huelva"], ["Matalascañas", 37.0, -6.55, 215, "Huelva"], ["Cádiz La Victoria", 36.512, -6.287, 260, "Cadix"], ["Sancti Petri", 36.379, -6.206, 260, "Cadix"], ["Roche", 36.332, -6.156, 240, "Cadix"], ["Conil", 36.279, -6.092, 220, "Cadix"], ["El Palmar", 36.241, -6.071, 230, "Cadix"], ["Zahara de los Atunes", 36.138, -5.847, 230, "Cadix"], ["Bolonia", 36.089, -5.774, 200, "Détroit de Gibraltar"], ["Valdevaqueros", 36.067, -5.685, 190, "Détroit de Gibraltar"], ["Los Lances", 36.064, -5.635, 190, "Détroit de Gibraltar"]];
 var DAYS=['mar. 20','mer. 21','jeu. 22','ven. 23','sam. 24','dim. 25','lun. 26'];
 var HOME=CHAIN.filter(function(s){return s[0]==='Montalivet'})[0];
-var state={style:'A',day:2,hour:13,radius:300,sel:null};
+var state={style:'D',day:2,hour:13,radius:300,sel:null};
 var cv=document.getElementById('c'),ctx=cv.getContext('2d'),W=0,H=0,DPR=window.devicePixelRatio||1;
 var view={cx:-2.6,cy:0,s:30};
 function my(lat){return Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))*180/Math.PI}
@@ -108,7 +110,7 @@ function draw(){
  if(st==='C'){ // nappe : lueur colorée autour de chaque spot
   pts.forEach(function(p){if(p.x<-80||p.x>W+80||p.y<-80||p.y>H+80)return;var r=Math.max(26,Math.min(90,view.s*0.45)),c=col(p.sc),g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
    g.addColorStop(0,rgb(c,.62));g.addColorStop(1,rgb(c,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.3);ctx.fill()})}
- if(st==='A'){ // ruban : trait de côte coloré par la note
+ if(st==='A'||st==='D'){ // ruban : trait de côte coloré par la note
   for(var i=1;i<pts.length;i++){var a=pts[i-1],b2=pts[i];if(km(a.s,b2.s)>=150)continue;
    ctx.lineCap='round';ctx.strokeStyle='rgba(6,16,24,.75)';ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b2.x,b2.y);ctx.stroke();
    var g=ctx.createLinearGradient(a.x,a.y,b2.x,b2.y);g.addColorStop(0,rgb(col(a.sc)));g.addColorStop(1,rgb(col(b2.sc)));
@@ -119,24 +121,41 @@ function draw(){
   var isSel=state.sel&&state.sel===g;var txt=fr(g.stars);
   if(st==='A'){ctx.font='800 13px system-ui';var w=ctx.measureText(txt).width+22,h=22;rr(g.x-w/2,g.y-h/2,w,h,11);ctx.fillStyle=rgb(col(g.sc));ctx.fill();ctx.lineWidth=isSel?3:1.5;ctx.strokeStyle=isSel?'#fff':'rgba(255,255,255,.8)';ctx.stroke();
    ctx.fillStyle='#061018';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('★ '+txt,g.x,g.y+0.5)}
-  if(st==='B'){var R=20;ctx.beginPath();ctx.arc(g.x,g.y,R,0,6.3);ctx.fillStyle=rgb(col(g.sc),.95);ctx.fill();ctx.lineWidth=isSel?4:2;ctx.strokeStyle='#fff';ctx.stroke();
+  if(st==='B'||st==='D'){var R=st==='D'?18:20;ctx.beginPath();ctx.arc(g.x,g.y,R,0,6.3);ctx.fillStyle=rgb(col(g.sc),.95);ctx.fill();ctx.lineWidth=isSel?4:2;ctx.strokeStyle='#fff';ctx.stroke();
    ctx.fillStyle='#061018';ctx.font='800 15px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,g.x,g.y+0.5);
    if(g.members.length>1){ctx.beginPath();ctx.arc(g.x+15,g.y-15,9,0,6.3);ctx.fillStyle='#0b1620';ctx.fill();ctx.fillStyle='#fff';ctx.font='700 10px system-ui';ctx.fillText('+'+(g.members.length-1),g.x+15,g.y-14.5)}}
   if(st==='C'){ctx.font='900 21px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=5;ctx.strokeStyle='rgba(6,16,24,.85)';ctx.strokeText(txt,g.x,g.y);ctx.fillStyle=isSel?'#ffe27a':'#fff';ctx.fillText(txt,g.x,g.y)}
-  if(g.single&&showNames){ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.textBaseline='top';ctx.lineWidth=4;ctx.strokeStyle='rgba(6,16,24,.85)';ctx.strokeText(g.best.s[0],g.x,g.y+(st==='B'?23:15));ctx.fillStyle='#fff';ctx.fillText(g.best.s[0],g.x,g.y+(st==='B'?23:15))}
+  if(g.single&&showNames){var oy=(st==='B'||st==='D')?23:15;ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.textBaseline='top';ctx.lineWidth=4;ctx.strokeStyle='rgba(6,16,24,.85)';ctx.strokeText(g.best.s[0],g.x,g.y+oy);ctx.fillStyle='#fff';ctx.fillText(g.best.s[0],g.x,g.y+oy)}
  });
  state.groups=gs;
  // maison
  var hx=sx(HOME[2]),hy=sy(HOME[1]);ctx.beginPath();ctx.arc(hx,hy,5,0,6.3);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#0b1620';ctx.lineWidth=2;ctx.stroke();
  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='9px system-ui';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText('NASA Blue Marble',W-8,H-6);
 }
-function panel(){
+function cardinal(d){return ['nord','nord-est','est','sud-est','sud','sud-ouest','ouest','nord-ouest'][Math.round(((d%360)+360)%360/45)%8]}
+function windCat(wd,face){var d=ad(wd,face);return d<50?'onshore':d>130?'offshore':(d>90?'side-off':'side-on')}
+function swellCat(sd,face){var d=ad(sd,face);return d<30?'houle de face':d<60?'houle de côté':d<90?'houle rasante':'abrité de la houle'}
+function localAdvice(){
+ var t=tNow(),r=scoreAt(HOME,t),best=null;
+ for(var f=0;f<360;f+=10){var sc=scoreAt([HOME[0],HOME[1],HOME[2],f,HOME[4]],t).sc;if(!best||sc>best[1])best=[f,sc]}
+ var within=CHAIN.filter(function(s){return km(HOME,s)<=state.radius&&s[3]!=null&&ad(s[3],best[0])<=30}).map(function(s){return{s:s,r:scoreAt(s,t)}}).sort(function(a,b){return b.r.sc-a.r.sc}).slice(0,4);
+ var here=windCat(r.wd,HOME[3]),off=(Math.round(r.wd)+180)%360;
+ var h='<div class="big">Le conseil du coin</div><div style="margin-top:4px">';
+ h+='Vent de '+cardinal(r.wd)+' '+Math.round(r.wsp)+' km/h, houle de '+cardinal(r.sdir)+' '+fr(r.h.toFixed(1))+' m. ';
+ h+='Chez toi ('+HOME[3]+'°) le vent est <b>'+here+'</b>. ';
+ if(r.wsp>=12&&here==='onshore')h+='Pour qu\'il soit offshore, il faudrait une plage tournée vers '+off+'° ('+cardinal(off)+'), mais elle ne reçoit pas la houle. ';
+ h+='<br>Le meilleur compromis : <b>une plage tournée vers '+best[0]+'° ('+cardinal(best[0])+')</b>, '+fr(starsOf(best[1]).toFixed(1))+' ★.';
+ if(within.length)h+='<br>Dans ton rayon, les spots qui répondent à ça : '+within.map(function(o){return '<b>'+o.s[0]+'</b> ('+o.s[3]+'°, '+fr(starsOf(o.r.sc).toFixed(1))+' ★)'}).join(', ')+'.';
+ else h+='<br>Aucun spot du rayon n\'est orienté comme ça : élargis le rayon.';
+ document.getElementById('local').innerHTML=h+'</div><div class="note" style="margin-top:6px">Orientations du catalogue. Tu peux corriger celle d\'un spot dans les réglages si tu le connais mieux.</div>';
+}
+function panel(){localAdvice();
  var g=state.sel,el=document.getElementById('panel');
  if(!g){el.innerHTML='<span class="mut">Touche un chiffre sur la carte : tu vois les spots qu\'il résume. Zoome : les chiffres se détaillent, jusqu\'au spot.</span>';return}
  var ms=g.members.slice().sort(function(a,b){return b.sc-a.sc}),zone=ms[0].s[4];
  var h='<div class="row"><span class="big">'+(g.members.length>1?zone+' · '+g.members.length+' spots':ms[0].s[0])+'</span><span class="star big">★ '+fr(g.stars)+'</span></div><div class="mut" style="font-size:12px;margin-bottom:4px">Les spots, du meilleur au moins bon · '+DAYS[state.day]+', '+state.hour+' h</div>';
  ms.forEach(function(p){var r=p.r,d=Math.round(km(HOME,p.s));
-  h+='<div class="spot"><div><b>'+p.s[0]+'</b><div class="mut" style="font-size:12px">'+d+' km · houle '+fr(r.h.toFixed(1))+' m '+Math.round(r.per)+' s <span class="arr" style="transform:rotate('+Math.round((r.sdir+180)%360)+'deg);color:#fff">↑</span> · vent '+Math.round(r.wsp)+' km/h <span class="arr" style="transform:rotate('+Math.round((r.wd+180)%360)+'deg);color:'+(r.wsp<12?'#3fd0b0':r.wsp<25?'#ff9a1f':'#ff5a55')+'">↑</span></div></div><span class="star"><b>★ '+fr(starsOf(p.sc))+'</b></span></div>'});
+  h+='<div class="spot"><div><b>'+p.s[0]+'</b><div class="mut" style="font-size:12px">'+d+' km · houle '+fr(r.h.toFixed(1))+' m '+Math.round(r.per)+' s <span class="arr" style="transform:rotate('+Math.round((r.sdir+180)%360)+'deg);color:#fff">↑</span> · vent '+Math.round(r.wsp)+' km/h <span class="arr" style="transform:rotate('+Math.round((r.wd+180)%360)+'deg);color:'+(r.wsp<12?'#3fd0b0':r.wsp<25?'#ff9a1f':'#ff5a55')+'">↑</span><br><span style="color:#9fd6e8">'+windCat(r.wd,p.s[3]==null?270:p.s[3])+' · '+swellCat(r.sdir,p.s[3]==null?270:p.s[3])+' ('+(p.s[3]==null?'?':p.s[3])+'°)</span></div></div><span class="star"><b>★ '+fr(starsOf(p.sc))+'</b></span></div>'});
  el.innerHTML=h;
 }
 function resize(){var r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);fit();}
@@ -160,8 +179,8 @@ function chips(){
  document.querySelectorAll('[data-h]').forEach(function(e){e.onclick=function(){state.hour=+e.dataset.h;state.sel=null;chips();panel();draw()}});
  document.querySelectorAll('[data-r]').forEach(function(e){e.onclick=function(){state.radius=+e.dataset.r;state.sel=null;chips();panel();fit()}});
 }
-var EXPL={A:'<b>A · Ruban de côte.</b> La côte elle-même est colorée par la note (rouge → vert), avec une pastille « ★ 3,5 » tous les 76 pixels : zoomé loin, un chiffre par grande portion de côte (la moyenne) ; en zoomant, les pastilles se rapprochent jusqu\'à un chiffre par spot, avec son nom.',B:'<b>B · Pastilles.</b> Des ronds colorés avec le chiffre, rangés sans se chevaucher (un « +3 » dit combien de spots se cachent derrière). Plus classique, mais moins « carte météo ».',C:'<b>C · Nappe et chiffres.</b> Une lueur colorée le long de la côte, et seulement des chiffres blancs posés dessus, comme les températures d\'une carte météo : le plus léger, le plus lisible d\'un coup d\'œil.'};
+var EXPL={D:'<b>D · Ruban + pastilles.</b> La côte colorée par la note (elle montre tout de suite quelle orientation marche) et, dessus, des pastilles rondes avec le chiffre, espacées pour ne jamais se chevaucher.',A:'<b>A · Ruban de côte.</b> La côte elle-même est colorée par la note (rouge → vert), avec une pastille « ★ 3,5 » tous les 76 pixels : zoomé loin, un chiffre par grande portion de côte (la moyenne) ; en zoomant, les pastilles se rapprochent jusqu\'à un chiffre par spot, avec son nom.',B:'<b>B · Pastilles.</b> Des ronds colorés avec le chiffre, rangés sans se chevaucher (un « +3 » dit combien de spots se cachent derrière). Plus classique, mais moins « carte météo ».',C:'<b>C · Nappe et chiffres.</b> Une lueur colorée le long de la côte, et seulement des chiffres blancs posés dessus, comme les températures d\'une carte météo : le plus léger, le plus lisible d\'un coup d\'œil.'};
 document.getElementById('styles').onclick=function(e){var c=e.target.closest('.chip');if(!c)return;state.style=c.dataset.s;document.querySelectorAll('#styles .chip').forEach(function(x){x.classList.toggle('on',x===c)});document.getElementById('explain').innerHTML=EXPL[state.style];draw()};
-document.getElementById('explain').innerHTML=EXPL.A;
+document.getElementById('explain').innerHTML=EXPL.D;
 window.addEventListener('resize',resize);chips();resize();panel();
 </script></body></html>
