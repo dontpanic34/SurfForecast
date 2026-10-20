@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Où surfer carte météo</title>
+<style>
+/* Maquette interactive : la carte « Où surfer ? » façon carte météo de la France. Une note (étoiles) au lieu d'une température, qui se détaille quand on zoome. Trois façons de la dessiner. Toutes les valeurs sont inventées. */
+:root{--bg:#0b1620;--card:#13232f;--card2:#1a2f3e;--txt:#e8f1f6;--mut:#8aa3b3;--acc:#7fc4e8}
+*{box-sizing:border-box}body{margin:0;background:#050b10;color:var(--txt);font:14px/1.4 system-ui,sans-serif;padding:12px}
+.wrap{max-width:420px;margin:0 auto}h1{font-size:17px;margin:0 0 2px}.mut{color:var(--mut)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.chip{padding:7px 12px;border-radius:999px;background:var(--card2);cursor:pointer;font-size:13px;user-select:none;white-space:nowrap}
+.chip.on{background:var(--acc);color:#061018;font-weight:700}
+.scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.mapbox{position:relative;border-radius:14px;overflow:hidden;margin:8px 0;touch-action:none}
+canvas{display:block;width:100%;height:440px}
+.zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+.zoom button{width:38px;height:38px;border-radius:10px;border:0;background:rgba(19,35,47,.92);color:#fff;font-size:20px}
+.legend{position:absolute;left:8px;bottom:8px;background:rgba(11,22,32,.85);border-radius:10px;padding:6px 8px;font-size:11px}
+.legend .g{height:8px;width:150px;border-radius:4px;background:linear-gradient(90deg,#9b1c31,#e53935,#ffd21f,#1a9c82,#2bd47a,#0f8a52);margin:3px 0}
+.card{background:var(--card);border-radius:14px;padding:12px;margin:8px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.big{font-size:15px;font-weight:700}
+.star{color:#ffc107}
+.spot{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1d3140}
+.spot:last-child{border:0}
+.arr{display:inline-block;font-weight:900;font-size:15px;line-height:1}
+.note{font-size:12px;color:var(--mut)}
+</style></head><body><div class="wrap">
+<h1>Où surfer ? la carte météo</h1>
+<div class="mut">Depuis Montalivet · valeurs inventées · une note à la place de la température</div>
+<div class="chips" id="styles">
+ <span class="chip on" data-s="D">D · Ruban + pastilles</span>
+ <span class="chip" data-s="A">A · Ruban</span>
+ <span class="chip" data-s="B">B · Pastilles</span>
+ <span class="chip" data-s="C">C · Nappe et chiffres</span>
+</div>
+<div class="mapbox"><canvas id="c"></canvas>
+ <div class="zoom"><button id="zi">+</button><button id="zo">−</button></div>
+ <div class="legend">Note du jour<div class="g"></div><div class="row"><span>1</span><span>2</span><span>3</span><span>4</span><span>5 ★</span></div></div></div>
+<div class="chips" id="tmodes"><span class="mut" style="align-self:center">Choix du moment</span><span class="chip on" data-m="1">1 · Frise</span><span class="chip" data-m="2">2 · Jour + moment</span><span class="chip" data-m="3">3 · Meilleur moment</span></div>
+<div class="card" id="timectl"></div>
+<div class="chips" id="rads"></div>
+<div class="card" id="local"></div>
+<div class="card" id="panel"><span class="mut">Touche un chiffre sur la carte : tu vois les spots qu'il résume. Zoome : les chiffres se détaillent, jusqu'au spot.</span></div>
+<div class="note" id="explain"></div>
+</div>
+<script>
+var CHAIN=[["Porspoder", 48.508, -4.769, 290, "Bretagne"], ["Morgat", 48.225, -4.502, 160, "Bretagne"], ["La Torche", 47.838, -4.354, 260, "Bretagne"], ["Gâvres", 47.691, -3.351, 200, "Bretagne"], ["Quiberon", 47.518, -3.155, 250, "Bretagne"], ["Saint-Gilles-Croix-de-Vie", 46.697, -1.951, 250, "Vendée"], ["Les Sables-d'Olonne", 46.483, -1.768, 200, "Vendée"], ["Jard-sur-Mer", 46.412, -1.579, 210, "Vendée"], ["Longeville", 46.417, -1.503, 220, "Vendée"], ["La Tranche-sur-Mer", 46.34, -1.438, 195, "Vendée"], ["Le Verdon", 45.548, -1.096, 285, "Gironde"], ["Soulac", 45.514, -1.13, 275, "Gironde"], ["L'Amélie", 45.495, -1.144, 275, "Gironde"], ["Le Gurp", 45.437, -1.155, 275, "Gironde"], ["Montalivet", 45.38, -1.159, 275, "Gironde"], ["Hourtin", 45.185, -1.177, 275, "Gironde"], ["Carcans", 45.083, -1.196, 275, "Gironde"], ["Lacanau", 44.998, -1.205, 275, "Gironde"], ["Le Porge", 44.887, -1.218, 275, "Gironde"], ["La Jenny", 44.835, -1.229, 275, "Gironde"], ["Le Grand Crohot", 44.795, -1.24, 275, "Gironde"], ["Le Truc Vert", 44.715, -1.247, 275, "Gironde"], ["Le Cap Ferret", 44.628, -1.248, 280, "Gironde"], ["La Salie", 44.52, -1.251, 265, "Gironde"], ["Biscarrosse", 44.448, -1.254, 270, "Landes"], ["Mimizan", 44.208, -1.298, 270, "Landes"], ["Contis", 44.093, -1.325, 270, "Landes"], ["Vielle-Saint-Girons", 43.953, -1.365, 265, "Landes"], ["Moliets", 43.854, -1.393, 265, "Landes"], ["Messanges", 43.816, -1.405, 265, "Landes"], ["Seignosse", 43.698, -1.436, 262, "Landes"], ["Hossegor", 43.665, -1.442, 260, "Landes"], ["Capbreton", 43.642, -1.445, 260, "Landes"], ["Tarnos", 43.535, -1.517, 265, "Pays Basque"], ["Boucau", 43.528, -1.522, 270, "Pays Basque"], ["Anglet", 43.504, -1.536, 285, "Pays Basque"], ["Biarritz", 43.483, -1.56, 290, "Pays Basque"], ["Bidart", 43.438, -1.595, 290, "Pays Basque"], ["Guéthary", 43.424, -1.611, 300, "Pays Basque"], ["Saint-Jean-de-Luz", 43.407, -1.637, 310, "Pays Basque"], ["Hendaye", 43.373, -1.774, 320, "Pays Basque"], ["Hondarribia", 43.385, -1.792, 330, "Pays Basque Espagnol"], ["San Sebastián", 43.324, -1.975, 350, "Pays Basque Espagnol"], ["Zarautz", 43.287, -2.164, 350, "Pays Basque Espagnol"], ["Mundaka", 43.407, -2.698, 350, "Pays Basque Espagnol"], ["Sopelana", 43.385, -2.997, 330, "Pays Basque Espagnol"], ["Laredo", 43.415, -3.428, 10, "Cantabrie & Asturies"], ["Berria", 43.465, -3.464, 350, "Cantabrie & Asturies"], ["Somo", 43.456, -3.743, 20, "Cantabrie & Asturies"], ["Santander", 43.473, -3.785, 30, "Cantabrie & Asturies"], ["Oyambre", 43.387, -4.323, 345, "Cantabrie & Asturies"], ["Rodiles", 43.5365, -5.367, 350, "Cantabrie & Asturies"], ["Gijón", 43.541, -5.656, 0, "Cantabrie & Asturies"], ["Xagó", 43.589, -5.835, 350, "Cantabrie & Asturies"], ["Salinas", 43.58, -5.956, 350, "Cantabrie & Asturies"], ["Navia", 43.547, -6.727, 350, "Cantabrie & Asturies"], ["Ribadeo", 43.551, -7.039, 350, "Galice"], ["Pantín", 43.639, -8.113, 330, "Galice"], ["Doniños", 43.487, -8.328, 350, "Galice"], ["A Coruña", 43.371, -8.411, 320, "Galice"], ["Razo", 43.292, -8.706, 320, "Galice"], ["Malpica", 43.324, -8.813, 330, "Galice"], ["Laxe", 43.222, -9.012, 320, "Galice"], ["Fisterra", 42.906, -9.262, 280, "Costa da Morte"], ["Carnota", 42.832, -9.1, 270, "Costa da Morte"], ["A Lanzada", 42.443, -8.877, 280, "Rías Baixas"], ["Montalvo", 42.379, -8.871, 250, "Rías Baixas"], ["Patos", 42.138, -8.823, 260, "Rías Baixas"], ["Baiona", 42.122, -8.845, 250, "Rías Baixas"], ["Viana do Castelo", 41.688, -8.841, 270, "Portugal Nord"], ["Esposende", 41.534, -8.786, 270, "Portugal Nord"], ["Póvoa de Varzim", 41.373, -8.769, 270, "Portugal Nord"], ["Vila do Conde", 41.354, -8.743, 270, "Portugal Nord"], ["Matosinhos", 41.183, -8.7, 270, "Portugal Nord"], ["Porto", 41.161, -8.687, 270, "Portugal Nord"], ["Espinho", 41.008, -8.646, 270, "Portugal Nord"], ["Furadouro", 40.867, -8.657, 270, "Aveiro & Figueira"], ["Costa Nova", 40.643, -8.75, 270, "Aveiro & Figueira"], ["Vagueira", 40.552, -8.771, 270, "Aveiro & Figueira"], ["Figueira da Foz", 40.155, -8.872, 270, "Aveiro & Figueira"], ["São Pedro de Moel", 39.757, -9.03, 270, "Portugal Centre"], ["Nazaré", 39.605, -9.077, 300, "Portugal Centre"], ["Foz do Arelho", 39.435, -9.227, 270, "Portugal Centre"], ["Baleal", 39.373, -9.34, 350, "Portugal Centre"], ["Peniche", 39.355, -9.378, 270, "Portugal Centre"], ["Consolação", 39.331, -9.333, 270, "Portugal Centre"], ["Santa Cruz", 39.133, -9.383, 270, "Portugal Centre"], ["Ribeira d'Ilhas", 38.998, -9.421, 290, "Portugal Centre"], ["Ericeira", 38.963, -9.418, 290, "Portugal Centre"], ["Praia Grande", 38.823, -9.475, 270, "Lisbonne & Alentejo"], ["Guincho", 38.732, -9.473, 280, "Lisbonne & Alentejo"], ["Cascais", 38.694, -9.422, 190, "Lisbonne & Alentejo"], ["Carcavelos", 38.678, -9.334, 190, "Lisbonne & Alentejo"], ["Costa da Caparica", 38.643, -9.245, 260, "Lisbonne & Alentejo"], ["Comporta", 38.38, -8.79, 270, "Lisbonne & Alentejo"], ["Sines", 37.956, -8.87, 270, "Lisbonne & Alentejo"], ["Porto Covo", 37.856, -8.792, 270, "Lisbonne & Alentejo"], ["Vila Nova de Milfontes", 37.724, -8.783, 270, "Lisbonne & Alentejo"], ["Zambujeira do Mar", 37.523, -8.787, 270, "Lisbonne & Alentejo"], ["Odeceixe", 37.437, -8.796, 270, "Lisbonne & Alentejo"], ["Arrifana", 37.299, -8.871, 260, "Algarve"], ["Carrapateira", 37.192, -8.903, 270, "Algarve"], ["Amado", 37.166, -8.905, 260, "Algarve"], ["Zavial", 37.046, -8.887, 190, "Algarve"], ["Sagres", 37.009, -8.94, 230, "Algarve"], ["Lagos", 37.113, -8.671, 190, "Algarve"], ["Albufeira", 37.078, -8.158, 180, "Algarve"], ["Faro", 37.0, -7.998, 180, "Algarve"], ["Tavira", 37.117, -7.633, 180, "Algarve"], ["Isla Canela", 37.185, -7.334, 190, "Huelva"], ["Mazagón", 37.135, -6.825, 200, "Huelva"], ["Matalascañas", 37.0, -6.55, 215, "Huelva"], ["Cádiz La Victoria", 36.512, -6.287, 260, "Cadix"], ["Sancti Petri", 36.379, -6.206, 260, "Cadix"], ["Roche", 36.332, -6.156, 240, "Cadix"], ["Conil", 36.279, -6.092, 220, "Cadix"], ["El Palmar", 36.241, -6.071, 230, "Cadix"], ["Zahara de los Atunes", 36.138, -5.847, 230, "Cadix"], ["Bolonia", 36.089, -5.774, 200, "Détroit de Gibraltar"], ["Valdevaqueros", 36.067, -5.685, 190, "Détroit de Gibraltar"], ["Los Lances", 36.064, -5.635, 190, "Détroit de Gibraltar"]];
+var DAYS=['mar. 20','mer. 21','jeu. 22','ven. 23','sam. 24','dim. 25','lun. 26'];
+var HOME=CHAIN.filter(function(s){return s[0]==='Montalivet'})[0];
+var state={style:'D',day:2,hour:13,radius:300,sel:null,tmode:1,more:false,play:null};
+var BC={};
+var cv=document.getElementById('c'),ctx=cv.getContext('2d'),W=0,H=0,DPR=window.devicePixelRatio||1;
+var view={cx:-2.6,cy:0,s:30};
+function my(lat){return Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))*180/Math.PI}
+function sx(lon){return W/2+(lon-view.cx)*view.s}function sy(lat){return H/2-(my(lat)-view.cy)*view.s}
+function lonAt(x){return view.cx+(x-W/2)/view.s}function latAt(y){var m=view.cy-(y-H/2)/view.s;return (2*Math.atan(Math.exp(m*Math.PI/180))-Math.PI/2)*180/Math.PI}
+// --- données inventées : une grosse houle de nord-ouest mercredi, vent d'ouest au nord, de sud-est au sud
+function amp(t){return 1+3.2*Math.exp(-Math.pow((t-36)/20,2))+1.4*Math.exp(-Math.pow((t-96)/14,2))}
+function swell(lon,lat,t){var a=amp(t),sh=1-0.55*Math.exp(-Math.pow((lon+2.6)/1.7,2)-Math.pow((lat-43.7)/1.0,2));return{h:a*sh*(1-0.03*Math.max(0,45-lat))*(1+0.04*Math.sin(lon*3+lat*2)),per:11+3*Math.min(1,a/4.5),dir:305+(lat-45)*0.8}}
+function sm(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)}
+function wind(lon,lat,t){var a=(amp(t)-1)/3.2,s=sm((lat-44)/1.6);var n={sp:14+22*a,d:290},so={sp:5+5*a,d:165};
+ var nu=-n.sp*Math.sin(n.d*Math.PI/180),nv=-n.sp*Math.cos(n.d*Math.PI/180),su=-so.sp*Math.sin(so.d*Math.PI/180),sv=-so.sp*Math.cos(so.d*Math.PI/180);
+ var u=su+(nu-su)*s,v=sv+(nv-sv)*s;return{sp:Math.sqrt(u*u+v*v),d:(Math.atan2(-u,-v)*180/Math.PI+360)%360}}
+function ad(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d}
+function scoreAt(sp,t){var s=swell(sp[2],sp[1],t),w=wind(sp[2],sp[1],t),h=s.h,face=sp[3]==null?270:sp[3];
+ var size=h<0.6?15:h<1?15+(h-0.6)/0.4*45:h<=1.8?60+(h-1)/0.8*40:h<=2.6?100:h<=3.4?100-(h-2.6)/0.8*50:Math.max(0,50-(h-3.4)*50);
+ var df=Math.max(0.2,Math.cos(Math.min(90,ad(s.dir,face))*Math.PI/180)),wd=ad(w.d,face),k=Math.min(30,w.sp)/30,wf=wd<50?1-k*0.75:wd>130?1:1-k*0.3;
+ return{sc:Math.round(size*(0.4+0.6*df)*wf),h:h,per:s.per,wsp:w.sp,wd:w.d,sdir:s.dir}}
+function starsOf(sc){var raw=0.5+Math.max(0,sc-30)/70*4.5;return Math.max(0.5,Math.min(5,Math.round(raw*2)/2))}
+function fr(x){return String(x).replace('.',',')}
+var STOPS=[[12,[155,28,49]],[35,[229,57,53]],[53,[255,210,31]],[71,[26,156,130]],[85,[43,212,122]],[97,[15,138,82]]];
+function col(sc){sc=Math.max(12,Math.min(97,sc));for(var i=1;i<STOPS.length;i++){if(sc<=STOPS[i][0]){var a=STOPS[i-1],b=STOPS[i],f=(sc-a[0])/(b[0]-a[0]);return a[1].map(function(x,k){return Math.round(x+(b[1][k]-x)*f)})}}return STOPS[5][1]}
+function rgb(c,a){return 'rgba('+c[0]+','+c[1]+','+c[2]+','+(a==null?1:a)+')'}
+function tNow(){return (state.day*24+state.hour)}
+function km(a,b){var dx=(a[2]-b[2])*111.32*Math.cos((a[1]+b[1])*Math.PI/360),dy=(a[1]-b[1])*111.32;return Math.hypot(dx,dy)}
+// --- tuiles NASA
+var TILES={};
+function tile(z,x,y){var k=z+'/'+x+'/'+y;if(TILES[k])return TILES[k];var im=new Image();im.crossOrigin='anonymous';im.onload=function(){im.ok=1;draw()};im.src='https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/2004-08/GoogleMapsCompatible_Level8/'+z+'/'+y+'/'+x+'.jpeg';TILES[k]=im;return im}
+function drawTiles(){var z=Math.max(3,Math.min(8,Math.round(Math.log(360*view.s/256)/Math.LN2))),n=Math.pow(2,z),size=360*view.s/n;
+ function wx(lon){return (lon+180)/360*n}function wy(lat){var r=lat*Math.PI/180;return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n}
+ var x0=Math.floor(wx(lonAt(0))),x1=Math.floor(wx(lonAt(W))),y0=Math.max(0,Math.floor(wy(latAt(0)))),y1=Math.min(n-1,Math.floor(wy(latAt(H))));
+ for(var x=x0;x<=x1;x++)for(var y=y0;y<=y1;y++){var im=tile(z,((x%n)+n)%n,y);if(!im.ok)continue;var lat=Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI;ctx.drawImage(im,sx(x/n*360-180),sy(lat),size+0.6,size+0.6)}}
+// --- regroupement : des fenêtres de côte d'environ MIN px d'écart ; chaque fenêtre porte la moyenne de ses spots
+var MIN=76;
+function groups(){
+ var t=tNow(),pts=CHAIN.map(function(s){var r=scoreAt(s,t);return{s:s,sc:r.sc,r:r,x:sx(s[2]),y:sy(s[1])}});
+ var vis=pts.filter(function(p){return p.x>-60&&p.x<W+60&&p.y>-60&&p.y<H+60});
+ var out=[],cur=[],len=0;
+ pts.forEach(function(p,i){
+   if(i>0){var q=pts[i-1];if(km(q.s,p.s)<150)len+=Math.hypot(p.x-q.x,p.y-q.y);else{if(cur.length)out.push(cur);cur=[];len=0}}
+   cur.push(p);
+   if(len>=MIN){out.push(cur);cur=[];len=0}
+ });
+ if(cur.length)out.push(cur);
+ return out.filter(function(g){return g.some(function(p){return p.x>-30&&p.x<W+30&&p.y>-30&&p.y<H+30})}).map(function(g){
+   var sc=g.reduce(function(a,p){return a+p.sc},0)/g.length,mid=g[Math.floor(g.length/2)];
+   var best=g.reduce(function(a,p){return p.sc>a.sc?p:a},g[0]);
+   return{members:g,sc:sc,stars:starsOf(sc),x:mid.x,y:mid.y,single:g.length===1,best:best}
+ });
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function draw(){
+ if(!W)return;ctx.clearRect(0,0,W,H);ctx.fillStyle='#0e2c44';ctx.fillRect(0,0,W,H);drawTiles();
+ var t=tNow(),pts=CHAIN.map(function(s){var r=scoreAt(s,t);return{s:s,sc:r.sc,x:sx(s[2]),y:sy(s[1])}});
+ var gs=groups();
+ // rayon
+ ctx.save();ctx.beginPath();for(var b=0;b<=360;b+=6){var d=state.radius/6371,la=HOME[1]*Math.PI/180,lo=HOME[2]*Math.PI/180,br=b*Math.PI/180;
+  var la2=Math.asin(Math.sin(la)*Math.cos(d)+Math.cos(la)*Math.sin(d)*Math.cos(br)),lo2=lo+Math.atan2(Math.sin(br)*Math.sin(d)*Math.cos(la),Math.cos(d)-Math.sin(la)*Math.sin(la2));
+  var X=sx(lo2*180/Math.PI),Y=sy(la2*180/Math.PI);b?ctx.lineTo(X,Y):ctx.moveTo(X,Y)}ctx.closePath();ctx.setLineDash([10,8]);ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();
+ var st=state.style;
+ if(st==='C'){ // nappe : lueur colorée autour de chaque spot
+  pts.forEach(function(p){if(p.x<-80||p.x>W+80||p.y<-80||p.y>H+80)return;var r=Math.max(26,Math.min(90,view.s*0.45)),c=col(p.sc),g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
+   g.addColorStop(0,rgb(c,.62));g.addColorStop(1,rgb(c,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.3);ctx.fill()})}
+ if(st==='A'||st==='D'){ // ruban : trait de côte coloré par la note
+  for(var i=1;i<pts.length;i++){var a=pts[i-1],b2=pts[i];if(km(a.s,b2.s)>=150)continue;
+   ctx.lineCap='round';ctx.strokeStyle='rgba(6,16,24,.75)';ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b2.x,b2.y);ctx.stroke();
+   var g=ctx.createLinearGradient(a.x,a.y,b2.x,b2.y);g.addColorStop(0,rgb(col(a.sc)));g.addColorStop(1,rgb(col(b2.sc)));
+   ctx.strokeStyle=g;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b2.x,b2.y);ctx.stroke()}}
+ // étiquettes
+ var showNames=view.s>120;
+ gs.forEach(function(g){
+  var isSel=state.sel&&state.sel===g;var txt=fr(g.stars);
+  if(st==='A'){ctx.font='800 13px system-ui';var w=ctx.measureText(txt).width+22,h=22;rr(g.x-w/2,g.y-h/2,w,h,11);ctx.fillStyle=rgb(col(g.sc));ctx.fill();ctx.lineWidth=isSel?3:1.5;ctx.strokeStyle=isSel?'#fff':'rgba(255,255,255,.8)';ctx.stroke();
+   ctx.fillStyle='#061018';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('★ '+txt,g.x,g.y+0.5)}
+  if(st==='B'||st==='D'){var R=st==='D'?18:20;ctx.beginPath();ctx.arc(g.x,g.y,R,0,6.3);ctx.fillStyle=rgb(col(g.sc),.95);ctx.fill();ctx.lineWidth=isSel?4:2;ctx.strokeStyle='#fff';ctx.stroke();
+   ctx.fillStyle='#061018';ctx.font='800 15px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,g.x,g.y+0.5);
+   if(g.members.length>1){ctx.beginPath();ctx.arc(g.x+15,g.y-15,9,0,6.3);ctx.fillStyle='#0b1620';ctx.fill();ctx.fillStyle='#fff';ctx.font='700 10px system-ui';ctx.fillText('+'+(g.members.length-1),g.x+15,g.y-14.5)}}
+  if(st==='C'){ctx.font='900 21px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=5;ctx.strokeStyle='rgba(6,16,24,.85)';ctx.strokeText(txt,g.x,g.y);ctx.fillStyle=isSel?'#ffe27a':'#fff';ctx.fillText(txt,g.x,g.y)}
+  if(g.single&&showNames){var oy=(st==='B'||st==='D')?23:15;ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.textBaseline='top';ctx.lineWidth=4;ctx.strokeStyle='rgba(6,16,24,.85)';ctx.strokeText(g.best.s[0],g.x,g.y+oy);ctx.fillStyle='#fff';ctx.fillText(g.best.s[0],g.x,g.y+oy)}
+ });
+ state.groups=gs;
+ // maison
+ var hx=sx(HOME[2]),hy=sy(HOME[1]);ctx.beginPath();ctx.arc(hx,hy,5,0,6.3);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#0b1620';ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='9px system-ui';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText('NASA Blue Marble',W-8,H-6);
+}
+function cardinal(d){return ['nord','nord-est','est','sud-est','sud','sud-ouest','ouest','nord-ouest'][Math.round(((d%360)+360)%360/45)%8]}
+function windCat(wd,face){var d=ad(wd,face);return d<50?'onshore':d>130?'offshore':(d>90?'side-off':'side-on')}
+function swellCat(sd,face){var d=ad(sd,face);return d<30?'houle de face':d<60?'houle de côté':d<90?'houle rasante':'abrité de la houle'}
+function localAdvice(){
+ var t=tNow(),r=scoreAt(HOME,t),best=null;
+ for(var f=0;f<360;f+=10){var sc=scoreAt([HOME[0],HOME[1],HOME[2],f,HOME[4]],t).sc;if(!best||sc>best[1])best=[f,sc]}
+ var within=CHAIN.filter(function(s){return km(HOME,s)<=state.radius&&s[3]!=null&&ad(s[3],best[0])<=30}).map(function(s){return{s:s,r:scoreAt(s,t)}}).sort(function(a,b){return b.r.sc-a.r.sc}).slice(0,4);
+ var here=windCat(r.wd,HOME[3]),off=(Math.round(r.wd)+180)%360;
+ var h='<div class="big">Le conseil du coin</div><div style="margin-top:4px">';
+ h+='Vent de '+cardinal(r.wd)+' '+Math.round(r.wsp)+' km/h, houle de '+cardinal(r.sdir)+' '+fr(r.h.toFixed(1))+' m. ';
+ h+='Chez toi ('+HOME[3]+'°) le vent est <b>'+here+'</b>. ';
+ if(r.wsp>=12&&here==='onshore')h+='Pour qu\'il soit offshore, il faudrait une plage tournée vers '+off+'° ('+cardinal(off)+'), mais elle ne reçoit pas la houle. ';
+ h+='<br>Le meilleur compromis : <b>une plage tournée vers '+best[0]+'° ('+cardinal(best[0])+')</b>, '+fr(starsOf(best[1]).toFixed(1))+' ★.';
+ if(within.length)h+='<br>Dans ton rayon, les spots qui répondent à ça : '+within.map(function(o){return '<b>'+o.s[0]+'</b> ('+o.s[3]+'°, '+fr(starsOf(o.r.sc).toFixed(1))+' ★)'}).join(', ')+'.';
+ else h+='<br>Aucun spot du rayon n\'est orienté comme ça : élargis le rayon.';
+ document.getElementById('local').innerHTML=h+'</div><div class="note" style="margin-top:6px">Orientations du catalogue. Tu peux corriger celle d\'un spot dans les réglages si tu le connais mieux.</div>';
+}
+function panel(){localAdvice();
+ var g=state.sel,el=document.getElementById('panel');
+ if(!g){el.innerHTML='<span class="mut">Touche un chiffre sur la carte : tu vois les spots qu\'il résume. Zoome : les chiffres se détaillent, jusqu\'au spot.</span>';return}
+ var ms=g.members.slice().sort(function(a,b){return b.sc-a.sc}),zone=ms[0].s[4];
+ var h='<div class="row"><span class="big">'+(g.members.length>1?zone+' · '+g.members.length+' spots':ms[0].s[0])+'</span><span class="star big">★ '+fr(g.stars)+'</span></div><div class="mut" style="font-size:12px;margin-bottom:4px">Les spots, du meilleur au moins bon · '+DAYS[state.day]+', '+state.hour+' h</div>';
+ ms.forEach(function(p){var r=p.r,d=Math.round(km(HOME,p.s));
+  h+='<div class="spot"><div><b>'+p.s[0]+'</b><div class="mut" style="font-size:12px">'+d+' km · houle '+fr(r.h.toFixed(1))+' m '+Math.round(r.per)+' s <span class="arr" style="transform:rotate('+Math.round((r.sdir+180)%360)+'deg);color:#fff">↑</span> · vent '+Math.round(r.wsp)+' km/h <span class="arr" style="transform:rotate('+Math.round((r.wd+180)%360)+'deg);color:'+(r.wsp<12?'#3fd0b0':r.wsp<25?'#ff9a1f':'#ff5a55')+'">↑</span><br><span style="color:#9fd6e8">'+windCat(r.wd,p.s[3]==null?270:p.s[3])+' · '+swellCat(r.sdir,p.s[3]==null?270:p.s[3])+' ('+(p.s[3]==null?'?':p.s[3])+'°)</span></div></div><span class="star"><b>★ '+fr(starsOf(p.sc))+'</b></span></div>'});
+ el.innerHTML=h;
+}
+function resize(){var r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);fit();}
+function fit(){var r=state.radius,deg=r/(111.32*Math.cos(HOME[1]*Math.PI/180));view.s=W/(2*deg*1.1);view.cx=HOME[2];view.cy=my(HOME[1]);if(state.radius>=300){view.cx=-3;view.cy=my(state.radius>=500?44.2:44.6)}draw()}
+function zoomAt(x,y,f){var lo=lonAt(x),la=my(latAt(y));view.s=Math.max(10,Math.min(1400,view.s*f));view.cx=lo-(x-W/2)/view.s;view.cy=la+(y-H/2)/view.s;state.sel=null;panel();draw()}
+var ptrs={},moved=0;
+cv.addEventListener('pointerdown',function(e){cv.setPointerCapture(e.pointerId);ptrs[e.pointerId]=[e.offsetX,e.offsetY];moved=0});
+cv.addEventListener('pointermove',function(e){var o=ptrs[e.pointerId];if(!o)return;var ids=Object.keys(ptrs);
+ if(ids.length===1){var dx=e.offsetX-o[0],dy=e.offsetY-o[1];moved+=Math.abs(dx)+Math.abs(dy);view.cx-=dx/view.s;view.cy+=dy/view.s;ptrs[e.pointerId]=[e.offsetX,e.offsetY];draw()}
+ else{var other=ids.filter(function(i){return i!=e.pointerId})[0],p=ptrs[other],d0=Math.hypot(o[0]-p[0],o[1]-p[1]),d1=Math.hypot(e.offsetX-p[0],e.offsetY-p[1]);ptrs[e.pointerId]=[e.offsetX,e.offsetY];moved+=9;if(d0>0)zoomAt((e.offsetX+p[0])/2,(e.offsetY+p[1])/2,d1/d0)}});
+cv.addEventListener('pointerup',function(e){var was=ptrs[e.pointerId];delete ptrs[e.pointerId];if(was&&moved<6&&!Object.keys(ptrs).length)tap(e.offsetX,e.offsetY)});
+cv.addEventListener('pointercancel',function(e){delete ptrs[e.pointerId]});
+cv.addEventListener('wheel',function(e){e.preventDefault();zoomAt(e.offsetX,e.offsetY,e.deltaY<0?1.25:1/1.25)},{passive:false});
+function tap(x,y){var best=null,bd=34;(state.groups||[]).forEach(function(g){var d=Math.hypot(g.x-x,g.y-y);if(d<bd){bd=d;best=g}});state.sel=best;panel();draw()}
+document.getElementById('zi').onclick=function(){zoomAt(W/2,H/2,1.6)};document.getElementById('zo').onclick=function(){zoomAt(W/2,H/2,1/1.6)};
+var SLOTS=[7,10,13,16,19],MOMENT=[['Matin',9],['Midi',13],['Après-midi',17]];
+function bestAtT(t){var k=state.radius+'/'+t;if(BC[k])return BC[k];var b=null;CHAIN.forEach(function(s){if(km(HOME,s)>state.radius)return;var r=scoreAt(s,t);if(!b||r.sc>b.sc)b={s:s,sc:r.sc,r:r}});return BC[k]=b}
+function dayBest(d){var b=null;SLOTS.forEach(function(h){var x=bestAtT(d*24+h);if(x&&(!b||x.sc>b.sc))b=x});return b}
+function setTime(d,h){state.day=d;state.hour=h;state.sel=null;renderTime();panel();draw()}
+function lbl(){return DAYS[state.day]+' · '+state.hour+' h'}
+function ranked(){var out=[];for(var d=0;d<7;d++){var best=null;SLOTS.forEach(function(h){var x=bestAtT(d*24+h);if(x&&(!best||x.sc>best.sc))best={d:d,h:h,x:x}});if(best)out.push(best)}return out.sort(function(a,b){return b.x.sc-a.x.sc}).slice(0,5)}
+function dayCards(){
+ var h='<div class="scroll">';
+ for(var d=0;d<7;d++){var b=dayBest(d),on=d===state.day;h+='<div data-dd="'+d+'" style="flex:0 0 auto;min-width:70px;text-align:center;padding:7px 8px;border-radius:12px;cursor:pointer;background:'+(on?'var(--acc)':'var(--card2)')+';color:'+(on?'#061018':'#fff')+'"><div style="font-weight:700;font-size:13px">'+DAYS[d]+'</div><div style="font-size:12px;font-weight:700;color:'+(on?'#061018':'#ffc107')+'">★ '+fr(starsOf(b.sc))+'</div></div>'}
+ h+='</div><div class="chips" style="margin-top:8px">'+MOMENT.map(function(m){var on=(state.hour>=m[1]-2&&state.hour<=m[1]+1);return '<span class="chip '+(on?'on':'')+'" data-mm="'+m[1]+'" style="flex:1;text-align:center">'+m[0]+'</span>'}).join('')+'</div>';
+ return h}
+function renderTime(){
+ var el=document.getElementById('timectl'),h='';
+ if(state.tmode===1){
+  h+='<div class="row"><b>'+lbl()+'</b><span class="chip" id="play">'+(state.play?'⏸':'▶')+'</span></div><div id="frise" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:8px;touch-action:none">';
+  for(var d=0;d<7;d++){h+='<div><div style="display:flex;align-items:flex-end;gap:2px;height:46px;padding:0 1px">';
+   SLOTS.forEach(function(hh){var x=bestAtT(d*24+hh),on=(d===state.day&&hh===state.hour);h+='<div data-fd="'+d+'" data-fh="'+hh+'" style="flex:1;height:'+Math.max(10,Math.round(x.sc*0.46))+'px;border-radius:3px;background:'+rgb(col(x.sc))+';'+(on?'outline:2px solid #fff;':'opacity:.8')+'"></div>'});
+   h+='</div><div style="text-align:center;font-size:11px;margin-top:3px;font-weight:'+(d===state.day?'800':'500')+';color:'+(d===state.day?'#fff':'var(--mut)')+'">'+DAYS[d].replace('. ',' ')+'</div></div>'}
+  h+='</div><div class="note" style="margin-top:6px">Chaque barre = le meilleur spot du rayon (3 h d\'écart de 7 h à 19 h). Glisse le doigt dessus, ou lance la lecture.</div>';
+ }
+ if(state.tmode===2)h+='<div class="row" style="margin-bottom:8px"><b>'+lbl()+'</b></div>'+dayCards();
+ if(state.tmode===3){
+  var r=ranked(),i=Math.max(0,r.findIndex(function(o){return o.d===state.day&&o.h===state.hour})),cur=r[i]||r[0];
+  h+='<div class="mut" style="font-size:12px">Meilleur moment du rayon</div><div class="row" style="margin:4px 0"><span class="chip" id="prevb">‹</span><div style="text-align:center"><div class="big">'+DAYS[cur.d]+' · '+cur.h+' h</div><div class="mut" style="font-size:12px">'+cur.x.s[0]+' · <span class="star">★ '+fr(starsOf(cur.x.sc))+'</span></div></div><span class="chip" id="nextb">›</span></div>';
+  h+='<div class="note" style="text-align:center">Moment '+(r.indexOf(cur)+1)+' sur '+r.length+', du meilleur au moins bon</div>';
+  h+='<div style="text-align:center;margin-top:6px"><span class="chip" id="moreb">'+(state.more?'Masquer le choix du jour':'Choisir un autre jour')+'</span></div>'+(state.more?'<div style="margin-top:8px">'+dayCards()+'</div>':'');
+ }
+ el.innerHTML=h;
+ el.querySelectorAll('[data-dd]').forEach(function(e){e.onclick=function(){setTime(+e.dataset.dd,state.hour)}});
+ el.querySelectorAll('[data-mm]').forEach(function(e){e.onclick=function(){setTime(state.day,+e.dataset.mm)}});
+ var fr0=document.getElementById('frise');
+ if(fr0){var pick=function(ev){var t=document.elementFromPoint(ev.clientX,ev.clientY);if(t&&t.dataset&&t.dataset.fd!=null&&(+t.dataset.fd!==state.day||+t.dataset.fh!==state.hour)){state.day=+t.dataset.fd;state.hour=+t.dataset.fh;state.sel=null;renderTime();panel();draw()}};
+  var down=false;fr0.onpointerdown=function(ev){down=true;fr0.setPointerCapture(ev.pointerId);pick(ev)};fr0.onpointermove=function(ev){if(down)pick(ev)};fr0.onpointerup=function(){down=false}}
+ var pl=document.getElementById('play');if(pl)pl.onclick=function(){if(state.play){clearInterval(state.play);state.play=null;renderTime();return}
+  state.play=setInterval(function(){var i=SLOTS.indexOf(state.hour);i++;var d=state.day;if(i>=SLOTS.length){i=0;d=(d+1)%7}state.day=d;state.hour=SLOTS[i];state.sel=null;renderTime();panel();draw()},650);renderTime()};
+ var pb=document.getElementById('prevb'),nb=document.getElementById('nextb'),mb=document.getElementById('moreb');
+ if(pb){var r2=ranked();var ci=Math.max(0,r2.findIndex(function(o){return o.d===state.day&&o.h===state.hour}));
+  pb.onclick=function(){var o=r2[(ci-1+r2.length)%r2.length];setTime(o.d,o.h)};nb.onclick=function(){var o=r2[(ci+1)%r2.length];setTime(o.d,o.h)};mb.onclick=function(){state.more=!state.more;renderTime()}}
+}
+function chips(){
+ document.getElementById('rads').innerHTML='<span class="mut" style="align-self:center">Rayon</span>'+[50,100,300,500].map(function(r){return '<span class="chip '+(r===state.radius?'on':'')+'" data-r="'+r+'">'+r+' km</span>'}).join('');
+ document.querySelectorAll('[data-r]').forEach(function(e){e.onclick=function(){state.radius=+e.dataset.r;BC={};state.sel=null;chips();renderTime();panel();fit()}});
+ renderTime();
+}
+document.getElementById('tmodes').onclick=function(e){var c=e.target.closest('[data-m]');if(!c)return;state.tmode=+c.dataset.m;if(state.tmode===3){var r=ranked();if(r.length&&!r.some(function(o){return o.d===state.day&&o.h===state.hour})){state.day=r[0].d;state.hour=r[0].h}}if(state.tmode===1&&SLOTS.indexOf(state.hour)<0)state.hour=13;document.querySelectorAll('#tmodes [data-m]').forEach(function(x){x.classList.toggle('on',x===c)});state.sel=null;renderTime();panel();draw()};
+var EXPL={D:'<b>D · Ruban + pastilles.</b> La côte colorée par la note (elle montre tout de suite quelle orientation marche) et, dessus, des pastilles rondes avec le chiffre, espacées pour ne jamais se chevaucher.',A:'<b>A · Ruban de côte.</b> La côte elle-même est colorée par la note (rouge → vert), avec une pastille « ★ 3,5 » tous les 76 pixels : zoomé loin, un chiffre par grande portion de côte (la moyenne) ; en zoomant, les pastilles se rapprochent jusqu\'à un chiffre par spot, avec son nom.',B:'<b>B · Pastilles.</b> Des ronds colorés avec le chiffre, rangés sans se chevaucher (un « +3 » dit combien de spots se cachent derrière). Plus classique, mais moins « carte météo ».',C:'<b>C · Nappe et chiffres.</b> Une lueur colorée le long de la côte, et seulement des chiffres blancs posés dessus, comme les températures d\'une carte météo : le plus léger, le plus lisible d\'un coup d\'œil.'};
+document.getElementById('styles').onclick=function(e){var c=e.target.closest('.chip');if(!c)return;state.style=c.dataset.s;document.querySelectorAll('#styles .chip').forEach(function(x){x.classList.toggle('on',x===c)});document.getElementById('explain').innerHTML=EXPL[state.style];draw()};
+document.getElementById('explain').innerHTML=EXPL.D;
+window.addEventListener('resize',resize);chips();resize();panel();
+</script></body></html>
