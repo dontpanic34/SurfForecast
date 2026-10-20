@@ -358,7 +358,11 @@ fun WhereToSurfMap(result: WhereResult, homeLat: Double, homeLon: Double, onPick
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("${frenchShortDayName(day.date)} ${day.date.day}", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else colors.onSurface)
-                    Text(day.best?.let { "★ " + starsText(it.stars) } ?: "–", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) colors.onPrimary else Color(0xFFFFC107))
+                    val textColor = if (on) colors.onPrimary else colors.onSurfaceVariant
+                    Text(tr("ici") + " ★ " + (day.homeStars?.let { starsText(it) } ?: "–"), fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                    // Ailleurs seulement quand ça vaut le déplacement (au moins 3 étoiles et 1 de plus qu'ici).
+                    val away = day.best?.takeIf { day.worthMoving }
+                    if (away != null) Text("→ ★ " + starsText(away.stars), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = if (on) colors.onPrimary else Color(0xFF2BD47A))
                 }
             }
         }
