@@ -124,7 +124,7 @@ object WidgetDataCache {
 
         val (waveTrend, waveChangeHour) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 0.2) { it.waveHeight }
         val (periodTrend, periodChangeHour) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 1.5) { it.wavePeriod }
-        val (windSpeedTrend, _) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 4.0) { it.windSpeedKmh.toDouble() }
+        val (windSpeedTrend, _) = trendAndChangeHour(hourly, aheadHours, forecast, fullIdx, 4.0) { windFeelKmh(it).toDouble() }
 
         // Rotation du vent : on cherche, dans les 12 prochaines heures, le premier moment où
         // le vent s'est vraiment écarté de sa direction actuelle (écart angulaire réel, pas
@@ -135,7 +135,7 @@ object WidgetDataCache {
         val rotationHour = (1..12)
             .mapNotNull { forecast.getOrNull(fullIdx + it) }
             .firstOrNull { angularDiff(degreesOf(it.windDirectionStr), currentDeg) >= ROTATION_THRESHOLD_DEG }
-            ?.takeIf { hourly.windSpeedKmh >= 10 || it.windSpeedKmh >= 10 }
+            ?.takeIf { windFeelKmh(hourly) >= 10 || windFeelKmh(it) >= 10 }
 
         // Prochaine marée (haute ou basse, quel que soit l'ordre) à venir par rapport à
         // maintenant — sur TOUTES les marées du jour (typiquement 4 : 2 PM + 2 BM), pas
@@ -181,13 +181,14 @@ object WidgetDataCache {
             }
             putInt("widget_temp", hourly.temperature)
             putString("widget_wind_dir_fr", SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr))
-            putInt("widget_wind_speed_kmh", hourly.windSpeedKmh)
+            // Le vent ressenti (rafales comprises), le même chiffre que sur l'écran principal et le site.
+            putInt("widget_wind_speed_kmh", windFeelKmh(hourly))
             putString("widget_wind_unit", windUnit)
             putString("widget_wind_speed_trend", windSpeedTrend.name)
             if (rotationHour != null) {
                 putString("widget_wind_rotation_to", SurfUnitsHelper.formatCardinalFr(rotationHour.windDirectionStr))
                 putString("widget_wind_rotation_time", hhmm(rotationHour.rawTime))
-                putInt("widget_wind_rotation_speed_kmh", rotationHour.windSpeedKmh)
+                putInt("widget_wind_rotation_speed_kmh", windFeelKmh(rotationHour))
             } else {
                 remove("widget_wind_rotation_to")
                 remove("widget_wind_rotation_time")
