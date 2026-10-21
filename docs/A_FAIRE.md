@@ -4,7 +4,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 
 ## À trancher / valider par le propriétaire
 - **Flèche 3 et icône de l'eau** : à juger à l'écran (l'icône de l'eau a été redessinée : thermomètre plein sur deux vagues).
-- **Vent** : moyenne ECMWF + GFS en ligne ; l'AROME HD est noté dans la source de chaque heure du journal des prévisions pour comparer pendant une semaine, puis décider de l'abandonner ou non.
+- **Vent** : depuis le 21 octobre, consensus de tous les modèles (médiane des vitesses, rafales les plus fortes) ; à comparer avec les stations (`data/obs`) pendant quelques semaines pour vérifier que les vitesses et les rafales collent.
 - **Coefficients de fréquence du volume** (+5 %, +10 %, +15 %) à valider.
 - **Icônes B** de la semaine (le chiffre 1/2/3 règle aussi les segments) : à juger à l'usage.
 - **Accueil en trois cartes et visite guidée courte** : à juger à l'usage.
