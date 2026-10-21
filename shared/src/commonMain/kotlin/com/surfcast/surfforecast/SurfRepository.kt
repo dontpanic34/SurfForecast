@@ -668,11 +668,11 @@ class SurfRepository(
      * que le vent (ce modèle ne fournit pas toutes les autres variables). Un échec ne doit
      * jamais faire échouer la prévision : on retombe simplement sur AROME standard.
      */
-    private suspend fun fetchAromeHdWind(lat: Double, lon: Double): Map<LocalDateTime, Pair<Double, Double>> {
+    private suspend fun fetchAromeHdWind(lat: Double, lon: Double): Map<LocalDateTime, Triple<Double, Double, Double>> {
         return try {
             val url = "https://api.open-meteo.com/v1/forecast?" +
                 "latitude=$lat&longitude=$lon" +
-                "&hourly=wind_speed_10m,wind_direction_10m" +
+                "&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m" +
                 "&models=$AROME_HD_MODEL" +
                 "&forecast_days=2" +
                 "&timezone=auto"
@@ -680,12 +680,13 @@ class SurfRepository(
             val timeArr = hourly.getValue("time").jsonArray
             val speedArr = hourly.optArray("wind_speed_10m") ?: hourly.optArray("wind_speed_10m_$AROME_HD_MODEL")
             val dirArr = hourly.optArray("wind_direction_10m") ?: hourly.optArray("wind_direction_10m_$AROME_HD_MODEL")
+            val gustArr = hourly.optArray("wind_gusts_10m") ?: hourly.optArray("wind_gusts_10m_$AROME_HD_MODEL")
             if (speedArr == null || dirArr == null) return emptyMap()
             buildMap {
                 for (i in timeArr.indices) {
                     val speed = speedArr.doubleAt(i) ?: continue
                     val dir = dirArr.doubleAt(i) ?: continue
-                    put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), speed to dir)
+                    put(LocalDateTime.parse(timeArr[i].jsonPrimitive.content), Triple(speed, dir, gustArr.doubleAt(i) ?: speed))
                 }
             }
         } catch (e: CancellationException) {
@@ -725,17 +726,6 @@ class SurfRepository(
         } catch (e: Exception) {
             emptyMap()
         }
-    }
-
-    /** Moyenne de deux directions de vent (en degrés) par les vecteurs, pour que 350° et 10° donnent 0° et non 180°. */
-    private fun meanDirection(a: Double, b: Double): Double {
-        val ra = a * PI / 180.0
-        val rb = b * PI / 180.0
-        val x = cos(ra) + cos(rb)
-        val y = sin(ra) + sin(rb)
-        if (x * x + y * y < 1e-9) return a
-        val deg = atan2(y, x) * 180.0 / PI
-        return (deg + 360.0) % 360.0
     }
 
     /**
@@ -849,20 +839,26 @@ class SurfRepository(
                     !longGust.isNaN() -> longGust
                     else -> Double.NaN
                 }
-                // Vent affiché : la moyenne des deux modèles globaux (ECMWF et GFS), plus crédible que l'AROME sur la côte (relevé du
-                // 12 octobre : 8 km/h contre 15 à 19 sur les autres sites). L'AROME HD n'est plus qu'une comparaison, notée dans la source.
+                // Vent affiché : le consensus de tous les modèles qui ont l'heure (ECMWF, GFS, AROME HD, AROME, ARPEGE) : médiane des vitesses,
+                // rafales les plus fortes (voir [windConsensus]). Hors de France et au-delà de 4 jours, il n'en reste souvent que deux.
                 val gfs = gfsWind[t]
                 val ecmwfOk = !longSpeed.isNaN() && !longDir.isNaN()
-                val hdNote = hd?.let { " · AROME HD ${it.first.roundToInt()}" }.orEmpty()
-                val globalWind: Triple<Double, Double, String>? = when {
-                    ecmwfOk && gfs != null -> Triple((longSpeed + gfs.first) / 2.0, meanDirection(longDir, gfs.second), "ECMWF+GFS")
-                    ecmwfOk -> Triple(longSpeed, longDir, "ECMWF")
-                    gfs != null -> Triple(gfs.first, gfs.second, "GFS")
-                    else -> null
-                }
+                val aromeOk = shortModelAvailable && isShortTerm && wData === shortWeather && !primarySpeed.isNaN() && !primaryDir.isNaN()
+                val arpegeSpeed = if (mfHasHour) mfWeather!!.windSpeeds.getOrElse(mfIndex!!) { Double.NaN } else Double.NaN
+                val arpegeDir = if (mfHasHour) mfWeather!!.windDirections.getOrElse(mfIndex!!) { Double.NaN } else Double.NaN
+                val arpegeGust = if (mfHasHour) mfWeather!!.windGusts.getOrElse(mfIndex!!) { Double.NaN } else Double.NaN
+                val arpegeOk = !arpegeSpeed.isNaN() && !arpegeDir.isNaN()
+                val consensus = windConsensus(
+                    listOfNotNull(
+                        if (ecmwfOk) WindVoiceIn("ECMWF", longSpeed, longDir, if (longGust.isNaN()) longSpeed else longGust) else null,
+                        gfs?.let { WindVoiceIn("GFS", it.first, it.second, it.third) },
+                        hd?.let { WindVoiceIn("AROME HD", it.first, it.second, it.third) },
+                        if (aromeOk) WindVoiceIn("AROME", primarySpeed, primaryDir, if (primaryGust.isNaN()) primarySpeed else primaryGust) else null,
+                        if (arpegeOk) WindVoiceIn("ARPEGE", arpegeSpeed, arpegeDir, if (arpegeGust.isNaN()) arpegeSpeed else arpegeGust) else null
+                    )
+                )
                 val (windSpeedRaw, windDirDeg, windSource) = when {
-                    globalWind != null -> Triple(globalWind.first, globalWind.second, globalWind.third + hdNote)
-                    hd != null -> Triple(hd.first, hd.second, "AROME HD")
+                    consensus != null -> Triple(consensus.speed, consensus.dir, consensus.source)
                     !primarySpeed.isNaN() && !primaryDir.isNaN() -> Triple(
                         primarySpeed,
                         primaryDir,
@@ -871,13 +867,15 @@ class SurfRepository(
                     !longSpeed.isNaN() && !longDir.isNaN() -> Triple(longSpeed, longDir, config.longTermWeather.name)
                     else -> Triple(0.0, 0.0, WIND_SOURCE_MISSING)
                 }
+                val gustFinal = consensus?.gust ?: gustRaw
 
                 // Les vents annoncés par chaque modèle pour cette heure (ECMWF, GFS, AROME HD, AROME) : leur écart dit si le vent est incertain.
                 val windVoices = listOfNotNull(
                     longSpeed.takeIf { ecmwfOk },
                     gfs?.first,
                     hd?.first,
-                    primarySpeed.takeIf { isShortTerm && wData === shortWeather && !it.isNaN() }
+                    primarySpeed.takeIf { aromeOk },
+                    arpegeSpeed.takeIf { arpegeOk }
                 )
                 resultList.add(
                     HourlyUiModel(
@@ -902,11 +900,12 @@ class SurfRepository(
                             if (ecmwfOk) ModelVoice("ECMWF", longSpeed, direction = longDir.toFloat()) else null,
                             gfs?.let { ModelVoice("GFS", it.first, direction = it.second.toFloat()) },
                             hd?.let { ModelVoice("AROME HD", it.first, direction = it.second.toFloat()) },
-                            if (shortModelAvailable && isShortTerm && wData === shortWeather && !primarySpeed.isNaN()) ModelVoice("AROME", primarySpeed, direction = primaryDir.toFloat()) else null
+                            if (aromeOk) ModelVoice("AROME", primarySpeed, direction = primaryDir.toFloat()) else null,
+                            if (arpegeOk) ModelVoice("ARPEGE", arpegeSpeed, direction = arpegeDir.toFloat()) else null
                         ).takeIf { it.size >= 2 } ?: emptyList(),
                         energyKj = calculateWaveEnergyReal(h, p),
                         windSpeedKmh = windSpeedRaw.roundToInt(),
-                        windGustKmh = (if (gustRaw.isNaN()) windSpeedRaw else maxOf(gustRaw, windSpeedRaw)).roundToInt(),
+                        windGustKmh = (if (gustFinal.isNaN()) windSpeedRaw else maxOf(gustFinal, windSpeedRaw)).roundToInt(),
                         windDirectionStr = getCardinalDirection(windDirDeg),
                         windSource = windSource,
                         weatherCode = wxData.weatherCodes.getOrElse(wxIndex) { 0 },

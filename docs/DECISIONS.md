@@ -162,3 +162,7 @@ Pas de taille « estimée au déferlement » affichée, ni de leçon chiffrée, 
 
 ## Où surfer ? et mode surf trip (19 octobre 2026)
 Tendance sur 7 jours : option B de la maquette `ou-surfer-tendance.html` (une ligne par jour, étoiles ici, « → zone » quand ça vaut le déplacement, détail heure par heure au toucher). Rayons 50, 100, 300, 500 km ; fond de carte libre de droit (NASA Blue Marble). L'entrée « Où surfer ? » n'apparaît d'elle-même (sous la vue semaine et sous le nom du spot) que si la semaine est mauvaise ici (règle proposée : au moins 3 jours sur 7 à moins de 2 étoiles, à valider) ; la ligne des réglages est toujours là. Le mode surf trip complet (décision monter / attendre / changer, météo du séjour, conseils de van) se développe dans `docs/CAHIER_SURF_TRIP.md`.
+
+
+## Vent : consensus de tous les modèles (21 octobre 2026)
+Le vent affiché est la **médiane des vitesses** de tous les modèles qui ont l'heure (ECMWF, GFS, AROME HD, AROME, ARPEGE), la direction est la moyenne pondérée par la vitesse, et les **rafales** sont la moyenne des deux plus fortes annoncées. Raison : le 20 octobre, ECMWF et GFS donnaient 50 km/h de rafales à Montalivet contre 70 à 87 pour l'AROME HD et les sites de prévision ; la moyenne des deux modèles mondiaux (règle du 12 octobre) était trop faible ce jour-là. Hors de France et au-delà de quatre jours, il ne reste souvent que deux modèles (leur moyenne). Les notes baissent les jours de rafales fortes, voulu (remarque d'un ami sur le poids du vent).
