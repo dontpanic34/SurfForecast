@@ -27,40 +27,40 @@ object SurfDatabase {
                     subRegions = listOf(
                         SurfSubRegionItem("Gironde", listOf(
                             SurfSpotItem("Le Verdon", 45.5480, -1.0960, 285),
-                            SurfSpotItem("Soulac", 45.5140, -1.1300, 275),
-                            SurfSpotItem("L'Amélie", 45.4950, -1.1440, 275),
-                            SurfSpotItem("Le Gurp", 45.4370, -1.1550, 275),
-                            SurfSpotItem("Montalivet", 45.3800, -1.1590, 275),
+                            SurfSpotItem("Soulac", 45.5140, -1.1300, 305),
+                            SurfSpotItem("L'Amélie", 45.4950, -1.1440, 295),
+                            SurfSpotItem("Le Gurp", 45.4370, -1.1550, 280),
+                            SurfSpotItem("Montalivet", 45.3800, -1.1590, 270),
                             SurfSpotItem("Hourtin", 45.1850, -1.1770, 275),
                             SurfSpotItem("Carcans", 45.0830, -1.1960, 275),
                             SurfSpotItem("Lacanau", 44.9980, -1.2050, 275),
                             SurfSpotItem("Le Porge", 44.8870, -1.2180, 275),
-                            SurfSpotItem("La Jenny", 44.8350, -1.2290, 275),
-                            SurfSpotItem("Le Grand Crohot", 44.7950, -1.2400, 275),
+                            SurfSpotItem("La Jenny", 44.8350, -1.2290, 280),
+                            SurfSpotItem("Le Grand Crohot", 44.7950, -1.2400, 280),
                             SurfSpotItem("Le Truc Vert", 44.7150, -1.2470, 275),
-                            SurfSpotItem("Le Cap Ferret", 44.6280, -1.2480, 280),
-                            SurfSpotItem("La Salie", 44.5200, -1.2510, 265)
+                            SurfSpotItem("Le Cap Ferret", 44.6280, -1.2480, 275),
+                            SurfSpotItem("La Salie", 44.5200, -1.2510, 260)
                         )),
                         SurfSubRegionItem("Landes", listOf(
-                            SurfSpotItem("Biscarrosse", 44.4480, -1.2540, 270),
+                            SurfSpotItem("Biscarrosse", 44.4480, -1.2540, 275),
                             SurfSpotItem("Mimizan", 44.2080, -1.2980, 270),
                             SurfSpotItem("Contis", 44.0930, -1.3250, 270),
-                            SurfSpotItem("Vielle-Saint-Girons", 43.9530, -1.3650, 265),
-                            SurfSpotItem("Moliets", 43.8540, -1.3930, 265),
-                            SurfSpotItem("Messanges", 43.8160, -1.4050, 265),
+                            SurfSpotItem("Vielle-Saint-Girons", 43.9530, -1.3650, 280),
+                            SurfSpotItem("Moliets", 43.8540, -1.3930, 290),
+                            SurfSpotItem("Messanges", 43.8160, -1.4050, 280),
                             SurfSpotItem("Hossegor", 43.6650, -1.4420, 260),
-                            SurfSpotItem("Capbreton", 43.6420, -1.4450, 260),
-                            SurfSpotItem("Seignosse", 43.6980, -1.4360, 262)
+                            SurfSpotItem("Capbreton", 43.6420, -1.4450, 300),
+                            SurfSpotItem("Seignosse", 43.6980, -1.4360, 270)
                         )),
                         SurfSubRegionItem("Pays Basque", listOf(
                             SurfSpotItem("Tarnos", 43.5350, -1.5170, 265),
                             SurfSpotItem("Boucau", 43.5280, -1.5220, 270),
-                            SurfSpotItem("Anglet", 43.5040, -1.5360, 285),
-                            SurfSpotItem("Biarritz", 43.4830, -1.5600, 290),
+                            SurfSpotItem("Anglet", 43.5040, -1.5360, 300),
+                            SurfSpotItem("Biarritz", 43.4830, -1.5600, 315),
                             SurfSpotItem("Bidart", 43.4380, -1.5950, 290),
-                            SurfSpotItem("Guéthary", 43.4240, -1.6110, 300),
-                            SurfSpotItem("Saint-Jean-de-Luz", 43.4070, -1.6370, 310),
-                            SurfSpotItem("Hendaye", 43.3730, -1.7740, 320)
+                            SurfSpotItem("Guéthary", 43.4240, -1.6110, 325),
+                            SurfSpotItem("Saint-Jean-de-Luz", 43.4070, -1.6370, 325),
+                            SurfSpotItem("Hendaye", 43.3730, -1.7740, 340)
                         ))
                     )
                 ),
@@ -68,7 +68,7 @@ object SurfDatabase {
                     name = "Bretagne & Vendée",
                     subRegions = listOf(
                         SurfSubRegionItem("Vendée", listOf(
-                            SurfSpotItem("La Tranche-sur-Mer", 46.3400, -1.4380, 195),
+                            SurfSpotItem("La Tranche-sur-Mer", 46.3400, -1.4380, 170),
                             SurfSpotItem("Longeville", 46.4170, -1.5030, 220),
                             SurfSpotItem("Jard-sur-Mer", 46.4120, -1.5790, 210),
                             SurfSpotItem("Les Sables-d'Olonne", 46.4830, -1.7680, 200),
@@ -77,8 +77,8 @@ object SurfDatabase {
                         SurfSubRegionItem("Bretagne", listOf(
                             SurfSpotItem("La Torche", 47.8380, -4.3540, 260),
                             SurfSpotItem("Gâvres", 47.6910, -3.3510, 200),
-                            SurfSpotItem("Quiberon", 47.5180, -3.1550, 250),
-                            SurfSpotItem("Porspoder", 48.5080, -4.7690, 290),
+                            SurfSpotItem("Quiberon", 47.5180, -3.1550, 260),
+                            SurfSpotItem("Porspoder", 48.5080, -4.7690, 280),
                             SurfSpotItem("Morgat", 48.2250, -4.5020, 160)
                         ))
                     )
