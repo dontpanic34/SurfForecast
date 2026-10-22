@@ -71,6 +71,7 @@ fun SpotHeader(
         }
     }
     var drag by remember { mutableStateOf(0f) }
+    var menuOpen by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     Column(
         modifier = Modifier.fillMaxWidth().background(colors.background).padding(horizontal = 4.dp, vertical = 2.dp)
@@ -97,18 +98,50 @@ fun SpotHeader(
                 if (names.none { it.second }) { if (names.size >= 3) names.removeAt(names.lastIndex); names += spotName to true }
                 names.forEach { (name, on) ->
                     val idx = filled.firstOrNull { favorites[it] == name }
-                    Text(
-                        name, fontSize = 13.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Medium, maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        color = if (on) colors.onPrimary else colors.onBackground.copy(alpha = 0.7f),
-                        modifier = Modifier.weight(1f, fill = false).clip(RoundedCornerShape(50))
-                            .background(if (on) colors.primary else colors.surfaceVariant)
-                            .clickable { if (on || idx == null) onOpenSpots() else onSelectIndex(idx) }
-                            .padding(horizontal = 11.dp, vertical = 7.dp)
-                    )
+                    Box(modifier = Modifier.weight(1f, fill = false)) {
+                        Text(
+                            name, fontSize = 13.sp, fontWeight = if (on) FontWeight.ExtraBold else FontWeight.Medium, maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            color = if (on) colors.onPrimary else colors.onBackground.copy(alpha = 0.7f),
+                            modifier = Modifier.clip(RoundedCornerShape(50))
+                                .background(if (on) colors.primary else colors.surfaceVariant)
+                                // Le spot actif ouvre un petit menu (changer de spot, voir où l'appli le place) ; un autre favori s'ouvre directement.
+                                .clickable { if (on) menuOpen = true else if (idx == null) onOpenSpots() else onSelectIndex(idx) }
+                                .padding(horizontal = 11.dp, vertical = 7.dp)
+                        )
+                        if (on) SpotMenu(spotName, menuOpen, { menuOpen = false }, onOpenSpots)
+                    }
                 }
             }
             Box(modifier = Modifier.width(44.dp), contentAlignment = Alignment.Center) { themeToggle() }
+        }
+    }
+}
+
+/**
+ * Le petit menu du spot actif : changer de spot, ou voir sur Google Maps l'endroit où l'appli le place (pour vérifier sa position), avec
+ * les coordonnées et l'orientation de la plage utilisées pour la note.
+ */
+@Composable
+private fun SpotMenu(spotName: String, open: Boolean, onClose: () -> Unit, onOpenSpots: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val spot = SurfDatabase.findSpotByName(spotName)
+    androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = onClose) {
+        androidx.compose.material3.DropdownMenuItem(text = { Text(tr("Changer de spot")) }, onClick = { onClose(); onOpenSpots() })
+        if (spot != null) {
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text(tr("Voir sur Google Maps")) },
+                onClick = {
+                    onClose()
+                    uri.openUri("https://www.google.com/maps/search/?api=1&query=${spot.latitude},${spot.longitude}")
+                }
+            )
+            Text(
+                "${formatDecimal(spot.latitude, 4).replace('.', ',')} ; ${formatDecimal(spot.longitude, 4).replace('.', ',')}" +
+                    (spot.idealSwellDirection?.let { " · " + tr("plage tournée vers") + " $it°" } ?: ""),
+                fontSize = 11.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            )
         }
     }
 }
