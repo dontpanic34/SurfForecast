@@ -4,7 +4,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 
 ## À trancher / valider par le propriétaire
 - **Flèche 3 et icône de l'eau** : à juger à l'écran (l'icône de l'eau a été redessinée : thermomètre plein sur deux vagues).
-- **Vent** : depuis le 21 octobre, consensus de tous les modèles (médiane des vitesses, rafales les plus fortes) ; à comparer avec les stations (`data/obs`) pendant quelques semaines pour vérifier que les vitesses et les rafales collent.
+- **Vent** : consensus de tous les modèles en ligne depuis le 21 octobre (médiane des vitesses, rafales les plus fortes). Décidé le 28 octobre : **on laisse tourner la collecte un mois de plus** (jusqu'à fin novembre) sans changer le vent. Bilan à mi-parcours dans le journal : les stations abritées donnent l'ancien consensus meilleur, mais la tempête de la semaine du 20 octobre a donné 60 km/h et rafales à 80 km/h et plus sur le front de mer (proche des 70 à 87 prévus par l'AROME HD). La station de Vendays est bonne pour la tendance, pas pour la direction du vent de plage. Idée : une **balise de plage** (anemomètre ouvert Windbird / Pioupiou, données publiques sans clé) chez le propriétaire, lue par la collecte puis par l'appli.
 - **Coefficients de fréquence du volume** (+5 %, +10 %, +15 %) à valider.
 - **Icônes B** de la semaine (le chiffre 1/2/3 règle aussi les segments) : à juger à l'usage.
 - **Accueil en trois cartes et visite guidée courte** : à juger à l'usage.
