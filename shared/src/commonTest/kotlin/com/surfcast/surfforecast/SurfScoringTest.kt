@@ -141,9 +141,9 @@ class SurfScoringTest {
 
     @Test
     fun swellDirectionAndCrossWind() {
-        // Écart 60° -> cos = 0.5 -> 98,1 kJ (juste sous le minimum de 100 : note 59) ; vent de travers N 18 km/h ;
-        // houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 -> 42.
-        assertEquals(42, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 18, windDir = "N"), 270, "intermediate", false))
+        // Écart 60°, réfraction comprise 45° (x 0,75) -> cos = 0.707 -> 138,7 kJ (au-dessus du minimum de 100) ; vent de travers N 18 km/h ;
+        // houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 -> 50.
+        assertEquals(50, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 18, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -255,7 +255,8 @@ class SurfScoringTest {
     fun swellComingFromTheSideScoresLowerThanHeadOn() {
         val headOn = calculateSlotScore(hour(10, waveDir = 275f), 275, "intermediate", false)
         val oblique = calculateSlotScore(hour(10, waveDir = 330f), 275, "intermediate", false)
-        val blocked = calculateSlotScore(hour(10, waveDir = 5f), 275, "intermediate", false)
+        // Houle qui vient de derrière la plage (180° d'écart) : même après réfraction, aucune énergie.
+        val blocked = calculateSlotScore(hour(10, waveDir = 95f), 275, "intermediate", false)
         assertTrue(headOn > oblique, "de face ($headOn) > de travers ($oblique)")
         assertTrue(oblique > blocked, "de travers ($oblique) > bloquée ($blocked)")
         assertEquals(0, blocked)
@@ -527,5 +528,35 @@ class StarsOffsetTest {
         kotlin.test.assertEquals(3.5f, starsForScore(70, 10))
         kotlin.test.assertEquals("3,5", starsText(3.5f))
         kotlin.test.assertEquals("4", starsText(4f))
+    }
+}
+
+
+class SurfScoringShelterTest {
+    private fun hour(dir: Float, height: Double = 1.9, period: Double = 13.0) = HourlyUiModel(
+        timeFormatted = "12:00", rawTime = kotlinx.datetime.LocalDateTime(2026, 10, 28, 12, 0), waveHeight = height, wavePeriod = period,
+        waveDirection = dir, energyKj = calculateWaveEnergyReal(height, period), windSpeedKmh = 8, windDirectionStr = "E", weatherCode = 0, temperature = 15
+    )
+
+    @Test
+    fun plageTourneeDeCoteRecoitUnPeuDHouleApresRefraction() {
+        // La Tranche-sur-Mer le 28 octobre : houle de 277°, plage à 170° (107° d'écart au large) : n'est plus « petit jour ».
+        val r = calculateSlotRating(hour(277f), 170, "intermediate+")
+        assertTrue(r.kind != ConditionKind.TOO_SMALL, "1,9 m à 13 s ne doit pas être « petit » : ${r.kind}")
+    }
+
+    @Test
+    fun houleCoupeeParLOrientationEstDiteAbritee() {
+        // Houle derrière la plage et profil exigeant : petit à cause de l'orientation, pas de la mer.
+        val r = calculateSlotRating(hour(95f), 275, "intermediate")
+        assertEquals(ConditionKind.TOO_SMALL, r.kind)
+        assertEquals(WHY_SHELTERED, r.why)
+    }
+
+    @Test
+    fun petiteMerResteUnPetitJour() {
+        val r = calculateSlotRating(hour(275f, height = 0.5, period = 7.0), 275, "intermediate")
+        assertEquals(ConditionKind.TOO_SMALL, r.kind)
+        assertEquals(WHY_TOO_SMALL, r.why)
     }
 }

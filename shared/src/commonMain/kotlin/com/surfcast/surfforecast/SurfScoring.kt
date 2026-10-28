@@ -273,12 +273,15 @@ fun calculateSlotRating(
     val directionDiff = idealSwellDirection?.let {
         angularDifference(hourlyModel.waveDirection.toDouble(), it.toDouble())
     } ?: 0.0
-    val coeffDirection = if (directionDiff >= 90.0) 0.0 else cos(directionDiff * PI / 180.0)
+    // Réfraction : une houle se courbe en approchant de la côte, elle arrive moins de travers qu'au large (surtout une houle longue).
+    // L'écart compté pour l'énergie est donc réduit ; 90° d'écart au large (plage tournée de côté) laissent encore un peu d'énergie.
+    val effectiveDiff = directionDiff * REFRACTION
+    val coeffDirection = if (effectiveDiff >= 90.0) 0.0 else cos(effectiveDiff * PI / 180.0)
 
     // L'énergie est la somme des trains de houle : la houle secondaire compte quand elle est assez grosse et longue pour être surfée.
     val secondaryKj = if (hourlyModel.secondaryHeight >= 0.2 && hourlyModel.secondaryPeriod >= 7.0) {
         val secDiff = idealSwellDirection?.let { angularDifference(hourlyModel.secondaryDirection.toDouble(), it.toDouble()) } ?: 0.0
-        waveEnergyKj(hourlyModel.secondaryHeight, hourlyModel.secondaryPeriod) * (if (secDiff >= 90.0) 0.0 else cos(secDiff * PI / 180.0))
+        waveEnergyKj(hourlyModel.secondaryHeight, hourlyModel.secondaryPeriod) * (if (secDiff * REFRACTION >= 90.0) 0.0 else cos(secDiff * REFRACTION * PI / 180.0))
     } else 0.0
     val energyKj = waveEnergyKj(h, t) * coeffDirection + secondaryKj
     // Un offshore creuse la vague (plus puissante, plus creuse), un onshore l'écrase : à taille égale, la vague
@@ -357,7 +360,9 @@ fun calculateSlotRating(
     // La note a retenu un vent qui gêne alors que le vent réel affiché est propre : c'est la mémoire du vent qui parle.
     val windMemory = displayedWind != null && windFactor < WIND_CLEAN &&
         windFactorOf(displayedWind, h, profile, windCategoryFor(displayedWind.windDirectionStr, idealSwellDirection)) >= WIND_CLEAN
-    return SlotRating(final, false, kind, whyFor(kind, windCategory, limits, windMemory, scoreBand(final)))
+    // Petit parce que la plage est tournée de côté (et non parce que la mer est petite) : on le dit.
+    val sheltered = kind == ConditionKind.TOO_SMALL && waveEnergyKj(h, t) >= profile.idealMin
+    return SlotRating(final, false, kind, if (sheltered) WHY_SHELTERED else whyFor(kind, windCategory, limits, windMemory, scoreBand(final)))
 }
 
 /**
@@ -375,6 +380,10 @@ const val GUST_WEIGHT = 0.35
 private const val TOO_SMALL_RATIO = 0.85
 private const val TOO_WINDY_FACTOR = 0.4
 const val WHY_TOO_SMALL = "Taille limite"
+const val WHY_SHELTERED = "Abrité de la houle"
+
+/** Part de l'écart de direction houle / plage qui compte après réfraction (0,75 : 107° au large comptent pour environ 80°). */
+const val REFRACTION = 0.75
 const val WHY_TOO_BIG = "Gros jour, à jauger sur place"
 /** Houle de 3 m ou plus : le libellé dit « Massif » (comme le résumé du jour). Sous 0,4 m : « Flat ». */
 const val MASSIVE_SWELL_M = 3.0

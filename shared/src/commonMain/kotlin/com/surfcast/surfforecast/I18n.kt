@@ -216,6 +216,7 @@ private val CORE: Map<String, List<String>> = mapOf(
     "Petit jour" to t("Small day", "Kleiner Tag", "Kleine dag", "Día pequeño"),
     "Massif" to t("Massive", "Riesig", "Massief", "Masivo"),
     "Flat" to t("Flat", "Flach", "Vlak", "Plano"),
+    "Abrité de la houle" to t("Sheltered from the swell", "Vor der Dünung geschützt", "Beschut tegen de deining", "Resguardado del oleaje"),
     "Trop de vent" to t("Too windy", "Zu windig", "Te veel wind", "Demasiado viento"),
     " à " to t(" to ", " bis ", " tot ", " a "),
     // Réglages
