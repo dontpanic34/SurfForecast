@@ -29,10 +29,45 @@
     <div id="loading-text">Chargement de Surf Log…</div>
 </div>
 <script>
-    // Safari iOS < 18.2 ne sait pas exécuter l'app (WebAssembly GC) : message clair plutôt qu'une page blanche.
-    if (typeof WebAssembly === "undefined") {
-        document.getElementById("loading-text").textContent = "Ce navigateur est trop ancien pour Surf Log (iOS 18.2 ou plus récent requis).";
-    }
+    // Page blanche : Safari iOS < 18.2 (et d'autres navigateurs anciens) sait lancer WebAssembly mais pas WebAssembly GC, dont l'app a besoin.
+    // On le détecte et on le dit clairement ; si le chargement traîne ou plante pour une autre raison, on affiche l'erreur et un bouton.
+    (function () {
+        var text = document.getElementById("loading-text");
+        function show(message, withButton, detail) {
+            text.style.maxWidth = "300px";
+            text.style.textAlign = "center";
+            text.textContent = message;
+            if (detail) {
+                var d = document.createElement("div");
+                d.style.cssText = "max-width:300px;font-size:11px;opacity:.7;word-break:break-word;text-align:center";
+                d.textContent = detail;
+                text.parentNode.appendChild(d);
+            }
+            if (withButton) {
+                var b = document.createElement("button");
+                b.textContent = "Recharger";
+                b.style.cssText = "background:#1E88E5;color:#fff;border:0;border-radius:20px;padding:10px 18px;font:600 14px -apple-system,system-ui,sans-serif";
+                b.onclick = function () { location.reload(); };
+                text.parentNode.appendChild(b);
+            }
+        }
+        var gc = false;
+        try { gc = typeof WebAssembly !== "undefined" && WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0])); } catch (e) {}
+        if (!gc) {
+            window.__noWasmGc = true;
+            show("Ce navigateur est trop ancien pour Surf Log (iOS 18.2 ou plus récent requis). Mets à jour iOS, ou utilise un navigateur à jour.", false);
+            return;
+        }
+        var lastError = "";
+        window.addEventListener("error", function (e) { lastError = (e && e.message) || lastError; });
+        window.addEventListener("unhandledrejection", function (e) { lastError = String((e && e.reason && (e.reason.message || e.reason)) || lastError); });
+        // L'app retire #loading en démarrant : s'il est encore là après 25 secondes, le chargement a échoué ou la connexion est trop lente.
+        setTimeout(function () {
+            if (document.getElementById("loading") && !document.querySelector("canvas")) {
+                show("Surf Log n'a pas pu démarrer. Vérifie ta connexion et recharge la page.", true, lastError);
+            }
+        }, 25000);
+    })();
 </script>
 <script>
     // Android (Chrome) : on garde l'invite d'installation pour la déclencher depuis un bouton des Paramètres.
