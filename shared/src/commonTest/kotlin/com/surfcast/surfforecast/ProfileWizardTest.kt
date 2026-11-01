@@ -178,7 +178,7 @@ class ProfileWizardTest {
         // Vent de mer modéré sur une vague moyenne.
         assertEquals("Onshore fort, ça sectionne", calculateSlotRating(hour(10, height = 1.2, period = 10.0, windKmh = 16, windDir = "O"), 270, "confirmed").why)
         // Rafales fortes : c'est elles qui gâchent la surface.
-        val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12).copy(windGustKmh = 40)
+        val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12).copy(windGustKmh = 55)
         assertEquals("Rafales fortes", calculateSlotRating(gusty, 275, "confirmed").why)
         // Challengeant : offshore = creux et puissant, vent de mer = gros mais moins creux.
         val offshore = PROFILE_EXAMPLES[4].hour

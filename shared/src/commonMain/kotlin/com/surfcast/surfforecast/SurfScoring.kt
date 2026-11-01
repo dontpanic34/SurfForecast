@@ -41,7 +41,8 @@ data class SlotRating(
 
 /** Courbes du facteur vent (de 0 à 1) selon la vitesse effective (km/h) : offshore, travers, onshore. */
 private val windCurves: Map<String, List<Pair<Double, Double>>> = mapOf(
-    "offshore" to listOf(0.0 to 1.0, 15.0 to 1.0, 25.0 to 0.75, 35.0 to 0.45, 45.0 to 0.25, 55.0 to 0.15),
+    // Un offshore, même soutenu, tient et nettoie la vague : propre jusqu'à 20 km/h ressentis, il ne gêne vraiment qu'au-delà de 30.
+    "offshore" to listOf(0.0 to 1.0, 20.0 to 1.0, 30.0 to 0.82, 40.0 to 0.55, 50.0 to 0.3, 60.0 to 0.15),
     // Vent de côté : propre jusqu'à environ 12 km/h ressentis, il gêne ensuite (18 km/h : 0,88 ; 24 km/h : 0,65).
     "cross" to listOf(0.0 to 1.0, 12.0 to 1.0, 18.0 to 0.88, 24.0 to 0.65, 32.0 to 0.4, 45.0 to 0.15),
     // Onshore : propre sans vent, il abîme la vague dès 6 km/h (10 km/h : 0,65 ; 14 km/h : 0,45 ; 20 km/h : 0,25 ; 30 km/h : 0,1).
@@ -315,10 +316,12 @@ fun calculateSlotRating(
     val windFactor = windFactorOf(hourlyModel, h, profile, windCategory)
     score *= windFactor
     // Un offshore fort freine une petite houle : elle s'aplatit.
-    score *= flattenFactor(h, effectiveWindKmh(hourlyModel), windCategory)
+    score *= flattenFactor(h, effectiveWindKmh(hourlyModel), windCategory, t)
     // Rafales fortes : mauvaises pour tout le monde, quelle que soit la direction.
     val gust = hourlyModel.windGustKmh
-    val gustF = if (profile.countGusts && gust > profile.gustThreshold) (1.0 - (gust - profile.gustThreshold) / 30.0).coerceAtLeast(0.3) else 1.0
+    // Des rafales en offshore gênent moitié moins que de face : elles nettoient la vague au lieu de la hacher.
+    val gustWeight = if (windCategory == "offshore" || windCategory == "side-off") 0.5 else 1.0
+    val gustF = if (profile.countGusts && gust > profile.gustThreshold) (1.0 - gustWeight * (gust - profile.gustThreshold) / 30.0).coerceAtLeast(0.3) else 1.0
     score *= gustF
     // Période trop courte pour le profil : houle de clapot, vagues moins organisées.
     val periodF = if (t < profile.minPeriod) (t / profile.minPeriod).coerceAtLeast(0.3) else 1.0
@@ -369,9 +372,11 @@ fun calculateSlotRating(
  * Un offshore fort freine une petite houle (20 km/h sur 0,4 m : presque plat ; la même force sur 1,2 m ne change rien).
  * 1 = pas d'effet, jusqu'à 0,15 ; moitié moins d'effet pour un side-off.
  */
-internal fun flattenFactor(heightM: Double, windKmh: Double, windCategory: String): Double {
+internal fun flattenFactor(heightM: Double, windKmh: Double, windCategory: String, periodS: Double = 0.0): Double {
     if (windCategory != "offshore" && windCategory != "side-off") return 1.0
-    val k = ((windKmh - 8.0) / 14.0).coerceIn(0.0, 1.0) * ((1.2 - heightM) / 0.8).coerceIn(0.0, 1.0) * (if (windCategory == "side-off") 0.5 else 1.0)
+    // Une houle longue (11 s et plus) garde sa forme : l'aplatissement est réduit de moitié à partir de 12 s.
+    val longSwell = ((periodS - 9.0) / 3.0).coerceIn(0.0, 1.0)
+    val k = ((windKmh - 8.0) / 14.0).coerceIn(0.0, 1.0) * ((1.2 - heightM) / 0.8).coerceIn(0.0, 1.0) * (if (windCategory == "side-off") 0.5 else 1.0) * (1.0 - 0.5 * longSwell)
     return maxOf(0.15, 1.0 - k)
 }
 

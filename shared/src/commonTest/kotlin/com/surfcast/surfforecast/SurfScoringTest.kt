@@ -142,8 +142,8 @@ class SurfScoringTest {
     @Test
     fun swellDirectionAndCrossWind() {
         // Écart 60°, réfraction comprise 45° (x 0,75) -> cos = 0.707 -> 138,7 kJ (au-dessus du minimum de 100) ; vent de travers N 18 km/h ;
-        // houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 -> 50.
-        assertEquals(50, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 18, windDir = "N"), 270, "intermediate", false))
+        // houle de travers : facteur 1 - 0.3 x 60/90 = 0.8 -> 51 (l'offshore tient la vague : moins de pénalité depuis le 1er novembre).
+        assertEquals(51, calculateSlotScore(hour(10, waveDir = 330f, windKmh = 18, windDir = "N"), 270, "intermediate", false))
     }
 
     @Test
@@ -213,9 +213,9 @@ class SurfScoringTest {
 
     @Test
     fun veryGustyOffshoreIsBadForEveryone() {
-        val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12, windDir = "E", gustKmh = 40)
+        val gusty = hour(10, height = 1.2, period = 11.0, windKmh = 12, windDir = "E", gustKmh = 60)
         listOf("beginner", "intermediate", "confirmed").forEach { level ->
-            assertTrue(calculateSlotScore(gusty, 275, level, false) <= 50, "rafales 40 ($level)")
+            assertTrue(calculateSlotScore(gusty, 275, level, false) <= 50, "rafales 60 ($level)")
         }
     }
 
