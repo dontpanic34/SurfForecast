@@ -158,7 +158,7 @@ fun SpotSelectionDialog(
                             ) {
                                 Text(
                                     text = subRegion.name,
-                                    fontSize = 11.5.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = if (isSelected) colors.primary else colors.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),

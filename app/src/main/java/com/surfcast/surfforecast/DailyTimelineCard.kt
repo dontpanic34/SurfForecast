@@ -128,14 +128,14 @@ fun DailyTimelineCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    modifier = Modifier.weight(1f).then(dragHandleModifier),
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    DragHandleIcon(color = onSurfaceColor.copy(alpha = 0.35f))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    CardGrip(modifier = dragHandleModifier)
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Déroulé de la journée",
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = onSurfaceColor.copy(alpha = 0.55f),
                         maxLines = 1
@@ -147,29 +147,7 @@ fun DailyTimelineCard(
                     }
                 }
 
-                IconButton(
-                    onClick = onToggleCollapse,
-                    modifier = Modifier.size(22.dp)
-                ) {
-                    Canvas(modifier = Modifier.size(12.dp)) {
-                        val w = size.width
-                        val h = size.height
-                        val path = Path().apply {
-                            if (isCollapsed) {
-                                moveTo(w * 0.2f, h * 0.35f)
-                                lineTo(w * 0.8f, h * 0.35f)
-                                lineTo(w * 0.5f, h * 0.75f)
-                                close()
-                            } else {
-                                moveTo(w * 0.2f, h * 0.65f)
-                                lineTo(w * 0.8f, h * 0.65f)
-                                lineTo(w * 0.5f, h * 0.25f)
-                                close()
-                            }
-                        }
-                        drawPath(path = path, color = onSurfaceColor.copy(alpha = 0.6f))
-                    }
-                }
+                CardCollapseButton(isCollapsed = isCollapsed, onToggle = onToggleCollapse)
             }
 
             if (!isCollapsed) {
@@ -178,7 +156,7 @@ fun DailyTimelineCard(
             if (timelineItems.isEmpty()) {
                 Text(
                     text = "Pas de données diurnes disponibles pour cette sélection.",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = onSurfaceColor.copy(alpha = 0.5f),
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
@@ -212,6 +190,8 @@ fun DailyTimelineCard(
                         val dirFr = SurfUnitsHelper.formatCardinalFr(hourly.windDirectionStr)
                         val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
                         val rotationAngle = (degrees + 180f) % 360f
+                        // Teinte vive d'origine, respecte le code jaune/orange/rouge selon
+                        // force/direction -- texte simple, sans fond ni ombre.
                         val arrowColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourly.windSpeedKmh)
                         val isSelected = index == selectedIndex
 
@@ -224,8 +204,8 @@ fun DailyTimelineCard(
                                 ),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(hourly), fontSize = 11.sp)
-                            Canvas(modifier = Modifier.size(9.dp)) {
+                            Text(text = SurfUnitsHelper.resolveRealWeatherEmoji(hourly), fontSize = 14.sp)
+                            Canvas(modifier = Modifier.size(12.dp)) {
                                 val w = size.width
                                 val h = size.height
                                 rotate(rotationAngle, pivot = Offset(w / 2f, h / 2f)) {
@@ -237,20 +217,21 @@ fun DailyTimelineCard(
                                         close()
                                     }
                                     drawPath(path = path, color = arrowColor)
+                                    drawPath(path = path, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 0.6.dp.toPx()))
                                 }
                             }
                             Text(
                                 text = dirFr,
-                                fontSize = 6.sp,
+                                fontSize = 9.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = arrowColor,
                                 maxLines = 1
                             )
                             Text(
                                 text = SurfUnitsHelper.formatWindValue(hourly.windSpeedKmh, windUnit),
-                                fontSize = 6.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = onSurfaceColor.copy(alpha = 0.7f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = arrowColor,
                                 maxLines = 1
                             )
                         }
@@ -265,9 +246,10 @@ fun DailyTimelineCard(
                     scores = scores,
                     nowIndex = nowIndex,
                     selectedIndex = selectedIndex,
+                    onSurfaceColor = onSurfaceColor,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(64.dp)
+                        .height(96.dp)
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -285,13 +267,13 @@ fun DailyTimelineCard(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(horizontal = 6.dp)
                         ) {
-                            Canvas(modifier = Modifier.size(6.dp)) {
+                            Canvas(modifier = Modifier.size(7.dp)) {
                                 drawCircle(color = dotColor, radius = size.minDimension / 2f)
                             }
                             Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = label,
-                                fontSize = 7.sp,
+                                fontSize = 10.sp,
                                 color = onSurfaceColor.copy(alpha = 0.55f),
                                 maxLines = 1
                             )
@@ -317,11 +299,11 @@ fun DailyTimelineCard(
                                     SunEventIcon(
                                         isSunrise = true,
                                         color = onSurfaceColor.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(10.dp)
+                                        modifier = Modifier.size(12.dp)
                                     )
                                     Text(
                                         text = sun.sunrise.format(hourFormatter),
-                                        fontSize = 7.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onSurfaceColor.copy(alpha = 0.6f),
                                         maxLines = 1
@@ -331,11 +313,11 @@ fun DailyTimelineCard(
                                     SunEventIcon(
                                         isSunrise = false,
                                         color = onSurfaceColor.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(10.dp)
+                                        modifier = Modifier.size(12.dp)
                                     )
                                     Text(
                                         text = sun.sunset.format(hourFormatter),
-                                        fontSize = 7.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onSurfaceColor.copy(alpha = 0.6f),
                                         maxLines = 1
@@ -344,7 +326,7 @@ fun DailyTimelineCard(
                                 else -> {
                                     Text(
                                         text = String.format(Locale.FRANCE, "%02dh", hourly.rawTime.hour),
-                                        fontSize = 7.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                         color = if (isSelected) primaryColor else onSurfaceColor.copy(alpha = 0.5f),
                                         maxLines = 1,
@@ -452,7 +434,7 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = highTime,
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor,
                 maxLines = 1
@@ -488,7 +470,7 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = lowTime,
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor,
                 maxLines = 1
@@ -506,7 +488,7 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
 
             Text(
                 text = "$coef",
-                fontSize = 8.5.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = onSurfaceColor.copy(alpha = 0.75f),
                 maxLines = 1
@@ -519,12 +501,34 @@ private fun TideMiniInfo(tideInfo: DailyTideInfo, onSurfaceColor: Color) {
     }
 }
 
+/**
+ * Formate une hauteur de houle pour l'axe, a la francaise (virgule) et sans decimale
+ * inutile sur les valeurs rondes : 0.5 -> "0,5", 1.0 -> "1", 1.5 -> "1,5".
+ * Les paliers en quart de metre (0.25 / 0.75...) gardent 2 decimales pour rester
+ * exacts : arrondir "%.1f" en HALF_UP afficherait a tort "0,3" pour 0.25.
+ */
+private fun formatAxisHeight(value: Double): String {
+    val hundredths = Math.round(value * 100)
+    return when {
+        hundredths % 100 == 0L -> (hundredths / 100).toString()
+        hundredths % 50 == 0L -> String.format(Locale.FRANCE, "%.1f", value)
+        else -> String.format(Locale.FRANCE, "%.2f", value)
+    }
+}
+
+/**
+ * Inspire des applis de reference (ex. Surf-Forecast) : un axe vertical a gauche avec
+ * des lignes horizontales a hauteur de houle fixe (0,5 / 1 / 1,5 m, etc.), pour lire
+ * la courbe d'un coup d'oeil "entre telle et telle ligne" plutot que de devoir dechiffrer
+ * de petites etiquettes numeriques collees a chaque point.
+ */
 @Composable
 private fun DailyTimelineSwellCanvas(
     hours: List<HourlyUiModel>,
     scores: List<Int>,
     nowIndex: Int,
     selectedIndex: Int,
+    onSurfaceColor: Color,
     modifier: Modifier = Modifier
 ) {
     if (hours.size < 2) {
@@ -534,11 +538,21 @@ private fun DailyTimelineSwellCanvas(
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val density = LocalDensity.current
-    val labelTextPaint = remember(density) {
+    val axisTextPaint = remember(density, onSurfaceColor) {
         Paint().apply {
-            color = AppColors.TideHighDark.toArgb()
-            textSize = with(density) { 7.5.sp.toPx() }
+            color = onSurfaceColor.copy(alpha = 0.45f).toArgb()
+            textSize = with(density) { 9.sp.toPx() }
             isAntiAlias = true
+            textAlign = Paint.Align.RIGHT
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+        }
+    }
+    val periodTextPaint = remember(density) {
+        Paint().apply {
+            color = Color.White.toArgb()
+            textSize = with(density) { 10.sp.toPx() }
+            isAntiAlias = true
+            textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
@@ -546,24 +560,51 @@ private fun DailyTimelineSwellCanvas(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        val padY = 6.dp.toPx()
+        val padY = 8.dp.toPx()
+
+        // Echelle de l'axe : un pas "rond" (0,25 / 0,5 / 1 / 2 m...) choisi pour obtenir
+        // environ 4 lignes, et toujours un peu de marge au-dessus du pic du jour.
+        val rawMax = (hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.3)
+        var step = 0.25
+        while (rawMax / step > 4.0) step *= 2.0
+        var niceMax = kotlin.math.ceil(rawMax / step) * step
+        if (niceMax - rawMax < step * 0.2) niceMax += step
+        val gridValues = generateSequence(step) { it + step }.takeWhile { it <= niceMax + step * 0.01 }.toList()
+
+        val axisLabels = gridValues.map { formatAxisHeight(it) }
+        val axisW = (axisLabels.maxOfOrNull { axisTextPaint.measureText(it) } ?: 0f) + 6.dp.toPx()
+
         val usableH = h - (2 * padY)
         val baseY = padY + usableH
+        val plotLeft = axisW
+        val plotW = (w - plotLeft).coerceAtLeast(1f)
+        val stepX = plotW / (hours.size - 1).toFloat()
 
-        val maxHeight = (hours.maxOfOrNull { it.waveHeight } ?: 1.0).coerceAtLeast(0.5).toFloat()
-        val stepX = w / (hours.size - 1).toFloat()
+        // Lignes horizontales de repere + etiquette a gauche, a chaque palier de l'axe.
+        gridValues.forEach { value ->
+            val y = padY + usableH * (1f - (value / niceMax).toFloat())
+            drawLine(
+                color = onSurfaceColor.copy(alpha = 0.10f),
+                start = Offset(plotLeft, y),
+                end = Offset(w, y),
+                strokeWidth = 0.8.dp.toPx()
+            )
+            drawContext.canvas.nativeCanvas.drawText(
+                formatAxisHeight(value),
+                plotLeft - 5.dp.toPx(),
+                y + 3.dp.toPx(),
+                axisTextPaint
+            )
+        }
 
-        // On ne remplit que 80% de la hauteur utile avec les donnees : les 20% du haut
-        // restent toujours libres pour que les etiquettes hauteur/periode ne soient
-        // jamais ecrasees par la courbe, meme quand un point touche le maximum.
         val points = hours.mapIndexed { index, item ->
-            val ratio = (item.waveHeight.toFloat() / maxHeight).coerceIn(0f, 1f) * 0.8f
+            val ratio = (item.waveHeight / niceMax).coerceIn(0.0, 1.0).toFloat()
             val y = padY + usableH * (1f - ratio)
-            Offset(index * stepX, y)
+            Offset(plotLeft + index * stepX, y)
         }
 
         val fillPath = Path().apply {
-            moveTo(0f, baseY)
+            moveTo(plotLeft, baseY)
             lineTo(points.first().x, points.first().y)
             for (i in 1 until points.size) {
                 val prev = points[i - 1]
@@ -592,19 +633,36 @@ private fun DailyTimelineSwellCanvas(
                 "orange" -> AppColors.WindMid
                 else -> AppColors.TideLow
             }
-            drawPath(path = segPath, color = segColor, style = Stroke(width = 2.2.dp.toPx()))
+            drawPath(path = segPath, color = segColor, style = Stroke(width = 2.6.dp.toPx()))
         }
 
-        // Étiquettes hauteur/période à quelques points clés pour éviter la surcharge visuelle
-        val labelStep = (hours.size / 6).coerceAtLeast(1)
-        hours.forEachIndexed { index, item ->
-            if (index % labelStep == 0) {
-                val label = String.format(Locale.US, "%.1fm/%ds", item.waveHeight, item.wavePeriod.roundToInt())
-                val textW = labelTextPaint.measureText(label)
-                val x = (points[index].x - textW / 2f).coerceIn(0f, (w - textW).coerceAtLeast(0f))
-                val y = (points[index].y - 4.dp.toPx()).coerceAtLeast(2.dp.toPx())
-                drawContext.canvas.nativeCanvas.drawText(label, x, y, labelTextPaint)
-            }
+        // Trois pastilles "periode" reparties dans la journee (matin / milieu / fin)
+        // plutot qu'une seule au pic : donne une idee de comment la periode evolue sur
+        // la journee, sans surcharger la courbe d'une etiquette par point.
+        val periodIndices = listOf(0.15, 0.5, 0.85)
+            .map { frac -> (frac * (hours.size - 1)).roundToInt().coerceIn(0, hours.size - 1) }
+            .distinct()
+        periodIndices.forEach { idx ->
+            val point = points[idx]
+            val label = "${hours[idx].wavePeriod.roundToInt()}s"
+            val textW = periodTextPaint.measureText(label)
+            val bubbleLow = plotLeft + textW / 2f + 6.dp.toPx()
+            val bubbleHigh = (w - textW / 2f - 6.dp.toPx()).coerceAtLeast(bubbleLow)
+            val bubbleCenter = Offset(
+                point.x.coerceIn(bubbleLow, bubbleHigh),
+                (point.y - 16.dp.toPx()).coerceAtLeast(padY + 8.dp.toPx())
+            )
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.35f),
+                radius = 13.dp.toPx(),
+                center = bubbleCenter
+            )
+            drawContext.canvas.nativeCanvas.drawText(
+                label,
+                bubbleCenter.x,
+                bubbleCenter.y + 3.5.dp.toPx(),
+                periodTextPaint
+            )
         }
 
         // Ligne verticale : heure selectionnee via le scrub tactile (synchro avec les
@@ -618,15 +676,15 @@ private fun DailyTimelineSwellCanvas(
                 end = Offset(selPoint.x, baseY),
                 strokeWidth = 1.6.dp.toPx()
             )
-            drawCircle(color = Color.White, radius = 3.5.dp.toPx(), center = selPoint)
-            drawCircle(color = primaryColor, radius = 2.4.dp.toPx(), center = selPoint)
+            drawCircle(color = Color.White, radius = 3.8.dp.toPx(), center = selPoint)
+            drawCircle(color = primaryColor, radius = 2.6.dp.toPx(), center = selPoint)
         }
 
         // Point rouge : heure actuelle, si elle fait partie des données affichées
         if (nowIndex in points.indices && nowIndex != selectedIndex) {
             val nowPoint = points[nowIndex]
-            drawCircle(color = Color.White, radius = 3.5.dp.toPx(), center = nowPoint)
-            drawCircle(color = Color(0xFFE53935), radius = 2.4.dp.toPx(), center = nowPoint)
+            drawCircle(color = Color.White, radius = 3.8.dp.toPx(), center = nowPoint)
+            drawCircle(color = Color(0xFFE53935), radius = 2.6.dp.toPx(), center = nowPoint)
         }
     }
 }

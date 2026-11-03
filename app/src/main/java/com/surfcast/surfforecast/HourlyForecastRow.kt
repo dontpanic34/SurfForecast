@@ -14,10 +14,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,9 +45,9 @@ fun HourlyForecastRow(
     val degrees = SurfUnitsHelper.cardinalToDegrees(dirFr)
     val rotationAngle = (degrees + 180f) % 360f
 
-    // Couleur du vent ajustée pour un meilleur contraste en mode clair
-    val rawWindColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyData.windSpeedKmh)
-    val windColor = if (rawWindColor == Color(0xFFFDD835)) Color(0xFFE68A00) else rawWindColor
+    // Code couleur vent (jaune = vent de terre, orange = vent de mer modere, rouge = vent
+    // de mer fort) : texte simple dans la teinte vive d'origine, sans fond ni ombre.
+    val windColor = SurfUnitsHelper.getSurfWindColor(dirFr, hourlyData.windSpeedKmh)
     val speedFormatted = SurfUnitsHelper.formatWindValue(hourlyData.windSpeedKmh, windUnit)
     val unitSymbol = SurfUnitsHelper.getWindUnitSymbol(windUnit)
 
@@ -75,12 +73,6 @@ fun HourlyForecastRow(
         isCurrentHour -> primaryColor.copy(alpha = 0.8f)
         else -> Color.Transparent
     }
-
-    val textShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.28f),
-        offset = Offset(0.5f, 1f),
-        blurRadius = 1.5f
-    )
 
     Row(
         modifier = modifier
@@ -169,7 +161,7 @@ fun HourlyForecastRow(
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 text = "${hourlyData.temperature}°",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
                 color = onSurfaceColor,
                 maxLines = 1
@@ -190,7 +182,7 @@ fun HourlyForecastRow(
         // Col 4 : Période
         Text(
             text = "${hourlyData.wavePeriod.roundToInt()}s",
-            fontSize = 11.5.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = if (isSelected || isCurrentHour) primaryColor else Color.Gray,
             maxLines = 1,
@@ -198,30 +190,24 @@ fun HourlyForecastRow(
             modifier = Modifier.weight(0.9f)
         )
 
-        // Col 5 : Énergie (avec ombre pour lisibilité en mode clair)
+        // Col 5 : Énergie
         Text(
             text = "${hourlyData.energyKj}kJ",
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFFFB300),
-                shadow = textShadow,
-                textAlign = TextAlign.Center
-            ),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF8F6300),
+            textAlign = TextAlign.Center,
             maxLines = 1,
             modifier = Modifier.weight(1.2f)
         )
 
-        // Col 6 : Direction cardinale (avec ombre contrastée)
+        // Col 6 : Direction cardinale
         Text(
             text = dirFr,
-            style = TextStyle(
-                fontSize = if (dirFr.length >= 3) 10.sp else 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = windColor,
-                shadow = textShadow,
-                textAlign = TextAlign.End
-            ),
+            fontSize = if (dirFr.length >= 3) 10.sp else 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = windColor,
+            textAlign = TextAlign.End,
             maxLines = 1,
             modifier = Modifier.weight(1.0f)
         )
@@ -246,21 +232,18 @@ fun HourlyForecastRow(
                         close()
                     }
                     drawPath(path = path, color = windColor)
-                    drawPath(path = path, color = Color.Gray, style = Stroke(width = 0.8.dp.toPx()))
+                    drawPath(path = path, color = Color.Black.copy(alpha = 0.35f), style = Stroke(width = 0.8.dp.toPx()))
                 }
             }
         }
 
-        // Col 8 : Vitesse du vent (avec ombre contrastée)
+        // Col 8 : Vitesse du vent
         Text(
             text = "$speedFormatted $unitSymbol",
-            style = TextStyle(
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = windColor,
-                shadow = textShadow,
-                textAlign = TextAlign.End
-            ),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = windColor,
+            textAlign = TextAlign.End,
             maxLines = 1,
             modifier = Modifier.weight(1.6f)
         )

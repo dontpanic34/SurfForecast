@@ -124,7 +124,7 @@ fun SurfCardComponent(
                         text = "${selectedHour.energyKj} kJ",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFB300)
+                        color = Color(0xFF8F6300)
                     )
 
                     Row(

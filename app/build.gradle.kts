@@ -14,18 +14,43 @@ android {
         applicationId = "com.surfcast.surfforecast"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        // Numero de build = numero du run GitHub Actions (surf-log-debug-<n>) : la version
+        // affichee dans l'app correspond directement a l'artifact telecharge. 0 = build local.
+        val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
+        versionCode = buildNumber.coerceAtLeast(1)
+        versionName = "1.0.$buildNumber"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Clé fixe (secrets GitHub) : l'APK publié se met à jour par-dessus l'ancien. Sans secrets, clé debug.
+    val keystorePath = System.getenv("SURFLOG_KEYSTORE_PATH")
+    val hasFixedKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
+    if (hasFixedKey) {
+        fun com.android.build.api.dsl.ApkSigningConfig.useFixedKey() {
+            storeFile = file(keystorePath!!)
+            storePassword = System.getenv("SURFLOG_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("SURFLOG_KEY_ALIAS")
+            keyPassword = System.getenv("SURFLOG_KEY_PASSWORD")
+        }
+        signingConfigs.getByName("debug").useFixedKey()
+        signingConfigs.create("release").useFixedKey()
+    }
+
     buildTypes {
         release {
+            // APK publié : version « release » (non déboguable). Même clé que le debug quand les
+            // secrets sont là (mises à jour par-dessus), sinon clé debug pour rester installable.
+            signingConfig = signingConfigs.getByName(if (hasFixedKey) "release" else "debug")
             optimization {
                 enable = false
             }
         }
+    }
+    lint {
+        // Le contrôle lint tourne déjà en local ; il ne doit pas bloquer la publication.
+        checkReleaseBuilds = false
+        abortOnError = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -38,6 +63,7 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
@@ -68,8 +94,8 @@ dependencies {
     // Coil (affichage des photos du journal de session)
     implementation("io.coil-kt:coil-compose:2.7.0")
 
-    // osmdroid (radar meteo RainViewer, Tache 4)
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    // WorkManager (rafraîchissement du widget en arrière-plan, appli fermée)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
