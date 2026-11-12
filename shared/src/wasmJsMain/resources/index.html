@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-version" content="dev">
     <title>Surf Log</title>
+    <script src="diag.js"></script>
     <meta name="description" content="Prévisions surf : houle, vent, marées, journal de bord.">
     <meta name="theme-color" content="#0D1B22">
     <!-- iPhone : "Ajouter à l'écran d'accueil" ouvre Surf Log en plein écran, comme une app. -->
@@ -67,6 +68,14 @@
                 show("Surf Log n'a pas pu démarrer. Vérifie ta connexion et recharge la page.", true, lastError);
             }
         }, 25000);
+        // Page blanche sans message : l'appli a démarré (un canvas existe) mais n'affiche rien. Pas de WebGL, ou une erreur déjà vue : on montre le diagnostic.
+        function webglOk() { try { var c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { return false; } }
+        if (!webglOk()) { window.addEventListener("DOMContentLoaded", function () { window.__diagShow("Ce navigateur n'offre pas le rendu graphique (WebGL) dont Surf Log a besoin."); }); }
+        setTimeout(function () {
+            // Seulement les erreurs graphiques ou WebAssembly : une requête réseau en échec ne doit pas couvrir l'appli.
+            var grave = (window.__diagErrors || []).filter(function (m) { return /webgl|wasm|webassembly|skia|skiko|RuntimeError|CompileError|LinkError|out of memory/i.test(m); });
+            if (grave.length && document.querySelector("canvas")) window.__diagShow("Surf Log a rencontré une erreur au démarrage.");
+        }, 10000);
     })();
 </script>
 <script>
