@@ -222,6 +222,15 @@ class SurfController(
     var spotHintDone by mutableStateOf(prefs.getBoolean("spot_hint_done", false))
         private set
 
+    /** Jour (epoch) de la dernière ouverture de « Où surfer ? » : le point orange de la boussole se tait 7 jours ensuite. */
+    var whereToSurfOpenedDay by mutableStateOf(prefs.getInt("where_opened_day", -1000))
+        private set
+
+    fun markWhereToSurfOpened() {
+        whereToSurfOpenedDay = nowLocalDateTime().date.toEpochDays().toInt()
+        prefs.putInt("where_opened_day", whereToSurfOpenedDay)
+    }
+
     fun markSpotHintDone() {
         spotHintDone = true
         prefs.putBoolean("spot_hint_done", true)

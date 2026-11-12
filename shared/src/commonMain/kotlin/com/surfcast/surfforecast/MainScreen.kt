@@ -658,6 +658,9 @@ fun MainScreen(
                                         onHintShown = { viewModel.markSpotHintDone() },
                                         onSelectIndex = { viewModel.selectFavoriteIndex(it) },
                                         onOpenSpots = { showSpotDialog = true },
+                                        onOpenWhereToSurf = { viewModel.markWhereToSurfOpened(); showWhereToSurf = true },
+                                        whereToSurfDot = WhereToSurf.needsWhereToSurf(dailyStars) &&
+                                            nowLocalDateTime().date.toEpochDays().toInt() - viewModel.whereToSurfOpenedDay >= 7,
                                         onToggleFavorite = {
                                             val slot = viewModel.favoriteSpots.indexOf(state.spotName)
                                             if (slot >= 0) viewModel.removeFavoriteSlot(slot)
@@ -1302,10 +1305,8 @@ fun DynamicCardsSection(
                                 boardOfDay = boardOfDay,
                                 toleranceLabel = null
                             )
-                            // La semaine est mauvaise ici : l'entrée « Où surfer ? » apparaît d'elle-même (sinon elle reste dans les réglages).
-                            if (onOpenWhereToSurf != null && WhereToSurf.needsWhereToSurf(dailyStars)) {
-                                WhereToSurfEncart(dailyStars.count { it != null && it < WhereToSurf.LOW_STARS }, dailyStars.size, onOpenWhereToSurf)
-                            }
+                            // « Où surfer ? » n'a plus d'encart ici (trop présent) : c'est la boussole de l'en-tête, avec un point orange
+                            // les semaines mauvaises (décision du 12 novembre).
                         }
                         "dailyTimeline" -> {
                             Spacer(modifier = Modifier.height(4.dp))
