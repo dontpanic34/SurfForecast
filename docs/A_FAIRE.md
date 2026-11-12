@@ -13,6 +13,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
+- **Rapports de problème pour l'APK Android** (décidé le 12 novembre, « plus tard ») : le site les envoie déjà ; faire pareil dans l'appli (même relais `/api/report`). Il faut aussi créer le secret `NTFY_TOPIC` dans Cloudflare Pages et installer l'appli ntfy sur le téléphone du propriétaire.
 - **Page blanche iPhone** : une utilisatrice a toujours un écran blanc après la mise à jour d'iOS. Lui demander d'ouvrir `surflog.fr/diag.html`, « Copier le diagnostic » et de l'envoyer (navigateur, version d'iOS, WebGL), puis réparer selon ce qu'il montre.
 - **Orientations des plages** : France faite à 27 spots sur 41 (voir le journal) ; à vérifier : les 14 spots incertains (jetées, embouchures, rochers) ; Espagne, Portugal et Maroc à mesurer avec une autre source (satellite de la NASA, environ ±10 à 15°).
 - **Vue satellite récente du spot** (Copernicus Sentinel-2, niveau 1) : attend le compte Copernicus Data Space du propriétaire ; identifiants dans les secrets GitHub, jamais dans le dépôt.
