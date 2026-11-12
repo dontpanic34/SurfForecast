@@ -31,11 +31,56 @@
     function wasmGc() {
         try { return typeof WebAssembly !== "undefined" && WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 95, 1, 120, 0])); } catch (e) { return false; }
     }
+    // Le canvas de l'appli est dans un shadow DOM : document.querySelector ne le voit pas.
+    window.__findCanvas = function () {
+        function walk(node, depth) {
+            var kids = node.children || [];
+            for (var i = 0; i < kids.length; i++) {
+                var k = kids[i];
+                if (k.tagName === "CANVAS") return k;
+                var c = (k.shadowRoot && walk(k.shadowRoot, depth + 1)) || (depth < 5 && walk(k, depth + 1));
+                if (c) return c;
+            }
+            return null;
+        }
+        return document.body ? walk(document.body, 0) : null;
+    };
+    // Échantillon de l'écran dessiné : null si illisible, sinon {uniform, color} (uniform = tous les pixels pareils : écran vide).
+    window.__sampleCanvas = function () {
+        var c = window.__findCanvas();
+        if (!c || !c.width || !c.height) return null;
+        try {
+            var t = document.createElement("canvas"); t.width = t.height = 24;
+            var x = t.getContext("2d", { willReadFrequently: true });
+            x.drawImage(c, 0, 0, 24, 24);
+            var d = x.getImageData(0, 0, 24, 24).data, u = true;
+            for (var i = 4; i < d.length; i += 4) if (d[i] !== d[0] || d[i + 1] !== d[1] || d[i + 2] !== d[2] || d[i + 3] !== d[3]) { u = false; break; }
+            return { uniform: u, color: d[0] + "," + d[1] + "," + d[2] + "," + d[3] };
+        } catch (e) { return null; }
+    };
+    // Le tampon WebGL est vidé après l'affichage : on ne peut le lire qu'au moment où l'appli vient de dessiner. On enveloppe
+    // requestAnimationFrame pour échantillonner juste après sa fonction de dessin (au plus une fois toutes les 2 s).
+    window.__samples = [];
+    var lastSample = 0, origRaf = window.requestAnimationFrame;
+    if (origRaf) {
+        window.requestAnimationFrame = function (cb) {
+            return origRaf.call(window, function (t) {
+                cb(t);
+                var now = Date.now();
+                if (now - lastSample > 2000 && window.__findCanvas()) {
+                    lastSample = now;
+                    var s = window.__sampleCanvas();
+                    if (s) { window.__samples.push(s); if (window.__samples.length > 40) window.__samples.shift(); }
+                }
+            });
+        };
+    }
+    window.__diagPush = push;
     window.surflogDiagText = function () {
         var meta = document.querySelector("meta[name=app-version]");
         var ua = navigator.userAgent;
         var ios = /OS (\d+[_\d]*) like Mac OS X/.exec(ua);
-        var canvases = document.querySelectorAll("canvas");
+        var fc = window.__findCanvas(), canvases = fc ? [fc] : [];
         var sizes = [];
         for (var i = 0; i < canvases.length; i++) sizes.push(canvases[i].width + "x" + canvases[i].height);
         var lines = [

@@ -64,7 +64,7 @@
         window.addEventListener("unhandledrejection", function (e) { lastError = String((e && e.reason && (e.reason.message || e.reason)) || lastError); });
         // L'app retire #loading en démarrant : s'il est encore là après 25 secondes, le chargement a échoué ou la connexion est trop lente.
         setTimeout(function () {
-            if (document.getElementById("loading") && !document.querySelector("canvas")) {
+            if (document.getElementById("loading") && !window.__findCanvas()) {
                 show("Surf Log n'a pas pu démarrer. Vérifie ta connexion et recharge la page.", true, lastError);
             }
         }, 25000);
@@ -74,8 +74,25 @@
         setTimeout(function () {
             // Seulement les erreurs graphiques ou WebAssembly : une requête réseau en échec ne doit pas couvrir l'appli.
             var grave = (window.__diagErrors || []).filter(function (m) { return /webgl|wasm|webassembly|skia|skiko|RuntimeError|CompileError|LinkError|out of memory/i.test(m); });
-            if (grave.length && document.querySelector("canvas")) window.__diagShow("Surf Log a rencontré une erreur au démarrage.");
+            if (grave.length && window.__findCanvas()) window.__diagShow("Surf Log a rencontré une erreur au démarrage.");
         }, 10000);
+        // Écran vide : l'appli a retiré le chargement mais ce qu'elle dessine reste d'une seule couleur. diag.js relève un échantillon
+        // juste après chaque dessin (au plus toutes les 2 s) ; un seul échantillon avec du contenu suffit pour conclure que tout va bien.
+        var tries = 0;
+        var blankTimer = setInterval(function () {
+            tries++;
+            var sm = window.__samples || [];
+            var painted = sm.some(function (x) { return !x.uniform; });
+            if (painted) { clearInterval(blankTimer); return; }
+            if (tries >= 12) {
+                clearInterval(blankTimer);
+                // Pas de relevés du tout = pas de dessin : l'appli n'a rien peint, ce qui est aussi un écran vide.
+                if (!document.getElementById("loading") && window.__findCanvas()) {
+                    window.__diagPush("rendu", sm.length ? "écran uniforme (rgba " + sm[sm.length - 1].color + ") sur " + sm.length + " relevés" : "aucun dessin détecté après le démarrage");
+                    window.__diagShow("Surf Log a démarré mais l'écran reste vide.");
+                }
+            }
+        }, 3000);
     })();
 </script>
 <script>
