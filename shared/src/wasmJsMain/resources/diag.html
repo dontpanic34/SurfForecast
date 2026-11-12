@@ -10,7 +10,7 @@
 <body>
 <script>
     // Page de diagnostic : à ouvrir sur le téléphone concerné (surflog.fr/diag.html), puis « Copier le diagnostic » et l'envoyer.
-    window.__diagShow("Diagnostic Surf Log");
+    window.__diagShow("Diagnostic Surf Log", { noSend: true });
     document.getElementById("surflog-diag").querySelector("button:last-child").remove();
 </script>
 </body>

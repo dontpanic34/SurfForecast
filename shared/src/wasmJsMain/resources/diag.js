@@ -98,7 +98,7 @@
         return lines.concat(errors.length ? errors : ["aucune"]).join("\n");
     };
     // Affiche un panneau par-dessus la page avec le texte du diagnostic et un bouton pour le copier.
-    window.__diagShow = function (title) {
+    window.__diagShow = function (title, opts) {
         if (document.getElementById("surflog-diag")) return;
         var box = document.createElement("div");
         box.id = "surflog-diag";
@@ -125,7 +125,32 @@
         close.textContent = "Fermer";
         close.style.cssText = reload.style.cssText;
         close.onclick = function () { box.remove(); };
-        box.appendChild(h); box.appendChild(pre); box.appendChild(copy); box.appendChild(reload); box.appendChild(close);
-        document.body.appendChild(box);
+        var status = document.createElement("div");
+        status.style.cssText = "margin-top:10px;font-size:12px;opacity:.8";
+        // Envoi automatique au développeur (relais Cloudflare /api/report) : texte technique seulement, une fois par panneau,
+        // pas plus d'un envoi toutes les 10 minutes par navigateur, jamais en local ni depuis diag.html.
+        var canSend = !(opts && opts.noSend) && /(^|\.)surflog\.fr$/.test(location.hostname);
+        if (canSend) {
+            var recent = false;
+            try { recent = Date.now() - Number(localStorage.getItem("surflog_report_at") || 0) < 600000; } catch (e) {}
+            if (recent) status.textContent = "Rapport déjà envoyé au développeur.";
+            else {
+                status.textContent = "Envoi du rapport technique au développeur (navigateur et erreurs, rien de personnel)…";
+                try { localStorage.setItem("surflog_report_at", String(Date.now())); } catch (e) {}
+                var meta = document.querySelector("meta[name=app-version]");
+                fetch("/api/report", { method: "POST", keepalive: true, headers: { "content-type": "text/plain" },
+                    body: JSON.stringify({ v: meta ? meta.getAttribute("content") : "", title: title || "", text: pre.textContent }) })
+                    .then(function (r) { status.textContent = r.ok ? "Rapport envoyé au développeur. Merci !" : "Le rapport n'a pas pu être envoyé (" + r.status + ")."; },
+                          function () { status.textContent = "Le rapport n'a pas pu être envoyé (pas de réseau ?). Tu peux copier le diagnostic."; });
+            }
+        }
+        box.appendChild(h); box.appendChild(pre); if (canSend) box.appendChild(status); box.appendChild(copy); box.appendChild(reload); box.appendChild(close);
+        // L'appli vide le body en démarrant (le panneau disparaissait, d'où un fond sombre vide) : on l'accroche à <html>
+        // et on le remet s'il est retiré, tant qu'on ne l'a pas fermé.
+        var closed = false;
+        close.onclick = function () { closed = true; box.remove(); };
+        document.documentElement.appendChild(box);
+        new MutationObserver(function () { if (!closed && !box.isConnected) document.documentElement.appendChild(box); })
+            .observe(document.documentElement, { childList: true });
     };
 })();
