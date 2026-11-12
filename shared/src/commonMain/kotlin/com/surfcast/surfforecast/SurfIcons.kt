@@ -29,6 +29,15 @@ object SurfIcons {
         )
     }
 
+    /** Boussole (Material « Explore ») : l'entrée « Où surfer ? » de l'en-tête. */
+    val Explore: ImageVector by lazy {
+        materialIcon(
+            "Explore",
+            "M12,10.9c-0.61,0 -1.1,0.49 -1.1,1.1s0.49,1.1 1.1,1.1c0.61,0 1.1,-0.49 1.1,-1.1s-0.49,-1.1 -1.1,-1.1z" +
+                "M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM14.19,14.19L6,18l3.81,-8.19L18,6l-3.81,8.19z"
+        )
+    }
+
     val Star: ImageVector by lazy {
         materialIcon("Star", "M12,17.27L18.18,21l-1.64,-7.03L22,9.24l-7.19,-0.61L12,2 9.19,8.63 2,9.24l5.46,4.73L5.82,21z")
     }

@@ -105,19 +105,3 @@ private fun ReadyContent(result: WhereResult, homeLat: Double, homeLon: Double, 
         fontSize = 11.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp)
     )
 }
-
-/** L'encart sous la vue semaine, seulement quand la semaine est mauvaise ici : « 4 jours sur 7 à moins de 2 étoiles ». */
-@Composable
-fun WhereToSurfEncart(lowDays: Int, totalDays: Int, onOpen: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(14.dp)).background(colors.surfaceVariant).clickable(onClick = onOpen).padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text("$lowDays " + tr("jours sur") + " $totalDays " + tr("à moins de 2 étoiles ici"), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
-            Text(tr("Il y a peut-être mieux ailleurs, près de toi."), fontSize = 11.5.sp, color = colors.onSurfaceVariant)
-        }
-        Text(tr("Où surfer ?") + " ›", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.primary)
-    }
-}

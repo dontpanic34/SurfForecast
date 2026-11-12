@@ -52,6 +52,8 @@ fun SpotHeader(
     onSelectIndex: (Int) -> Unit,
     onOpenSpots: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onOpenWhereToSurf: (() -> Unit)? = null,
+    whereToSurfDot: Boolean = false,
     themeToggle: @Composable () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -111,6 +113,17 @@ fun SpotHeader(
                         )
                         if (on) SpotMenu(spotName, menuOpen, { menuOpen = false }, onOpenSpots)
                     }
+                }
+            }
+            // « Où surfer ? » : une boussole discrète, toujours là ; un point orange quand la semaine est mauvaise ici et que
+            // la carte n'a pas encore été ouverte cette semaine (remplace l'encart sous la vue semaine, jugé trop présent).
+            if (onOpenWhereToSurf != null) {
+                Box(modifier = Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onOpenWhereToSurf), contentAlignment = Alignment.Center) {
+                    Icon(SurfIcons.Explore, contentDescription = tr("Où surfer ?"), tint = colors.onBackground, modifier = Modifier.size(22.dp))
+                    if (whereToSurfDot) Box(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 7.dp).size(9.dp).clip(CircleShape)
+                            .background(colors.background).padding(1.5.dp).clip(CircleShape).background(Color(0xFFF29A1A))
+                    )
                 }
             }
             Box(modifier = Modifier.width(44.dp), contentAlignment = Alignment.Center) { themeToggle() }
