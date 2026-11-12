@@ -142,7 +142,10 @@ h+='<div class="card"><h2>Répartition par niveau</h2>'+bars(lv,known)+'</div>';
 h+='<div class="card"><h2>Réponses à chaque question</h2><select id="q" onchange="showQ()">'+Object.keys(Q).map(k=>'<option value="'+k+'">'+Q[k][0]+'</option>').join('')+'</select><div id="qa"></div></div>';
 const vs=Object.entries(a.versions).sort((x,y)=>y[1]-x[1]);
 h+='<div class="card"><h2>Versions de l\\'appli</h2>'+bars(vs,a.users)+'</div>';
-o.innerHTML=h;window.__a=a;showQ();}
+o.innerHTML=h;window.__a=a;showQ();
+const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+fetch('../report',{headers:{'x-stats-key':k}}).then(r=>r.ok?r.json():null).then(j=>{if(!j)return;const c=document.createElement('div');c.className='card';
+c.innerHTML='<h2>Problèmes signalés ('+j.reports.length+')</h2>'+(j.reports.length?j.reports.map(x=>'<details style="margin:6px 0"><summary>'+esc(x.at.slice(0,16).replace('T',' '))+' · '+esc(x.v)+' · '+esc(x.title)+'</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:11px">'+esc(x.text)+'</pre></details>').join(''):'Aucun');o.appendChild(c)}).catch(()=>{});}
 function showQ(){const k=document.getElementById('q').value,d=(window.__a.q||{})[k]||{},opts=Q[k][1];const tot=Object.values(d).reduce((s,x)=>s+x,0);
 document.getElementById('qa').innerHTML=bars(opts.map((l,i)=>[l,d[i]||0]),tot)+'<small style="color:var(--m)">'+tot+' réponses</small>';}
 try{const s=localStorage.getItem('statsKey');if(s){document.getElementById('k').value=s;go()}}catch(e){}
