@@ -10,6 +10,10 @@
 
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
+## 12 novembre 2026
+
+- **Diagnostic de la page blanche iPhone** (en ligne une fois publié) : une utilisatrice voit une page entièrement blanche sur iPhone, même après la mise à jour d'iOS du jour, sans message. Ce n'est donc pas le cas « iOS trop ancien » (la page de chargement a disparu et un canvas existe : l'appli démarre mais ne dessine rien, piste WebGL/Skia, à confirmer). Ajouts dans `index.html` : `diag.js` (récolte navigateur, version d'iOS, WebAssembly GC, WebGL 1 et 2 avec le moteur de rendu, taille des canvas, erreurs de la page) et `diag.html`, page à ouvrir sur le téléphone concerné (surflog.fr/diag.html) avec un bouton « Copier le diagnostic ». Le panneau s'affiche aussi tout seul si WebGL est absent, perdu ou impossible à créer, ou si une erreur WebAssembly/Skia est vue avec un canvas présent. Rien n'est envoyé nulle part. Vérifié dans Chromium (page de diagnostic complète, aucun panneau sur un chargement normal) ; pas de WebKit ici, donc pas testé sur Safari.
+
 ## 15 octobre 2026
 
 - **Encart « Actuellement » repliable** (en cours de vérification) : la barre lumineuse reste toujours visible ; toucher la ligne de titre (« Actuellement 13 h · Très bon ▴/▾ ») plie ou déplie les tuiles Houle/Vent/Marée et la ligne LIVE. Choix mémorisé (préférence `now_card_open`, déplié au premier lancement).
