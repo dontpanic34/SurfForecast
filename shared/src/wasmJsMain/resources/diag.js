@@ -15,6 +15,19 @@
         var r = e && e.reason;
         push("promesse", r && (r.stack || r.message) || r);
     });
+    // L'appli Kotlin rattrape ses exceptions et les écrit dans la console (console.error) : sans ça, le diagnostic disait
+    // « Erreurs (0) » alors qu'une exception venait de partir.
+    if (window.console && console.error) {
+        var origError = console.error;
+        console.error = function () {
+            try {
+                var parts = [];
+                for (var i = 0; i < arguments.length; i++) { var a = arguments[i]; parts.push(a && (a.stack || a.message) || String(a)); }
+                push("console", parts.join(" "));
+            } catch (e) {}
+            return origError.apply(console, arguments);
+        };
+    }
     document.addEventListener("webglcontextlost", function () { push("webgl", "contexte perdu"); window.__diagShow && window.__diagShow("Le rendu graphique (WebGL) a été perdu."); }, true);
     document.addEventListener("webglcontextcreationerror", function (e) { push("webgl", "création impossible " + ((e && e.statusMessage) || "")); window.__diagShow && window.__diagShow("Le rendu graphique (WebGL) n'a pas pu démarrer."); }, true);
 
