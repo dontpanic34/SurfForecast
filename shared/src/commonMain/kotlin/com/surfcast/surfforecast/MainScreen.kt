@@ -613,9 +613,13 @@ fun MainScreen(
                         ) {
                             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                             Column(modifier = Modifier.fillMaxSize()) {
+                            // La roue ne s'affiche que si l'utilisateur a tiré la liste : les rechargements automatiques (changement de
+                            // spot, retour sur l'appli) restent silencieux, sinon la roue recouvrait le titre du jour sous l'en-tête.
+                            var pulledByUser by remember { mutableStateOf(false) }
+                            LaunchedEffect(viewModel.isRefreshing) { if (!viewModel.isRefreshing) pulledByUser = false }
                             PullToRefreshBox(
-                                isRefreshing = viewModel.isRefreshing,
-                                onRefresh = { viewModel.refreshActiveSpot() },
+                                isRefreshing = viewModel.isRefreshing && pulledByUser,
+                                onRefresh = { pulledByUser = true; viewModel.refreshActiveSpot() },
                                 modifier = Modifier.weight(1f).fillMaxWidth().onGloballyPositioned { CardGear.listTopY = it.positionInRoot().y }
                             ) {
                             CardGear.listState = mainListState

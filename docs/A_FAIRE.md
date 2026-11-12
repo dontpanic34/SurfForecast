@@ -3,6 +3,7 @@
 Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne sur `web` (1.0.333) et `unified` (voir le journal).
 
 ## À trancher / valider par le propriétaire
+- **« Où surfer ? » plus discret** (12 novembre, le propriétaire le trouve trop présent) : choisir dans `docs/maquettes/ou-surfer-discret.html` (A icône boussole en haut avec point orange, B petit lien sous la semaine, C « → ★ 2 » sous les jours faibles ; préférence de l'assistant : A, éventuellement avec C).
 - **Flèche 3 et icône de l'eau** : à juger à l'écran (l'icône de l'eau a été redessinée : thermomètre plein sur deux vagues).
 - **Vent** : consensus de tous les modèles en ligne depuis le 21 octobre (médiane des vitesses, rafales les plus fortes). Décidé le 28 octobre : **on laisse tourner la collecte un mois de plus** (jusqu'à fin novembre) sans changer le vent. Bilan à mi-parcours dans le journal : les stations abritées donnent l'ancien consensus meilleur, mais la tempête de la semaine du 20 octobre a donné 60 km/h et rafales à 80 km/h et plus sur le front de mer (proche des 70 à 87 prévus par l'AROME HD). La station de Vendays est bonne pour la tendance, pas pour la direction du vent de plage. Idée : une **balise de plage** (anemomètre ouvert Windbird / Pioupiou, données publiques sans clé) chez le propriétaire, lue par la collecte puis par l'appli.
 - **Coefficients de fréquence du volume** (+5 %, +10 %, +15 %) à valider.
@@ -13,6 +14,7 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Marées de nuit sur la courbe** : aujourd'hui en texte « hors soleil » ; les mettre sur la courbe demande une bande de 24 h (à maquetter si voulu).
 
 ## À faire
+- **Rapports de problème pour l'APK Android** (décidé le 12 novembre, « plus tard ») : le site les envoie déjà ; faire pareil dans l'appli (même relais `/api/report`). Pas de ntfy (décision du 12 novembre) : le propriétaire consulte la carte « Problèmes signalés ». Ancienne note : secret `NTFY_TOPIC` et appli ntfy sur le téléphone du propriétaire.
 - **Page blanche iPhone** : une utilisatrice a toujours un écran blanc après la mise à jour d'iOS. Lui demander d'ouvrir `surflog.fr/diag.html`, « Copier le diagnostic » et de l'envoyer (navigateur, version d'iOS, WebGL), puis réparer selon ce qu'il montre.
 - **Orientations des plages** : France faite à 27 spots sur 41 (voir le journal) ; à vérifier : les 14 spots incertains (jetées, embouchures, rochers) ; Espagne, Portugal et Maroc à mesurer avec une autre source (satellite de la NASA, environ ±10 à 15°).
 - **Vue satellite récente du spot** (Copernicus Sentinel-2, niveau 1) : attend le compte Copernicus Data Space du propriétaire ; identifiants dans les secrets GitHub, jamais dans le dépôt.
