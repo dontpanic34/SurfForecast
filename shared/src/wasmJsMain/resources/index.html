@@ -77,14 +77,15 @@
             if (grave.length && window.__findCanvas()) window.__diagShow("Surf Log a rencontré une erreur au démarrage.");
         }, 10000);
         // Écran vide : l'appli a retiré le chargement mais ce qu'elle dessine reste d'une seule couleur. diag.js relève un échantillon
-        // juste après chaque dessin (au plus toutes les 2 s) ; un seul échantillon avec du contenu suffit pour conclure que tout va bien.
+        // juste après un dessin (3 relevés au plus, 10 s d'écart ; aucun avec ?nodiag) ; un seul échantillon avec du contenu suffit pour conclure que tout va bien.
         var tries = 0;
+        if (window.__noDiag) tries = -1000000;
         var blankTimer = setInterval(function () {
             tries++;
             var sm = window.__samples || [];
             var painted = sm.some(function (x) { return !x.uniform; });
             if (painted) { clearInterval(blankTimer); return; }
-            if (tries >= 12) {
+            if (tries >= 15) {
                 clearInterval(blankTimer);
                 // Pas de relevés du tout = pas de dessin : l'appli n'a rien peint, ce qui est aussi un écran vide.
                 if (!document.getElementById("loading") && window.__findCanvas()) {

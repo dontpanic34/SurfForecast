@@ -74,14 +74,17 @@
     // Le tampon WebGL est vidé après l'affichage : on ne peut le lire qu'au moment où l'appli vient de dessiner. On enveloppe
     // requestAnimationFrame pour échantillonner juste après sa fonction de dessin (au plus une fois toutes les 2 s).
     window.__samples = [];
-    var lastSample = 0, origRaf = window.requestAnimationFrame;
-    if (origRaf) {
+    // Copier l'écran WebGL force le GPU à le relire : fait toutes les 2 s, ça a pu abîmer le dessin sur Safari (iPhone).
+    // Maintenant : au plus 3 relevés, espacés de 10 s, et aucun avec ?nodiag dans l'adresse (pour tester sans).
+    window.__noDiag = /[?&]nodiag\b/.test(location.search);
+    var lastSample = 0, nSamples = 0, origRaf = window.requestAnimationFrame;
+    if (origRaf && !window.__noDiag) {
         window.requestAnimationFrame = function (cb) {
             return origRaf.call(window, function (t) {
                 cb(t);
                 var now = Date.now();
-                if (now - lastSample > 2000 && window.__findCanvas()) {
-                    lastSample = now;
+                if (nSamples < 3 && now - lastSample > 10000 && window.__findCanvas()) {
+                    lastSample = now; nSamples++;
                     var s = window.__sampleCanvas();
                     if (s) { window.__samples.push(s); if (window.__samples.length > 40) window.__samples.shift(); }
                 }
