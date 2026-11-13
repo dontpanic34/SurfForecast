@@ -32,6 +32,14 @@ import java.net.URL
  */
 class MainActivity : ComponentActivity() {
 
+    // Change à chaque retour dans l'appli : la recherche de mise à jour se refait (avant : seulement au tout premier lancement).
+    private var resumeTick by mutableStateOf(0)
+
+    override fun onResume() {
+        super.onResume()
+        resumeTick++
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -78,10 +86,12 @@ class MainActivity : ComponentActivity() {
             runCatching { PackageInfoCompat.getLongVersionCode(packageManager.getPackageInfo(packageName, 0)) }.getOrDefault(0L)
         }
         var newVersionName by remember { mutableStateOf<String?>(null) }
-        LaunchedEffect(Unit) {
+        LaunchedEffect(resumeTick) {
             newVersionName = withContext(Dispatchers.IO) {
                 runCatching {
-                    val conn = URL("https://surflog.fr/apk-version.json").openConnection() as HttpURLConnection
+                    // « ?t= » et useCaches = false : jamais une ancienne réponse gardée en cache.
+                    val conn = URL("https://surflog.fr/apk-version.json?t=${System.currentTimeMillis()}").openConnection() as HttpURLConnection
+                    conn.useCaches = false
                     conn.connectTimeout = 8000
                     conn.readTimeout = 8000
                     val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
