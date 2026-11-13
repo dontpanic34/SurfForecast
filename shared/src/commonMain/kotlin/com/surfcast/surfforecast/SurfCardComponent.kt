@@ -41,7 +41,10 @@ fun SurfCardComponent(
     modifier: Modifier = Modifier,
     // Orientation de la plage : la taille de la flèche de houle dit si la houle est bien orientée.
     beachFacing: Int? = null,
-    sun: DailySunInfo? = null
+    sun: DailySunInfo? = null,
+    // « Au bord séries à la poitrine › » sous les heures : null = ligne masquée.
+    shoreSpotName: String? = null,
+    onOpenShore: (() -> Unit)? = null
 ) {
     if (allHoursOfDay.isEmpty()) return
 
@@ -95,6 +98,9 @@ fun SurfCardComponent(
                 valueOf = { g -> g.map { it.waveHeight }.average() },
                 colorOf = { _, sel -> if (sel) primaryColor else primaryColor.copy(alpha = 0.78f) }
             )
+            if (shoreSpotName != null && onOpenShore != null) {
+                SwellAtShoreLine(spotName = shoreSpotName, hour = selectedHour, onOpen = onOpenShore)
+            }
             }
         }
     }
