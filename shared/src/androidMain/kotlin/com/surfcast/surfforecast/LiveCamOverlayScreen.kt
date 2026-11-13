@@ -91,7 +91,12 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.surfcast.surfforecast.ui.theme.AppColors
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -116,7 +121,7 @@ private val StarGold = Color(0xFFF5B50A)
  * - Plein écran (bouton ⤢ ou téléphone tourné) : la vidéo seule, nom de la caméra, croix, flèches entre caméras et
  *   la barre houle / marée / vent ; les commandes se masquent seules et reviennent au toucher.
  * - Le lecteur officiel Viewsurf (pv.viewsurf.com) ne contient que la vidéo : rien à nettoyer. Les autres pages
- *   (GoSurf, Médoc Atlantique) gardent le nettoyage par script, la recherche GoSurf et « Lier cette page ».
+ *   (GoSurf) gardent le nettoyage par script, la recherche GoSurf et « Lier cette page ».
  *
  * Un seul WebView pour tout l'écran : il passe de la page au plein écran sans recharger le flux.
  */
@@ -567,19 +572,24 @@ private fun CamPage(
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Favoris : des pastilles dans la page (plus rien par-dessus la barre d'état).
-            if (favorites.isNotEmpty() || favMessage != null) {
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (favorites.isNotEmpty()) {
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                items(favorites) { fav ->
-                                    SpotChip(text = fav, active = fav.equals(spotName, ignoreCase = true), onClick = { onSwitchSpot(fav) })
-                                }
-                            }
+            // Favoris webcam : des pastilles dans la page (plus rien par-dessus la barre d'état).
+            // L'étoile en haut, ou la pastille « ☆ Ajouter », place le spot affiché dans les favoris.
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(favorites) { fav ->
+                            SpotChip(text = fav, active = fav.equals(spotName, ignoreCase = true), onClick = { onSwitchSpot(fav) })
                         }
-                        favMessage?.let { Text(it, fontSize = 12.sp, color = colors.onSurfaceVariant) }
+                        if (!isFavorite && favorites.size < 4) {
+                            item { AddFavoriteChip(text = "☆ Ajouter $spotName", onClick = onToggleFavorite) }
+                        }
                     }
+                    val hint = favMessage ?: when {
+                        favorites.isEmpty() -> "Tes webcams favorites s'affichent ici : touche ☆ pour ajouter ce spot."
+                        favorites.size == 1 && isFavorite -> "Ouvre un autre spot (Autour, Toutes les webcams) et touche ☆ pour l'ajouter ici. 4 favoris au plus ; touche ★ pour retirer."
+                        else -> null
+                    }
+                    hint?.let { Text(it, fontSize = 12.sp, color = colors.onSurfaceVariant) }
                 }
             }
 
@@ -706,6 +716,21 @@ private fun SpotChip(text: String, active: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
+private fun AddFavoriteChip(text: String, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        modifier = Modifier.clip(RoundedCornerShape(50)).clickable(onClick = onClick),
+        color = Color.Transparent,
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, colors.onSurfaceVariant.copy(alpha = 0.5f))
+    ) {
+        Text(
+            text, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, color = colors.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        )
+    }
+}
+
+@Composable
 private fun LivePill(modifier: Modifier = Modifier) {
     Row(
         modifier = modifier.clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 8.dp, vertical = 4.dp),
@@ -730,7 +755,7 @@ private fun CameraRow(camera: SurfWebcamOption, active: Boolean, onClick: () -> 
             .padding(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        CamThumbnail(seed = camera.camName, modifier = Modifier.width(84.dp).height(47.dp))
+        CamThumbnail(camera = camera, seed = camera.camName, modifier = Modifier.width(84.dp).height(47.dp))
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(camera.shortName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -760,23 +785,67 @@ private fun NearbyCard(spot: NearbyCamSpot, onClick: () -> Unit) {
         modifier = Modifier.width(132.dp).clip(RoundedCornerShape(10.dp)).clickable(onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        CamThumbnail(seed = spot.name, modifier = Modifier.fillMaxWidth().height(74.dp))
+        val camera = remember(spot.name) {
+            SurfWebcamHelper.getCamerasForSpot(spot.name).cameras.let { cams -> cams.firstOrNull { it.isViewsurfPlayer } ?: cams.firstOrNull() }
+        }
+        CamThumbnail(camera = camera, seed = spot.name, modifier = Modifier.fillMaxWidth().height(74.dp))
         Text(spot.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text("${spot.distanceKm} km", fontSize = 11.sp, color = colors.onSurfaceVariant)
     }
 }
 
 /**
- * Vignette dessinée (ciel, mer, sable) : les exploitants ne fournissent pas d'image fixe stable pour chaque caméra.
- * La teinte varie avec le nom pour qu'on distingue les vignettes entre elles.
+ * Vignette d'une caméra : la vraie image la plus récente pour le lecteur Viewsurf (lue dans la page du lecteur,
+ * rafraîchie à chaque ouverture et gardée 10 min), sinon un dessin (ciel, mer, sable) dont la teinte varie avec le nom.
  */
 @Composable
-private fun CamThumbnail(seed: String, modifier: Modifier = Modifier) {
+private fun CamThumbnail(camera: SurfWebcamOption?, seed: String, modifier: Modifier = Modifier) {
+    val imageUrl by produceState<String?>(initialValue = camera?.let { CamImageCache.cached(it) }, camera?.pageUrl) {
+        if (camera != null && camera.isViewsurfPlayer) value = CamImageCache.imageFor(camera)
+    }
+    Box(modifier.clip(RoundedCornerShape(8.dp))) {
+        DrawnBeach(seed, Modifier.fillMaxSize())
+        imageUrl?.let { url ->
+            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+/** Images Viewsurf récentes, par caméra : une seule lecture de la page du lecteur pour toutes les vues d'un même lecteur. */
+private object CamImageCache {
+    private const val MAX_AGE_MS = 10 * 60 * 1000L
+    private val pages = mutableMapOf<String, Pair<Long, String>>()
+    private val images = mutableMapOf<String, String>()
+
+    fun cached(camera: SurfWebcamOption): String? = synchronized(this) { images[camera.pageUrl] }
+
+    suspend fun imageFor(camera: SurfWebcamOption): String? = withContext(Dispatchers.IO) {
+        val pageKey = camera.pageUrl.substringBefore("?")
+        val now = System.currentTimeMillis()
+        val html = synchronized(this@CamImageCache) { pages[pageKey]?.takeIf { now - it.first < MAX_AGE_MS }?.second }
+            ?: runCatching {
+                val conn = URL(pageKey).openConnection() as HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13; Mobile)")
+                conn.inputStream.bufferedReader().use { it.readText() }.also { text ->
+                    synchronized(this@CamImageCache) { pages[pageKey] = now to text }
+                }
+            }.getOrNull()
+            ?: return@withContext cached(camera)
+        val image = SurfWebcamHelper.viewsurfImageFromPlayerHtml(html, camera.pageUrl)
+        if (image != null) synchronized(this@CamImageCache) { images[camera.pageUrl] = image }
+        image
+    }
+}
+
+@Composable
+private fun DrawnBeach(seed: String, modifier: Modifier = Modifier) {
     val h = seed.hashCode() and 0x7fffffff
     val warm = h % 2 == 0
     val horizon = 0.38f + (h % 7) * 0.02f
     val shore = 0.72f + (h % 5) * 0.02f
-    Canvas(modifier = modifier.clip(RoundedCornerShape(8.dp))) {
+    Canvas(modifier = modifier) {
         val w = size.width
         val ht = size.height
         drawRect(
