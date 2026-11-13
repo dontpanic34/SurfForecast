@@ -68,4 +68,25 @@ class WhereToSurfTest {
         assertEquals("au nord", WhereToSurf.directionWord(43.0, -1.0, 46.0, -1.0))
         assertEquals("à l'ouest", WhereToSurf.directionWord(43.0, -1.0, 43.0, -3.0))
     }
+
+    @Test
+    fun routeEtRaisonEnMots() {
+        assertEquals("49 min", WhereToSurf.routeText(50))
+        assertEquals("4 h 34", WhereToSurf.routeText(281))
+        val good = spot("Propre", 270) to hours(1.8, 12.0, 270f, 8, "E")
+        val d = WhereToSurf.analyse(300, mapOf(day to 1.0f), listOf(good)).days.single()
+        val reason = WhereToSurf.reasonFor(d.best!!)
+        assertTrue(reason.startsWith("1,8 m à 12 s de face"), reason)
+        assertTrue(reason.contains("vent offshore"), reason)
+        assertNotNull(d.best!!.bestHour)
+    }
+
+    @Test
+    fun ilFautUneEtoileEtDemieDePlusPourBouger() {
+        // Seuil du 13 novembre : au moins 3 étoiles ailleurs et 1,5 de plus qu'ici.
+        val good = spot("Propre", 270) to hours(1.8, 12.0, 270f, 8, "E")
+        val best = WhereToSurf.analyse(300, mapOf(day to 0f), listOf(good)).days.single().best!!.stars
+        assertTrue(WhereToSurf.analyse(300, mapOf(day to best - 1.5f), listOf(good)).days.single().worthMoving)
+        assertFalse(WhereToSurf.analyse(300, mapOf(day to best - 1.0f), listOf(good)).days.single().worthMoving)
+    }
 }
