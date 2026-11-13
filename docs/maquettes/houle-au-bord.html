@@ -230,7 +230,7 @@ code{font-size:12.5px}
       <div class="nbox">
         <h2>À trancher</h2>
         <ul>
-          <li>Les repères (genoux, taille, poitrine, épaules, tête) sont pour un surfeur de 1,75 m : faut-il prendre ta taille (réglage du profil) ?</li><li>Entrée dans l'encart Houle : A (petite ligne avec la réponse) ou B (icône) ?</li>
+          <li>Échelle des surfeurs (on surfe fléchi) : chevilles, genoux, taille, poitrine, épaules, taille d'homme (environ 1,5 m), overhead (environ 2 m), double overhead (environ 3 m).</li><li>Entrée dans l'encart Houle : A (petite ligne avec la réponse) ou B (icône) ?</li>
           </ul>
       </div>
 </div>
@@ -267,8 +267,9 @@ function compute(Hs,T,type){
   const s=series(T);
   return {hb,xi,E,s,lo:hb*0.88,hi:hb*1.12,max:hb*1.25,lull:hb*s.lullK,dur:[s.n[0]*T,s.n[1]*T]};
 }
-const BODY=[[0.3,"aux chevilles"],[0.5,"aux genoux"],[0.75,"aux cuisses"],[0.95,"à la taille"],[1.25,"à la poitrine"],[1.55,"aux épaules"],[1.85,"à la tête"],[2.4,"au-dessus de la tête"],[99,"deux fois la tête"]];
+const BODY=[[0.3,"aux chevilles"],[0.6,"aux genoux"],[0.8,"à la taille"],[1.1,"à la poitrine"],[1.35,"aux épaules"],[1.7,"taille d'homme"],[2.5,"overhead"],[3.5,"double overhead"],[99,"énormes, plus de 3,5 m"]];
 const bodyOf=v=>BODY.find(([m])=>v<m)[1];
+const seriesWord=v=>`Séries ${bodyOf(v)}`;
 function kindOf(xi){return xi<0.5?["glissante","Vagues molles qui déroulent doucement, faciles pour la mousse."]:xi<=3.3?["creuse","Vagues creuses et puissantes, qui peuvent tuber."]:["gonflée","La vague gonfle et s'écrase au bord sans vraiment déferler."]}
 function storyOf(r){
   const [a,b]=r.s.w, [n1,n2]=r.s.n, [k,kt]=kindOf(r.xi);
@@ -281,7 +282,7 @@ function render(){
   const [hl,hhs,ht]=HOURS[st.hour];
   $("nowH").textContent=`${f1(hhs)} m`; $("nowT").textContent=`${ht} s · ouest`;
   const rr=compute(hhs,ht,st.type);
-  $("slimTxt").textContent=`séries ${bodyOf(rr.hb)}`;
+  $("slimTxt").textContent=seriesWord(rr.hb).replace(/^Séries/,"séries");
   $("open").hidden=st.variant!=="A"; $("open2").hidden=st.variant!=="B";
   document.querySelectorAll("[data-variant]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.variant===st.variant)));
   $("sheetwrap").hidden=!st.open;
@@ -294,7 +295,7 @@ function render(){
   $("hourCtl").textContent=hand?`À la main · ${f1(Hs)} m · ${T} s`:`${hl} · ${f1(hhs)} m · ${ht} s`;
   $("shSub").textContent=hand?"Montalivet · houle réglée à la main":`Montalivet · aujourd'hui ${hl}`;
   const r=compute(Hs,T,st.type), [k,kt]=kindOf(r.xi);
-  $("bodyWord").textContent=`Séries ${bodyOf(r.hb)}`;
+  $("bodyWord").textContent=seriesWord(r.hb);
   $("hb").textContent=`${f1(r.lo)}–${f1(r.hi)} m, max ${f1(r.max)} m`;
   $("kind").textContent=`vague ${k}`; $("groundswell").textContent=r.s.name.toLowerCase();
   $("feel").textContent=r.s.w[0]>=15?`Séries rares : il faut être patient. ${kt.split(",")[0]}.`:`${kt.split(",")[0]}.`;
