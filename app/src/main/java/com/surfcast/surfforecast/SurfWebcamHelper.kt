@@ -24,7 +24,7 @@ object SurfWebcamHelper {
         "Montalivet" to SpotWebcams(
             "Montalivet",
             listOf(
-                SurfWebcamOption("Webcam Médoc Atlantique", "https://medoc-atlantique.com/webcams/webcam-montalivet/")
+                SurfWebcamOption("Montalivet (Viewsurf)", "https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage")
             )
         ),
         "Hourtin" to SpotWebcams(

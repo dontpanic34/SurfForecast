@@ -76,4 +76,32 @@ class SurfWebcamHelperTest {
         kotlin.test.assertTrue(SurfWebcamHelper.toggleWebcamFavorite(prefs, "Montalivet"))
         kotlin.test.assertFalse(SurfWebcamHelper.isWebcamFavorite(prefs, "Montalivet"))
     }
+
+    @Test
+    fun viewsurfImageFollowsTheViewOfTheAddress() {
+        val html = """
+            <meta property="og:image" content="https://filmspv.viewsurf.com/montalivet01_live/media.jpg" />
+            "collection": [{ "id": "6592", "default": false, "media": { "thumbnail": "//filmspv.viewsurf.com/m/panoramique/media_1_tn.jpg" } },
+            { "id": "6594", "default": true, "media": { "thumbnail": "//filmspv.viewsurf.com/m/plage/media_2_tn.jpg", "poster": "//filmspv.viewsurf.com/m/plage/media_2.jpg" } },
+            { "id": "6596", "default": false, "media": { "thumbnail": "//filmspv.viewsurf.com/m/plage_nord/media_3_tn.jpg", "poster": "//filmspv.viewsurf.com/m/plage_nord/media_3.jpg" } }]
+        """
+        assertEquals("6596", SurfWebcamHelper.decodeBase64Id("NjU5Njp1bmRlZmluZWQ"))
+        assertEquals(
+            "https://filmspv.viewsurf.com/m/plage_nord/media_3.jpg",
+            SurfWebcamHelper.viewsurfImageFromPlayerHtml(html, "https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage?i=NjU5Njp1bmRlZmluZWQ")
+        )
+        assertEquals(
+            "https://filmspv.viewsurf.com/m/plage/media_2.jpg",
+            SurfWebcamHelper.viewsurfImageFromPlayerHtml(html, "https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage")
+        )
+        assertEquals(
+            "https://filmspv.viewsurf.com/montalivet01_live/media.jpg",
+            SurfWebcamHelper.viewsurfImageFromPlayerHtml("""<meta property="og:image" content="https://filmspv.viewsurf.com/montalivet01_live/media.jpg" />""", "https://pv.viewsurf.com/1704/x")
+        )
+    }
+
+    @Test
+    fun medocAtlantiqueIsGone() {
+        kotlin.test.assertTrue(SurfWebcamHelper.allSpotsWithCameras.flatMap { it.cameras }.none { "medoc" in it.pageUrl })
+    }
 }
