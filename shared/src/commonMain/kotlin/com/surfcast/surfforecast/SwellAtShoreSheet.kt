@@ -94,6 +94,7 @@ fun SwellAtShoreSheet(spotName: String, hour: HourlyUiModel, onDismiss: () -> Un
     var manualT by remember { mutableDoubleStateOf(hour.wavePeriod.roundToInt().toDouble()) }
     var type by remember { mutableStateOf(ShoreSettings.typeFor(spotName)) }
     var typeMenu by remember { mutableStateOf(false) }
+    var showInfo by remember { mutableStateOf(false) }
 
     val hs = if (manual) manualHs else hour.waveHeight
     val t = if (manual) manualT else hour.wavePeriod
@@ -134,8 +135,15 @@ fun SwellAtShoreSheet(spotName: String, hour: HourlyUiModel, onDismiss: () -> Un
                                 fontSize = 12.5.sp, color = colors.onBackground.copy(alpha = 0.6f)
                             )
                         }
+                        IconButton(onClick = { showInfo = !showInfo }) {
+                            Icon(
+                                SurfIcons.Info, contentDescription = "Comment c'est calculé",
+                                tint = if (showInfo) colors.primary else colors.onBackground.copy(alpha = 0.7f)
+                            )
+                        }
                         IconButton(onClick = onDismiss) { Icon(SurfIcons.Close, contentDescription = "Fermer", tint = colors.onBackground) }
                     }
+                    if (showInfo) ShoreInfo()
 
                     // Heure choisie ou houle réglée à la main.
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -235,6 +243,37 @@ fun SwellAtShoreSheet(spotName: String, hour: HourlyUiModel, onDismiss: () -> Un
                     )
                 }
             }
+        }
+    }
+}
+
+/** Le « i » : comment la taille au bord et les séries sont calculées, en mots simples. */
+@Composable
+private fun ShoreInfo() {
+    val colors = MaterialTheme.colorScheme
+    val lines = listOf(
+        "Taille au bord" to "la formule de Komar et Gaughan (hauteur et période au large), la même que Rider Report, calée sur ce qu'on voit à Montalivet : 1,3 m à 14 s au large donne 1,6 m au bord. Le type de spot l'ajuste : bancs marqués + 16 %, récif ou pointe + 25 %.",
+        "Repères" to "on surfe fléchi : 1,5 m au bord, c'est taille d'homme ; 2 m, overhead.",
+        "Forme de la vague" to "selon la pente du fond et le rapport entre la hauteur et la période (nombre d'Iribarren) : glissante, creuse ou gonflée.",
+        "Séries" to "plus la période est longue, plus les séries sont longues et espacées (ordres de grandeur d'observation). Durée d'une série = nombre de vagues × période.",
+        "Énergie" to "énergie d'une vague par mètre de crête, la même que les kJ de l'encart Houle."
+    )
+    Surface(shape = RoundedCornerShape(14.dp), color = colors.surface) {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Comment c'est calculé", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.onSurface)
+            lines.forEach { (title, text) ->
+                Text(
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("$title : ") }
+                        append(text)
+                    },
+                    fontSize = 12.5.sp, color = colors.onSurface, lineHeight = 17.sp
+                )
+            }
+            Text(
+                "Ce sont des estimations : le banc de sable, la marée et le vent changent beaucoup ce qu'on voit au bord.",
+                fontSize = 12.sp, color = colors.onSurface.copy(alpha = 0.6f), lineHeight = 16.sp
+            )
         }
     }
 }
