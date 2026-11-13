@@ -217,6 +217,7 @@ class SurfController(
         SkyGraphSettings.loadCurve(prefs.getInt("graph_curve_dp", SkyGraphSettings.DEFAULT_CURVE))
         SkyGraphSettings.loadShowChop(prefs.getInt("show_chop", 1) == 1)
         SkyGraphSettings.persist = { k, v -> prefs.putInt(k, v) }
+        ShoreSettings.store = prefs
     }
     // Mouvement d'accroche de l'en-tête des spots : joué une seule fois.
     var spotHintDone by mutableStateOf(prefs.getBoolean("spot_hint_done", false))

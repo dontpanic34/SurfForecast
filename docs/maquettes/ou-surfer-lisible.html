@@ -1,0 +1,257 @@
+<title>Où surfer, version lisible</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Mise en page : un téléphone (l'écran proposé) à côté des notes ; couleurs = AppColors de l'appli (sombre par défaut du téléphone, clair aussi). */
+:root{
+  --page:#EDF1F6; --bg:#C5D3E2; --card:#D9E3EE; --card2:#C9D6E4; --ink:#0C2433; --muted:#5A7686; --line:#B9C8D8;
+  --accent:#134B73; --accent-ink:#fff; --chip:#D9E3EE; --star:#E0A100; --good:#1E9E5A; --goodbg:rgba(46,212,122,.18);
+  --sea:#9DB8CF; --land:#B7C2A6; --frame:#0C1820;
+  --f-text:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0B121A; --bg:#0D1B22; --card:#14262F; --card2:#1B333D; --ink:#ECEFF1; --muted:#90A4AE; --line:#23404C;
+  --accent:#7FC3E6; --accent-ink:#06202C; --chip:#1B333D; --star:#F5B50A; --good:#2ED47A; --goodbg:rgba(46,212,122,.14);
+  --sea:#123247; --land:#2A3A2E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --page:#0B121A; --bg:#0D1B22; --card:#14262F; --card2:#1B333D; --ink:#ECEFF1; --muted:#90A4AE; --line:#23404C;
+  --accent:#7FC3E6; --accent-ink:#06202C; --chip:#1B333D; --star:#F5B50A; --good:#2ED47A; --goodbg:rgba(46,212,122,.14);
+  --sea:#123247; --land:#2A3A2E; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--ink);font-family:var(--f-text);margin:0;line-height:1.4;
+  padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:18px}
+h1{font-size:22px;margin:0;text-wrap:balance}
+.lead{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:72ch}
+.stage{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:380px;max-width:100%;height:800px;border-radius:34px;background:var(--frame);padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);flex:none}
+.screen{width:100%;height:100%;border-radius:26px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+.status{height:24px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11.5px;font-weight:700}
+.head{flex:none;padding:6px 16px 8px;display:flex;align-items:flex-start;gap:8px}
+.head .t{flex:1;min-width:0}
+.head b{font-size:20px;display:block}
+.head span{font-size:12.5px;color:var(--muted)}
+.x{all:unset;cursor:pointer;width:34px;height:34px;display:grid;place-items:center;border-radius:50%}
+.x:hover{background:var(--card)}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:0 12px 18px;display:flex;flex-direction:column;gap:12px}
+.scroll>*{flex:none}
+.scroll::-webkit-scrollbar{width:0}
+.radius{display:flex;gap:6px}
+.radius button{all:unset;cursor:pointer;flex:1;text-align:center;padding:7px 0;border-radius:99px;background:var(--chip);font-size:13px;font-weight:700}
+.radius button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sec{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin:4px 2px -4px}
+.st{color:var(--star);font-weight:800;letter-spacing:1px;white-space:nowrap}
+.st i{font-style:normal;opacity:.28}
+
+/* semaine : une ligne par jour */
+.week{background:var(--card);border-radius:14px;padding:4px}
+.day{all:unset;cursor:pointer;display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:8px;padding:8px 8px;border-radius:10px;width:100%;box-sizing:border-box}
+.day+.day{border-top:1px solid var(--line)}
+.day.on{background:var(--card2);border-top-color:transparent}
+.day .d{font-weight:700;font-size:13.5px}
+.day .d small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.day .here{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;min-width:0}
+.day .go{display:flex;flex-direction:column;align-items:flex-end;font-size:12px;gap:1px}
+.day .go b{font-size:12.5px}
+.day .go.yes{color:var(--good)}
+.day .go.no{color:var(--muted)}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;background:var(--goodbg);color:var(--good);font-weight:800;font-size:11px}
+
+/* classement du jour */
+.verdict{background:var(--card);border-radius:14px;padding:12px 14px;display:grid;gap:4px}
+.verdict b{font-size:16px}
+.verdict span{font-size:13px;color:var(--muted)}
+.rank{display:grid;gap:6px}
+.spot{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;background:var(--card);border-radius:12px;padding:10px 12px}
+.spot .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--accent);color:var(--accent-ink)}
+.spot .n.home{background:transparent;border:2px solid var(--muted);color:var(--muted)}
+.spot .info{min-width:0}
+.spot .info b{font-size:14.5px;display:block}
+.spot .info span{font-size:12px;color:var(--muted);display:block}
+.spot .info em{font-style:normal;font-size:12px;display:block}
+.spot .r{text-align:right;display:grid;gap:2px}
+.spot .r small{font-size:11px;color:var(--muted)}
+.spot.here{background:transparent;border:1.5px dashed var(--line)}
+
+/* carte */
+.maptog{all:unset;cursor:pointer;text-align:center;padding:10px;border-radius:12px;background:var(--card);font-weight:700;font-size:13.5px}
+.map{border-radius:14px;overflow:hidden;background:var(--sea)}
+.map svg{display:block;width:100%;height:auto}
+.mapnote{font-size:11px;color:var(--muted);padding:4px 2px 0}
+
+.map{position:relative}
+.mapbanner{position:absolute;left:8px;right:8px;top:8px;background:rgba(6,16,24,.78);color:#fff;border-radius:10px;padding:7px 10px;font-size:12.5px;line-height:1.35}
+.mapbanner b{color:#6FE3A5}
+.mapbanner.stay b{color:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;margin-top:-4px;padding:0 2px}
+.legend span{white-space:nowrap}
+.legend i{font-style:normal;display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:10.5px;font-weight:800;margin-right:4px;vertical-align:-3px}
+.legend i.first{background:var(--good)}
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.days::-webkit-scrollbar{height:0}
+.dchip{all:unset;cursor:pointer;flex:none;min-width:62px;text-align:center;padding:7px 8px;border-radius:12px;background:var(--card);display:grid;gap:1px}
+.dchip b{font-size:12.5px}
+.dchip span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.dchip span.yes{color:var(--good);font-weight:800}
+.dchip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.dchip[aria-pressed="true"] span{color:var(--accent-ink)}
+.tip{background:var(--card);border-radius:14px;padding:12px 14px;display:grid;gap:6px;font-size:13.5px}
+.tip b{font-size:14.5px}
+
+.notes{flex:1 1 380px;min-width:0;display:grid;gap:12px;align-content:start}
+.box{background:var(--card);border-radius:16px;padding:14px 16px;display:grid;gap:8px}
+.box h2{margin:0;font-size:15px}
+.box ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13.5px}
+.mut{color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Où surfer ?, version lisible</h1>
+    <p class="lead">Maquette interactive. Touche un jour ou change le rayon : la carte suit. Les notes et les spots sont des exemples, pas les prévisions réelles.</p>
+  </header>
+
+  <div class="stage">
+    <div class="phone"><div class="screen">
+      <div class="status"><span>20:07</span><span>35 %</span></div>
+      <div class="head">
+        <div class="t"><b>Où surfer ?</b><span>Depuis Montalivet · notés comme tes étoiles</span></div>
+        <button class="x" aria-label="Fermer"><svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="scroll" id="scroll">
+        <div class="radius" id="radius"></div>
+
+        <div class="map"><svg id="map" viewBox="0 0 340 300" role="img" aria-label="Carte des spots classés"></svg>
+          <div class="mapbanner" id="mapbanner"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+        <div class="days" id="days"></div>
+
+        <div class="verdict" id="verdict"></div>
+        <div class="rank" id="rank"></div>
+
+        <div class="tip" id="tip"></div>
+      </div>
+    </div></div>
+
+    <div class="notes">
+      <div class="box">
+        <h2>Pourquoi l'écran actuel se lit mal</h2>
+        <ul>
+          <li>La carte prend tout l'écran, mais elle ne répond pas à la question : il faut deviner ce que veulent dire « 0,5 », « +7 » ou la couleur du ruban.</li>
+          <li>Les pastilles se chevauchent et cachent le point « chez toi ».</li>
+          <li>Les jours se lisent mal : « ici ★ 0,5 → ★ 3,5 » est coupé et ne dit pas où aller.</li>
+          <li>Matin / Midi / Après-midi oblige à essayer trois fois pour trouver le bon moment.</li>
+          <li>Le conseil parle en degrés (270°, 310°), pas en plages.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h2>Ce que propose la maquette</h2>
+        <ul>
+          <li><b>La carte en premier</b> (ta demande) : juste sous les rayons, avec la réponse du jour écrite dessus (« mar. 17 : Berria, 4 ★, 281 km »), les 5 meilleurs spots numérotés (le n° 1 en vert) avec leur nom et leurs étoiles juste sous la carte, et ta maison. Plus de ruban ni de pastilles « +7 ».</li>
+          <li><b>Les jours juste sous la carte</b>, en pastilles lisibles : « ici 0,5 ★ », ou « → 4 ★ » en vert quand ça vaut le déplacement. Toucher un jour change la carte. (Elles remplacent les lignes par jour de l'option B, pour garder la carte en haut.)</li>
+          <li><b>Un classement</b> des 5 meilleurs spots du jour : nom, distance et temps de route, étoiles, le meilleur moment, une raison en mots simples. Chez toi reste en bas pour comparer.</li>
+          <li><b>Le moment est choisi tout seul</b> pour chaque spot (« le mieux vers 10 h »). Matin / Midi / Après-midi disparaît.</li>
+          <li><b>Ensuite le détail</b> : pourquoi ça vaut (ou pas) le déplacement, puis le classement.</li>
+          <li><b>Le conseil en plages</b> : « vent de sud-ouest : cherche une plage tournée vers le nord-ouest, comme Biarritz ou Guéthary ».</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h2>À trancher</h2>
+        <ul>
+          <li>Seuil « ça vaut le déplacement » : proposé à au moins 1,5 étoile de plus qu'ici, et au moins 3 étoiles.</li>
+          <li>Temps de route : estimé (distance × 1,3 à 80 km/h). Assez juste pour comparer, pas pour partir.</li>
+          <li>Noms sous la carte (lisibles même quand les spots sont proches) ou écrits sur la carte ?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const HOME={name:"Montalivet",lat:45.38,lon:-1.159};
+const SPOTS={
+  "Soulac":[45.514,-1.13],"Lacanau":[44.998,-1.205],"Le Porge":[44.887,-1.218],"Le Truc Vert":[44.715,-1.247],
+  "Biscarrosse":[44.448,-1.254],"Mimizan":[44.208,-1.298],"Moliets":[43.854,-1.393],"Seignosse":[43.698,-1.436],
+  "Hossegor":[43.665,-1.442],"Anglet":[43.504,-1.536],"Biarritz":[43.483,-1.56],"Guéthary":[43.424,-1.611],
+  "Saint-Jean-de-Luz":[43.407,-1.637],"Zarautz":[43.287,-2.164],"Mundaka":[43.407,-2.698],"Sopelana":[43.385,-2.997],
+  "Berria":[43.465,-3.464],"Somo":[43.456,-3.743],"La Tranche-sur-Mer":[46.34,-1.438],"Les Sables-d'Olonne":[46.483,-1.768]
+};
+// Exemple de semaine : note ici, notes ailleurs (spot: [note, meilleure heure, raison])
+const DAYS=[
+  {d:"ven.",n:13,here:0.5,why:"houle trop petite, vent de mer",spots:{"Hossegor":[2,"9 h","houle 1 m, vent faible"],"Biarritz":[2,"10 h","abritée du vent"],"Lacanau":[1,"9 h","même houle qu'ici"]}},
+  {d:"sam.",n:14,here:0.5,why:"vent de mer fort",spots:{"Guéthary":[2,"10 h","récif, vent de côté"],"Hossegor":[1.5,"8 h","vent fort l'après-midi"],"Mundaka":[1.5,"11 h","marée à surveiller"]}},
+  {d:"dim.",n:15,here:0.5,why:"vent de mer fort",spots:{"Biarritz":[2,"9 h","abritée du vent"],"Zarautz":[2,"10 h","vent de terre le matin"],"Seignosse":[1,"8 h","clapot"]}},
+  {d:"lun.",n:16,here:1,why:"vent de sud-ouest de côté",spots:{"Hossegor":[3.5,"10 h","houle 1,6 m de face, vent de côté léger"],"Biarritz":[3,"11 h","houle 1,4 m, abritée du vent"],"Guéthary":[3,"10 h","récif, vent de côté"],"Moliets":[2.5,"9 h","houle de face, un peu de vent"],"Lacanau":[1.5,"9 h","vent de côté"]}},
+  {d:"mar.",n:17,here:0.5,why:"vent d'ouest de face, 25 km/h",spots:{"Berria":[4,"10 h","houle 1,8 m de face, vent de terre"],"Somo":[3.5,"11 h","houle 1,6 m, vent de côté léger"],"Sopelana":[3,"9 h","houle de face, vent de terre le matin"],"Biarritz":[2.5,"10 h","abritée du vent"],"Hossegor":[2,"9 h","vent de mer"]}},
+  {d:"mer.",n:18,here:1.5,why:"houle moyenne, vent de côté",spots:{"Lacanau":[2,"10 h","houle 1,2 m"],"Hossegor":[2,"9 h","houle 1,2 m"],"Biarritz":[2,"11 h","abritée"]}},
+  {d:"jeu.",n:19,here:3,why:"houle 1,4 m, vent de terre",spots:{"Lacanau":[3,"10 h","même houle"],"Le Porge":[3,"10 h","même houle"],"Hossegor":[3.5,"9 h","houle un peu plus grosse"]}}
+];
+let st={day:4,radius:300,map:false};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function km(a,b,c,d){const R=6371,t=x=>x*Math.PI/180;const dl=t(c-a),dn=t(d-b);const h=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dn/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(h)))}
+const dist=n=>km(HOME.lat,HOME.lon,SPOTS[n][0],SPOTS[n][1]);
+function route(k){const m=Math.round(k*1.3/80*60);return m<60?`${m} min`:`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}`}
+function stars(v){const full=Math.floor(v),half=v-full>=.5;let s="★".repeat(full)+(half?"½":"");return `<span class="st">${s||"·"}</span>`}
+const fmt=v=>String(v).replace(".",",");
+function ranked(day){
+  return Object.entries(day.spots).map(([n,[v,h,why]])=>({n,v,h,why,k:dist(n)})).filter(s=>s.k<=st.radius).sort((a,b)=>b.v-a.v||a.k-b.k).slice(0,5);
+}
+const worth=(day,best)=>best&&best.v>=3&&best.v-day.here>=1.5;
+
+function render(){
+  $("radius").innerHTML=[50,100,300,500].map(r=>`<button aria-pressed="${r===st.radius}" data-r="${r}">${r} km</button>`).join("");
+  $("days").innerHTML=DAYS.map((d,i)=>{
+    const best=ranked(d)[0], w=worth(d,best);
+    return `<button class="dchip" aria-pressed="${i===st.day}" data-day="${i}"><b>${d.d} ${d.n}</b>${w?`<span class="yes">→ ${fmt(best.v)} ★</span>`:`<span>ici ${fmt(d.here)} ★</span>`}</button>`}).join("");
+  const d=DAYS[st.day], list=ranked(d), best=list[0], w=worth(d,best);
+  $("mapbanner").className="mapbanner"+(w?"":" stay");
+  $("mapbanner").innerHTML=w
+    ?`${d.d} ${d.n} : <b>${esc(best.n)}, ${fmt(best.v)} ★</b> · ${best.k} km, ${route(best.k)} (ici ${fmt(d.here)} ★)`
+    :`${d.d} ${d.n} : <b>reste à Montalivet</b> · ici ${fmt(d.here)} ★${best?`, ailleurs ${fmt(best.v)} ★ au mieux`:""}`;
+  $("verdict").innerHTML=w
+    ?`<b>Ça vaut le déplacement</b><span>${esc(best.n)} : ${esc(best.why)}. Le mieux vers ${best.h}.</span>`
+    :`<b>Pas la peine de bouger</b><span>${best?`Le meilleur dans ${st.radius} km fait ${fmt(best.v)} ★ (${esc(best.n)}), pas assez pour faire la route.`:`Aucun spot mieux noté dans ${st.radius} km.`}</span>`;
+  $("rank").innerHTML=list.map((s,i)=>`<div class="spot"><span class="n">${i+1}</span><div class="info"><b>${esc(s.n)}</b><span>${s.k} km · ${route(s.k)} · vers ${s.h}</span><em>${esc(s.why)}</em></div><div class="r">${stars(s.v)}<small>${fmt(s.v)} / 5</small></div></div>`).join("")
+    +`<div class="spot here"><span class="n home">⌂</span><div class="info"><b>Montalivet (chez toi)</b><em>${esc(d.why)}</em></div><div class="r">${stars(d.here)}<small>${fmt(d.here)} / 5</small></div></div>`;
+  drawMap(list);
+  $("legend").innerHTML=list.map((x,i)=>`<span><i class="${i===0?"first":""}">${i+1}</i>${esc(x.n)} ${fmt(x.v)} ★</span>`).join("");
+  const sw=[3,4].includes(st.day);
+  $("tip").innerHTML=`<b>Le conseil du coin</b><span>${st.day===4
+    ?"Vent d'ouest 25 km/h : il arrive de face sur toute la côte landaise et girondine. Cherche une plage tournée vers le nord, abritée de l'ouest : la côte cantabre (Berria, Somo) est la plus proche qui s'en sort."
+    :sw?"Vent de sud-ouest 18 km/h : de côté chez toi. Les plages tournées vers le nord-ouest s'en sortent mieux, comme Biarritz ou Guéthary."
+    :"Pas de piège de vent ce jour-là : la note suit surtout la taille de la houle."}</span>`;
+}
+function drawMap(list){
+  const W=340,H=300;
+  // Cadre ajusté à chez toi et aux spots classés, même échelle en largeur et en hauteur, place en haut pour le bandeau.
+  const pts0=[[HOME.lat,HOME.lon],...list.map(x=>SPOTS[x.n])];
+  let la0=Math.min(...pts0.map(p=>p[0])),la1=Math.max(...pts0.map(p=>p[0])),lo0=Math.min(...pts0.map(p=>p[1])),lo1=Math.max(...pts0.map(p=>p[1]));
+  const k=Math.cos(44.5*Math.PI/180);
+  let spanX=(lo1-lo0)*k+0.9, spanY=(la1-la0)+0.9;
+  const ratio=W/(H-40);
+  if(spanX/spanY<ratio) spanX=spanY*ratio; else spanY=spanX/ratio;
+  const cx=(lo0+lo1)/2, cy=(la0+la1)/2;
+  const lon0=cx-spanX/k/2, lon1=cx+spanX/k/2, lat1=cy+spanY/2+ (40/(H-40))*spanY, lat0=cy-spanY/2;
+  const px=lon=>(lon-lon0)/(lon1-lon0)*W, py=lat=>(lat1-lat)/(lat1-lat0)*H;
+  const coast=[[46.7,-2.0],[46.48,-1.77],[46.34,-1.44],[46.2,-1.2],[45.9,-1.15],[45.55,-1.1],[45.38,-1.16],[45.0,-1.2],[44.63,-1.25],[44.45,-1.25],[44.2,-1.3],[43.85,-1.39],[43.66,-1.44],[43.5,-1.54],[43.41,-1.64],[43.37,-1.78],[43.32,-1.98],[43.29,-2.16],[43.4,-2.7],[43.38,-3.0],[43.42,-3.43],[43.46,-3.46],[43.46,-3.74],[43.47,-3.79],[43.39,-4.0]];
+  const pts=coast.map(([a,b])=>`${px(b).toFixed(1)},${py(a).toFixed(1)}`).join(" ");
+  const land=`M${pts.split(" ").join(" L")} L${px(-4.5)},${py(43.39)} L${px(-4.5)},${py(41)} L${px(3)},${py(41)} L${px(3)},${py(48)} L${px(-2.0)},${py(48)} Z`;
+  const rr=st.radius/111/(lat1-lat0)*H; // rayon approx en px (axe nord-sud)
+  let s=`<path d="${land}" fill="var(--land)"/><polyline points="${pts}" fill="none" stroke="var(--muted)" stroke-width="1"/>`;
+  s+=`<circle cx="${px(HOME.lon)}" cy="${py(HOME.lat)}" r="${rr}" fill="none" stroke="var(--ink)" stroke-opacity=".35" stroke-dasharray="4 4"/>`;
+  list.slice().reverse().forEach((sp,ri)=>{const i=list.length-1-ri;const [a,b]=SPOTS[sp.n];
+    const lab="";
+    s+=`<g><circle cx="${px(b)}" cy="${py(a)}" r="10" fill="${i===0?"var(--good)":"var(--accent)"}" stroke="var(--bg)" stroke-width="2"/><text x="${px(b)}" y="${py(a)+4.5}" text-anchor="middle" font-size="12" font-weight="800" fill="var(--accent-ink)">${i+1}</text>${lab}</g>`});
+  s+=`<g><circle cx="${px(HOME.lon)}" cy="${py(HOME.lat)}" r="9" fill="var(--bg)" stroke="var(--ink)" stroke-width="2"/><text x="${px(HOME.lon)}" y="${py(HOME.lat)+4}" text-anchor="middle" font-size="11" fill="var(--ink)">⌂</text></g>`;
+  $("map").innerHTML=s;
+}
+document.addEventListener("click",e=>{
+  const r=e.target.closest("[data-r]");if(r){st.radius=+r.dataset.r;render();return}
+  const d=e.target.closest("[data-day]");if(d){st.day=+d.dataset.day;render();return}
+});
+render();
+</script>

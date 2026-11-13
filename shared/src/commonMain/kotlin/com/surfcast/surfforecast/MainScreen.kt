@@ -828,6 +828,7 @@ fun MainScreen(
                                         DynamicCardsSection(
                                             listState = mainListState,
                                             selectedHourState = pickedHourState,
+                                            spotName = state.spotName,
                                             onOpenProfile = { preferencesStartPage = "profileQuiz"; showPreferencesDialog = true },
                                             onOpenModelSettings = { preferencesStartPage = "forecast"; showPreferencesDialog = true },
                                             onOpenWhereToSurf = { showWhereToSurf = true },
@@ -1141,7 +1142,9 @@ fun DynamicCardsSection(
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>? = null,
     onOpenWeatherDetail: (() -> Unit)? = null,
     listState: androidx.compose.foundation.lazy.LazyListState? = null,
-    selectedHourState: androidx.compose.runtime.MutableState<HourlyUiModel?>
+    selectedHourState: androidx.compose.runtime.MutableState<HourlyUiModel?>,
+    // Spot affiché : sert à « Ce que ça donne au bord » dans l'encart Houle.
+    spotName: String = ""
 ) {
     val boardsForBar by viewModel.quiverBoards.collectAsState()
     var selectedHourlyItem by selectedHourState
@@ -1332,6 +1335,7 @@ fun DynamicCardsSection(
                         }
                         "surf" -> {
                             Spacer(modifier = Modifier.height(4.dp))
+                            var shoreSheetHour by remember { mutableStateOf<HourlyUiModel?>(null) }
                             selectedHourlyItem?.let { hourly ->
                                 SurfCardComponent(
                                     selectedHour = hourly,
@@ -1342,9 +1346,13 @@ fun DynamicCardsSection(
                                     dragHandleModifier = Modifier,
                                     sun = dailySunInfo[hourly.rawTime.date],
                                     modifier = Modifier.fillMaxWidth(),
-                                    beachFacing = idealSwellDirection
+                                    beachFacing = idealSwellDirection,
+                                    shoreSpotName = spotName.takeIf { it.isNotBlank() },
+                                    onOpenShore = { shoreSheetHour = hourly }
                                 )
                             }
+                            // « Ce que ça donne au bord » pour l'heure choisie (maquette houle-au-bord.html).
+                            shoreSheetHour?.let { h -> SwellAtShoreSheet(spotName = spotName, hour = h, onDismiss = { shoreSheetHour = null }) }
                         }
                         "wind" -> {
                             Spacer(modifier = Modifier.height(4.dp))
