@@ -10,6 +10,10 @@
 
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
+## 13 novembre 2026
+
+- **Refonte de l'écran webcam** (maquette, pas de code) : `docs/maquettes/webcam-refonte.html`, inspirée des pages par commune de rider.report. Le spot regardé s'ouvre en premier ; page avec grand lecteur, conditions du moment, caméras du spot (vignette, nom, source), spots autour (distance, note), « Toutes les webcams » avec recherche ; favoris en pastilles sous le titre (plus rien sous la barre d'état), étoile pour ajouter ou retirer ; plein écran épuré (nom, croix, flèches entre caméras, barre houle / marée / vent). Proposé : le lecteur officiel Viewsurf (`pv.viewsurf.com/<id>/<nom>`, celui qu'utilise rider.report) à la place des pages GoSurf nettoyées par script ; Montalivet aurait « Montalivet » (`pv.viewsurf.com/1704/Vendays-Montalivet-Plage`) et « Montalivet Nord ». En attente du go du propriétaire.
+
 ## 12 novembre 2026
 
 - **Diagnostic de l'iPhone d'Elisa** (12 novembre) : iPhone avec iOS 18.7 et Safari, WebAssembly GC, WebGL et WebGL2 disponibles, aucune erreur. Ce n'est donc pas un problème de matériel. Son écran de l'appli est mélangé et figé (courbe de marée dessinée par-dessus l'encart des heures), avec « NO GLYPH » à la place des symboles ▾ et ⟳ (police sans ces glyphes). Hypothèse non vérifiée : la copie de l'écran WebGL que fait le diagnostic (toutes les 2 s) perturbe Safari.

@@ -3,6 +3,7 @@
 Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne sur `web` (1.0.333) et `unified` (voir le journal).
 
 ## À trancher / valider par le propriétaire
+- **Refonte de l'écran webcam** (13 novembre, maquette `docs/maquettes/webcam-refonte.html`) : go ou retouches ; même page sur le site (lecteur Viewsurf intégré, option écartée jusqu'ici) ou lien direct gardé ; droits d'utilisation du lecteur Viewsurf à vérifier.
 - **Boussole « Où surfer ? »** (12 novembre, option A codée sur la branche) : à juger à l'usage, notamment si le point orange revient trop souvent.
 - **Flèche 3 et icône de l'eau** : à juger à l'écran (l'icône de l'eau a été redessinée : thermomètre plein sur deux vagues).
 - **Vent** : consensus de tous les modèles en ligne depuis le 21 octobre (médiane des vitesses, rafales les plus fortes). Décidé le 28 octobre : **on laisse tourner la collecte un mois de plus** (jusqu'à fin novembre) sans changer le vent. Bilan à mi-parcours dans le journal : les stations abritées donnent l'ancien consensus meilleur, mais la tempête de la semaine du 20 octobre a donné 60 km/h et rafales à 80 km/h et plus sur le front de mer (proche des 70 à 87 prévus par l'AROME HD). La station de Vendays est bonne pour la tendance, pas pour la direction du vent de plage. Idée : une **balise de plage** (anemomètre ouvert Windbird / Pioupiou, données publiques sans clé) chez le propriétaire, lue par la collecte puis par l'appli.
