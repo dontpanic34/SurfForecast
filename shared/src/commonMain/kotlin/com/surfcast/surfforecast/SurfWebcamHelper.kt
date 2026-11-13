@@ -1,9 +1,29 @@
 package com.surfcast.surfforecast
 
+import kotlin.math.roundToInt
+
 data class SurfWebcamOption(
     val camName: String,
     val pageUrl: String
-)
+) {
+    /** Lecteur officiel Viewsurf (pv.viewsurf.com) : une page qui ne contient que la vidéo, sans rien à nettoyer. */
+    val isViewsurfPlayer: Boolean get() = pageUrl.startsWith("https://pv.viewsurf.com/")
+
+    /** Nom de l'exploitant affiché sous la caméra (« Images : Viewsurf »). */
+    val sourceName: String
+        get() = when {
+            isViewsurfPlayer -> "Viewsurf"
+            "gosurf.fr" in pageUrl -> "GoSurf"
+            "medoc-atlantique.com" in pageUrl -> "Médoc Atlantique"
+            else -> pageUrl.substringAfter("://").substringBefore('/').removePrefix("www.")
+        }
+
+    /** Nom sans la précision de source entre parenthèses (« Grande Plage (Viewsurf) » → « Grande Plage »). */
+    val shortName: String get() = camName.substringBefore(" (").ifBlank { camName }
+}
+
+/** Un spot équipé de webcam proche d'un autre, avec la distance à vol d'oiseau. */
+data class NearbyCamSpot(val name: String, val distanceKm: Int)
 
 data class SpotWebcams(
     val spotDisplayName: String,
@@ -22,6 +42,8 @@ object SurfWebcamHelper {
         "Montalivet" to SpotWebcams(
             "Montalivet",
             listOf(
+                SurfWebcamOption("Montalivet", "https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage"),
+                SurfWebcamOption("Montalivet Nord", "https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage?i=NjU5Njp1bmRlZmluZWQ"),
                 SurfWebcamOption("Plage Centrale (GoSurf)", "https://gosurf.fr/webcam/fr/57/Montalivet-Plage-Centrale"),
                 SurfWebcamOption("Webcam Médoc Atlantique", "https://medoc-atlantique.com/webcams/webcam-montalivet/")
             )
@@ -37,6 +59,7 @@ object SurfWebcamHelper {
         "Lacanau" to SpotWebcams(
             "Lacanau",
             listOf(
+                SurfWebcamOption("Surf club (Plage Nord)", "https://pv.viewsurf.com/410/Lacanau-Plage-Nord-Surf-club?i=MjY5Njp1bmRlZmluZWQ"),
                 SurfWebcamOption("Plage Centrale (GoSurf)", "https://gosurf.fr/webcam/fr/76/Lacanau-Ocean-Plage-Centrale")
             )
         ),
@@ -59,12 +82,18 @@ object SurfWebcamHelper {
         "Biscarrosse" to SpotWebcams(
             "Biscarrosse",
             listOf(
+                SurfWebcamOption("La Nord", "https://pv.viewsurf.com/2362/Biscarrosse-Plage-Nord?i=ODI3NDp1bmRlZmluZWQ"),
+                SurfWebcamOption("La Sud", "https://pv.viewsurf.com/2364/Biscarrosse-Plage-Sud?i=ODI4NDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Biscarrosse Plage", "https://pv.viewsurf.com/2484/Biscarrosse-Plage-Live?i=ODUwNDp1bmRlZmluZWQ"),
                 SurfWebcamOption("Plage de la Centrale (GoSurf)", "https://gosurf.fr/webcam/fr/56/Biscarrosse-Plage-de-la-Centrale")
             )
         ),
         "Mimizan" to SpotWebcams(
             "Mimizan",
             listOf(
+                SurfWebcamOption("Centrale", "https://pv.viewsurf.com/2598/Mimizan-Plage-remember?i=ODczMDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Nord", "https://pv.viewsurf.com/2598/Mimizan-Plage-remember?i=ODcyODp1bmRlZmluZWQ"),
+                SurfWebcamOption("Sud", "https://pv.viewsurf.com/2598/Mimizan-Plage-remember?i=ODczMjoxMTkxMjg4Mjk0"),
                 SurfWebcamOption("Plage Centrale", "https://gosurf.fr/webcam/fr/184/Mimizan-Plage-Centrale"),
                 SurfWebcamOption("Plage Nord", "https://gosurf.fr/webcam/fr/183/Mimizan-Plage-Nord"),
                 SurfWebcamOption("Plage Sud", "https://gosurf.fr/webcam/fr/185/Mimizan-Plage-Sud")
@@ -72,22 +101,29 @@ object SurfWebcamHelper {
         ),
         "Contis" to SpotWebcams(
             "Contis",
-            listOf(SurfWebcamOption("Plage de Contis", "https://gosurf.fr/webcam/fr/163/Contis-Plage-de-Contis"))
+            listOf(
+                SurfWebcamOption("Plage de Contis", "https://gosurf.fr/webcam/fr/163/Contis-Plage-de-Contis")
+            )
         ),
         "Moliets" to SpotWebcams(
             "Moliets",
             listOf(
+                SurfWebcamOption("Golf de Moliets", "https://pv.viewsurf.com/2344/Golf-de-Moliets-Ocean?i=ODE5Njp1bmRlZmluZWQ"),
                 SurfWebcamOption("Plage Centrale", "https://gosurf.fr/webcam/fr/59/Moliets-Plage-Centrale"),
                 SurfWebcamOption("Plage Nord", "https://gosurf.fr/webcam/fr/58/Moliets-Plage-Nord")
             )
         ),
         "Messanges" to SpotWebcams(
             "Messanges",
-            listOf(SurfWebcamOption("Plage", "https://gosurf.fr/webcam/fr/60/Messanges-Plage"))
+            listOf(
+                SurfWebcamOption("Plage", "https://gosurf.fr/webcam/fr/60/Messanges-Plage")
+            )
         ),
         "Hossegor" to SpotWebcams(
             "Hossegor",
             listOf(
+                SurfWebcamOption("Hossegor", "https://pv.viewsurf.com/2646/Hossegor?i=ODg1MDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Plage Centrale", "https://pv.viewsurf.com/1810/hossegor?i=Njg4MDp1bmRlZmluZWQ"),
                 SurfWebcamOption("La Centrale", "https://gosurf.fr/webcam/fr/21/Hossegor-La-Centrale"),
                 SurfWebcamOption("Plage de la Nord", "https://gosurf.fr/webcam/fr/170/Hossegor-Plage-de-la-Nord")
             )
@@ -95,33 +131,48 @@ object SurfWebcamHelper {
         "Capbreton" to SpotWebcams(
             "Capbreton",
             listOf(
+                SurfWebcamOption("Santocha", "https://pv.viewsurf.com/2534/Capbreton-Santocha?i=ODU3Mjo"),
                 SurfWebcamOption("Plage Notre-Dame", "https://gosurf.fr/webcam/fr/64/Capbreton-Plage-Notre-Dame"),
                 SurfWebcamOption("Plage de la Piste", "https://gosurf.fr/webcam/fr/63/Capbreton-Plage-de-la-Piste")
             )
         ),
         "Seignosse" to SpotWebcams(
             "Seignosse",
-            emptyList()
+            listOf(
+                SurfWebcamOption("Le Penon", "https://pv.viewsurf.com/2652/Seignosse-Le-Penon?i=ODg1Njp1bmRlZmluZWQ")
+            )
         ),
         "Tarnos" to SpotWebcams(
             "Tarnos",
-            listOf(SurfWebcamOption("Plage de la Digue", "https://gosurf.fr/webcam/fr/61/Tarnos-Plage-de-la-Digue"))
+            listOf(
+                SurfWebcamOption("Plage de la Barre", "https://pv.viewsurf.com/2134/Anglet-Plage-de-La-Barre-et-embouchure-de-l-Adour?i=NzY4MDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Plage de la Digue", "https://gosurf.fr/webcam/fr/61/Tarnos-Plage-de-la-Digue")
+            )
         ),
         "Anglet" to SpotWebcams(
             "Anglet",
             listOf(
+                SurfWebcamOption("Chambre d'Amour", "https://pv.viewsurf.com/2270/Anglet-La-petite-chambre-d-amour-Quiksilver?i=Nzk4Njo"),
+                SurfWebcamOption("Cavaliers", "https://pv.viewsurf.com/1994/Anglet-Plage-des-Cavaliers?i=NzMxMDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Plage de l'Océan", "https://pv.viewsurf.com/774/Anglet-Plage-de-l-Ocean?i=NDE1ODp1bmRlZmluZWQ"),
+                SurfWebcamOption("Plage du Club", "https://pv.viewsurf.com/2126/Anglet-Plage-du-Club?i=NzY3Mjp1bmRlZmluZWQ"),
+                SurfWebcamOption("Sables d'Or", "https://pv.viewsurf.com/2128/Anglet-Plage-des-Sables-d-Or?i=NzY3NDp1bmRlZmluZWQ"),
                 SurfWebcamOption("Les Cavaliers", "https://gosurf.fr/webcam/fr/41/Anglet-Les-Cavaliers")
             )
         ),
         "Biarritz" to SpotWebcams(
             "Biarritz",
             listOf(
+                SurfWebcamOption("Côte des Basques", "https://pv.viewsurf.com/2052/Biarritz-Cote-des-basques?i=NzUwMjp1bmRlZmluZWQ"),
+                SurfWebcamOption("Grande Plage (Viewsurf)", "https://pv.viewsurf.com/1802/Biarritz-Grande-Plage?i=Njg2NDp1bmRlZmluZWQ"),
                 SurfWebcamOption("Grande Plage", "https://gosurf.fr/webcam/fr/42/Biarritz-Grande-Plage")
             )
         ),
         "Bidart" to SpotWebcams(
             "Bidart",
-            listOf(SurfWebcamOption("Plage du Centre", "https://gosurf.fr/webcam/fr/43/Bidart-Plage-du-Centre"))
+            listOf(
+                SurfWebcamOption("Plage du Centre", "https://gosurf.fr/webcam/fr/43/Bidart-Plage-du-Centre")
+            )
         ),
         "Guéthary" to SpotWebcams(
             "Guéthary",
@@ -129,41 +180,66 @@ object SurfWebcamHelper {
         ),
         "Saint-Jean-de-Luz" to SpotWebcams(
             "Saint-Jean-de-Luz",
-            emptyList()
+            listOf(
+                SurfWebcamOption("Saint-Jean-de-Luz", "https://pv.viewsurf.com/480/Saint-Jean-de-Luz?i=MzExNDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Sainte-Barbe", "https://pv.viewsurf.com/480/Saint-Jean-de-Luz?i=MzEyNjp1bmRlZmluZWQ"),
+                SurfWebcamOption("Donibane", "https://pv.viewsurf.com/480/Saint-Jean-de-Luz?i=MzEyMDp1bmRlZmluZWQ")
+            )
         ),
         "Hendaye" to SpotWebcams(
             "Hendaye",
             listOf(
+                SurfWebcamOption("Plage des Jumeaux", "https://pv.viewsurf.com/850/Hendaye-Plage-des-jumeaux?i=NDQxODp1bmRlZmluZWQ"),
                 SurfWebcamOption("Plage des Deux Jumeaux", "https://gosurf.fr/webcam/fr/46/Hendaye-Plage-des-Deux-Jumeaux")
             )
         ),
         "La Tranche-sur-Mer" to SpotWebcams(
             "La Tranche-sur-Mer",
-            emptyList()
+            listOf(
+                SurfWebcamOption("L'Embarcadère", "https://pv.viewsurf.com/2094/La-Tranche-sur-mer-Embarcadere")
+            )
         ),
         "Longeville" to SpotWebcams(
             "Longeville",
-            emptyList()
+            listOf(
+                SurfWebcamOption("Les Conches", "https://pv.viewsurf.com/1998/Longeville-sur-mer-Plage-des-Conches?i=NzMzMjp1bmRlZmluZWQ"),
+                SurfWebcamOption("Bud Bud", "https://pv.viewsurf.com/1998/Longeville-sur-mer-Plage-des-Conches?i=NzMzMDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Plage du Rocher", "https://pv.viewsurf.com/2000/Longeville-sur-mer-Plage-du-Rocher?i=NzMzNjp1bmRlZmluZWQ")
+            )
         ),
         "Les Sables-d'Olonne" to SpotWebcams(
             "Les Sables-d'Olonne",
-            emptyList()
+            listOf(
+                SurfWebcamOption("Tanchet", "https://pv.viewsurf.com/id/1070/a/media/c/4912?i=NDkxNDp1bmRlZmluZWQ"),
+                SurfWebcamOption("Baie des Sables", "https://pv.viewsurf.com/id/1070/a/media/c/4912?i=NDkwODp1bmRlZmluZWQ"),
+                SurfWebcamOption("Remblai", "https://pv.viewsurf.com/id/1070/a/media/c/4912?i=NDkxMDp1bmRlZmluZWQ")
+            )
         ),
         "Saint-Gilles-Croix-de-Vie" to SpotWebcams(
             "Saint-Gilles-Croix-de-Vie",
-            listOf(SurfWebcamOption("Grande Plage", "https://gosurf.fr/webcam/fr/112/Saint-Gilles-Croix-de-Vie-Grande-Plage"))
+            listOf(
+                SurfWebcamOption("La Plage", "https://pv.viewsurf.com/2008/Saint-Gilles-Croix-de-Vie-La-Plage?i=NzM2Mjp1bmRlZmluZWQ"),
+                SurfWebcamOption("Grande Plage", "https://gosurf.fr/webcam/fr/112/Saint-Gilles-Croix-de-Vie-Grande-Plage")
+            )
         ),
         "La Torche" to SpotWebcams(
             "La Torche",
-            listOf(SurfWebcamOption("Pointe de la Torche", "https://gosurf.fr/webcam/fr/11/Plomeur-Pointe-de-la-Torche"))
+            listOf(
+                SurfWebcamOption("Pointe de la Torche", "https://gosurf.fr/webcam/fr/11/Plomeur-Pointe-de-la-Torche")
+            )
         ),
         "Quiberon" to SpotWebcams(
             "Quiberon",
-            listOf(SurfWebcamOption("Plage de Penthièvre", "https://gosurf.fr/webcam/fr/17/Saint-Pierre-Quiberon-Plage-de-Penthievre"))
+            listOf(
+                SurfWebcamOption("Plage de Penthièvre", "https://gosurf.fr/webcam/fr/17/Saint-Pierre-Quiberon-Plage-de-Penthievre")
+            )
         ),
         "Morgat" to SpotWebcams(
             "Morgat",
-            listOf(SurfWebcamOption("Morgat", "https://gosurf.fr/webcam/fr/9/Crozon-Morgat"))
+            listOf(
+                SurfWebcamOption("Morgat (Viewsurf)", "https://pv.viewsurf.com/id/606/a/media/c/3632?i=MzYzMjp1bmRlZmluZWQ"),
+                SurfWebcamOption("Morgat", "https://gosurf.fr/webcam/fr/9/Crozon-Morgat")
+            )
         )
     )
 
@@ -186,6 +262,12 @@ object SurfWebcamHelper {
      * (sans pubs ni cookies), sinon ouvre la même page dans le navigateur courant.
      */
     fun liveCamUrl(spotName: String, camera: SurfWebcamOption): String {
+        // Le lecteur Viewsurf a une adresse stable : on y va tout droit, sans passer par le relais (réservé à GoSurf).
+        if (camera.isViewsurfPlayer) {
+            return if (SkyGraphSettings.camBrave) {
+                "intent://" + camera.pageUrl.removePrefix("https://") + "#Intent;scheme=https;package=com.brave.browser;S.browser_fallback_url=" + percentEncode(camera.pageUrl) + ";end"
+            } else camera.pageUrl
+        }
         val multiple = (catalog[spotName]?.cameras?.size ?: 0) > 1
         val search = listOfNotNull("webcam", "gosurf", spotName, if (multiple) camera.camName.substringBefore(" (") else null).joinToString(" ")
         val relay = "https://surflog.fr/api/cam?u=" + percentEncode(camera.pageUrl) + "&q=" + percentEncode(search)
@@ -259,6 +341,41 @@ object SurfWebcamHelper {
 
     fun setWebcamFavorite(prefs: KeyValueStore, slotIndex: Int, spotName: String) {
         prefs.putString("webcam_fav_$slotIndex", spotName)
+    }
+
+    /** Vrai si le spot est dans les favoris webcam. */
+    fun isWebcamFavorite(prefs: KeyValueStore, spotName: String): Boolean =
+        getWebcamFavorites(prefs).any { it.equals(spotName, ignoreCase = true) }
+
+    /**
+     * Ajoute le spot dans la première place libre des favoris webcam, ou l'en retire s'il y est déjà.
+     * Renvoie false si les 4 places sont prises (rien n'est changé).
+     */
+    fun toggleWebcamFavorite(prefs: KeyValueStore, spotName: String): Boolean {
+        val favorites = getWebcamFavorites(prefs)
+        val existing = favorites.indexOfFirst { it.equals(spotName, ignoreCase = true) }
+        if (existing >= 0) {
+            prefs.remove("webcam_fav_$existing")
+            return true
+        }
+        val free = favorites.indexOfFirst { it == null }
+        if (free < 0) return false
+        setWebcamFavorite(prefs, free, spotName)
+        return true
+    }
+
+    /**
+     * Spots équipés de webcam autour de [currentSpotName], du plus proche au plus loin (le spot lui-même exclu),
+     * dans un rayon de [maxKm] km, au plus [limit] spots. Liste vide si le spot est inconnu.
+     */
+    fun camSpotsAround(currentSpotName: String, maxKm: Int = 150, limit: Int = 8): List<NearbyCamSpot> {
+        val current = SurfDatabase.findSpotByName(currentSpotName) ?: return emptyList()
+        return SurfDatabase.getAllSpots()
+            .filter { it.name != current.name && hasCamera(it.name) }
+            .map { NearbyCamSpot(it.name, distanceKm(current.latitude, current.longitude, it.latitude, it.longitude).roundToInt()) }
+            .filter { it.distanceKm <= maxKm }
+            .sortedBy { it.distanceKm }
+            .take(limit)
     }
 
     /**

@@ -20,16 +20,18 @@ class SurfWebcamHelperTest {
             "https://surflog.fr/api/cam?u=https%3A%2F%2Fgosurf.fr%2Fwebcam%2Ffr%2F183%2FMimizan-Plage-Nord&q=webcam%20gosurf%20Mimizan%20Plage%20Nord",
             SurfWebcamHelper.liveCamUrl("Mimizan", nord)
         )
-        val lacanau = SurfWebcamHelper.getCamerasForSpot("Lacanau").cameras.single()
+        // Lacanau a maintenant deux caméras (lecteur Viewsurf ajouté le 13 novembre) : le cas « une seule caméra » passe à Contis.
+        val contis = SurfWebcamHelper.getCamerasForSpot("Contis").cameras.single()
         assertEquals(
-            "https://surflog.fr/api/cam?u=https%3A%2F%2Fgosurf.fr%2Fwebcam%2Ffr%2F76%2FLacanau-Ocean-Plage-Centrale&q=webcam%20gosurf%20Lacanau",
-            SurfWebcamHelper.liveCamUrl("Lacanau", lacanau)
+            "https://surflog.fr/api/cam?u=https%3A%2F%2Fgosurf.fr%2Fwebcam%2Ffr%2F163%2FContis-Plage-de-Contis&q=webcam%20gosurf%20Contis",
+            SurfWebcamHelper.liveCamUrl("Contis", contis)
         )
     }
 
     @Test
     fun braveOptionBuildsAnIntentWithTheRelayAsFallback() {
-        val cam = SurfWebcamHelper.getCamerasForSpot("Lacanau").cameras.single()
+        // Caméra GoSurf de Lacanau (le spot a aussi un lecteur Viewsurf depuis le 13 novembre, ouvert sans relais).
+        val cam = SurfWebcamHelper.getCamerasForSpot("Lacanau").cameras.first { "gosurf.fr" in it.pageUrl }
         SkyGraphSettings.camBrave = true
         try {
             val url = SurfWebcamHelper.liveCamUrl("Lacanau", cam)
@@ -45,5 +47,33 @@ class SurfWebcamHelperTest {
             "https://duckduckgo.com/?q=%21ducky%20webcam%20gosurf%20Gu%C3%A9thary",
             SurfWebcamHelper.liveCamUrl("Guéthary")
         )
+    }
+
+    @Test
+    fun viewsurfPlayerIsOpenedDirectly() {
+        val cam = SurfWebcamHelper.getCamerasForSpot("Montalivet").cameras.first()
+        kotlin.test.assertTrue(cam.isViewsurfPlayer)
+        assertEquals("Viewsurf", cam.sourceName)
+        assertEquals("https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage", SurfWebcamHelper.liveCamUrl("Montalivet", cam))
+    }
+
+    @Test
+    fun spotsAroundAreSortedByDistanceWithoutTheSpotItself() {
+        val around = SurfWebcamHelper.camSpotsAround("Montalivet")
+        kotlin.test.assertTrue(around.isNotEmpty())
+        kotlin.test.assertTrue(around.none { it.name == "Montalivet" })
+        kotlin.test.assertTrue(around.all { SurfWebcamHelper.hasCamera(it.name) })
+        assertEquals(around.sortedBy { it.distanceKm }, around)
+        assertEquals("Lacanau", around.first().name)
+    }
+
+    @Test
+    fun favoriteToggleUsesTheFirstFreeSlotAndRemovesOnSecondTap() {
+        val prefs = InMemoryKeyValueStore()
+        SurfWebcamHelper.setWebcamFavorite(prefs, 0, "Lacanau")
+        kotlin.test.assertTrue(SurfWebcamHelper.toggleWebcamFavorite(prefs, "Montalivet"))
+        assertEquals(listOf("Lacanau", "Montalivet", null, null), SurfWebcamHelper.getWebcamFavorites(prefs))
+        kotlin.test.assertTrue(SurfWebcamHelper.toggleWebcamFavorite(prefs, "Montalivet"))
+        kotlin.test.assertFalse(SurfWebcamHelper.isWebcamFavorite(prefs, "Montalivet"))
     }
 }
