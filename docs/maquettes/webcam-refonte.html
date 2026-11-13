@@ -1,0 +1,350 @@
+<title>Surf Log Webcams</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Mise en page : deux téléphones côte à côte (page portrait + plein écran paysage), notes dessous. Couleurs = AppColors de l'appli. */
+:root{
+  --page:#EDF1F6; --bg:#C5D3E2; --card:#D9E3EE; --card2:#C9D6E4; --ink:#0C2433; --muted:#5A7686; --line:#B9C8D8;
+  --accent:#134B73; --accent-ink:#fff; --pill:#D9E3EE; --wind:#EF6C00; --tideh:#1565C0; --tidel:#2E7D32; --star:#F5B50A;
+  --live:#E53935; --frame:#0C1820;
+  --f-text:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"Roboto Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0B121A; --bg:#0D1B22; --card:#14262F; --card2:#1B333D; --ink:#ECEFF1; --muted:#90A4AE; --line:#23404C;
+  --accent:#1565C0; --accent-ink:#fff; --pill:#23404C; --tideh:#4FC3F7; --tidel:#66BB6A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --page:#0B121A; --bg:#0D1B22; --card:#14262F; --card2:#1B333D; --ink:#ECEFF1; --muted:#90A4AE; --line:#23404C;
+  --accent:#1565C0; --accent-ink:#fff; --pill:#23404C; --tideh:#4FC3F7; --tidel:#66BB6A; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--ink);font-family:var(--f-text);margin:0;line-height:1.4;
+  padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+h1{font-size:22px;margin:0;text-wrap:balance}
+.lead{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:72ch}
+.stage{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.col{display:grid;gap:8px;min-width:0}
+.col>h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+
+/* ---------- Téléphone portrait ---------- */
+.phone{width:360px;max-width:100%;height:740px;border-radius:34px;background:var(--frame);padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.screen{width:100%;height:100%;border-radius:26px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{height:26px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11.5px;font-weight:700;color:var(--ink)}
+.appbar{flex:none;display:flex;align-items:center;gap:6px;padding:4px 8px 6px}
+.ib{all:unset;cursor:pointer;width:38px;height:38px;border-radius:50%;display:grid;place-items:center}
+.ib:hover{background:var(--card)}
+.ib:focus-visible,.chip:focus-visible,.cam:focus-visible,.near:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ttl{flex:1;min-width:0}
+.ttl b{display:block;font-size:17px;line-height:1.15}
+.ttl span{font-size:12px;color:var(--muted)}
+.scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 12px 16px;display:flex;flex-direction:column;gap:12px}
+.scroll>*{flex:none}
+.scroll::-webkit-scrollbar{width:0}
+
+.favs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.favs::-webkit-scrollbar{height:0}
+.chip{all:unset;cursor:pointer;flex:none;padding:7px 12px;border-radius:99px;background:var(--pill);font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.chip.on{background:var(--accent);color:var(--accent-ink)}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:var(--live)}
+.chip.ghost{background:transparent;border:1.5px dashed var(--line);color:var(--muted)}
+
+.player{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:16/9;max-width:100%;background:#000}
+.player canvas{display:block;width:100%;height:100%}
+.pl-live{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 8px;border-radius:99px;display:flex;gap:5px;align-items:center}
+.pl-live i{width:6px;height:6px;border-radius:50%;background:var(--live)}
+.pl-name{position:absolute;left:10px;bottom:8px;color:#fff;font-weight:800;font-size:14px;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.pl-src{position:absolute;right:46px;bottom:10px;color:rgba(255,255,255,.75);font-size:10.5px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.pl-fs{all:unset;cursor:pointer;position:absolute;right:6px;bottom:4px;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:rgba(0,0,0,.45)}
+
+.cond{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--card);border-radius:14px;padding:8px 4px}
+.cond>div{display:grid;justify-items:center;gap:1px;padding:0 4px;border-left:1px solid var(--line)}
+.cond>div:first-child{border-left:0}
+.cond small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+.cond b{font-size:14px;font-variant-numeric:tabular-nums}
+.cond span{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+.sec{display:grid;gap:6px}
+.sec h3{margin:0;font-size:11.5px;gap:8px;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;justify-content:space-between}
+.cams{display:grid;gap:4px}
+.cam{all:unset;cursor:pointer;display:flex;gap:10px;align-items:center;padding:6px;border-radius:12px}
+.cam.on{background:var(--card)}
+.cam canvas{width:84px;height:47px;border-radius:8px;flex:none;display:block}
+.cam .tx{min-width:0;flex:1}
+.cam b{display:block;font-size:14px}
+.cam span{font-size:11.5px;color:var(--muted)}
+.cam .eq{width:16px;height:16px;flex:none;opacity:0}
+.cam.on .eq{opacity:1}
+
+.nears{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.nears::-webkit-scrollbar{height:0}
+.near{all:unset;cursor:pointer;flex:none;width:132px;display:grid;gap:4px}
+.near canvas{width:132px;height:74px;border-radius:10px;display:block}
+.near b{font-size:13px;display:flex;justify-content:space-between;gap:4px}
+.near b em{font-style:normal;color:var(--star);font-size:12px}
+.near span{font-size:11px;color:var(--muted)}
+
+.btn{all:unset;cursor:pointer;text-align:center;padding:11px;border-radius:12px;background:var(--card);font-weight:700;font-size:13.5px}
+
+/* barre d'onglets du bas de l'appli */
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);padding:6px 0 10px;border-top:1px solid var(--line)}
+.tabbar div{display:grid;justify-items:center;font-size:10px;color:var(--muted);gap:2px;font-weight:600}
+.tabbar div.on{color:var(--ink)}
+.tabbar div.on svg{background:var(--accent);color:var(--accent-ink);border-radius:99px;padding:2px 12px;width:46px}
+
+/* feuille « toutes les webcams » */
+.sheet{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end}
+.sheet .in{background:var(--bg);width:100%;max-height:82%;border-radius:20px 20px 0 0;padding:10px 14px 16px;display:grid;gap:10px;grid-template-rows:auto auto 1fr}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);justify-self:center}
+.search{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:12px;padding:9px 12px}
+.search input{all:unset;flex:1;font-size:14px;min-width:0}
+.list{overflow-y:auto;display:grid;gap:12px;align-content:start}
+.list h4{margin:0 0 4px;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.list .r{all:unset;cursor:pointer;display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px;width:100%}
+.list .r span{color:var(--muted);font-size:12px}
+
+/* ---------- Plein écran paysage ---------- */
+.land{width:680px;max-width:100%;aspect-ratio:2.1/1;border-radius:30px;background:var(--frame);padding:9px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.lscreen{position:relative;width:100%;height:100%;border-radius:22px;overflow:hidden;background:#000;cursor:pointer}
+.lscreen canvas{display:block;width:100%;height:100%}
+.ui{transition:opacity .25s}
+.lscreen.hide .ui{opacity:0;pointer-events:none}
+.l-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:8px;padding:12px 14px 22px 40px;background:linear-gradient(rgba(0,0,0,.55),transparent)}
+.l-top b{color:#fff;font-size:14px}
+.l-top span{color:rgba(255,255,255,.7);font-size:11.5px}
+.l-top .sp{flex:1}
+.l-x{all:unset;cursor:pointer;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.45)}
+.l-arrow{all:unset;cursor:pointer;position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.4)}
+.l-dots{position:absolute;left:50%;transform:translateX(-50%);bottom:52px;display:flex;gap:5px}
+.l-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4)}
+.l-dots i.on{background:#fff}
+.l-bar{position:absolute;left:40px;right:40px;bottom:10px;display:flex;justify-content:space-around;align-items:center;background:rgba(10,20,26,.7);border-radius:12px;padding:7px 10px;color:#fff;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.l-bar span{display:flex;gap:5px;align-items:center}
+.hint{font-size:12px;color:var(--muted)}
+
+.notes{background:var(--card);border-radius:16px;padding:14px 16px;display:grid;gap:8px;max-width:1180px}
+.notes h2{margin:0;font-size:15px}
+.notes ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13.5px;max-width:95ch}
+.notes b{color:var(--ink)}
+.notes .mut{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.ui{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Webcams, refonte façon Rider Report</h1>
+    <p class="lead">Maquette interactive. Touche une caméra, un spot « autour », l'étoile, le bouton plein écran ou « Toutes les webcams ». Les images sont simulées ; dans l'appli ce sera le vrai flux.</p>
+  </header>
+
+  <div class="stage">
+    <div class="col">
+      <h2>1. Page webcam (ouverte depuis le spot affiché)</h2>
+      <div class="phone"><div class="screen" id="scr">
+        <div class="status"><span>16:54</span><span>54 %</span></div>
+        <div class="appbar">
+          <button class="ib" aria-label="Retour" id="back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="ttl"><b id="t-spot">Montalivet</b><span id="t-sub">3 caméras · en direct</span></div>
+          <button class="ib" aria-label="Favori" id="favBtn"><svg width="22" height="22" viewBox="0 0 24 24" id="favIco"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="var(--star)" stroke="var(--star)" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+        </div>
+        <div class="scroll" id="scroll">
+          <div class="favs" id="favs"></div>
+          <div class="player" id="player">
+            <canvas id="main" width="672" height="378"></canvas>
+            <div class="pl-live"><i></i>EN DIRECT</div>
+            <div class="pl-name" id="pl-name"></div>
+            <div class="pl-src" id="pl-src"></div>
+            <button class="pl-fs" id="fsBtn" aria-label="Plein écran"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          </div>
+          <div class="cond" id="cond"></div>
+          <div class="sec">
+            <h3><span id="camsTitle">Caméras</span></h3>
+            <div class="cams" id="cams"></div>
+          </div>
+          <div class="sec">
+            <h3><span id="nearTitle">Autour</span><span style="text-transform:none;letter-spacing:0;font-weight:500">★ note du moment</span></h3>
+            <div class="nears" id="nears"></div>
+          </div>
+          <button class="btn" id="allBtn">Toutes les webcams</button>
+        </div>
+        <div class="tabbar">
+          <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15c3-4 6-4 9 0s6 4 9 0"/><path d="M3 10c3-4 6-4 9 0s6 4 9 0"/></svg>Prévisions</div>
+          <div class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>Webcam</div>
+          <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6"/></svg>Journal</div>
+          <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Comprendre</div>
+          <div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Réglages</div>
+        </div>
+        <div class="sheet" id="sheet" hidden>
+          <div class="in">
+            <div class="grab"></div>
+            <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="Chercher une plage, une ville" aria-label="Chercher"></label>
+            <div class="list" id="list"></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col">
+      <h2>2. Plein écran (bouton ⤢ ou téléphone tourné)</h2>
+      <div class="land"><div class="lscreen" id="ls">
+        <canvas id="big" width="1320" height="620"></canvas>
+        <div class="ui l-top">
+          <svg width="8" height="8"><circle cx="4" cy="4" r="4" fill="#E53935"/></svg>
+          <div><b id="l-name"></b> <span id="l-spot"></span></div>
+          <div class="sp"></div>
+          <button class="l-x" aria-label="Fermer le plein écran" id="lx"><svg width="18" height="18" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+        <button class="ui l-arrow" style="left:40px" id="lprev" aria-label="Caméra précédente"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="ui l-arrow" style="right:14px" id="lnext" aria-label="Caméra suivante"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></button>
+        <div class="ui l-dots" id="ldots"></div>
+        <div class="ui l-bar" id="lbar"></div>
+      </div></div>
+      <p class="hint">Touche l'image pour masquer ou afficher les commandes. Les flèches passent d'une caméra du spot à l'autre ; rien d'autre par-dessus l'image.</p>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h2>Ce qui change par rapport à l'écran actuel</h2>
+    <ul>
+      <li><b>Le spot regardé passe toujours en premier.</b> Ouvrir la webcam depuis Montalivet ouvre la page Montalivet, sa meilleure caméra déjà lancée. L'onglet Webcam du bas ouvre le spot actif.</li>
+      <li><b>Une vraie page plutôt qu'une vidéo couverte de boutons.</b> En haut le lecteur, puis les conditions du moment, les caméras du spot (vignette, nom, source), les spots autour avec leur distance et leur note, et « Toutes les webcams » avec recherche.</li>
+      <li><b>Les favoris deviennent une ligne de pastilles sous le titre</b>, dans la page : plus rien ne passe sous la barre d'état. L'étoile en haut ajoute ou retire le spot. Fini les « + » vides et l'appui long.</li>
+      <li><b>Plein écran épuré</b> : nom de la caméra, croix, flèches entre caméras et la barre houle / marée / vent. Plus de favoris ni de « Spots ▾ » sur l'image.</li>
+      <li><b>Lecteur officiel Viewsurf quand il existe</b> (comme Rider Report : <span class="mut">pv.viewsurf.com/1704/Vendays-Montalivet-Plage</span>). Il n'affiche que la vidéo, plus besoin de nettoyer une page GoSurf par script ni du bouton « Lier cette page ». Montalivet gagne ainsi « Montalivet » et « Montalivet Nord ».</li>
+      <li><b>Couleurs et typo de l'appli</b> (fond, cartes, pastille bleue active, orange réservé au vent), en clair comme en sombre.</li>
+      <li class="mut">Site surflog.fr : la même page est possible, mais elle suppose d'intégrer le lecteur Viewsurf dans le site (iframe), option écartée jusqu'ici. À toi de dire si on la rouvre ; sinon le site garde le lien direct.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const SPOTS={
+  "Montalivet":{lat:45.38,stars:3,cams:[["Montalivet","Viewsurf",1],["Montalivet Nord","Viewsurf",2],["Front de mer","Médoc Atlantique",3]],
+    cond:{h:"0.6 m · 8 s",hs:"6 °C",t1:"PM 06:43",t2:"BM 13:08 · coef 67",w:"ENE 28",ws:"offshore"},
+    near:[["Vensac",6],["Soulac",19],["Hourtin",22],["Lacanau",45],["Le Porge",62]]},
+  "Lacanau":{lat:45.0,stars:2,cams:[["Plage Centrale","GoSurf",4],["Plage Nord","Viewsurf",5]],
+    cond:{h:"0.7 m · 9 s",hs:"6 °C",t1:"PM 06:51",t2:"BM 13:15 · coef 67",w:"E 24",ws:"offshore"},
+    near:[["Le Porge",17],["Carcans",14],["Hourtin",24],["Montalivet",45]]},
+  "Vensac":{lat:45.42,stars:3,cams:[["Plage de Vensac","Viewsurf",6]],
+    cond:{h:"0.6 m · 8 s",hs:"6 °C",t1:"PM 06:42",t2:"BM 13:07 · coef 67",w:"ENE 27",ws:"offshore"},
+    near:[["Montalivet",6],["Soulac",13],["Hourtin",28]]},
+  "Soulac":{lat:45.51,stars:2,cams:[["Plage Centrale","Viewsurf",7],["L'Amélie","Viewsurf",8]],
+    cond:{h:"0.5 m · 8 s",hs:"6 °C",t1:"PM 06:40",t2:"BM 13:05 · coef 67",w:"E 26",ws:"side-off"},
+    near:[["Vensac",13],["Montalivet",19],["Royan",9]]},
+  "Hourtin":{lat:45.2,stars:3,cams:[["Hourtin Plage","Viewsurf",9]],
+    cond:{h:"0.6 m · 8 s",hs:"6 °C",t1:"PM 06:47",t2:"BM 13:11 · coef 67",w:"ENE 26",ws:"offshore"},
+    near:[["Carcans",11],["Montalivet",22],["Lacanau",24]]},
+  "Le Porge":{lat:44.9,stars:2,cams:[["Plage du Gressier","Viewsurf",10]],
+    cond:{h:"0.7 m · 9 s",hs:"7 °C",t1:"PM 06:55",t2:"BM 13:18 · coef 67",w:"E 22",ws:"offshore"},
+    near:[["Lacanau",17],["Le Grand Crohot",12],["Montalivet",62]]},
+};
+const NEAR_STARS={"Vensac":3,"Soulac":2,"Hourtin":3,"Lacanau":2,"Le Porge":2,"Carcans":3,"Royan":1,"Le Grand Crohot":2,"Montalivet":3};
+const ALL={"Gironde":["Soulac","Vensac","Montalivet","Hourtin","Carcans","Lacanau","Le Porge","Le Grand Crohot"],
+  "Landes":["Biscarrosse","Mimizan","Contis","Moliets","Seignosse","Hossegor","Capbreton"],
+  "Pays basque":["Anglet","Biarritz","Bidart","Saint-Jean-de-Luz","Hendaye"],
+  "Bretagne":["La Torche","Guidel","Quiberon","Crozon"]};
+
+let st={spot:"Montalivet",cam:0,favs:["Montalivet","Lacanau","Hossegor"],full:false};
+try{const s=JSON.parse(localStorage.getItem("wc-mq")||"null");if(s&&SPOTS[s.spot])st=Object.assign(st,s,{cam:0});}catch(e){}
+const save=()=>{try{localStorage.setItem("wc-mq",JSON.stringify({spot:st.spot,favs:st.favs}))}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stars=n=>"★".repeat(n)+"☆".repeat(5-n);
+
+/* ---- scène de plage dessinée (remplace le flux vidéo dans la maquette) ---- */
+function rnd(seed){let x=Math.sin(seed*999)*10000;return x-Math.floor(x)}
+function paint(cv,seed,t){
+  const c=cv.getContext("2d"),w=cv.width,h=cv.height;
+  const hz=h*(0.36+rnd(seed)*0.12), shore=h*(0.68+rnd(seed+1)*0.1);
+  const warm=rnd(seed+2)>.5;
+  let g=c.createLinearGradient(0,0,0,hz);
+  g.addColorStop(0,warm?"#4d6f93":"#5b86b0");g.addColorStop(1,warm?"#e7b98c":"#c9dceb");
+  c.fillStyle=g;c.fillRect(0,0,w,hz);
+  const sx=w*(0.25+rnd(seed+3)*0.5);
+  const sg=c.createRadialGradient(sx,hz*0.7,2,sx,hz*0.7,h*0.35);
+  sg.addColorStop(0,"rgba(255,248,225,.95)");sg.addColorStop(.15,"rgba(255,236,190,.45)");sg.addColorStop(1,"rgba(255,236,190,0)");
+  c.fillStyle=sg;c.fillRect(0,0,w,shore);
+  g=c.createLinearGradient(0,hz,0,shore);g.addColorStop(0,"#2f5f78");g.addColorStop(1,"#5f8e9c");
+  c.fillStyle=g;c.fillRect(0,hz,w,shore-hz);
+  for(let i=0;i<7;i++){
+    const y=hz+(shore-hz)*(i+1)/8, ph=t*0.0006*(1+i*0.15)+i*1.7;
+    c.strokeStyle=`rgba(255,255,255,${0.15+i*0.08})`;c.lineWidth=1+i*0.6;c.beginPath();
+    for(let x=0;x<=w;x+=8){const yy=y+Math.sin(x*0.012+ph)*(1+i*0.5);x?c.lineTo(x,yy):c.moveTo(x,yy)}
+    c.stroke();
+  }
+  const fy=shore-6+Math.sin(t*0.001+seed)*4;
+  c.fillStyle="rgba(255,255,255,.55)";c.fillRect(0,fy,w,5);
+  g=c.createLinearGradient(0,shore,0,h);g.addColorStop(0,"#c9b38c");g.addColorStop(1,"#8f7a59");
+  c.fillStyle=g;c.fillRect(0,shore,w,h-shore);
+  if(rnd(seed+4)>.4){c.fillStyle="rgba(30,30,30,.7)";c.fillRect(w*(0.1+rnd(seed+5)*0.2),hz*0.25,Math.max(2,w*0.004),shore-hz*0.25)}
+}
+let thumbs=[],lastT=0;
+function loop(t){
+  paint($("main"),camSeed(),t);
+  paint($("big"),camSeed(),t);
+  if(t-lastT>1500){lastT=t;thumbs.forEach(([cv,s])=>paint(cv,s,t));}
+  requestAnimationFrame(loop);
+}
+const camSeed=()=>SPOTS[st.spot].cams[st.cam][2];
+
+/* ---- rendu ---- */
+function render(){
+  const S=SPOTS[st.spot],C=S.cams[st.cam];
+  $("t-spot").textContent=st.spot;
+  $("t-sub").textContent=S.cams.length+(S.cams.length>1?" caméras":" caméra")+" · en direct";
+  const isFav=st.favs.includes(st.spot);
+  $("favIco").querySelector("path").setAttribute("fill",isFav?"var(--star)":"none");
+  $("favIco").querySelector("path").setAttribute("stroke",isFav?"var(--star)":"var(--muted)");
+  $("favBtn").setAttribute("aria-pressed",isFav);
+  $("favs").innerHTML=st.favs.map(f=>`<button class="chip${f===st.spot?" on":""}" data-spot="${esc(f)}">${f===st.spot?'<i class="dot"></i>':""}${esc(f)}</button>`).join("")
+    +(st.favs.length<3?`<button class="chip ghost" id="addFav">☆ Ajouter ${esc(st.spot)}</button>`:"");
+  $("pl-name").textContent=C[0];$("pl-src").textContent="Images : "+C[1];
+  $("cond").innerHTML=`<div><small>Houle</small><b>${S.cond.h}</b><span>eau ${S.cond.hs}</span></div>
+    <div><small>Marée</small><b style="color:var(--tideh)">${S.cond.t1}</b><span>${S.cond.t2}</span></div>
+    <div><small>Vent</small><b style="color:var(--wind)">${S.cond.w} km/h</b><span>${S.cond.ws}</span></div>`;
+  $("camsTitle").textContent="Caméras de "+st.spot;
+  $("cams").innerHTML=S.cams.map((c,i)=>`<button class="cam${i===st.cam?" on":""}" data-cam="${i}"><canvas width="168" height="94" data-seed="${c[2]}"></canvas><div class="tx"><b>${esc(c[0])}</b><span>Images : ${esc(c[1])}</span></div>
+    <svg class="eq" viewBox="0 0 16 16"><rect x="2" y="6" width="3" height="8" rx="1" fill="var(--accent)"/><rect x="6.5" y="2" width="3" height="12" rx="1" fill="var(--accent)"/><rect x="11" y="8" width="3" height="6" rx="1" fill="var(--accent)"/></svg></button>`).join("");
+  $("nearTitle").textContent="Autour de "+st.spot;
+  $("nears").innerHTML=S.near.map(([n,km])=>`<button class="near" data-spot="${esc(n)}"><canvas width="264" height="148" data-seed="${n.length*7+km}"></canvas><b>${esc(n)}<em>${stars(NEAR_STARS[n]||2).slice(0,3)}</em></b><span>${km} km</span></button>`).join("");
+  // plein écran
+  $("l-name").textContent=C[0];$("l-spot").textContent="· "+st.spot+" · "+C[1];
+  $("ldots").innerHTML=S.cams.length>1?S.cams.map((c,i)=>`<i class="${i===st.cam?"on":""}"></i>`).join(""):"";
+  $("lprev").hidden=$("lnext").hidden=S.cams.length<2;
+  $("lbar").innerHTML=`<span>🌊 ${S.cond.h}</span><span style="color:#4FC3F7">${S.cond.t1}</span><span style="color:#90CAF9">${S.cond.t2}</span><span style="color:#FF9A3D">${S.cond.w} km/h</span>`;
+  thumbs=[...document.querySelectorAll("canvas[data-seed]")].map(cv=>[cv,+cv.dataset.seed]);
+  thumbs.forEach(([cv,s])=>paint(cv,s,performance.now()));
+  save();
+}
+function goSpot(n){
+  if(!SPOTS[n]){toast(n+" : pas de données dans la maquette");return}
+  st.spot=n;st.cam=0;$("sheet").hidden=true;render();$("scroll").scrollTop=0;
+}
+function toast(m){const el=document.createElement("div");el.textContent=m;
+  el.style.cssText="position:absolute;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 12px;border-radius:10px;font-size:12.5px;white-space:nowrap";
+  $("scr").appendChild(el);setTimeout(()=>el.remove(),1800)}
+
+document.addEventListener("click",e=>{
+  const sp=e.target.closest("[data-spot]");if(sp){goSpot(sp.dataset.spot);return}
+  const cm=e.target.closest("[data-cam]");if(cm){st.cam=+cm.dataset.cam;render();return}
+  if(e.target.closest("#addFav")||e.target.closest("#favBtn")){
+    if(st.favs.includes(st.spot))st.favs=st.favs.filter(f=>f!==st.spot);
+    else{if(st.favs.length>=3){toast("3 favoris au plus : retire-en un");return}st.favs.push(st.spot)}
+    render();return}
+  if(e.target.closest("#allBtn")){$("sheet").hidden=false;renderList("");$("q").value="";return}
+  if(e.target.id==="sheet"){$("sheet").hidden=true;return}
+  if(e.target.closest("#back")){toast("Retour aux prévisions");return}
+  if(e.target.closest("#fsBtn")){$("ls").classList.remove("hide");$("ls").scrollIntoView({behavior:"smooth",block:"center"});return}
+  if(e.target.closest("#lx")){$("player").scrollIntoView({behavior:"smooth",block:"center"});return}
+  if(e.target.closest("#lprev")){const n=SPOTS[st.spot].cams.length;st.cam=(st.cam+n-1)%n;render();return}
+  if(e.target.closest("#lnext")){const n=SPOTS[st.spot].cams.length;st.cam=(st.cam+1)%n;render();return}
+  if(e.target.closest("#ls")){$("ls").classList.toggle("hide");return}
+});
+function renderList(q){
+  q=q.trim().toLowerCase();
+  $("list").innerHTML=Object.entries(ALL).map(([reg,arr])=>{
+    const f=arr.filter(n=>n.toLowerCase().includes(q));if(!f.length)return"";
+    return `<div><h4>${esc(reg)}</h4>${f.map(n=>`<button class="r" data-spot="${esc(n)}">${esc(n)}<span>${SPOTS[n]?SPOTS[n].cams.length+" cam.":""}</span></button>`).join("")}</div>`}).join("")||`<p class="hint">Aucune plage ne correspond.</p>`;
+}
+$("q").addEventListener("input",e=>renderList(e.target.value));
+render();requestAnimationFrame(loop);
+</script>
