@@ -47,6 +47,14 @@ h1{font-size:22px;margin:0;text-wrap:balance}
 .h[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .h[aria-pressed="true"] small,.h[aria-pressed="true"] span{color:var(--accent-ink)}
 .h:focus-visible,.btn:focus-visible,.x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.slim{all:unset;cursor:pointer;margin-top:6px;display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);padding:4px 2px}
+.slim b{color:var(--ink);font-weight:700}
+.slim svg{margin-left:auto;opacity:.6}
+.hr{display:flex;align-items:center;gap:6px}
+.iconbtn{all:unset;cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--card2)}
+.variant{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.variant button{all:unset;cursor:pointer;padding:7px 12px;border-radius:99px;background:var(--card);font-size:13px;font-weight:700}
+.variant button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .entry{all:unset;cursor:pointer;margin-top:10px;display:flex;align-items:center;gap:10px;background:var(--card2);border-radius:12px;padding:10px 12px;width:100%;box-sizing:border-box}
 .entry .ic{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
 .entry div{flex:1;min-width:0}
@@ -108,7 +116,8 @@ code{font-size:12.5px}
 <div class="wrap">
   <header>
     <h1>Ce que donne la houle au bord</h1>
-    <p class="lead">Maquette interactive. La feuille est ouverte : ferme-la pour voir l'encart Houle, touche une heure, puis « Ce que ça donne au bord ». Ou passe sur « Régler à la main ». Les heures sont des exemples.</p>
+    <div class="variant" id="variant"><button data-variant="A" aria-pressed="true">A : une ligne avec la réponse</button><button data-variant="B" aria-pressed="false">B : juste une icône</button></div>
+    <p class="lead">Maquette interactive. Choisis A ou B pour voir l'encart Houle (la feuille se ferme), touche une heure, puis l'entrée « Au bord ». Les heures sont des exemples.</p>
   </header>
 
   <div class="stage">
@@ -117,14 +126,10 @@ code{font-size:12.5px}
       <div class="scroll">
         <div class="ghost">Encart Maintenant</div>
         <div class="card">
-          <h3>Houle <small>Montalivet</small></h3>
+          <h3>Houle <span class="hr"><small>Montalivet</small><button class="iconbtn" id="open2" data-v="B" aria-label="Ce que ça donne au bord"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 14c3-4 6-4 9 0s6 4 9 0"/><path d="M2 19h20"/></svg></button></span></h3>
           <div class="now"><b id="nowH">1,0 m</b><span id="nowT">12 s · ouest</span></div>
           <div class="hours" id="hours"></div>
-          <button class="entry" id="open">
-            <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 15c3-4 6-4 9 0s6 4 9 0"/><path d="M2 20h20"/></svg></span>
-            <div><b>Ce que ça donne au bord</b><span id="entrySub">à 14 h : séries, taille au bord, 30 minutes au bord</span></div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
-          </button>
+          <button class="slim" id="open" data-v="A"><span>Au bord</span><b id="slimTxt">à la poitrine</b><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></button>
         </div>
         <div class="ghost">Encart Vent</div>
         <div class="ghost">Encart Marée</div>
@@ -200,7 +205,7 @@ code{font-size:12.5px}
       <div class="nbox">
         <h2>Où ça se place dans l'appli</h2>
         <ul>
-          <li><b>Dans l'encart Houle</b> : toucher une heure la sélectionne (comme aujourd'hui), et la ligne « Ce que ça donne au bord » en dessous ouvre la feuille pour cette heure-là. Exemple : 14 h, 1,0 m à 12 s, calcul fait pour 1,0 m à 12 s.</li>
+          <li><b>Dans l'encart Houle, version 3 (plus discrète)</b> : A, une seule petite ligne grise sous les heures qui donne déjà la réponse pour l'heure choisie (« Au bord séries à la poitrine › ») ; ou B, rien qu'une petite icône à côté du nom du spot. Un toucher ouvre la feuille calculée pour cette heure-là.</li>
           <li><b>« Régler à la main »</b> dans la feuille : deux curseurs (hauteur, période) pour tester n'importe quelle houle, comme l'outil de Rider Report.</li>
           <li><b>Type de spot</b> réglé d'après le spot (Montalivet : plage douce, choix du propriétaire), modifiable. Il change la taille au bord et la forme de la vague.</li>
           <li><b>Le résultat</b> : la taille des séries, une phrase simple, la grille des chiffres et le graphique des 30 minutes.</li>
@@ -243,7 +248,7 @@ const HOURS=[["8 h",0.9,11],["10 h",0.9,12],["12 h",1.0,12],["14 h",1.0,12],["16
 const TYPES={flat:{k:1.00,tan:0.02,label:"Plage douce : la vague casse loin, en douceur."},
              bars:{k:1.16,tan:0.05,label:"Beach break avec bancs bien formés : la vague casse sur le banc, plus raide que la plage."},
              reef:{k:1.25,tan:0.10,label:"Récif ou pointe : fond qui remonte vite, vague qui se creuse."}};
-let st={hour:3,src:"hour",hs:1.0,t:12,type:"flat",open:false,mine:1.0,fb:null};
+let st={hour:3,src:"hour",hs:1.0,t:12,type:"flat",open:false,mine:1.0,fb:null,variant:"A"};
 // Calage : 1,3 m à 14 s donne 1,6 m au bord à Montalivet (observation du propriétaire) ; la formule brute donne 2,18 m.
 const CAL=1.6/(0.39*Math.pow(9.81,0.2)*Math.pow(14*1.3*1.3,0.4));
 const $=id=>document.getElementById(id);
@@ -315,7 +320,10 @@ function render(){
   $("hours").innerHTML=HOURS.map(([h,hs,t],i)=>`<button class="h" aria-pressed="${i===st.hour}" data-h="${i}"><small>${h}</small><b>${f1(hs)} m</b><span>${t} s</span></button>`).join("");
   const [hl,hhs,ht]=HOURS[st.hour];
   $("nowH").textContent=`${f1(hhs)} m`; $("nowT").textContent=`${ht} s · ouest`;
-  $("entrySub").textContent=`à ${hl} : séries, taille au bord, 30 minutes au bord`;
+  const rr=compute(hhs,ht,st.type);
+  $("slimTxt").textContent=`séries ${bodyOf(rr.hb)}`;
+  $("open").hidden=st.variant!=="A"; $("open2").hidden=st.variant!=="B";
+  document.querySelectorAll("[data-variant]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.variant===st.variant)));
   $("sheetwrap").hidden=!st.open;
   if(!st.open) return;
   const hand=st.src==="hand";
@@ -344,7 +352,8 @@ function render(){
 }
 document.addEventListener("click",e=>{
   const h=e.target.closest("[data-h]");if(h){st.hour=+h.dataset.h;if(st.open)st.src="hour";render();return}
-  if(e.target.closest("#open")){st.open=true;st.src="hour";render();return}
+  const vv=e.target.closest("[data-variant]");if(vv){st.variant=vv.dataset.variant;st.open=false;render();return}
+  if(e.target.closest("#open")||e.target.closest("#open2")){st.open=true;st.src="hour";render();return}
   if(e.target.closest("#close")||e.target.id==="sheetwrap"){st.open=false;render();return}
   const fb=e.target.closest("[data-fb]");if(fb){const v=+fb.dataset.fb;st.fb=v;st.mine=Math.max(0.6,Math.min(1.4,st.mine*(v===0?1:v>0?1.05:0.95)));render();return}
   if(e.target.closest("#srcHour")){st.src="hour";render();return}
