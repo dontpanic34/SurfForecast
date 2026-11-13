@@ -149,8 +149,8 @@ code{font-size:12.5px}
               <div id="hourCtl" class="row"><span id="hourLine"></span></div>
               <div class="row"><span>Type de spot</span></div>
               <select id="type" aria-label="Type de spot">
-                <option value="flat">Plage douce, bancs peu marqués</option>
-                <option value="bars" selected>Beach break, bancs marqués</option>
+                <option value="flat" selected>Plage douce, bancs peu marqués</option>
+                <option value="bars">Beach break, bancs marqués</option>
                 <option value="reef">Récif ou pointe</option>
               </select>
               <span class="foot" id="typeNote">Réglé d'après le spot ; modifiable.</span>
@@ -169,7 +169,7 @@ code{font-size:12.5px}
               <svg id="chart" viewBox="0 0 320 130" role="img" aria-label="Hauteur des vagues sur 30 minutes"></svg>
               <span class="foot">Un exemple de 30 minutes : les séries ne tombent jamais pile à l'heure, l'écart varie d'une fois à l'autre.</span>
             </div>
-            <span class="warnline">Taille au bord : formule de Komar et Gaughan, celle de Rider Report. Notre essai d'octobre la trouvait trop haute à Montalivet (voir les notes).</span>
+            <span class="foot">Taille au bord : formule de Komar et Gaughan (celle de Rider Report), corrigée par le type de spot.</span>
           </div>
         </div>
       </div>
@@ -181,7 +181,7 @@ code{font-size:12.5px}
         <ul>
           <li><b>Dans l'encart Houle</b> : toucher une heure la sélectionne (comme aujourd'hui), et la ligne « Ce que ça donne au bord » en dessous ouvre la feuille pour cette heure-là. Exemple : 14 h, 1,0 m à 12 s, calcul fait pour 1,0 m à 12 s.</li>
           <li><b>« Régler à la main »</b> dans la feuille : deux curseurs (hauteur, période) pour tester n'importe quelle houle, comme l'outil de Rider Report.</li>
-          <li><b>Type de spot</b> réglé d'après le spot (Montalivet : beach break à bancs marqués), modifiable. Il change la taille au bord et la forme de la vague.</li>
+          <li><b>Type de spot</b> réglé d'après le spot (Montalivet : plage douce, choix du propriétaire), modifiable. Il change la taille au bord et la forme de la vague.</li>
           <li><b>Le résultat</b> : la taille des séries, une phrase simple, la grille des chiffres et le graphique des 30 minutes.</li>
         </ul>
       </div>
@@ -198,7 +198,7 @@ code{font-size:12.5px}
       <div class="nbox">
         <h2>À trancher</h2>
         <ul>
-          <li><b>La taille au bord.</b> En octobre, tu avais écarté cette formule : 1,3 m à 14 s donne 2,2 m, alors que tu vois plutôt 1,6 m. Trois choix : la garder telle quelle (comme Rider Report), la corriger d'après ton expérience (par exemple × 0,75 sur nos plages), ou n'afficher que le rythme des séries et la forme de la vague, sans taille.</li>
+          <li><b>Taille au bord : tranché le 13 novembre</b> : la formule de Rider Report est gardée, Montalivet en plage douce (× 0,92). 1,3 m à 14 s donne 2,0 m au bord (2,2 m sans le facteur de pente).</li>
           <li>Le type de spot : à remplir pour chaque spot du catalogue (proposition par défaut : beach break à bancs marqués).</li>
         </ul>
       </div>
@@ -211,7 +211,7 @@ const HOURS=[["8 h",0.9,11],["10 h",0.9,12],["12 h",1.0,12],["14 h",1.0,12],["16
 const TYPES={flat:{k:0.92,tan:0.02,label:"Plage douce : la vague casse loin, en douceur."},
              bars:{k:1.07,tan:0.05,label:"Beach break avec bancs bien formés : la vague casse sur le banc, plus raide que la plage."},
              reef:{k:1.15,tan:0.10,label:"Récif ou pointe : fond qui remonte vite, vague qui se creuse."}};
-let st={hour:3,src:"hour",hs:1.0,t:12,type:"bars",open:false};
+let st={hour:3,src:"hour",hs:1.0,t:12,type:"flat",open:false};
 const $=id=>document.getElementById(id);
 const f1=v=>v.toFixed(1).replace(".",",");
 const g=9.81,rho=1025;

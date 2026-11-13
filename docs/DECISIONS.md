@@ -169,3 +169,6 @@ Le vent affiché est la **médiane des vitesses** de tous les modèles qui ont l
 
 ## Orientations des plages mesurées, pas de spots secrets (22 octobre 2026)
 Les orientations des spots français sont **mesurées** sur la limite terre-mer officielle de l'IGN (BDTOPO, service WFS de la Géoplateforme) : direction de la côte sur 1,2 km et sur 2,5 km autour du spot, orientation vers le large ; la valeur n'est retenue (arrondie à 5°) que si les deux mesures s'accordent à 15° près, sinon l'ancienne valeur du catalogue reste. Les spots que le propriétaire veut garder secrets ne sont jamais ajoutés au catalogue (le dépôt est public) ; il règle leur orientation à la main dans les réglages.
+
+## Taille au bord : formule de Rider Report gardée (13 novembre 2026)
+Pour l'outil « Ce que ça donne au bord » (encart Houle, maquette `docs/maquettes/houle-au-bord.html`), le propriétaire garde la formule de Komar et Gaughan utilisée par Rider Report, corrigée par un facteur de pente selon le type de spot (plage douce 0,92 ; beach break à bancs marqués 1,07 ; récif ou pointe 1,15). Montalivet est une **plage douce**. Exemple : 1,3 m à 14 s donne 2,0 m au bord à Montalivet. Cela remplace, pour cet outil seulement, le refus d'octobre d'afficher une taille au déferlement ; la note et les étoiles ne changent pas.
