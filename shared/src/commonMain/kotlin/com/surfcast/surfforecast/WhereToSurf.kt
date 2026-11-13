@@ -22,7 +22,9 @@ data class SpotDay(
     val heightM: Double,
     val periodS: Double,
     val windKmh: Int,
-    val windDir: String
+    val windDir: String,
+    // Sa meilleure heure de la journée (« le mieux vers 10 h ») avec toutes ses conditions.
+    val bestHour: HourlyUiModel? = null
 )
 
 /** Le meilleur spot du rayon à une heure donnée (pour le détail heure par heure d'un jour). */
@@ -35,7 +37,9 @@ data class DayPick(
     val best: SpotDay?,
     val worthMoving: Boolean,
     val top: List<SpotDay>,
-    val hours: List<HourPick>
+    val hours: List<HourPick>,
+    // Chez toi ce jour-là (pour la ligne « chez toi » du classement et sa raison).
+    val homeDay: SpotDay? = null
 )
 
 /** [scans] : les spots du rayon avec leurs heures (pour la carte) ; [home] : le spot de départ avec les heures de l'appli. */
@@ -68,9 +72,9 @@ object WhereToSurf {
     /** Heures de jour retenues pour noter une journée (le lever et le coucher exacts ne comptent pas ici). */
     private val DAY_HOURS = 7..19
 
-    /** Un jour « vaut le déplacement » si ailleurs est au moins à [MOVE_MIN_STARS] et gagne [MOVE_GAIN_STARS] sur ici. */
+    /** Un jour « vaut le déplacement » si ailleurs est au moins à [MOVE_MIN_STARS] et gagne [MOVE_GAIN_STARS] sur ici (1,5 depuis le 13 novembre, maquette ou-surfer-lisible). */
     const val MOVE_MIN_STARS = 3.0f
-    const val MOVE_GAIN_STARS = 1.0f
+    const val MOVE_GAIN_STARS = 1.5f
 
     /** L'entrée « Où surfer ? » apparaît d'elle-même quand au moins [NEEDED_DAYS] jours de la semaine sont sous [LOW_STARS] étoiles. */
     const val LOW_STARS = 2.0f
@@ -107,7 +111,7 @@ object WhereToSurf {
         if (day.size < 6) return null
         val score = dayQualityScore(day, spot.facing, NEUTRAL_LEVEL, null) ?: return null
         val bestHour = day.maxByOrNull { calculateSlotRating(it, spot.facing, NEUTRAL_LEVEL, bandShift = 0).score } ?: return null
-        return SpotDay(spot, score, starsForScore(score, 0), bestHour.waveHeight, bestHour.wavePeriod, bestHour.windSpeedKmh, bestHour.windDirectionStr)
+        return SpotDay(spot, score, starsForScore(score, 0), bestHour.waveHeight, bestHour.wavePeriod, bestHour.windSpeedKmh, bestHour.windDirectionStr, bestHour)
     }
 
     /**
@@ -132,9 +136,39 @@ object WhereToSurf {
                     if (rating.tooBig) null else HourPick(h, spot, rating.score, hour.waveHeight)
                 }.maxByOrNull { it.score }
             }
-            DayPick(date, here, best, worth, perSpot.take(5), hours)
+            DayPick(date, here, best, worth, perSpot.take(5), hours, home?.let { (spot, hrs) -> spotDay(spot, hrs, date) })
         }
         return WhereResult(radiusKm, days, scans.size, scans, home)
+    }
+
+    /** Temps de route estimé : distance × 1,3 (routes) à 80 km/h. Assez juste pour comparer, pas pour partir. */
+    fun routeText(km: Int): String {
+        val minutes = (km * 1.3 / 80.0 * 60).roundToInt()
+        return if (minutes < 60) "$minutes min" else "${minutes / 60} h ${(minutes % 60).toString().padStart(2, '0')}"
+    }
+
+    /** La raison d'une note, en mots : « 1,8 m à 12 s de face, vent offshore 10 km/h ». */
+    fun reasonFor(day: SpotDay): String {
+        val h = day.bestHour
+        val swell = h?.let { swellSide(it.waveDirection.toDouble(), day.spot.facing) }
+        val wind = h?.let { windCategoryFor(it.windDirectionStr, day.spot.facing) } ?: "side"
+        return buildString {
+            append(formatDecimal(day.heightM, 1).replace('.', ','))
+            append(" m à ${day.periodS.roundToInt()} s")
+            if (swell != null) append(" $swell")
+            append(", vent $wind ${day.windKmh} km/h")
+        }
+    }
+
+    private fun swellSide(swellDir: Double, facing: Int?): String? {
+        if (facing == null) return null
+        val d = angularDifference(swellDir, facing.toDouble())
+        return when {
+            d < 30 -> "de face"
+            d < 60 -> "de côté"
+            d < 90 -> "rasante"
+            else -> "abritée de la houle"
+        }
     }
 
     /** Le sens à prendre pour aller de [fromLat],[fromLon] à [toLat],[toLon], en deux mots (« au sud », « au nord-est »). */
