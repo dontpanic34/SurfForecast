@@ -3,6 +3,7 @@
 Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne sur `web` (1.0.333) et `unified` (voir le journal).
 
 ## À trancher / valider par le propriétaire
+- **Ce que donne la houle au bord** (13 novembre, maquette `docs/maquettes/houle-au-bord.html`, demandé dans l'encart Houle) : go ou retouches. À trancher : la taille au bord par Komar et Gaughan (écartée en octobre, trop haute à Montalivet) : telle quelle, corrigée (ex. × 0,75), ou pas de taille (seulement le rythme et la forme) ; type de spot à remplir pour chaque spot du catalogue.
 - **Où surfer ?, version lisible** (13 novembre, maquette `docs/maquettes/ou-surfer-lisible.html`) : go ou retouches ; seuil « ça vaut le déplacement » (proposé : 1,5 étoile de plus qu'ici et au moins 3) ; carte en premier (demandé) ; noms des spots sous la carte ou écrits dessus ; les jours en pastilles remplacent les lignes par jour de l'option B.
 - **Écran webcam refait** (13 novembre) : à vérifier sur téléphone (plein écran en tournant le téléphone, lecteur Viewsurf qui démarre seul, vraies vignettes, pastille « ☆ Ajouter »). Droits d'utilisation du lecteur Viewsurf dans l'appli publique à vérifier (conditions Viewsurf ou leur poser la question). Page webcam sur le site : seulement si le propriétaire rouvre l'intégration (iframe).
 - **Boussole « Où surfer ? »** (12 novembre, option A codée sur la branche) : à juger à l'usage, notamment si le point orange revient trop souvent.
@@ -40,7 +41,6 @@ Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne s
 - **Windguru, Windy, Yadusurf** : pas lisibles automatiquement ; relever à la main si on veut les comparer.
 
 ## Idées gardées
-- **« Ce que donne la houle au bord »** (13 novembre, vu dans une vidéo de Rider Report, à intégrer plus tard, pas maintenant) : outil où l'on choisit le type de spot (beach break à bancs marqués, etc.), la hauteur au large et la période, et qui donne : taille des séries au bord, un texte (« séries très espacées, toutes les 15 à 25 min, 6 à 10 vagues par série, presque rien entre les séries, vagues creuses »), une grille (vagues par série, attente entre séries, vagues pendant l'accalmie, durée d'une série, plus grosses vagues, énergie par vague) et un graphique « à quoi ressemblent 30 minutes au bord ». Leur calcul : Hb = 0,39 g^0,2 (T Hs²)^0,4 (Komar et Gaughan) corrigé de la pente (Weggel), type de vague par l'Iribarren ξ = tanβ / √(Hs/L0), énergie E = ρ g² Hs² T² / 32π. **Attention** : `DECISIONS.md` écarte l'affichage d'une taille au déferlement par Komar et Gaughan (tailles trop hautes sur nos côtes, démenties par l'expérience du propriétaire) ; à rediscuter avant de coder. Le rythme des séries (groupes de vagues selon la période) et le graphique des 30 minutes ne dépendent pas de cette formule. Bonne place possible : un outil de la section « Comprendre ».
 - « Tu surfes sur quoi ? » en choix multiple dans le matériel.
 - Nettoyer les anciens réglages inutilisés (`volume_level_idx`, `body_height_cm`, `body_fitness`, `stars_offset`, `show_*_card`).
 - Nuages : transitions plus douces si un défaut revient.

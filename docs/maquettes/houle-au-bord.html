@@ -1,0 +1,306 @@
+<title>Houle au bord</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Mise en page : un téléphone (encart Houle puis feuille « Ce que ça donne au bord ») à côté des notes et des formules. Couleurs = AppColors. */
+:root{
+  --page:#EDF1F6; --bg:#C5D3E2; --card:#D9E3EE; --card2:#C9D6E4; --ink:#0C2433; --muted:#5A7686; --line:#B9C8D8;
+  --accent:#134B73; --accent-ink:#fff; --chip:#D9E3EE; --swell:#1565C0; --bar:#2C6C8A; --barhi:#1E9E8A; --warn:#C25E00;
+  --frame:#0C1820; --scrim:rgba(0,0,0,.45);
+  --f-text:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#0B121A; --bg:#0D1B22; --card:#14262F; --card2:#1B333D; --ink:#ECEFF1; --muted:#90A4AE; --line:#23404C;
+  --accent:#7FC3E6; --accent-ink:#06202C; --chip:#1B333D; --swell:#4FC3F7; --bar:#3E7F96; --barhi:#4FD1C5; --warn:#FF9A1F; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --page:#0B121A; --bg:#0D1B22; --card:#14262F; --card2:#1B333D; --ink:#ECEFF1; --muted:#90A4AE; --line:#23404C;
+  --accent:#7FC3E6; --accent-ink:#06202C; --chip:#1B333D; --swell:#4FC3F7; --bar:#3E7F96; --barhi:#4FD1C5; --warn:#FF9A1F; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--page);color:var(--ink);font-family:var(--f-text);margin:0;line-height:1.4;
+  padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:18px}
+h1{font-size:22px;margin:0;text-wrap:balance}
+.lead{color:var(--muted);font-size:14px;margin:4px 0 0;max-width:72ch}
+.stage{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:380px;max-width:100%;height:800px;border-radius:34px;background:var(--frame);padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);flex:none}
+.screen{position:relative;width:100%;height:100%;border-radius:26px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+.status{height:24px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:11.5px;font-weight:700}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:6px 12px 18px;display:flex;flex-direction:column;gap:12px}
+.scroll>*{flex:none}
+.scroll::-webkit-scrollbar{width:0}
+.ghost{background:var(--card);border-radius:14px;height:90px;opacity:.55;display:grid;place-items:center;color:var(--muted);font-size:12px}
+
+/* encart Houle */
+.card{background:var(--card);border-radius:14px;padding:12px}
+.card h3{margin:0 0 2px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.card h3 small{font-weight:500;font-size:12px;color:var(--muted)}
+.now{display:flex;align-items:baseline;gap:8px;margin:4px 0 10px}
+.now b{font-size:26px;font-variant-numeric:tabular-nums}
+.now span{color:var(--muted);font-size:13px}
+.hours{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+.hours::-webkit-scrollbar{height:0}
+.h{all:unset;cursor:pointer;flex:none;width:48px;border-radius:10px;padding:6px 0;text-align:center;display:grid;gap:2px;font-variant-numeric:tabular-nums}
+.h small{font-size:11px;color:var(--muted)}
+.h b{font-size:13px}
+.h span{font-size:11px;color:var(--muted)}
+.h[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.h[aria-pressed="true"] small,.h[aria-pressed="true"] span{color:var(--accent-ink)}
+.h:focus-visible,.btn:focus-visible,.x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.entry{all:unset;cursor:pointer;margin-top:10px;display:flex;align-items:center;gap:10px;background:var(--card2);border-radius:12px;padding:10px 12px;width:100%;box-sizing:border-box}
+.entry .ic{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.entry div{flex:1;min-width:0}
+.entry b{display:block;font-size:13.5px}
+.entry span{font-size:12px;color:var(--muted)}
+
+/* feuille */
+.sheetwrap{position:absolute;inset:0;background:var(--scrim);display:flex;align-items:flex-end}
+.sheet{background:var(--bg);width:100%;height:90%;border-radius:20px 20px 0 0;display:flex;flex-direction:column}
+.sh-head{flex:none;padding:8px 14px 6px;display:grid;gap:6px}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);justify-self:center}
+.sh-title{display:flex;align-items:flex-start;gap:8px}
+.sh-title div{flex:1}
+.sh-title b{font-size:17px;display:block}
+.sh-title span{font-size:12.5px;color:var(--muted)}
+.x{all:unset;cursor:pointer;width:32px;height:32px;display:grid;place-items:center;border-radius:50%}
+.sh-body{flex:1;min-height:0;overflow-y:auto;padding:0 14px 18px;display:flex;flex-direction:column;gap:10px}
+.sh-body>*{flex:none}
+.sh-body::-webkit-scrollbar{width:0}
+.src{display:flex;gap:6px}
+.src button{all:unset;cursor:pointer;flex:1;text-align:center;padding:7px 0;border-radius:99px;background:var(--chip);font-size:12.5px;font-weight:700}
+.src button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.box{background:var(--card);border-radius:14px;padding:12px;display:grid;gap:8px}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px}
+.row b{font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+select{background:var(--card2);border:0;border-radius:10px;padding:8px 10px;font-size:13.5px;width:100%}
+.big{display:flex;align-items:baseline;gap:8px}
+.big b{font-size:34px;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+.big span{font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;padding:3px 9px;border-radius:99px;background:var(--card2);font-size:11.5px;font-weight:700}
+.story{border-left:3px solid var(--accent);padding:2px 0 2px 10px;font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.grid div{padding:9px 10px;border-top:1px solid var(--line)}
+.grid div:nth-child(-n+2){border-top:0}
+.grid div:nth-child(odd){border-right:1px solid var(--line)}
+.grid small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.grid b{font-size:17px;font-variant-numeric:tabular-nums}
+.grid b i{font-style:normal;font-size:11px;font-weight:500;color:var(--muted);margin-left:2px}
+.chart svg{display:block;width:100%;height:auto}
+.foot{font-size:11px;color:var(--muted)}
+.warnline{font-size:12px;color:var(--warn)}
+
+.notes{flex:1 1 380px;min-width:0;display:grid;gap:12px;align-content:start}
+.nbox{background:var(--card);border-radius:16px;padding:14px 16px;display:grid;gap:8px}
+.nbox h2{margin:0;font-size:15px}
+.nbox ul{margin:0;padding-left:18px;display:grid;gap:6px;font-size:13.5px}
+code{font-size:12.5px}
+.mut{color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Ce que donne la houle au bord</h1>
+    <p class="lead">Maquette interactive. La feuille est ouverte : ferme-la pour voir l'encart Houle, touche une heure, puis « Ce que ça donne au bord ». Ou passe sur « Régler à la main ». Les heures sont des exemples.</p>
+  </header>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="screen">
+      <div class="status"><span>14:02</span><span>62 %</span></div>
+      <div class="scroll">
+        <div class="ghost">Encart Maintenant</div>
+        <div class="card">
+          <h3>Houle <small>Montalivet</small></h3>
+          <div class="now"><b id="nowH">1,0 m</b><span id="nowT">12 s · ouest</span></div>
+          <div class="hours" id="hours"></div>
+          <button class="entry" id="open">
+            <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 15c3-4 6-4 9 0s6 4 9 0"/><path d="M2 20h20"/></svg></span>
+            <div><b>Ce que ça donne au bord</b><span id="entrySub">à 14 h : séries, taille au bord, 30 minutes au bord</span></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div class="ghost">Encart Vent</div>
+        <div class="ghost">Encart Marée</div>
+      </div>
+
+      <div class="sheetwrap" id="sheetwrap" hidden>
+        <div class="sheet" role="dialog" aria-label="Ce que donne la houle au bord">
+          <div class="sh-head">
+            <div class="grab"></div>
+            <div class="sh-title">
+              <div><b>Ce que ça donne au bord</b><span id="shSub">Montalivet · aujourd'hui 14 h</span></div>
+              <button class="x" id="close" aria-label="Fermer"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+            <div class="src">
+              <button id="srcHour" aria-pressed="true">Heure choisie</button>
+              <button id="srcHand" aria-pressed="false">Régler à la main</button>
+            </div>
+          </div>
+          <div class="sh-body">
+            <div class="box">
+              <div class="lbl">Houle au large</div>
+              <div id="handCtl" hidden>
+                <div class="row"><span>Hauteur</span><b id="hsV"></b></div>
+                <input type="range" id="hs" min="0.2" max="4" step="0.1" aria-label="Hauteur au large">
+                <div class="row"><span>Période</span><b id="tV"></b></div>
+                <input type="range" id="t" min="5" max="20" step="1" aria-label="Période">
+              </div>
+              <div id="hourCtl" class="row"><span id="hourLine"></span></div>
+              <div class="row"><span>Type de spot</span></div>
+              <select id="type" aria-label="Type de spot">
+                <option value="flat">Plage douce, bancs peu marqués</option>
+                <option value="bars" selected>Beach break, bancs marqués</option>
+                <option value="reef">Récif ou pointe</option>
+              </select>
+              <span class="foot" id="typeNote">Réglé d'après le spot ; modifiable.</span>
+            </div>
+
+            <div class="box">
+              <div class="lbl">Taille des séries au bord</div>
+              <div class="big"><b id="hb"></b><span id="hbSub"></span></div>
+              <div><span class="tag" id="kind"></span> <span class="tag" id="groundswell"></span></div>
+              <div class="story" id="story"></div>
+              <div class="grid" id="grid"></div>
+            </div>
+
+            <div class="box chart">
+              <div class="lbl">À quoi ressemblent 30 minutes au bord</div>
+              <svg id="chart" viewBox="0 0 320 130" role="img" aria-label="Hauteur des vagues sur 30 minutes"></svg>
+              <span class="foot">Un exemple de 30 minutes : les séries ne tombent jamais pile à l'heure, l'écart varie d'une fois à l'autre.</span>
+            </div>
+            <span class="warnline">Taille au bord : formule de Komar et Gaughan, celle de Rider Report. Notre essai d'octobre la trouvait trop haute à Montalivet (voir les notes).</span>
+          </div>
+        </div>
+      </div>
+    </div></div>
+
+    <div class="notes">
+      <div class="nbox">
+        <h2>Où ça se place dans l'appli</h2>
+        <ul>
+          <li><b>Dans l'encart Houle</b> : toucher une heure la sélectionne (comme aujourd'hui), et la ligne « Ce que ça donne au bord » en dessous ouvre la feuille pour cette heure-là. Exemple : 14 h, 1,0 m à 12 s, calcul fait pour 1,0 m à 12 s.</li>
+          <li><b>« Régler à la main »</b> dans la feuille : deux curseurs (hauteur, période) pour tester n'importe quelle houle, comme l'outil de Rider Report.</li>
+          <li><b>Type de spot</b> réglé d'après le spot (Montalivet : beach break à bancs marqués), modifiable. Il change la taille au bord et la forme de la vague.</li>
+          <li><b>Le résultat</b> : la taille des séries, une phrase simple, la grille des chiffres et le graphique des 30 minutes.</li>
+        </ul>
+      </div>
+      <div class="nbox">
+        <h2>Les formules (les mêmes que Rider Report)</h2>
+        <ul>
+          <li>Taille au bord : <code>Hb = 0,39 · g^0,2 · (T · Hs²)^0,4</code> (Komar et Gaughan), multipliée par un facteur de pente (plage douce 0,92 ; bancs marqués 1,07 ; récif 1,15).</li>
+          <li>Forme de la vague (Iribarren) : <code>ξ = tanβ / √(Hs / L0)</code>, <code>L0 = g·T² / 2π</code>. Sous 0,5 : glissante ; de 0,5 à 3,3 : creuse ; au-dessus : gonflée.</li>
+          <li>Énergie par vague et par mètre de crête : <code>E = ρ · g² · Hs² · T² / 32π</code>.</li>
+          <li>Séries : nombre de vagues et attente selon la période (ordres de grandeur d'observation), durée = vagues × période ; plus grosses ≈ 1,25 × Hb ; accalmie ≈ 0,25 × Hb en houle longue.</li>
+          <li class="mut">Vérification : 0,3 m à 18 s donne 0,8 m au bord, 6 à 10 vagues, 15 à 25 min, 108 à 180 s, 29 kJ, comme dans la vidéo.</li>
+        </ul>
+      </div>
+      <div class="nbox">
+        <h2>À trancher</h2>
+        <ul>
+          <li><b>La taille au bord.</b> En octobre, tu avais écarté cette formule : 1,3 m à 14 s donne 2,2 m, alors que tu vois plutôt 1,6 m. Trois choix : la garder telle quelle (comme Rider Report), la corriger d'après ton expérience (par exemple × 0,75 sur nos plages), ou n'afficher que le rythme des séries et la forme de la vague, sans taille.</li>
+          <li>Le type de spot : à remplir pour chaque spot du catalogue (proposition par défaut : beach break à bancs marqués).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const HOURS=[["8 h",0.9,11],["10 h",0.9,12],["12 h",1.0,12],["14 h",1.0,12],["16 h",1.1,13],["18 h",1.2,13],["20 h",1.2,14]];
+const TYPES={flat:{k:0.92,tan:0.02,label:"Plage douce : la vague casse loin, en douceur."},
+             bars:{k:1.07,tan:0.05,label:"Beach break avec bancs bien formés : la vague casse sur le banc, plus raide que la plage."},
+             reef:{k:1.15,tan:0.10,label:"Récif ou pointe : fond qui remonte vite, vague qui se creuse."}};
+let st={hour:3,src:"hour",hs:1.0,t:12,type:"bars",open:false};
+const $=id=>document.getElementById(id);
+const f1=v=>v.toFixed(1).replace(".",",");
+const g=9.81,rho=1025;
+
+function series(T){
+  if(T<8) return {n:[2,3],w:[2,4],lullK:0.6,name:"Mer du vent"};
+  if(T<10) return {n:[3,5],w:[4,7],lullK:0.5,name:"Houle courte"};
+  if(T<12) return {n:[4,6],w:[6,10],lullK:0.45,name:"Houle moyenne"};
+  if(T<14) return {n:[5,7],w:[8,12],lullK:0.4,name:"Houle longue"};
+  if(T<16) return {n:[6,8],w:[10,18],lullK:0.3,name:"Groundswell long"};
+  return {n:[6,10],w:[15,25],lullK:0.25,name:"Groundswell très long"};
+}
+function compute(Hs,T,type){
+  const ty=TYPES[type];
+  const hb=0.39*Math.pow(g,0.2)*Math.pow(T*Hs*Hs,0.4)*ty.k;
+  const L0=g*T*T/(2*Math.PI);
+  const xi=ty.tan/Math.sqrt(Hs/L0);
+  const E=rho*g*g*Hs*Hs*T*T/(32*Math.PI)/1000;
+  const s=series(T);
+  return {hb,xi,E,s,lo:hb*0.88,hi:hb*1.12,max:hb*1.25,lull:hb*s.lullK,dur:[s.n[0]*T,s.n[1]*T]};
+}
+function kindOf(xi){return xi<0.5?["glissante","Vagues molles qui déroulent doucement, faciles pour la mousse."]:xi<=3.3?["creuse","Vagues creuses et puissantes, qui peuvent tuber."]:["gonflée","La vague gonfle et s'écrase au bord sans vraiment déferler."]}
+function storyOf(r){
+  const [a,b]=r.s.w, [n1,n2]=r.s.n, [k,kt]=kindOf(r.xi);
+  const space=a>=15?"très, très espacées":a>=10?"bien espacées":a>=6?"régulières":"rapprochées";
+  const between=r.lull<0.35?"presque rien entre les séries : il faut être patient":`des vagues de ${f1(r.lull)} m entre les séries`;
+  return `Séries ${space}, toutes les ${a} à ${b} minutes. Elles cassent entre ${f1(r.lo)} et ${f1(r.hi)} m, voire ${f1(r.max)} m pour les plus grosses, avec ${n1} à ${n2} vagues par série et ${between}. ${kt}`;
+}
+function drawChart(r,T){
+  const W=320,H=130,l=26,b=18,top=8, maxY=Math.max(1,Math.ceil(r.max*2)/2);
+  const x=s=>l+(s/1800)*(W-l-4), y=v=>H-b-(v/maxY)*(H-b-top);
+  let out="";
+  [0,maxY/2,maxY].forEach(v=>{out+=`<line x1="${l}" x2="${W-4}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${l-4}" y="${y(v)+3}" text-anchor="end" font-size="8" fill="var(--muted)">${f1(v)} m</text>`});
+  [0,5,10,15,20,25,30].forEach(m=>{out+=`<text x="${x(m*60)}" y="${H-5}" text-anchor="middle" font-size="8" fill="var(--muted)">${m} min</text>`});
+  // graine fixe pour un dessin stable
+  let seed=Math.round(r.hb*100)+T*7; const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280};
+  const gap=(r.s.w[0]+r.s.w[1])/2*60, n=Math.round((r.s.n[0]+r.s.n[1])/2);
+  let t=gap*0.25, nextSeries=t, bw=Math.max(1.2,(W-l-4)*T/1800*0.7);
+  while(t<1800){
+    if(t>=nextSeries && t<nextSeries+n*T){
+      const i=Math.floor((t-nextSeries)/T), mid=(n-1)/2, shape=1-Math.abs(i-mid)/(mid+1)*0.35;
+      const v=r.lo+(r.max-r.lo)*shape*(0.75+rnd()*0.25);
+      out+=`<rect x="${x(t)-bw/2}" y="${y(v)}" width="${bw}" height="${y(0)-y(v)}" rx="1" fill="var(--barhi)"/>`;
+    } else {
+      if(t>=nextSeries+n*T) nextSeries+=gap*(0.8+rnd()*0.4);
+      const v=r.lull*(0.6+rnd()*0.5);
+      out+=`<rect x="${x(t)-bw/2}" y="${y(v)}" width="${bw}" height="${y(0)-y(v)}" rx="1" fill="var(--bar)" opacity=".7"/>`;
+    }
+    t+=T;
+  }
+  $("chart").innerHTML=out;
+}
+function render(){
+  $("hours").innerHTML=HOURS.map(([h,hs,t],i)=>`<button class="h" aria-pressed="${i===st.hour}" data-h="${i}"><small>${h}</small><b>${f1(hs)} m</b><span>${t} s</span></button>`).join("");
+  const [hl,hhs,ht]=HOURS[st.hour];
+  $("nowH").textContent=`${f1(hhs)} m`; $("nowT").textContent=`${ht} s · ouest`;
+  $("entrySub").textContent=`à ${hl} : séries, taille au bord, 30 minutes au bord`;
+  $("sheetwrap").hidden=!st.open;
+  if(!st.open) return;
+  const hand=st.src==="hand";
+  $("srcHour").setAttribute("aria-pressed",!hand); $("srcHand").setAttribute("aria-pressed",hand);
+  $("handCtl").hidden=!hand; $("hourCtl").hidden=hand;
+  const Hs=hand?st.hs:hhs, T=hand?st.t:ht;
+  $("hs").value=st.hs; $("t").value=st.t; $("hsV").textContent=`${f1(st.hs)} m`; $("tV").textContent=`${st.t} s`;
+  $("hourLine").innerHTML=`Aujourd'hui ${hl} : <b>${f1(hhs)} m à ${ht} s</b>`;
+  $("shSub").textContent=hand?"Montalivet · houle réglée à la main":`Montalivet · aujourd'hui ${hl}`;
+  $("typeNote").textContent=TYPES[st.type].label;
+  const r=compute(Hs,T,st.type), [k]=kindOf(r.xi);
+  $("hb").textContent=`≈ ${f1(r.hb)} m`;
+  $("hbSub").textContent=`${f1(Hs)} m à ${T} s au large`;
+  $("kind").textContent=`Vague ${k}`; $("groundswell").textContent=r.s.name;
+  $("story").textContent=storyOf(r);
+  $("grid").innerHTML=[
+    ["Vagues par série",`${r.s.n[0]} à ${r.s.n[1]}`,""],["Attente entre séries",`${r.s.w[0]} à ${r.s.w[1]}`,"min"],
+    ["Vagues pendant l'accalmie",f1(r.lull),"m"],["Durée d'une série",`${r.dur[0]} à ${r.dur[1]}`,"s"],
+    ["Plus grosses vagues",f1(r.max),"m"],["Énergie par vague",Math.round(r.E),"kJ"]
+  ].map(([a,b,u])=>`<div><small>${a}</small><b>${b}<i>${u}</i></b></div>`).join("");
+  drawChart(r,T);
+}
+document.addEventListener("click",e=>{
+  const h=e.target.closest("[data-h]");if(h){st.hour=+h.dataset.h;if(st.open)st.src="hour";render();return}
+  if(e.target.closest("#open")){st.open=true;st.src="hour";render();return}
+  if(e.target.closest("#close")||e.target.id==="sheetwrap"){st.open=false;render();return}
+  if(e.target.closest("#srcHour")){st.src="hour";render();return}
+  if(e.target.closest("#srcHand")){const [,hs,t]=HOURS[st.hour];st.hs=hs;st.t=t;st.src="hand";render();return}
+});
+$("hs").addEventListener("input",e=>{st.hs=+e.target.value;render()});
+$("t").addEventListener("input",e=>{st.t=+e.target.value;render()});
+$("type").addEventListener("change",e=>{st.type=e.target.value;render()});
+// ouvert d'emblée pour que la maquette montre le résultat
+st.open=true;render();
+</script>
