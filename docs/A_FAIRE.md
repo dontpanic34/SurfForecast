@@ -3,6 +3,7 @@
 Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne sur `web` (1.0.333) et `unified` (voir le journal).
 
 ## À trancher / valider par le propriétaire
+- **Où surfer ?, version lisible** (13 novembre, maquette `docs/maquettes/ou-surfer-lisible.html`) : go ou retouches ; seuil « ça vaut le déplacement » (proposé : 1,5 étoile de plus qu'ici et au moins 3) ; carte repliée ou dépliée par défaut.
 - **Écran webcam refait** (13 novembre) : à vérifier sur téléphone (plein écran en tournant le téléphone, lecteur Viewsurf qui démarre seul, vraies vignettes, pastille « ☆ Ajouter »). Droits d'utilisation du lecteur Viewsurf dans l'appli publique à vérifier (conditions Viewsurf ou leur poser la question). Page webcam sur le site : seulement si le propriétaire rouvre l'intégration (iframe).
 - **Boussole « Où surfer ? »** (12 novembre, option A codée sur la branche) : à juger à l'usage, notamment si le point orange revient trop souvent.
 - **Flèche 3 et icône de l'eau** : à juger à l'écran (l'icône de l'eau a été redessinée : thermomètre plein sur deux vagues).
