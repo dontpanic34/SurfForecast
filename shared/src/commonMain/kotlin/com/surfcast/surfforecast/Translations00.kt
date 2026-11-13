@@ -35,7 +35,6 @@ internal val TR_PART_0: Map<String, List<String>> = mapOf(
     "Onshore dégrade la vague" to listOf("Onshore degrades the wave", "Onshore verschlechtert die Welle", "Onshore verslechtert de golf", "El onshore degrada la ola"),
     "Après-demain et la suite" to listOf("The day after tomorrow and beyond", "Übermorgen und danach", "Overmorgen en verder", "Pasado mañana y el resto"),
     "réussir chaque take-off" to listOf("nail every take-off", "jedes Take-off meistern", "elke take-off halen", "clavar cada take-off"),
-    "Webcam Médoc Atlantique" to listOf("Médoc Atlantique webcam", "Webcam Médoc Atlantique", "Webcam Médoc Atlantique", "Webcam Médoc Atlantique"),
     "3. Direction et clapot" to listOf("3. Direction and chop", "3. Richtung und Windwellen", "3. Richting en korte golven", "3. Dirección y mar de viento"),
     "Indifférent\nsans effet" to listOf("Doesn't matter\nno effect", "Egal\nkein Effekt", "Maakt niet uit\ngeen effect", "Indiferente\nsin efecto"),
     "Vérifier avec la bouée" to listOf("Check with the buoy", "Mit der Boje prüfen", "Controleer met de boei", "Comprobar con la boya"),

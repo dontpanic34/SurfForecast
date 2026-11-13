@@ -14,7 +14,6 @@ data class SurfWebcamOption(
         get() = when {
             isViewsurfPlayer -> "Viewsurf"
             "gosurf.fr" in pageUrl -> "GoSurf"
-            "medoc-atlantique.com" in pageUrl -> "Médoc Atlantique"
             else -> pageUrl.substringAfter("://").substringBefore('/').removePrefix("www.")
         }
 
@@ -44,8 +43,7 @@ object SurfWebcamHelper {
             listOf(
                 SurfWebcamOption("Montalivet", "https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage"),
                 SurfWebcamOption("Montalivet Nord", "https://pv.viewsurf.com/1704/Vendays-Montalivet-Plage?i=NjU5Njp1bmRlZmluZWQ"),
-                SurfWebcamOption("Plage Centrale (GoSurf)", "https://gosurf.fr/webcam/fr/57/Montalivet-Plage-Centrale"),
-                SurfWebcamOption("Webcam Médoc Atlantique", "https://medoc-atlantique.com/webcams/webcam-montalivet/")
+                SurfWebcamOption("Plage Centrale (GoSurf)", "https://gosurf.fr/webcam/fr/57/Montalivet-Plage-Centrale")
             )
         ),
         "Hourtin" to SpotWebcams(
@@ -368,6 +366,55 @@ object SurfWebcamHelper {
      * Spots équipés de webcam autour de [currentSpotName], du plus proche au plus loin (le spot lui-même exclu),
      * dans un rayon de [maxKm] km, au plus [limit] spots. Liste vide si le spot est inconnu.
      */
+    /**
+     * Adresse de l'image la plus récente d'une caméra Viewsurf, lue dans la page de son lecteur [html] :
+     * la vue désignée par « ?i= » (identifiant en base64, ex. « 6596:undefined ») dans [pageUrl], sinon la vue
+     * par défaut, sinon l'image de partage (og:image). Image en grand (« poster ») si elle existe, sinon la vignette.
+     */
+    fun viewsurfImageFromPlayerHtml(html: String, pageUrl: String): String? {
+        fun abs(u: String) = if (u.startsWith("//")) "https:$u" else u
+        val wantedId = pageUrl.substringAfter("?i=", "").takeIf { it.isNotEmpty() }?.let { decodeBase64Id(it) }
+        val items = Regex("\"id\":\\s*\"(\\d+)\"").findAll(html).map { it.groupValues[1] to it.range.first }.toList()
+        fun imageOfItemAt(index: Int): String? {
+            val start = items[index].second
+            val end = items.getOrNull(index + 1)?.second ?: html.length
+            val block = html.substring(start, end)
+            val poster = Regex("\"poster\":\\s*\"([^\"]+)\"").find(block)?.groupValues?.get(1)
+            val thumb = Regex("\"thumbnail\":\\s*\"([^\"]+)\"").find(block)?.groupValues?.get(1)
+            return (poster ?: thumb)?.let(::abs)
+        }
+        if (wantedId != null) {
+            val i = items.indexOfFirst { it.first == wantedId }
+            if (i >= 0) imageOfItemAt(i)?.let { return it }
+        }
+        val defaultIndex = items.indices.firstOrNull { i ->
+            val end = items.getOrNull(i + 1)?.second ?: html.length
+            Regex("\"default\":\\s*true").containsMatchIn(html.substring(items[i].second, end))
+        }
+        if (defaultIndex != null) imageOfItemAt(defaultIndex)?.let { return it }
+        return Regex("property=\"og:image\"\\s+content=\"([^\"]+)\"").find(html)?.groupValues?.get(1)?.let(::abs)
+    }
+
+    /** « NjU5Njp1bmRlZmluZWQ » → « 6596 » (partie avant les deux-points, chiffres seulement). */
+    internal fun decodeBase64Id(value: String): String? {
+        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        val bytes = mutableListOf<Byte>()
+        var buffer = 0
+        var bits = 0
+        for (c in value.trimEnd('=')) {
+            val v = alphabet.indexOf(c)
+            if (v < 0) return null
+            buffer = (buffer shl 6) or v
+            bits += 6
+            if (bits >= 8) {
+                bits -= 8
+                bytes.add(((buffer shr bits) and 0xFF).toByte())
+            }
+        }
+        val text = bytes.toByteArray().decodeToString()
+        return text.substringBefore(':').takeIf { it.isNotEmpty() && it.all(Char::isDigit) }
+    }
+
     fun camSpotsAround(currentSpotName: String, maxKm: Int = 150, limit: Int = 8): List<NearbyCamSpot> {
         val current = SurfDatabase.findSpotByName(currentSpotName) ?: return emptyList()
         return SurfDatabase.getAllSpots()
