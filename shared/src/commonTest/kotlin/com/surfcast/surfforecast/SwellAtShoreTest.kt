@@ -30,7 +30,7 @@ class SwellAtShoreTest {
 
     @Test
     fun longPeriodSmallSwellGivesRareSets() {
-        // Cas de la vidéo de Rider Report (0,3 m à 18 s) : séries très espacées, 6 à 10 vagues, 108 à 180 s, 29 kJ.
+        // Petite houle très longue (0,3 m à 18 s) : séries très espacées, 6 à 10 vagues, 108 à 180 s, 29 kJ.
         val r = SwellAtShoreCalc.compute(0.3, 18.0, ShoreType.GENTLE)
         assertEquals(6..10, r.wavesPerSet)
         assertEquals(15..25, r.minutesBetweenSets)

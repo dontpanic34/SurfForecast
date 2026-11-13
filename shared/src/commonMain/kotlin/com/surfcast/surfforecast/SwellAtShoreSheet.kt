@@ -252,7 +252,7 @@ fun SwellAtShoreSheet(spotName: String, hour: HourlyUiModel, onDismiss: () -> Un
 private fun ShoreInfo() {
     val colors = MaterialTheme.colorScheme
     val lines = listOf(
-        "Taille au bord" to "la formule de Komar et Gaughan (hauteur et période au large), la même que Rider Report, calée sur ce qu'on voit à Montalivet : 1,3 m à 14 s au large donne 1,6 m au bord. Le type de spot l'ajuste : bancs marqués + 16 %, récif ou pointe + 25 %.",
+        "Taille au bord" to "la formule de Komar et Gaughan (hauteur et période au large), calée sur ce qu'on voit à Montalivet : 1,3 m à 14 s au large donne 1,6 m au bord. Le type de spot l'ajuste : bancs marqués + 16 %, récif ou pointe + 25 %.",
         "Repères" to "on surfe fléchi : 1,5 m au bord, c'est taille d'homme ; 2 m, overhead.",
         "Forme de la vague" to "selon la pente du fond et le rapport entre la hauteur et la période (nombre d'Iribarren) : glissante, creuse ou gonflée.",
         "Séries" to "plus la période est longue, plus les séries sont longues et espacées (ordres de grandeur d'observation). Durée d'une série = nombre de vagues × période.",

@@ -9,7 +9,7 @@ import kotlin.math.sqrt
  * « Ce que ça donne au bord » (maquette `docs/maquettes/houle-au-bord.html`, décision du 13 novembre dans `DECISIONS.md`).
  *
  * À partir de la houle au large (hauteur, période) et du type de spot :
- * - taille des séries au bord : formule de Komar et Gaughan (celle de Rider Report), calée sur l'observation du propriétaire
+ * - taille des séries au bord : formule de Komar et Gaughan, calée sur l'observation du propriétaire
  *   à Montalivet (plage douce : 1,3 m à 14 s = 1,6 m au bord), puis proportionnelle au type de spot ;
  * - forme de la vague par le nombre d'Iribarren ;
  * - rythme des séries selon la période (ordres de grandeur d'observation) ;
