@@ -59,7 +59,9 @@ fun SurfLogApp(
     // Hôte (Android) : lecteur webcam intégré (spot, fermeture, changement de spot) ; null = page web.
     liveCamOverlay: (@Composable (LiveCamContext) -> Unit)? = null,
     // Hôte (Android) : bandeau « nouvelle version disponible ».
-    updateBanner: (@Composable () -> Unit)? = null
+    updateBanner: (@Composable () -> Unit)? = null,
+    // Hôte (Android) : onglet « Vue satellite » (reçoit la fermeture) ; null = pas d'onglet.
+    satelliteScreen: (@Composable (onClose: () -> Unit) -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val controller = remember(prefs) {
@@ -91,7 +93,8 @@ fun SurfLogApp(
                         backup = backup,
                         install = install,
                         liveCamOverlay = liveCamOverlay,
-                        updateBanner = updateBanner
+                        updateBanner = updateBanner,
+                        satelliteScreen = satelliteScreen
                     )
                 }
             }

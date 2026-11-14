@@ -3,6 +3,7 @@
 Mis à jour le 13 octobre 2026 en fin de journée. Le lot du jour est en ligne sur `web` (1.0.333) et `unified` (voir le journal).
 
 ## À trancher / valider par le propriétaire
+- **Vue satellite** (codée le 14 novembre, Android seulement) : à vérifier sur téléphone (film, zoom, poser un point, « Ma position », coordonnées, photo) ; dire si le seuil de nuages (30 %) écarte trop ou pas assez de photos ; plus tard : le site, d'autres zones que Montalivet.
 - **Ce que ça donne au bord** (codé le 13 novembre) : à vérifier sur téléphone et sur le site (petite ligne de l'encart Houle, feuille, curseurs) ; dire si les tailles collent à ce que tu vois ; corriger les types de spot par défaut si besoin.
 - **Où surfer ? refait** (codé le 13 novembre) : à vérifier sur téléphone et sur le site (cadrage de la carte, lisibilité du bandeau, classement).
 - **Écran webcam refait** (13 novembre) : à vérifier sur téléphone (plein écran en tournant le téléphone, lecteur Viewsurf qui démarre seul, vraies vignettes, pastille « ☆ Ajouter »). Droits d'utilisation du lecteur Viewsurf dans l'appli publique à vérifier (conditions Viewsurf ou leur poser la question). Page webcam sur le site : seulement si le propriétaire rouvre l'intégration (iframe).

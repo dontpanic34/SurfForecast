@@ -74,7 +74,8 @@ class MainActivity : ComponentActivity() {
                         loadLiveConditions = cam.loadLiveConditions
                     )
                 },
-                updateBanner = { UpdateBanner() }
+                updateBanner = { UpdateBanner() },
+                satelliteScreen = { onClose -> SatelliteScreen(onClose = onClose) }
             )
         }
     }

@@ -74,10 +74,13 @@ fun MainScreen(
     // Hôte (Android) : lecteur webcam intégré. null = on ouvre la page de la webcam dans le navigateur.
     liveCamOverlay: (@Composable (LiveCamContext) -> Unit)? = null,
     // Hôte (Android) : bandeau « nouvelle version disponible » (APK).
-    updateBanner: (@Composable () -> Unit)? = null
+    updateBanner: (@Composable () -> Unit)? = null,
+    // Onglet « Vue satellite » (Android) ; null = pas d'onglet.
+    satelliteScreen: (@Composable (onClose: () -> Unit) -> Unit)? = null
 ) {
     var showLiveCam by remember { mutableStateOf(false) }
     var directWebcamSpot by remember { mutableStateOf<String?>(null) }
+    var showSatellite by remember { mutableStateOf(false) }
     // "clock" = heure pleine la plus proche (10h44 -> 11h), qui avance toute seule : avant,
     // "maintenant" n'était calculé qu'au chargement.
     var clock by remember { mutableStateOf(nearestHourLocalDateTime()) }
@@ -939,6 +942,7 @@ fun MainScreen(
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
+                                onSatellite = if (satelliteScreen != null) ({ showSatellite = true }) else null,
                                 coachTargets = coachTargets
                             )
                         }
@@ -948,6 +952,7 @@ fun MainScreen(
         }
             }
         }
+        if (showSatellite && satelliteScreen != null) satelliteScreen { showSatellite = false }
         if (showLiveCam && liveCamOverlay != null) {
             liveCamOverlay(
                 LiveCamContext(
@@ -1023,6 +1028,22 @@ fun ThemeToggleIcon(
                     cap = StrokeCap.Round
                 )
             }
+        }
+    }
+}
+
+/** Icône de l'onglet « Vue satellite » : un satellite (corps et deux panneaux) en biais. */
+@Composable
+fun SatelliteIcon(color: Color, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        rotate(-45f) {
+            drawRoundRect(color, topLeft = androidx.compose.ui.geometry.Offset(w * 0.38f, w * 0.36f), size = androidx.compose.ui.geometry.Size(w * 0.24f, w * 0.28f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.04f), style = stroke)
+            drawRect(color, topLeft = androidx.compose.ui.geometry.Offset(w * 0.04f, w * 0.41f), size = androidx.compose.ui.geometry.Size(w * 0.26f, w * 0.18f), style = stroke)
+            drawRect(color, topLeft = androidx.compose.ui.geometry.Offset(w * 0.70f, w * 0.41f), size = androidx.compose.ui.geometry.Size(w * 0.26f, w * 0.18f), style = stroke)
+            drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.30f, w * 0.5f), androidx.compose.ui.geometry.Offset(w * 0.38f, w * 0.5f), strokeWidth = w * 0.09f)
+            drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.62f, w * 0.5f), androidx.compose.ui.geometry.Offset(w * 0.70f, w * 0.5f), strokeWidth = w * 0.09f)
         }
     }
 }
@@ -1464,6 +1485,7 @@ private fun BottomNavBar(
     onSettings: () -> Unit,
     hasWebcam: Boolean,
     onWebcam: () -> Unit,
+    onSatellite: (() -> Unit)? = null,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
 ) {
     val colors = MaterialTheme.colorScheme
@@ -1497,7 +1519,8 @@ private fun BottomNavBar(
                 Item(tr("Webcam"), false, onWebcam) {
                     WebcamIcon(tint = if (hasWebcam) AppColors.WindMid else colors.onSurface.copy(alpha = 0.35f), size = 20.dp)
                 }
-                // Le « + » au centre exact de la barre (deux onglets de chaque côté) : une nouvelle session.
+                if (onSatellite != null) Item(tr("Satellite"), false, onSatellite) { SatelliteIcon(color = colors.onSurface, modifier = Modifier.size(20.dp)) }
+                // Le « + » : une nouvelle session.
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Box(
                         modifier = Modifier.coachTarget("add", coachTargets).size(42.dp).clip(CircleShape).background(colors.primary).clickable(onClick = onAddSession),
