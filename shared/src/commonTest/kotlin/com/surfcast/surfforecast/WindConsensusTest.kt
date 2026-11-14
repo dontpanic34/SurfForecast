@@ -31,8 +31,8 @@ class WindConsensusTest {
         )
         assertNotNull(c)
         assertEquals(30.0, c.speed, 0.01)
-        // Les deux plus fortes rafales : 71 et 70.
-        assertEquals(70.5, c.gust, 0.01)
+        // Règle du 14 novembre : milieu entre la médiane (56) et la moyenne des deux plus fortes (70,5). Avant : 70,5.
+        assertEquals(63.25, c.gust, 0.01)
         assertTrue(c.dir in 288.0..296.0)
         assertEquals("ECMWF+GFS+AROME HD+AROME+ARPEGE", c.source)
     }
