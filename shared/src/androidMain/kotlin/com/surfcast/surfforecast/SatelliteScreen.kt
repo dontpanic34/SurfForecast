@@ -47,6 +47,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -129,7 +135,8 @@ fun SatelliteScreen(onClose: () -> Unit) {
     var userPoints by remember { mutableStateOf(SatelliteModel.loadPoints(prefs)) }
     var selected by remember { mutableIntStateOf(prefs.getInt("sat_selected", 0)) }
     var months by remember { mutableIntStateOf(prefs.getInt("sat_months", 3)) }
-    var clearOnly by remember { mutableStateOf(prefs.getBoolean("sat_clear_only", true)) }
+    val clearOnly = true   // les photos nuageuses ne sont plus proposées (demande du 14 novembre)
+    var speed by remember { mutableIntStateOf(prefs.getInt("sat_speed", 1)) }
     var lowTideOnly by remember { mutableStateOf(false) }
     var currentDate by remember { mutableStateOf<String?>(null) }
     var playing by remember { mutableStateOf(false) }
@@ -162,17 +169,20 @@ fun SatelliteScreen(onClose: () -> Unit) {
         val point = points.getOrElse(selected) { points.first() }
         val frames = remember(idx, point, months, clearOnly, lowTideOnly) { SatelliteModel.frames(idx, point.lat, months, clearOnly, lowTideOnly) }
         val current = frames.firstOrNull { it.date == currentDate } ?: frames.lastOrNull()
-        val bitmaps = rememberStripBitmaps(frames, current)
+        val bitmaps = rememberStripBitmaps(frames, current, idx, point)
 
-        // Le film : une photo toutes les 0,9 s, de la plus ancienne à la plus récente.
-        LaunchedEffect(playing, frames) {
+        // Le film : une photo toutes les 2,2 s (lent), 1,4 s (normal) ou 0,8 s (rapide). On n'avance que quand la photo suivante est
+        // chargée : la photo en cours reste affichée, jamais d'écran noir entre deux dates.
+        LaunchedEffect(playing, frames, speed) {
             if (!playing) return@LaunchedEffect
             if (frames.size < 2) { playing = false; return@LaunchedEffect }
             if (current == frames.last()) currentDate = frames.first().date
             while (true) {
-                delay(900)
+                delay(longArrayOf(2200L, 1400L, 800L)[speed.coerceIn(0, 2)])
                 val k = frames.indexOfFirst { it.date == currentDate }
                 if (k < 0 || k >= frames.size - 1) { playing = false; break }
+                var waited = 0
+                while (bitmaps.get(frames[k + 1]) == null && waited < 100) { delay(100); waited++ }
                 currentDate = frames[k + 1].date
             }
         }
@@ -180,7 +190,7 @@ fun SatelliteScreen(onClose: () -> Unit) {
         if (placing) {
             PlacePointSheet(
                 index = idx,
-                strip = (idx.images.lastOrNull { !idx.isCloudy(it, idx.homeLat) } ?: idx.images.lastOrNull())?.let { bitmaps.get(it) },
+                strip = rememberFullStrip(idx.images.lastOrNull { !idx.isCloudy(it, idx.homeLat) } ?: idx.images.lastOrNull()),
                 existing = points,
                 onSave = { p ->
                     userPoints = userPoints + p
@@ -211,8 +221,11 @@ fun SatelliteScreen(onClose: () -> Unit) {
 
             // La photo du point.
             Box(Modifier.fillMaxWidth().aspectRatio(SatelliteSource.VIEW_COLS.toFloat() / SatelliteSource.VIEW_ROWS).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
-                val bmp = current?.let { bitmaps.get(it) }
-                if (bmp != null) PointView(bmp, idx, point) else if (current != null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
+                val crop = current?.let { bitmaps.get(it) }
+                var lastCrop by remember(point) { mutableStateOf<Crop?>(null) }
+                if (crop != null) lastCrop = crop
+                val shown = crop ?: lastCrop
+                if (shown != null) PointView(shown, idx, point) else if (current != null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
                 if (current != null) {
                     Column(
                         Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xC7061018)).padding(horizontal = 10.dp, vertical = 6.dp)
@@ -222,7 +235,7 @@ fun SatelliteScreen(onClose: () -> Unit) {
                     }
                 } else {
                     Text(
-                        "Aucune photo avec ces choix.\nEssaie « Toutes » ou une période plus longue.",
+                        "Aucune photo avec ces choix.\nEssaie une période plus longue.",
                         fontSize = 13.sp, color = Color.White, modifier = Modifier.align(Alignment.Center).padding(16.dp)
                     )
                 }
@@ -242,11 +255,15 @@ fun SatelliteScreen(onClose: () -> Unit) {
                         if (k >= 0) currentDate = frames[k].date
                     }
                     Column(Modifier.weight(1f)) {
-                        val all = remember(idx, months) { SatelliteModel.frames(idx, point.lat, months, clearOnly = false, lowTideOnly = false) }
-                        Timeline(all = all, shown = frames, current = current, months = months, last = idx.images.lastOrNull()) { playing = false; currentDate = it.date }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        val k = frames.indexOf(current).coerceAtLeast(0)
+                        if (frames.size > 1) Slider(
+                            value = k.toFloat(), valueRange = 0f..(frames.size - 1).toFloat(), steps = (frames.size - 2).coerceAtLeast(0),
+                            onValueChange = { playing = false; currentDate = frames[it.roundToInt().coerceIn(0, frames.size - 1)].date }
+                        )
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(frames.firstOrNull()?.let { shortDate(it) } ?: "", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
-                            Text("${frames.size} photo${if (frames.size > 1) "s" else ""}", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
+                            val loaded = bitmaps.loaded(frames)
+                            Text(if (loaded < frames.size) "chargement $loaded/${frames.size}" else "${k + 1} / ${frames.size}", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
                             Text(frames.lastOrNull()?.let { shortDate(it) } ?: "", fontSize = 10.5.sp, color = colors.onSurfaceVariant)
                         }
                     }
@@ -263,20 +280,18 @@ fun SatelliteScreen(onClose: () -> Unit) {
                     Chip(label, selected = months == m) { playing = false; months = m; prefs.putInt("sat_months", m) }
                 }
             }
-            OptionRow("Photos") {
-                Chip("Sans nuages", selected = clearOnly) { playing = false; clearOnly = true; prefs.putBoolean("sat_clear_only", true) }
-                Chip("Toutes", selected = !clearOnly) { playing = false; clearOnly = false; prefs.putBoolean("sat_clear_only", false) }
+            OptionRow("Vitesse") {
+                listOf("Lent", "Normal", "Rapide").forEachIndexed { k, label ->
+                    Chip(label, selected = speed == k) { speed = k; prefs.putInt("sat_speed", k) }
+                }
             }
             OptionRow("Marée") {
                 Chip("Toutes", selected = !lowTideOnly) { playing = false; lowTideOnly = false }
                 Chip("Basse seulement", selected = lowTideOnly) { playing = false; lowTideOnly = true }
             }
 
-            val cloudy = remember(idx, point, months) { SatelliteModel.frames(idx, point.lat, months, false, false).count { idx.isCloudy(it, point.lat) } }
             Text(
-                (if (clearOnly) "$cloudy photo(s) nuageuse(s) sautée(s) sur ce point. " else "Toutes les photos : $cloudy nuageuse(s) sur ce point. ") +
-                    (if (lowTideOnly) "Marée basse seulement : les bancs se comparent mieux. " else "") +
-                    "Pince pour zoomer, glisse pour te déplacer.",
+                (if (lowTideOnly) "Marée basse seulement : les bancs se comparent mieux. " else "") + "Pince pour zoomer, glisse pour te déplacer.",
                 fontSize = 11.5.sp, color = colors.onSurfaceVariant
             )
             if (selected > 0 && selected < points.size) {
@@ -294,27 +309,69 @@ fun SatelliteScreen(onClose: () -> Unit) {
     }
 }
 
-/** Les bandes déjà téléchargées (gardées en mémoire le temps de l'écran ; le disque est géré par Coil). */
-private class StripBitmaps(private val map: Map<String, ImageBitmap>) {
-    fun get(image: SatImage): ImageBitmap? = map[image.file]
+/** Une photo découpée autour du point : la fenêtre (bitmap), sa première ligne et sa hauteur en lignes du cadre de la bande. */
+private class Crop(val bitmap: ImageBitmap, val topRow: Float, val rows: Float)
+
+/** Les fenêtres déjà téléchargées (le disque est géré par Coil). Chaque fenêtre pèse environ 1,4 Mo au lieu de 6 Mo pour la bande entière. */
+private class StripBitmaps(private val map: Map<String, Crop>) {
+    fun get(image: SatImage): Crop? = map[image.file]
+    fun loaded(frames: List<SatImage>): Int = frames.count { it.file in map }
 }
 
+private const val CROP_ROWS = 700f
+
 @Composable
-private fun rememberStripBitmaps(frames: List<SatImage>, current: SatImage?): StripBitmaps {
+private fun rememberStripBitmaps(frames: List<SatImage>, current: SatImage?, index: SatIndex, point: SatPoint): StripBitmaps {
     val context = LocalContext.current
-    val map = remember { mutableStateMapOf<String, ImageBitmap>() }
+    val map = remember(point) { mutableStateMapOf<String, Crop>() }
     // La photo affichée d'abord, puis les autres de la période (pour que le film soit fluide).
-    LaunchedEffect(frames, current?.file) {
+    LaunchedEffect(frames, current?.file, point) {
         val order = listOfNotNull(current) + frames.reversed()
         for (image in order) {
             if (image.file in map) continue
             val request = ImageRequest.Builder(context).data(SatelliteSource.BASE_URL + image.file).size(coil.size.Size.ORIGINAL).allowHardware(false).build()
-            val drawable = context.imageLoader.execute(request).drawable as? BitmapDrawable ?: continue
-            map[image.file] = drawable.bitmap.asImageBitmap()
-            if (map.size > 40) map.keys.firstOrNull { k -> k != current?.file && frames.none { it.file == k } }?.let { map.remove(it) }
+            val bitmap = (context.imageLoader.execute(request).drawable as? BitmapDrawable)?.bitmap ?: continue
+            val k = bitmap.height.toFloat() / index.height
+            val top = (index.rowOf(point.lat).toFloat() - CROP_ROWS / 2).coerceIn(0f, index.height - CROP_ROWS)
+            val window = runCatching { android.graphics.Bitmap.createBitmap(bitmap, 0, (top * k).roundToInt(), bitmap.width, (CROP_ROWS * k).roundToInt().coerceAtMost(bitmap.height - (top * k).roundToInt())) }.getOrNull() ?: continue
+            map[image.file] = Crop(window.asImageBitmap(), top, CROP_ROWS)
         }
     }
     return StripBitmaps(map)
+}
+
+/** La bande entière la plus récente, pour « Poser un point » (une seule image, chargée à la demande). */
+@Composable
+private fun rememberFullStrip(image: SatImage?): ImageBitmap? {
+    val context = LocalContext.current
+    val state = produceState<ImageBitmap?>(null, image?.file) {
+        if (image != null) {
+            val request = ImageRequest.Builder(context).data(SatelliteSource.BASE_URL + image.file).size(coil.size.Size.ORIGINAL).allowHardware(false).build()
+            value = (context.imageLoader.execute(request).drawable as? BitmapDrawable)?.bitmap?.asImageBitmap()
+        }
+    }
+    return state.value
+}
+
+/**
+ * Rendu des photos : un peu plus de saturation et de contraste, pour séparer les bancs (sable, jaune) des baïnes (eau plus sombre).
+ * Saturation 1,35, contraste 1,5 autour de 70, luminosité +12 (essayé sur la photo du 7 mai 2026). Sentinel-2 ne donne que 10 m
+ * par pixel : cela améliore la lecture, pas la finesse.
+ */
+private val SatEnhance: ColorFilter = run {
+    val sat = 1.35f
+    val c = 1.5f
+    val t = 70f * (1f - c) + 12f
+    ColorFilter.colorMatrix(
+        ColorMatrix(
+            floatArrayOf(
+                c * (0.213f + 0.787f * sat), c * (0.715f - 0.715f * sat), c * (0.072f - 0.072f * sat), 0f, t,
+                c * (0.213f - 0.213f * sat), c * (0.715f + 0.285f * sat), c * (0.072f - 0.072f * sat), 0f, t,
+                c * (0.213f - 0.213f * sat), c * (0.715f - 0.715f * sat), c * (0.072f + 0.928f * sat), 0f, t,
+                0f, 0f, 0f, 1f, 0f
+            )
+        )
+    )
 }
 
 /**
@@ -322,13 +379,14 @@ private fun rememberStripBitmaps(frames: List<SatImage>, current: SatImage?): St
  * boutons − et +, jusqu'à voir environ 6 km de côte) et se déplacer en glissant.
  */
 @Composable
-private fun PointView(strip: ImageBitmap, index: SatIndex, point: SatPoint) {
+private fun PointView(crop: Crop, index: SatIndex, point: SatPoint) {
+    val strip = crop.bitmap
     var zoom by remember(point) { mutableFloatStateOf(1f) }
     var panCols by remember(point) { mutableFloatStateOf(0f) }
     var panRows by remember(point) { mutableFloatStateOf(0f) }
     var size by remember { mutableStateOf(IntSize.Zero) }
     // La bande téléchargée peut être plus petite que son cadre (image réduite) : tout se calcule dans le cadre, puis on convertit.
-    val k = strip.height.toFloat() / index.height
+    val k = strip.height.toFloat() / crop.rows
     Box(Modifier.fillMaxSize()) {
         Canvas(
             Modifier.fillMaxSize().onSizeChanged { size = it }.pointerInput(point) {
@@ -341,14 +399,15 @@ private fun PointView(strip: ImageBitmap, index: SatIndex, point: SatPoint) {
                 }
             }
         ) {
-            val rows = (SatelliteSource.VIEW_ROWS / zoom).coerceAtMost(index.height.toFloat())
+            val rows = (SatelliteSource.VIEW_ROWS / zoom).coerceAtMost(crop.rows)
             val cols = (rows * this.size.width / this.size.height).coerceAtMost(index.width.toFloat())
             val left = (index.colOf(point.lon).toFloat() - 25f + panCols - cols / 2).coerceIn(0f, index.width - cols)
-            val top = (index.rowOf(point.lat).toFloat() + panRows - rows / 2).coerceIn(0f, index.height - rows)
+            val top = (index.rowOf(point.lat).toFloat() + panRows - rows / 2).coerceIn(crop.topRow, crop.topRow + crop.rows - rows)
             drawImage(
-                strip, srcOffset = IntOffset((left * k).roundToInt(), (top * k).roundToInt()),
+                strip, srcOffset = IntOffset((left * k).roundToInt(), ((top - crop.topRow) * k).roundToInt()),
                 srcSize = IntSize((cols * k).roundToInt().coerceAtLeast(1), (rows * k).roundToInt().coerceAtLeast(1)),
-                dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt())
+                dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt()),
+                filterQuality = FilterQuality.High, colorFilter = SatEnhance
             )
             // Le point lui-même.
             val px = (index.colOf(point.lon).toFloat() - left) / cols * this.size.width
@@ -379,31 +438,6 @@ private fun ZoomButton(label: String, onClick: () -> Unit) {
 private fun DrawScope.drawPin(at: Offset, r: Float) {
     drawCircle(Color.White, radius = r, center = at, style = Stroke(r * 0.35f))
     drawCircle(PinRed, radius = r * 0.45f, center = at)
-}
-
-/** La ligne du temps : un rond par passage du satellite ; les photos écartées par les choix sont estompées. */
-@Composable
-private fun Timeline(all: List<SatImage>, shown: List<SatImage>, current: SatImage?, months: Int, last: SatImage?, onPick: (SatImage) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val end = last?.dayNumber ?: return
-    val start = end - months * 31
-    Canvas(
-        Modifier.fillMaxWidth().height(22.dp).pointerInput(shown, months) {
-            detectTapGestures { tap ->
-                val target = start + tap.x / size.width * (end - start)
-                shown.minByOrNull { kotlin.math.abs(it.dayNumber - target) }?.let(onPick)
-            }
-        }
-    ) {
-        val y = size.height / 2
-        drawLine(colors.onSurface.copy(alpha = 0.2f), Offset(0f, y), Offset(size.width, y), strokeWidth = 2.dp.toPx())
-        all.forEach { image ->
-            val x = (image.dayNumber - start).toFloat() / (end - start) * size.width
-            val on = image in shown
-            if (image == current) drawCircle(colors.primary, radius = 7.dp.toPx(), center = Offset(x, y))
-            else drawCircle(colors.onSurface.copy(alpha = if (on) 0.75f else 0.2f), radius = 3.dp.toPx(), center = Offset(x, y))
-        }
-    }
 }
 
 @Composable
@@ -548,7 +582,8 @@ private fun PlacePointSheet(index: SatIndex, strip: ImageBitmap?, existing: List
                 drawImage(
                     strip, srcOffset = IntOffset((left * k).roundToInt(), (top * k).roundToInt()),
                     srcSize = IntSize((colsShown * k).roundToInt().coerceAtLeast(1), (rowsShown * k).roundToInt().coerceAtLeast(1)),
-                    dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt())
+                    dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt()),
+                    filterQuality = FilterQuality.High, colorFilter = SatEnhance
                 )
                 fun pos(lat: Double, lon: Double) = Offset((index.colOf(lon).toFloat() - left) / perPx, (index.rowOf(lat).toFloat() - top) / perPx)
                 // Les plages connues, pour se repérer.
