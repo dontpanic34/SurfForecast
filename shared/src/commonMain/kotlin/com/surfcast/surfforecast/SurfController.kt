@@ -8,7 +8,9 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -53,13 +55,20 @@ data class DailySummaryUiModel(
  * pour l'instant côté Android ; [onForecastLoaded] permet à l'hôte de s'y brancher.
  */
 class SurfController(
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val prefs: KeyValueStore,
     private val repository: SurfRepository = SurfRepository(defaultHttpClient(), prefs),
     private val onForecastLoaded: (SurfUiState.Success, SurfRepository.TidesBundle) -> Unit = { _, _ -> },
     // Journal de bord (Room sur mobile, JSON dans le navigateur) : null = pas de stockage (tests).
     private val sessionLogStore: SessionLogStore? = null
 ) {
+
+    // Une tâche qui échoue ne doit jamais faire tomber les autres ni l'appli entière. Sur le web, un échec réseau est une
+    // kotlin.Error (pas une Exception) : non rattrapée, elle remontait jusqu'à l'affichage et laissait un écran vide (« page blanche »).
+    private val scope: CoroutineScope = CoroutineScope(
+        scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]) +
+            CoroutineExceptionHandler { _, e -> println("Surf Log : tâche en échec : ${e.message}") }
+    )
 
     // Planches retirées du matériel mais gardées dans le journal (elles ont servi dans des sessions) : leurs identifiants.
     private val archivedBoardIds = MutableStateFlow(
@@ -458,6 +467,11 @@ class SurfController(
         loadActiveSpot(initialLoad = false)
     }
 
+    /** Après un échec du premier chargement : repart de l'écran de démarrage. */
+    fun retryInitialLoad() {
+        loadActiveSpot(initialLoad = true)
+    }
+
     /**
      * À chaque retour de l'appli au premier plan : recharge si les prévisions ont plus de
      * 15 min, pour ne plus afficher un "maintenant" vieux de plusieurs heures.
@@ -581,9 +595,9 @@ class SurfController(
             runCatching { onForecastLoaded(successState, tidesBundle) }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {   // Throwable : sur le web, un échec réseau est une kotlin.Error, pas une Exception
             if (_uiState.value !is SurfUiState.Success) {
-                _uiState.value = SurfUiState.Error(e.message ?: "Erreur de connexion.")
+                _uiState.value = SurfUiState.Error("Les prévisions ne se chargent pas. Vérifie ta connexion.")
             }
         }
     }
