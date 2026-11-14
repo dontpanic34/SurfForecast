@@ -1,9 +1,10 @@
 name: Collecte des vues satellite
 
-# Relève, une fois par jour, les nouvelles photos Sentinel-2 de la bande de côte (onglet « Vue satellite » de l'appli).
-# Les photos sont rangées dans la branche `data` (data/sat/<zone>/AAAAMMJJ.jpg et index.json), à part du code.
-# Source : Copernicus Sentinel-2 (ESA), catalogue Earth Search, fichiers en libre accès, sans clé.
-# Lancement à la main : « jours » = nombre de jours à remonter (365 pour remplir une année).
+# Relève, une fois par jour, les nouvelles photos Sentinel-2 des tuiles de côte (onglet « Vue satellite » de l'appli et du site).
+# Les photos sont rangées dans la branche `sat` (data/sat/<zone>/AAAAMMJJ.jpg et index.json), à part du code et des autres relevés :
+# cette branche peut être recréée à neuf sans perdre autre chose que des photos qu'on sait recollecter.
+# Zones : scripts/collect/sat_zones.json. Source : Copernicus Sentinel-2 (ESA), catalogue Earth Search, libre accès, sans clé.
+# Lancement à la main : « jours » = nombre de jours à remonter (365 pour remplir une année) ; « zones » = liste d'identifiants (toutes si vide).
 on:
   schedule:
     - cron: "43 15 * * *"
@@ -12,18 +13,70 @@ on:
       jours:
         description: "Nombre de jours à remonter"
         default: "12"
+      zones:
+        description: "Zones (identifiants séparés par des virgules, toutes si vide)"
+        default: ""
 
 permissions:
   contents: write
 
 concurrency:
-  group: collect-forecasts
+  group: collect-satellite
   cancel-in-progress: false
 
 jobs:
-  satellite:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
+    outputs:
+      groups: ${{ steps.groups.outputs.groups }}
+    steps:
+      - name: Checkout (scripts)
+        uses: actions/checkout@v4
+
+      - name: Créer la branche sat si besoin et y mettre la liste des zones
+        run: |
+          git config user.name "surflog-collecte"
+          git config user.email "collecte@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin sat >/dev/null 2>&1; then
+            git fetch origin sat
+            git worktree add ../sat-wt origin/sat
+            cd ../sat-wt && git checkout -B sat
+          else
+            git worktree add --detach ../sat-wt
+            cd ../sat-wt && git checkout --orphan sat && git rm -rfq . || true
+            printf '# Vues satellite\n\nPhotos Sentinel-2 (Copernicus, ESA) découpées autour des zones de spots : data/sat/<zone>/AAAAMMJJ.jpg et index.json.\n' > README.md
+          fi
+          mkdir -p data/sat
+          cp "$GITHUB_WORKSPACE/scripts/collect/sat_zones.json" data/sat/zones.json
+          git add -A
+          if git diff --cached --quiet; then echo "rien à enregistrer"; exit 0; fi
+          git commit -qm "Liste des zones $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push origin HEAD:sat
+
+      - name: Répartir les zones en groupes
+        id: groups
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          zones = [z["id"] for z in json.load(open("scripts/collect/sat_zones.json"))["zones"]]
+          wanted = [z for z in "${{ github.event.inputs.zones }}".replace(" ", "").split(",") if z]
+          if wanted:
+              zones = [z for z in zones if z in wanted]
+          size = 6
+          groups = [",".join(zones[i:i + size]) for i in range(0, len(zones), size)]
+          print("groups=" + json.dumps(groups))
+          PY
+
+  satellite:
+    needs: prepare
+    if: needs.prepare.outputs.groups != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJson(needs.prepare.outputs.groups) }}
     steps:
       - name: Checkout (scripts)
         uses: actions/checkout@v4
@@ -31,26 +84,27 @@ jobs:
       - name: Outils
         run: pip install --quiet rasterio numpy pillow
 
-      - name: Préparer la branche data
+      - name: Préparer la branche sat
         run: |
           git config user.name "surflog-collecte"
           git config user.email "collecte@users.noreply.github.com"
-          git fetch origin data
-          git worktree add ../data-wt origin/data
-          cd ../data-wt && git checkout -B data
+          git fetch origin sat
+          git worktree add ../sat-wt origin/sat
+          cd ../sat-wt && git checkout -B sat
 
       - name: Relever les vues satellite
         env:
           GDAL_DISABLE_READDIR_ON_OPEN: EMPTY_DIR
-        run: python3 scripts/collect/satellite.py ../data-wt/data "${{ github.event.inputs.jours || '12' }}"
+        run: python3 scripts/collect/satellite.py ../sat-wt/data "${{ github.event.inputs.jours || '12' }}" "${{ matrix.group }}"
 
       - name: Enregistrer
         run: |
-          cd ../data-wt
+          cd ../sat-wt
           git add -A
           if git diff --cached --quiet; then echo "rien à enregistrer"; exit 0; fi
-          git commit -qm "Vues satellite $(date -u +%Y-%m-%dT%H:%MZ)"
-          for i in 1 2 3; do
-            git push origin HEAD:data && break
-            git pull --rebase origin data
+          git commit -qm "Vues satellite ${{ matrix.group }} $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5 6; do
+            git push origin HEAD:sat && break
+            git pull --rebase origin sat
+            sleep $((RANDOM % 10 + 3))
           done
