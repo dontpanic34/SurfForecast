@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
                     )
                 },
                 updateBanner = { UpdateBanner() },
-                satelliteScreen = { onClose -> SatelliteScreen(onClose = onClose) }
+                satellitePlatform = { rememberAndroidSatellitePlatform() }
             )
         }
     }

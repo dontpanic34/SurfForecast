@@ -68,6 +68,9 @@ class SurfController(
 
     // Une tâche qui échoue ne doit jamais faire tomber les autres ni l'appli entière. Sur le web, un échec réseau est une
     // kotlin.Error (pas une Exception) : non rattrapée, elle remontait jusqu'à l'affichage et laissait un écran vide (« page blanche »).
+    /** Les réglages gardés sur l'appareil (pour les écrans qui ont leurs propres préférences, comme la vue satellite). */
+    val settings: KeyValueStore get() = prefs
+
     private val scope: CoroutineScope = CoroutineScope(
         scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]) +
             CoroutineExceptionHandler { _, e -> println("Surf Log : tâche en échec : ${e.message}") }

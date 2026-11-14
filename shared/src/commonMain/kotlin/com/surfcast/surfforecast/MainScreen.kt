@@ -75,8 +75,8 @@ fun MainScreen(
     liveCamOverlay: (@Composable (LiveCamContext) -> Unit)? = null,
     // Hôte (Android) : bandeau « nouvelle version disponible » (APK).
     updateBanner: (@Composable () -> Unit)? = null,
-    // Onglet « Vue satellite » (Android) ; null = pas d'onglet.
-    satelliteScreen: (@Composable (onClose: () -> Unit) -> Unit)? = null
+    // Aides de l'appareil pour la vue satellite (voir SatellitePlatform) ; null = aucune.
+    satellitePlatform: (@Composable () -> SatellitePlatform)? = null
 ) {
     var showLiveCam by remember { mutableStateOf(false) }
     var directWebcamSpot by remember { mutableStateOf<String?>(null) }
@@ -948,7 +948,7 @@ fun MainScreen(
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
-                                onSatellite = if (satelliteScreen != null) ({ showSatellite = true }) else null,
+                                onSatellite = { showSatellite = true },
                                 coachTargets = coachTargets
                             )
                         }
@@ -958,7 +958,16 @@ fun MainScreen(
         }
             }
         }
-        if (showSatellite && satelliteScreen != null) satelliteScreen { showSatellite = false }
+        if (showSatellite) {
+            // Vue satellite : par-dessus tout, pour le spot affiché (ses coordonnées viennent du catalogue).
+            val platform = satellitePlatform?.invoke() ?: SatellitePlatform()
+            val activeName = (uiState as? SurfUiState.Success)?.spotName ?: ""
+            val activeSpot = SurfDatabase.findSpotByName(activeName)
+            SatelliteScreen(
+                spotName = activeName.ifBlank { "Mon spot" }, spotLat = activeSpot?.latitude ?: 45.38, spotLon = activeSpot?.longitude ?: -1.159,
+                prefs = viewModel.settings, platform = platform, onClose = { showSatellite = false }
+            )
+        }
         if (showLiveCam && liveCamOverlay != null) {
             liveCamOverlay(
                 LiveCamContext(
