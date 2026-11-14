@@ -1,0 +1,56 @@
+name: Collecte des vues satellite
+
+# Relève, une fois par jour, les nouvelles photos Sentinel-2 de la bande de côte (onglet « Vue satellite » de l'appli).
+# Les photos sont rangées dans la branche `data` (data/sat/<zone>/AAAAMMJJ.jpg et index.json), à part du code.
+# Source : Copernicus Sentinel-2 (ESA), catalogue Earth Search, fichiers en libre accès, sans clé.
+# Lancement à la main : « jours » = nombre de jours à remonter (365 pour remplir une année).
+on:
+  schedule:
+    - cron: "43 15 * * *"
+  workflow_dispatch:
+    inputs:
+      jours:
+        description: "Nombre de jours à remonter"
+        default: "12"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect-forecasts
+  cancel-in-progress: false
+
+jobs:
+  satellite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout (scripts)
+        uses: actions/checkout@v4
+
+      - name: Outils
+        run: pip install --quiet rasterio numpy pillow
+
+      - name: Préparer la branche data
+        run: |
+          git config user.name "surflog-collecte"
+          git config user.email "collecte@users.noreply.github.com"
+          git fetch origin data
+          git worktree add ../data-wt origin/data
+          cd ../data-wt && git checkout -B data
+
+      - name: Relever les vues satellite
+        env:
+          GDAL_DISABLE_READDIR_ON_OPEN: EMPTY_DIR
+        run: python3 scripts/collect/satellite.py ../data-wt/data "${{ github.event.inputs.jours || '12' }}"
+
+      - name: Enregistrer
+        run: |
+          cd ../data-wt
+          git add -A
+          if git diff --cached --quiet; then echo "rien à enregistrer"; exit 0; fi
+          git commit -qm "Vues satellite $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do
+            git push origin HEAD:data && break
+            git pull --rebase origin data
+          done
