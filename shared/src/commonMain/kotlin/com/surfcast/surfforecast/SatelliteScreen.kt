@@ -147,6 +147,7 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
     var selected by remember { mutableIntStateOf(prefs.getInt("sat_selected", 0)) }
     var months by remember { mutableIntStateOf(prefs.getInt("sat_months", 3)) }
     var speed by remember { mutableIntStateOf(prefs.getInt("sat_speed", 1)) }
+    var render by remember { mutableIntStateOf(prefs.getInt("sat_render", 1)) }
     var lowTideOnly by remember { mutableStateOf(false) }
     var currentDate by remember { mutableStateOf<String?>(null) }
     var playing by remember { mutableStateOf(false) }
@@ -182,7 +183,7 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
 
             if (placing) {
                 PlacePointSheet(
-                    client = client, zones = allZones, reference = points.first(), existing = points, platform = platform,
+                    client = client, zones = allZones, reference = points.first(), existing = points, platform = platform, render = render,
                     onSave = { p ->
                         userPoints = userPoints + p
                         SatelliteModel.savePoints(prefs, userPoints)
@@ -234,6 +235,7 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
                         client = client, zone = zone, idx = idx, point = point, points = points, selected = selected,
                         months = months, onMonths = { playing = false; months = it; prefs.putInt("sat_months", it) },
                         speed = speed, onSpeed = { speed = it; prefs.putInt("sat_speed", it) },
+                        render = render, onRender = { render = it; prefs.putInt("sat_render", it) },
                         lowTideOnly = lowTideOnly, onLowTide = { playing = false; lowTideOnly = it },
                         currentDate = currentDate, onDate = { currentDate = it },
                         playing = playing, onPlaying = { playing = it },
@@ -266,7 +268,7 @@ private fun NoticeBox(title: String, text: String, action: String? = null, onAct
 @Composable
 private fun SatelliteBody(
     client: HttpClient, zone: SatZone, idx: SatIndex, point: SatPoint, points: List<SatPoint>, selected: Int,
-    months: Int, onMonths: (Int) -> Unit, speed: Int, onSpeed: (Int) -> Unit, lowTideOnly: Boolean, onLowTide: (Boolean) -> Unit,
+    months: Int, onMonths: (Int) -> Unit, speed: Int, onSpeed: (Int) -> Unit, render: Int, onRender: (Int) -> Unit, lowTideOnly: Boolean, onLowTide: (Boolean) -> Unit,
     currentDate: String?, onDate: (String?) -> Unit, playing: Boolean, onPlaying: (Boolean) -> Unit, referenceName: String, onDelete: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -298,7 +300,7 @@ private fun SatelliteBody(
         var lastCrop by remember(point) { mutableStateOf<Crop?>(null) }
         if (crop != null) lastCrop = crop
         val shown = crop ?: lastCrop
-        if (shown != null) PointView(shown, idx, point) else if (current != null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
+        if (shown != null) PointView(shown, idx, point, render) else if (current != null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
         if (current != null) {
             Column(
                 Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xC7061018)).padding(horizontal = 10.dp, vertical = 6.dp)
@@ -353,6 +355,9 @@ private fun SatelliteBody(
     }
     OptionRow("Vitesse") {
         listOf("Lent", "Normal", "Rapide").forEachIndexed { k, label -> Chip(label, selected = speed == k) { onSpeed(k) } }
+    }
+    OptionRow("Rendu") {
+        listOf("Naturel", "Doux", "Contrasté").forEachIndexed { k, label -> Chip(label, selected = render == k) { onRender(k) } }
     }
     OptionRow("Marée") {
         Chip("Toutes", selected = !lowTideOnly) { onLowTide(false) }
@@ -412,15 +417,18 @@ private fun rememberTileCrops(client: HttpClient, zone: SatZone, frames: List<Sa
 }
 
 /**
- * Rendu des photos : un peu plus de saturation et de contraste, pour séparer les bancs (sable, jaune) des baïnes (eau plus sombre).
- * Saturation 1,35, contraste 1,5 autour de 70, luminosité +12 (essayé sur la photo du 7 mai 2026). Sentinel-2 ne donne que 10 m
- * par pixel : cela améliore la lecture, pas la finesse.
+ * Rendu des photos, au choix : 0 Naturel (la photo telle quelle), 1 Doux (un peu de saturation et de contraste, le sable reste crème),
+ * 2 Contrasté (bancs et baïnes ressortent plus, mais le sable devient jaune vif). Sentinel-2 ne donne que 10 m par pixel : le rendu
+ * améliore la lecture, pas la finesse.
  */
-private val SatEnhance: ColorFilter = run {
-    val sat = 1.35f
-    val c = 1.5f
-    val t = 70f * (1f - c) + 12f
-    ColorFilter.colorMatrix(
+private fun satFilter(mode: Int): ColorFilter? {
+    val (sat, c, pivot, bright) = when (mode) {
+        1 -> listOf(1.1f, 1.2f, 55f, 4f)
+        2 -> listOf(1.35f, 1.5f, 70f, 12f)
+        else -> return null
+    }
+    val t = pivot * (1f - c) + bright
+    return ColorFilter.colorMatrix(
         ColorMatrix(
             floatArrayOf(
                 c * (0.213f + 0.787f * sat), c * (0.715f - 0.715f * sat), c * (0.072f - 0.072f * sat), 0f, t,
@@ -437,7 +445,7 @@ private val SatEnhance: ColorFilter = run {
  * 4,4 km de haut) et se déplacer en glissant, dans les 4,8 km découpés autour du point.
  */
 @Composable
-private fun PointView(crop: Crop, index: SatIndex, point: SatPoint) {
+private fun PointView(crop: Crop, index: SatIndex, point: SatPoint, render: Int) {
     var zoom by remember(point) { mutableFloatStateOf(1f) }
     var panCols by remember(point) { mutableFloatStateOf(0f) }
     var panRows by remember(point) { mutableFloatStateOf(0f) }
@@ -465,7 +473,7 @@ private fun PointView(crop: Crop, index: SatIndex, point: SatPoint) {
                 strip, srcOffset = IntOffset(((left - crop.leftCol) * k).roundToInt(), ((top - crop.topRow) * k).roundToInt()),
                 srcSize = IntSize((cols * k).roundToInt().coerceAtLeast(1), (rows * k).roundToInt().coerceAtLeast(1)),
                 dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt()),
-                filterQuality = FilterQuality.High, colorFilter = SatEnhance
+                filterQuality = FilterQuality.High, colorFilter = satFilter(render)
             )
             // Le point lui-même.
             val px = (index.colOf(point.lon).toFloat() - left) / cols * this.size.width
@@ -557,7 +565,7 @@ private fun StepArrow(left: Boolean, color: Color, onClick: () -> Unit) {
  */
 @Composable
 private fun PlacePointSheet(
-    client: HttpClient, zones: SatZones, reference: SatPoint, existing: List<SatPoint>, platform: SatellitePlatform,
+    client: HttpClient, zones: SatZones, reference: SatPoint, existing: List<SatPoint>, platform: SatellitePlatform, render: Int,
     onSave: (SatPoint) -> Unit, onCancel: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
@@ -659,7 +667,7 @@ private fun PlacePointSheet(
                     bmp, srcOffset = IntOffset((left * k).roundToInt(), (top * k).roundToInt()),
                     srcSize = IntSize((colsShown * k).roundToInt().coerceAtLeast(1), (rowsShown * k).roundToInt().coerceAtLeast(1)),
                     dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt()),
-                    filterQuality = FilterQuality.High, colorFilter = SatEnhance
+                    filterQuality = FilterQuality.High, colorFilter = satFilter(render)
                 )
                 fun pos(lat: Double, lon: Double) = Offset((idx.colOf(lon).toFloat() - left) / perPx, (idx.rowOf(lat).toFloat() - top) / perPx)
                 // Les plages connues, pour se repérer.
