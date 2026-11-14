@@ -147,7 +147,7 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
     var selected by remember { mutableIntStateOf(prefs.getInt("sat_selected", 0)) }
     var months by remember { mutableIntStateOf(prefs.getInt("sat_months", 3)) }
     var speed by remember { mutableIntStateOf(prefs.getInt("sat_speed", 1)) }
-    var render by remember { mutableIntStateOf(prefs.getInt("sat_render", 1)) }
+    var render by remember { mutableIntStateOf(prefs.getInt("sat_render", 2)) }
     var lowTideOnly by remember { mutableStateOf(false) }
     var currentDate by remember { mutableStateOf<String?>(null) }
     var playing by remember { mutableStateOf(false) }
