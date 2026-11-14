@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Vue satellite : découpe, à chaque passage de Sentinel-2, une bande de côte autour d'un spot.
+"""Vue satellite : découpe, à chaque passage de Sentinel-2, une tuile de côte autour de chaque zone de spots.
 
-Usage : satellite.py <dossier data> [jours en arrière, 12 par défaut]
+Usage : satellite.py <dossier> [jours en arrière, 12 par défaut] [zones séparées par des virgules, toutes par défaut]
 
-Pour chaque zone de ZONES, range dans <data>/sat/<zone>/ :
-  - AAAAMMJJ.jpg : la bande de côte (nord en haut, 10 m par pixel) ;
+Pour chaque zone de sat_zones.json (des tuiles carrées de 8 km), range dans <dossier>/sat/<zone>/ :
+  - AAAAMMJJ.jpg : la tuile (nord en haut, 10 m par pixel) ;
   - index.json   : le cadre de la bande (latitudes, longitudes, taille) et, pour chaque photo, sa date, son heure (UTC)
                    la part de nuages par tranche de 500 m du nord au sud (0 à 100), pour juger les nuages point par point,
                    et la marée du moment (niveau, état, marnage du jour) d'après le niveau de la mer d'Open-Meteo.
@@ -31,24 +31,25 @@ STAC = "https://earth-search.aws.element84.com/v1/search"
 PIXEL_M = 10.0
 BLOCK_ROWS = 50  # tranche de 500 m pour la part de nuages
 
-# Une zone : le point de repère, la longueur de côte de chaque côté (km), et la largeur gardée à l'ouest et à l'est (km).
-ZONES = {
-    "montalivet": {"lat": 45.380, "lon": -1.159, "half_km": 15.0, "west_km": 2.2, "east_km": 3.0},
-}
+ZONES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sat_zones.json")
 
 
-def frame(zone):
-    """Cadre de la bande : nord en haut, pixels de 10 m, coordonnées linéaires en latitude et longitude."""
+def load_zones():
+    cfg = json.load(open(ZONES_FILE))
+    return cfg["side_km"], cfg["zones"]
+
+
+def frame(zone, side_km):
+    """Cadre de la tuile : un carré de [side_km] km centré sur la zone, nord en haut, pixels de 10 m, coordonnées linéaires."""
     dlat = PIXEL_M / 111320.0
     dlon = PIXEL_M / (111320.0 * math.cos(math.radians(zone["lat"])))
-    height = int(round(2 * zone["half_km"] * 1000 / PIXEL_M))
-    width = int(round((zone["west_km"] + zone["east_km"]) * 1000 / PIXEL_M))
-    lat_top = zone["lat"] + zone["half_km"] * 1000 / PIXEL_M * dlat
-    lon_left = zone["lon"] - zone["west_km"] * 1000 / PIXEL_M * dlon
+    size = int(round(side_km * 1000 / PIXEL_M))
+    lat_top = zone["lat"] + size / 2 * dlat
+    lon_left = zone["lon"] - size / 2 * dlon
     return {
-        "width": width, "height": height,
-        "lat_top": lat_top, "lat_bottom": lat_top - height * dlat,
-        "lon_left": lon_left, "lon_right": lon_left + width * dlon,
+        "width": size, "height": size,
+        "lat_top": lat_top, "lat_bottom": lat_top - size * dlat,
+        "lon_left": lon_left, "lon_right": lon_left + size * dlon,
         "transform": Affine(dlon, 0, lon_left, 0, -dlat, lat_top),
     }
 
@@ -111,14 +112,19 @@ def warp(href, fr, bands, resampling):
 def main():
     data_dir = sys.argv[1]
     days = int(sys.argv[2]) if len(sys.argv) > 2 else 12
+    only = set(sys.argv[3].split(",")) if len(sys.argv) > 3 and sys.argv[3] else None
     since = datetime.now(timezone.utc) - timedelta(days=days)
-    for name, zone in ZONES.items():
-        fr = frame(zone)
+    side_km, zones = load_zones()
+    for zone in zones:
+        name = zone["id"]
+        if only and name not in only:
+            continue
+        fr = frame(zone, side_km)
         folder = os.path.join(data_dir, "sat", name)
         os.makedirs(folder, exist_ok=True)
         index_path = os.path.join(folder, "index.json")
         index = json.load(open(index_path)) if os.path.exists(index_path) else {"images": []}
-        known = {i["date"] for i in index["images"]}
+        known = {i["date"] for i in index["images"]} | set(index.get("skipped", []))
         added = 0
         for item in search(zone, since):
             stamp = item["properties"]["datetime"]
@@ -128,13 +134,18 @@ def main():
             try:
                 rgb = warp(item["assets"]["visual"]["href"], fr, [1, 2, 3], Resampling.bilinear)
                 valid = float((rgb.max(axis=0) > 0).mean())
-                if valid < 0.9:  # bord de fauchée : la bande n'est pas entière
-                    print(f"{name} {date} : bande incomplète ({valid:.0%}), sautée")
+                if valid < 0.9:  # bord de fauchée : la tuile n'est pas entière
+                    print(f"{name} {date} : tuile incomplète ({valid:.0%}), sautée")
                     continue
                 scl = warp(item["assets"]["scl"]["href"], fr, [1], Resampling.nearest)[0]
                 cloud = np.isin(scl, (8, 9))  # nuages moyens et épais ; les cirrus fins (10) laissent voir la côte
                 blocks = [int(round(100 * float(cloud[r:r + BLOCK_ROWS].mean()))) for r in range(0, fr["height"], BLOCK_ROWS)]
-                Image.fromarray(np.transpose(rgb, (1, 2, 0))).save(os.path.join(folder, date + ".jpg"), "JPEG", quality=78, optimize=True)
+                if cloud.mean() > 0.8:  # presque entièrement sous les nuages : inutile de la garder
+                    print(f"{name} {date} : nuages {int(round(100 * float(cloud.mean())))} %, sautée")
+                    known.add(date)
+                    index.setdefault("skipped", []).append(date)
+                    continue
+                Image.fromarray(np.transpose(rgb, (1, 2, 0))).save(os.path.join(folder, date + ".jpg"), "JPEG", quality=74, optimize=True)
                 index["images"].append({"date": date, "time": stamp[11:16], "file": date + ".jpg", "cloud": blocks, "tide": tide_at(zone, date, stamp[11:16])})
                 known.add(date)
                 added += 1
@@ -145,7 +156,7 @@ def main():
             if not image.get("tide"):
                 image["tide"] = tide_at(zone, image["date"], image["time"])
         index.update({k: fr[k] for k in ("width", "height", "lat_top", "lat_bottom", "lon_left", "lon_right")})
-        index.update({"zone": name, "lat": zone["lat"], "lon": zone["lon"], "pixel_m": PIXEL_M, "block_rows": BLOCK_ROWS,
+        index.update({"zone": name, "name": zone["name"], "lat": zone["lat"], "lon": zone["lon"], "pixel_m": PIXEL_M, "block_rows": BLOCK_ROWS,
                       "source": "Copernicus Sentinel-2 (ESA), niveau 2A"})
         index["images"].sort(key=lambda i: i["date"])
         json.dump(index, open(index_path, "w"), separators=(",", ":"))
