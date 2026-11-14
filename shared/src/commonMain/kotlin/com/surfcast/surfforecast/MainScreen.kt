@@ -70,11 +70,14 @@ fun MainScreen(
     // Sauvegarde du journal dans un fichier (version web seulement).
     backup: SessionLogBackup? = null,
     // Installation du site comme appli (version web seulement).
-    install: AppInstall? = null
+    install: AppInstall? = null,
+    // Aides de l'appareil pour la vue satellite (voir SatellitePlatform) ; null = aucune.
+    satellitePlatform: (@Composable () -> SatellitePlatform)? = null
 ) {
     // "clock" = heure pleine la plus proche (10h44 -> 11h), qui avance toute seule : avant,
     // "maintenant" n'était calculé qu'au chargement.
     var clock by remember { mutableStateOf(nearestHourLocalDateTime()) }
+    var showSatellite by remember { mutableStateOf(false) }
     LaunchedEffect(appVersion, viewModel.levelAnswers, viewModel.levelShift) { viewModel.reportStats(appVersion) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -927,6 +930,7 @@ fun MainScreen(
                                 onSettings = { preferencesStartPage = null; showPreferencesDialog = true },
                                 hasWebcam = SurfWebcamHelper.hasCamera(state.spotName),
                                 onWebcam = { if (SurfWebcamHelper.hasCamera(state.spotName)) openLiveCam(state.spotName) else showNoWebcam = true },
+                                onSatellite = { showSatellite = true },
                                 coachTargets = coachTargets
                             )
                         }
@@ -935,6 +939,16 @@ fun MainScreen(
             }
         }
             }
+        }
+        if (showSatellite) {
+            // Vue satellite : par-dessus tout, pour le spot affiché (ses coordonnées viennent du catalogue).
+            val platform = satellitePlatform?.invoke() ?: SatellitePlatform()
+            val activeName = (uiState as? SurfUiState.Success)?.spotName ?: ""
+            val activeSpot = SurfDatabase.findSpotByName(activeName)
+            SatelliteScreen(
+                spotName = activeName.ifBlank { "Mon spot" }, spotLat = activeSpot?.latitude ?: 45.38, spotLon = activeSpot?.longitude ?: -1.159,
+                prefs = viewModel.settings, platform = platform, onClose = { showSatellite = false }
+            )
         }
         // Visite guidée de la première utilisation (une fois l'écran de bienvenue fermé).
         if (viewModel.showHomeTour && !viewModel.showOnboarding) {
@@ -996,6 +1010,22 @@ fun ThemeToggleIcon(
                     cap = StrokeCap.Round
                 )
             }
+        }
+    }
+}
+
+/** Icône de l'onglet « Vue satellite » : un satellite (corps et deux panneaux) en biais. */
+@Composable
+fun SatelliteIcon(color: Color, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        rotate(-45f) {
+            drawRoundRect(color, topLeft = androidx.compose.ui.geometry.Offset(w * 0.38f, w * 0.36f), size = androidx.compose.ui.geometry.Size(w * 0.24f, w * 0.28f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.04f), style = stroke)
+            drawRect(color, topLeft = androidx.compose.ui.geometry.Offset(w * 0.04f, w * 0.41f), size = androidx.compose.ui.geometry.Size(w * 0.26f, w * 0.18f), style = stroke)
+            drawRect(color, topLeft = androidx.compose.ui.geometry.Offset(w * 0.70f, w * 0.41f), size = androidx.compose.ui.geometry.Size(w * 0.26f, w * 0.18f), style = stroke)
+            drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.30f, w * 0.5f), androidx.compose.ui.geometry.Offset(w * 0.38f, w * 0.5f), strokeWidth = w * 0.09f)
+            drawLine(color, androidx.compose.ui.geometry.Offset(w * 0.62f, w * 0.5f), androidx.compose.ui.geometry.Offset(w * 0.70f, w * 0.5f), strokeWidth = w * 0.09f)
         }
     }
 }
@@ -1437,6 +1467,7 @@ private fun BottomNavBar(
     onSettings: () -> Unit,
     hasWebcam: Boolean,
     onWebcam: () -> Unit,
+    onSatellite: (() -> Unit)? = null,
     coachTargets: MutableMap<String, androidx.compose.ui.geometry.Rect>
 ) {
     val colors = MaterialTheme.colorScheme
@@ -1470,7 +1501,8 @@ private fun BottomNavBar(
                 Item(tr("Webcam"), false, onWebcam) {
                     WebcamIcon(tint = if (hasWebcam) AppColors.WindMid else colors.onSurface.copy(alpha = 0.35f), size = 20.dp)
                 }
-                // Le « + » au centre exact de la barre (deux onglets de chaque côté) : une nouvelle session.
+                if (onSatellite != null) Item(tr("Satellite"), false, onSatellite) { SatelliteIcon(color = colors.onSurface, modifier = Modifier.size(20.dp)) }
+                // Le « + » : une nouvelle session.
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Box(
                         modifier = Modifier.coachTarget("add", coachTargets).size(42.dp).clip(CircleShape).background(colors.primary).clickable(onClick = onAddSession),

@@ -43,7 +43,9 @@ fun SurfLogApp(
     onPinWidget: (() -> Unit)? = null,
     appVersion: String? = null,
     backup: SessionLogBackup? = null,
-    install: AppInstall? = null
+    install: AppInstall? = null,
+    // Hôte (Android) : « Ma position », photo, liens courts Maps et bouton retour de la vue satellite ; null = rien de tout cela (site).
+    satellitePlatform: (@Composable () -> SatellitePlatform)? = null
 ) {
     val scope = rememberCoroutineScope()
     val controller = remember(prefs) { SurfController(scope = scope, prefs = prefs, sessionLogStore = sessionLogStore) }
@@ -66,7 +68,7 @@ fun SurfLogApp(
             val skyImages = rememberSkyImages()
             CompositionLocalProvider(LocalSkyImages provides skyImages) {
                 PinchZoomBox {
-                    MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install)
+                    MainScreen(viewModel = controller, onPinWidget = onPinWidget, appVersion = appVersion, backup = backup, install = install, satellitePlatform = satellitePlatform)
                 }
             }
         }
