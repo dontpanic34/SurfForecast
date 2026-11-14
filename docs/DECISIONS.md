@@ -175,3 +175,6 @@ Pour l'outil « Ce que ça donne au bord » (encart Houle, maquette `docs/maquet
 
 ## Où surfer ? : la carte en premier (13 novembre 2026)
 Écran refait selon `docs/maquettes/ou-surfer-lisible.html` version 2, validée par le propriétaire : la carte d'abord avec la réponse du jour écrite dessus et les 5 meilleurs spots numérotés (noms juste dessous), puis les jours en pastilles, le pourquoi, le classement et le conseil du coin en plages. Les pastilles de jours remplacent les lignes par jour de l'option B (19 octobre). Plus de Matin / Midi / Après-midi : chaque spot a son meilleur moment. Un jour « vaut le déplacement » si ailleurs fait au moins 3 étoiles et 1,5 de plus qu'ici. Temps de route estimé (distance × 1,3 à 80 km/h).
+
+## Rafales et houle ajustées d'après le bilan (14 novembre 2026)
+Décidé par le propriétaire après le bilan du 14 novembre, sans attendre la fin du test : les **rafales** affichées sont le milieu entre la médiane des modèles et la moyenne des deux plus fortes (avant : la moyenne des deux plus fortes) ; **GFS Wave** compte pour un sixième au plus dans la houle dès 60 h (avant : un tiers). Le vent moyen reste la médiane des modèles : donner plus de poids aux AROME par vent fort a été testé sur les relevés et n'apporte rien. À revoir au bilan de fin novembre (`scripts/collect/analyse.py`).

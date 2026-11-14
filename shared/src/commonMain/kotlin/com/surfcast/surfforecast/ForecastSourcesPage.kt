@@ -36,7 +36,7 @@ fun ForecastSourcesPage(
         if (autoModels) {
             SettingsNote("En Auto, l'appli compare plusieurs modèles pour toi et affiche une seule valeur. Rien à régler.")
             SettingsSection("Ce que fait Auto") {
-                SettingsRow("Houle", "Consensus de MF-WAM, ECMWF Wave et GFS Wave : la hauteur et la période viennent du même calcul. Les modèles fins pèsent plus aujourd'hui et demain, les trois à égalité ensuite.", SettingsIcons.Wave, top = false)
+                SettingsRow("Houle", "Consensus de MF-WAM, ECMWF Wave et GFS Wave : la hauteur et la période viennent du même calcul. Les modèles fins pèsent plus aujourd'hui et demain, GFS Wave s'y ajoute ensuite pour une petite part.", SettingsIcons.Wave, top = false)
                 SettingsRow("Vent", "Moyenne de ECMWF et de GFS, ressenti (rafales comprises), jusqu'à J+7.", SettingsIcons.Wind)
                 SettingsRow("Ciel, température, pluie", "Météo-France : AROME aujourd'hui et demain, puis ARPEGE jusqu'à environ 4 jours, puis ECMWF.", SettingsIcons.Cloud)
                 SettingsRow("Houle secondaire", "Affichée dès 0,2 m et 7 s, et ajoutée à l'énergie de la note.", SettingsIcons.Layers)

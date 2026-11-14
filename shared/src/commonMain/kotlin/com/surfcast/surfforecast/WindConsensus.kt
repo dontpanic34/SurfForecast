@@ -13,8 +13,8 @@ data class WindConsensus(val speed: Double, val dir: Double, val gust: Double, v
 
 /**
  * Le consensus du vent : la médiane des vitesses de tous les modèles disponibles (un modèle qui s'écarte fortement ne tire pas la
- * moyenne), la direction moyenne pondérée par la vitesse, et pour les rafales la moyenne des deux plus fortes annoncées : ce sont elles
- * qui comptent pour la sécurité, et les modèles mondiaux, trop grossiers près de la côte, les sous-estiment (20 octobre : 50 km/h
+ * moyenne), la direction moyenne pondérée par la vitesse, et pour les rafales le milieu entre la médiane des modèles et la moyenne des deux plus
+ * fortes annoncées : les fortes comptent pour la sécurité, et les modèles mondiaux, trop grossiers près de la côte, les sous-estiment (20 octobre : 50 km/h
  * pour ECMWF et GFS, 70 à 87 pour l'AROME HD, ce que montrent les sites de prévision). Avec deux modèles seulement, c'est leur moyenne.
  * Null sans modèle.
  */
@@ -31,7 +31,11 @@ fun windConsensus(voices: List<WindVoiceIn>): WindConsensus? {
         y += v.speed * cos(r)
     }
     val dir = if (x == 0.0 && y == 0.0) voices.first().dir else (atan2(x, y) * 180.0 / PI + 360.0) % 360.0
+    // Rafales : à mi-chemin entre la médiane des modèles et la moyenne des deux plus fortes (bilan du 14 novembre : la moyenne des
+    // deux plus fortes seule annonçait 6 km/h de trop en moyenne ; la médiane seule manquait de 7 km/h les rafales de 45 km/h et plus).
     val gusts = voices.map { maxOf(it.gust, it.speed) }.sortedDescending()
-    val gust = maxOf(gusts.take(2).average(), speed)
+    val gm = gusts.size / 2
+    val gustMedian = if (gusts.size % 2 == 1) gusts[gm] else (gusts[gm - 1] + gusts[gm]) / 2.0
+    val gust = maxOf((gustMedian + gusts.take(2).average()) / 2.0, speed)
     return WindConsensus(speed, dir, gust, voices.joinToString("+") { it.label })
 }

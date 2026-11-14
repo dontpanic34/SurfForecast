@@ -496,10 +496,11 @@ class SurfScoringTest {
         val near = waveConsensusWeights(12.0)
         assertEquals(0.5, near[0], 1e-9); assertEquals(0.5, near[1], 1e-9); assertEquals(0.0, near[2], 1e-9)
         val far = waveConsensusWeights(80.0)
-        far.forEach { assertEquals(1.0 / 3.0, it, 1e-9) }
+        // Règle du 14 novembre : GFS Wave pour un sixième au plus (avant : trois parts égales), il sous-estime face aux bouées.
+        assertEquals(5.0 / 12.0, far[0], 1e-9); assertEquals(5.0 / 12.0, far[1], 1e-9); assertEquals(1.0 / 6.0, far[2], 1e-9)
         val mid = waveConsensusWeights(48.0)
         assertEquals(1.0, mid.sum(), 1e-9)
-        assertTrue(mid[2] > 0.0 && mid[2] < 1.0 / 3.0)
+        assertTrue(mid[2] > 0.0 && mid[2] < 1.0 / 6.0)
     }
 
     @Test
