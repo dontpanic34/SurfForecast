@@ -389,8 +389,14 @@ fun MainScreen(
                 }
             }
             is SurfUiState.Error -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                // Échec du premier chargement : un message clair et un bouton, jamais un écran vide.
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = tr(state.message), fontSize = 15.sp, color = onSurfaceColor, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(onClick = { viewModel.retryInitialLoad() }) { Text(tr("Réessayer")) }
                 }
             }
             is SurfUiState.Success -> {
