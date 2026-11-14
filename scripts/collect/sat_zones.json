@@ -330,6 +330,13 @@
    "spots": [
     "Hendaye"
    ]
+  },
+  {
+   "id": "montalivet-sud",
+   "name": "Montalivet sud",
+   "lat": 45.322,
+   "lon": -1.166,
+   "spots": []
   }
  ]
 }
