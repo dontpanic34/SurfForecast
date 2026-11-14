@@ -87,8 +87,9 @@
             if (painted) { clearInterval(blankTimer); return; }
             if (tries >= 15) {
                 clearInterval(blankTimer);
-                // Pas de relevés du tout = pas de dessin : l'appli n'a rien peint, ce qui est aussi un écran vide.
-                if (!document.getElementById("loading") && window.__findCanvas()) {
+                // Il faut au moins deux relevés, tous d'une seule couleur, pour conclure à un écran vide. Zéro ou un relevé ne prouve rien :
+                // un écran sain qui ne bouge pas ne redessine pas (fausses alertes des versions 1.0.511 et 1.0.512).
+                if (sm.length >= 2 && !document.getElementById("loading") && window.__findCanvas()) {
                     window.__diagPush("rendu", sm.length ? "écran uniforme (rgba " + sm[sm.length - 1].color + ") sur " + sm.length + " relevés" : "aucun dessin détecté après le démarrage");
                     window.__diagShow("Surf Log a démarré mais l'écran reste vide.");
                 }

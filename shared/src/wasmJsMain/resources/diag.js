@@ -77,13 +77,16 @@
     // Copier l'écran WebGL force le GPU à le relire : fait toutes les 2 s, ça a pu abîmer le dessin sur Safari (iPhone).
     // Maintenant : au plus 3 relevés, espacés de 10 s, et aucun avec ?nodiag dans l'adresse (pour tester sans).
     window.__noDiag = /[?&]nodiag\b/.test(location.search);
-    var lastSample = 0, nSamples = 0, origRaf = window.requestAnimationFrame;
+    // Le premier relevé attend 3 s après la fin du chargement : au tout début l'appli ne peint que son fond, d'une seule couleur,
+    // et un écran qui ne bouge plus ensuite ne redessine pas (donc pas d'autre relevé) : ce seul relevé faisait croire à un écran vide.
+    var lastSample = 0, nSamples = 0, readyAt = 0, origRaf = window.requestAnimationFrame;
     if (origRaf && !window.__noDiag) {
         window.requestAnimationFrame = function (cb) {
             return origRaf.call(window, function (t) {
                 cb(t);
                 var now = Date.now();
-                if (nSamples < 3 && now - lastSample > 10000 && window.__findCanvas()) {
+                if (!readyAt && !document.getElementById("loading") && window.__findCanvas()) readyAt = now;
+                if (readyAt && now - readyAt > 3000 && nSamples < 3 && now - lastSample > 10000 && window.__findCanvas()) {
                     lastSample = now; nSamples++;
                     var s = window.__sampleCanvas();
                     if (s) { window.__samples.push(s); if (window.__samples.length > 40) window.__samples.shift(); }
