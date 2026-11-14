@@ -1,7 +1,260 @@
 {
- "side_km": 8.0,
+ "side_km": 12.0,
  "pixel_m": 10.0,
  "zones": [
+  {
+   "id": "le-verdon",
+   "name": "Le Verdon",
+   "lat": 45.548,
+   "lon": -1.1217,
+   "spots": [
+    "Le Verdon",
+    "Soulac",
+    "L'Amélie"
+   ]
+  },
+  {
+   "id": "le-gurp",
+   "name": "Le Gurp",
+   "lat": 45.4682,
+   "lon": -1.1747,
+   "spots": [
+    "Soulac",
+    "L'Amélie",
+    "Le Gurp"
+   ]
+  },
+  {
+   "id": "montalivet",
+   "name": "Montalivet",
+   "lat": 45.3786,
+   "lon": -1.1847,
+   "spots": [
+    "Montalivet"
+   ]
+  },
+  {
+   "id": "montalivet-2",
+   "name": "Montalivet 2",
+   "lat": 45.2889,
+   "lon": -1.1929,
+   "spots": []
+  },
+  {
+   "id": "hourtin",
+   "name": "Hourtin",
+   "lat": 45.1991,
+   "lon": -1.2012,
+   "spots": [
+    "Hourtin"
+   ]
+  },
+  {
+   "id": "carcans",
+   "name": "Carcans",
+   "lat": 45.1099,
+   "lon": -1.2165,
+   "spots": [
+    "Carcans"
+   ]
+  },
+  {
+   "id": "lacanau",
+   "name": "Lacanau",
+   "lat": 45.0203,
+   "lon": -1.2281,
+   "spots": [
+    "Lacanau"
+   ]
+  },
+  {
+   "id": "le-porge",
+   "name": "Le Porge",
+   "lat": 44.9307,
+   "lon": -1.2383,
+   "spots": [
+    "Le Porge"
+   ]
+  },
+  {
+   "id": "la-jenny",
+   "name": "La Jenny",
+   "lat": 44.8414,
+   "lon": -1.253,
+   "spots": [
+    "Le Porge",
+    "La Jenny",
+    "Le Grand Crohot"
+   ]
+  },
+  {
+   "id": "le-truc-vert",
+   "name": "Le Truc Vert",
+   "lat": 44.7524,
+   "lon": -1.269,
+   "spots": [
+    "Le Grand Crohot",
+    "Le Truc Vert"
+   ]
+  },
+  {
+   "id": "le-cap-ferret",
+   "name": "Le Cap Ferret",
+   "lat": 44.6626,
+   "lon": -1.2729,
+   "spots": [
+    "Le Truc Vert",
+    "Le Cap Ferret"
+   ]
+  },
+  {
+   "id": "la-salie",
+   "name": "La Salie",
+   "lat": 44.5726,
+   "lon": -1.2748,
+   "spots": [
+    "La Salie"
+   ]
+  },
+  {
+   "id": "biscarrosse",
+   "name": "Biscarrosse",
+   "lat": 44.4827,
+   "lon": -1.2777,
+   "spots": [
+    "La Salie",
+    "Biscarrosse"
+   ]
+  },
+  {
+   "id": "biscarrosse-2",
+   "name": "Biscarrosse 2",
+   "lat": 44.3933,
+   "lon": -1.2892,
+   "spots": []
+  },
+  {
+   "id": "mimizan",
+   "name": "Mimizan",
+   "lat": 44.3041,
+   "lon": -1.3055,
+   "spots": []
+  },
+  {
+   "id": "mimizan-2",
+   "name": "Mimizan 2",
+   "lat": 44.2149,
+   "lon": -1.3218,
+   "spots": [
+    "Mimizan"
+   ]
+  },
+  {
+   "id": "contis",
+   "name": "Contis",
+   "lat": 44.1262,
+   "lon": -1.3422,
+   "spots": [
+    "Contis"
+   ]
+  },
+  {
+   "id": "contis-2",
+   "name": "Contis 2",
+   "lat": 44.0379,
+   "lon": -1.3657,
+   "spots": []
+  },
+  {
+   "id": "vielle-saint-girons",
+   "name": "Vielle-Saint-Girons",
+   "lat": 43.9498,
+   "lon": -1.3909,
+   "spots": [
+    "Vielle-Saint-Girons"
+   ]
+  },
+  {
+   "id": "moliets",
+   "name": "Moliets",
+   "lat": 43.8617,
+   "lon": -1.4157,
+   "spots": [
+    "Moliets",
+    "Messanges"
+   ]
+  },
+  {
+   "id": "messanges",
+   "name": "Messanges",
+   "lat": 43.7736,
+   "lon": -1.441,
+   "spots": [
+    "Messanges"
+   ]
+  },
+  {
+   "id": "seignosse",
+   "name": "Seignosse",
+   "lat": 43.6852,
+   "lon": -1.4632,
+   "spots": [
+    "Hossegor",
+    "Capbreton",
+    "Seignosse"
+   ]
+  },
+  {
+   "id": "capbreton",
+   "name": "Capbreton",
+   "lat": 43.6002,
+   "lon": -1.4979,
+   "spots": [
+    "Capbreton"
+   ]
+  },
+  {
+   "id": "anglet",
+   "name": "Anglet",
+   "lat": 43.5193,
+   "lon": -1.5519,
+   "spots": [
+    "Tarnos",
+    "Boucau",
+    "Anglet",
+    "Biarritz"
+   ]
+  },
+  {
+   "id": "bidart",
+   "name": "Bidart",
+   "lat": 43.4429,
+   "lon": -1.616,
+   "spots": [
+    "Biarritz",
+    "Bidart",
+    "Guéthary",
+    "Saint-Jean-de-Luz"
+   ]
+  },
+  {
+   "id": "hendaye",
+   "name": "Hendaye",
+   "lat": 43.3938,
+   "lon": -1.7148,
+   "spots": [
+    "Hendaye"
+   ]
+  },
+  {
+   "id": "hendaye-2",
+   "name": "Hendaye 2",
+   "lat": 43.373,
+   "lon": -1.7987,
+   "spots": [
+    "Hendaye"
+   ]
+  },
   {
    "id": "porspoder",
    "name": "Porspoder",
@@ -71,7 +324,8 @@
    "lat": 46.417,
    "lon": -1.503,
    "spots": [
-    "Longeville"
+    "Longeville",
+    "Jard-sur-Mer"
    ]
   },
   {
@@ -80,6 +334,7 @@
    "lat": 46.412,
    "lon": -1.579,
    "spots": [
+    "Longeville",
     "Jard-sur-Mer"
    ]
   },
@@ -91,252 +346,6 @@
    "spots": [
     "La Tranche-sur-Mer"
    ]
-  },
-  {
-   "id": "le-verdon",
-   "name": "Le Verdon",
-   "lat": 45.548,
-   "lon": -1.096,
-   "spots": [
-    "Le Verdon"
-   ]
-  },
-  {
-   "id": "soulac",
-   "name": "Soulac",
-   "lat": 45.5045,
-   "lon": -1.137,
-   "spots": [
-    "Soulac",
-    "L'Amélie"
-   ]
-  },
-  {
-   "id": "le-gurp",
-   "name": "Le Gurp",
-   "lat": 45.437,
-   "lon": -1.155,
-   "spots": [
-    "Le Gurp"
-   ]
-  },
-  {
-   "id": "montalivet",
-   "name": "Montalivet",
-   "lat": 45.38,
-   "lon": -1.159,
-   "spots": [
-    "Montalivet"
-   ]
-  },
-  {
-   "id": "hourtin",
-   "name": "Hourtin",
-   "lat": 45.185,
-   "lon": -1.177,
-   "spots": [
-    "Hourtin"
-   ]
-  },
-  {
-   "id": "carcans",
-   "name": "Carcans",
-   "lat": 45.083,
-   "lon": -1.196,
-   "spots": [
-    "Carcans"
-   ]
-  },
-  {
-   "id": "lacanau",
-   "name": "Lacanau",
-   "lat": 44.998,
-   "lon": -1.205,
-   "spots": [
-    "Lacanau"
-   ]
-  },
-  {
-   "id": "le-porge",
-   "name": "Le Porge",
-   "lat": 44.887,
-   "lon": -1.218,
-   "spots": [
-    "Le Porge"
-   ]
-  },
-  {
-   "id": "la-jenny",
-   "name": "La Jenny",
-   "lat": 44.835,
-   "lon": -1.229,
-   "spots": [
-    "La Jenny"
-   ]
-  },
-  {
-   "id": "le-grand-crohot",
-   "name": "Le Grand Crohot",
-   "lat": 44.795,
-   "lon": -1.24,
-   "spots": [
-    "Le Grand Crohot"
-   ]
-  },
-  {
-   "id": "le-truc-vert",
-   "name": "Le Truc Vert",
-   "lat": 44.715,
-   "lon": -1.247,
-   "spots": [
-    "Le Truc Vert"
-   ]
-  },
-  {
-   "id": "le-cap-ferret",
-   "name": "Le Cap Ferret",
-   "lat": 44.628,
-   "lon": -1.248,
-   "spots": [
-    "Le Cap Ferret"
-   ]
-  },
-  {
-   "id": "la-salie",
-   "name": "La Salie",
-   "lat": 44.52,
-   "lon": -1.251,
-   "spots": [
-    "La Salie"
-   ]
-  },
-  {
-   "id": "biscarrosse",
-   "name": "Biscarrosse",
-   "lat": 44.448,
-   "lon": -1.254,
-   "spots": [
-    "Biscarrosse"
-   ]
-  },
-  {
-   "id": "mimizan",
-   "name": "Mimizan",
-   "lat": 44.208,
-   "lon": -1.298,
-   "spots": [
-    "Mimizan"
-   ]
-  },
-  {
-   "id": "contis",
-   "name": "Contis",
-   "lat": 44.093,
-   "lon": -1.325,
-   "spots": [
-    "Contis"
-   ]
-  },
-  {
-   "id": "vielle-saint-girons",
-   "name": "Vielle-Saint-Girons",
-   "lat": 43.953,
-   "lon": -1.365,
-   "spots": [
-    "Vielle-Saint-Girons"
-   ]
-  },
-  {
-   "id": "moliets",
-   "name": "Moliets",
-   "lat": 43.854,
-   "lon": -1.393,
-   "spots": [
-    "Moliets"
-   ]
-  },
-  {
-   "id": "messanges",
-   "name": "Messanges",
-   "lat": 43.816,
-   "lon": -1.405,
-   "spots": [
-    "Messanges"
-   ]
-  },
-  {
-   "id": "seignosse",
-   "name": "Seignosse",
-   "lat": 43.6815,
-   "lon": -1.439,
-   "spots": [
-    "Seignosse",
-    "Hossegor"
-   ]
-  },
-  {
-   "id": "capbreton",
-   "name": "Capbreton",
-   "lat": 43.642,
-   "lon": -1.445,
-   "spots": [
-    "Capbreton"
-   ]
-  },
-  {
-   "id": "tarnos",
-   "name": "Tarnos",
-   "lat": 43.5223,
-   "lon": -1.525,
-   "spots": [
-    "Tarnos",
-    "Boucau",
-    "Anglet"
-   ]
-  },
-  {
-   "id": "biarritz",
-   "name": "Biarritz",
-   "lat": 43.483,
-   "lon": -1.56,
-   "spots": [
-    "Biarritz"
-   ]
-  },
-  {
-   "id": "bidart",
-   "name": "Bidart",
-   "lat": 43.431,
-   "lon": -1.603,
-   "spots": [
-    "Bidart",
-    "Guéthary"
-   ]
-  },
-  {
-   "id": "saint-jean-de-luz",
-   "name": "Saint-Jean-de-Luz",
-   "lat": 43.407,
-   "lon": -1.637,
-   "spots": [
-    "Saint-Jean-de-Luz"
-   ]
-  },
-  {
-   "id": "hendaye",
-   "name": "Hendaye",
-   "lat": 43.373,
-   "lon": -1.774,
-   "spots": [
-    "Hendaye"
-   ]
-  },
-  {
-   "id": "montalivet-sud",
-   "name": "Montalivet sud",
-   "lat": 45.322,
-   "lon": -1.166,
-   "spots": []
   }
  ]
 }
