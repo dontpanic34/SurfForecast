@@ -124,6 +124,8 @@ def main():
         os.makedirs(folder, exist_ok=True)
         index_path = os.path.join(folder, "index.json")
         index = json.load(open(index_path)) if os.path.exists(index_path) else {"images": []}
+        if index["images"] and (index.get("width") != fr["width"] or abs(index.get("lat_top", 0) - fr["lat_top"]) > 1e-6 or abs(index.get("lon_left", 0) - fr["lon_left"]) > 1e-6):
+            index = {"images": []}  # cadrage changé : les anciennes photos ne se superposent plus, on repart à neuf
         known = {i["date"] for i in index["images"]} | set(index.get("skipped", []))
         added = 0
         for item in search(zone, since):
