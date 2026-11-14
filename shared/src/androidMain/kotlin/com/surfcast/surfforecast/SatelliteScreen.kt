@@ -56,6 +56,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +84,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
 import java.net.HttpURLConnection
@@ -306,7 +308,7 @@ private fun rememberStripBitmaps(frames: List<SatImage>, current: SatImage?): St
         val order = listOfNotNull(current) + frames.reversed()
         for (image in order) {
             if (image.file in map) continue
-            val request = ImageRequest.Builder(context).data(SatelliteSource.BASE_URL + image.file).allowHardware(false).build()
+            val request = ImageRequest.Builder(context).data(SatelliteSource.BASE_URL + image.file).size(coil.size.Size.ORIGINAL).allowHardware(false).build()
             val drawable = context.imageLoader.execute(request).drawable as? BitmapDrawable ?: continue
             map[image.file] = drawable.bitmap.asImageBitmap()
             if (map.size > 40) map.keys.firstOrNull { k -> k != current?.file && frames.none { it.file == k } }?.let { map.remove(it) }
@@ -315,42 +317,63 @@ private fun rememberStripBitmaps(frames: List<SatImage>, current: SatImage?): St
     return StripBitmaps(map)
 }
 
-/** La fenêtre du point dans la bande : 1,8 km sur 2,2 km, un peu décalée vers le large. On peut zoomer et se déplacer. */
+/**
+ * La fenêtre du point dans la bande : 1,8 km sur 2,2 km au départ, un peu décalée vers le large. On peut zoomer (pincer ou
+ * boutons − et +, jusqu'à voir environ 6 km de côte) et se déplacer en glissant.
+ */
 @Composable
 private fun PointView(strip: ImageBitmap, index: SatIndex, point: SatPoint) {
     var zoom by remember(point) { mutableFloatStateOf(1f) }
     var panCols by remember(point) { mutableFloatStateOf(0f) }
     var panRows by remember(point) { mutableFloatStateOf(0f) }
     var size by remember { mutableStateOf(IntSize.Zero) }
-    Canvas(
-        Modifier.fillMaxSize().onSizeChanged { size = it }.pointerInput(point) {
-            detectTransformGestures { _, pan, gestureZoom, _ ->
-                if (size.width == 0) return@detectTransformGestures
-                zoom = (zoom * gestureZoom).coerceIn(0.35f, 4f)
-                val rowsShown = SatelliteSource.VIEW_ROWS / zoom
-                panCols -= pan.x / size.height * rowsShown
-                panRows -= pan.y / size.height * rowsShown
+    // La bande téléchargée peut être plus petite que son cadre (image réduite) : tout se calcule dans le cadre, puis on convertit.
+    val k = strip.height.toFloat() / index.height
+    Box(Modifier.fillMaxSize()) {
+        Canvas(
+            Modifier.fillMaxSize().onSizeChanged { size = it }.pointerInput(point) {
+                detectTransformGestures { _, pan, gestureZoom, _ ->
+                    if (size.width == 0) return@detectTransformGestures
+                    zoom = (zoom * gestureZoom).coerceIn(0.35f, 4f)
+                    val rowsShown = SatelliteSource.VIEW_ROWS / zoom
+                    panCols -= pan.x / size.height * rowsShown
+                    panRows -= pan.y / size.height * rowsShown
+                }
             }
+        ) {
+            val rows = (SatelliteSource.VIEW_ROWS / zoom).coerceAtMost(index.height.toFloat())
+            val cols = (rows * this.size.width / this.size.height).coerceAtMost(index.width.toFloat())
+            val left = (index.colOf(point.lon).toFloat() - 25f + panCols - cols / 2).coerceIn(0f, index.width - cols)
+            val top = (index.rowOf(point.lat).toFloat() + panRows - rows / 2).coerceIn(0f, index.height - rows)
+            drawImage(
+                strip, srcOffset = IntOffset((left * k).roundToInt(), (top * k).roundToInt()),
+                srcSize = IntSize((cols * k).roundToInt().coerceAtLeast(1), (rows * k).roundToInt().coerceAtLeast(1)),
+                dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt())
+            )
+            // Le point lui-même.
+            val px = (index.colOf(point.lon).toFloat() - left) / cols * this.size.width
+            val py = (index.rowOf(point.lat).toFloat() - top) / rows * this.size.height
+            drawPin(Offset(px, py), 9.dp.toPx())
+            // Échelle : 500 m.
+            val bar = 50f / cols * this.size.width
+            val y = this.size.height - 12.dp.toPx()
+            drawLine(Color.White, Offset(10.dp.toPx(), y), Offset(10.dp.toPx() + bar, y), strokeWidth = 3.dp.toPx())
         }
-    ) {
-        val rows = (SatelliteSource.VIEW_ROWS / zoom).coerceAtMost(strip.height.toFloat())
-        val cols = (rows * this.size.width / this.size.height).coerceAtMost(strip.width.toFloat())
-        val left = (index.colOf(point.lon).toFloat() - 25f + panCols - cols / 2).coerceIn(0f, strip.width - cols)
-        val top = (index.rowOf(point.lat).toFloat() + panRows - rows / 2).coerceIn(0f, strip.height - rows)
-        drawImage(
-            strip, srcOffset = IntOffset(left.roundToInt(), top.roundToInt()), srcSize = IntSize(cols.roundToInt(), rows.roundToInt()),
-            dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt())
-        )
-        // Le point lui-même.
-        val px = (index.colOf(point.lon).toFloat() - left) / cols * this.size.width
-        val py = (index.rowOf(point.lat).toFloat() - top) / rows * this.size.height
-        drawPin(Offset(px, py), 9.dp.toPx())
-        // Échelle : 500 m.
-        val bar = 50f / cols * this.size.width
-        val y = this.size.height - 14.dp.toPx()
-        drawLine(Color.White, Offset(10.dp.toPx(), y), Offset(10.dp.toPx() + bar, y), strokeWidth = 3.dp.toPx())
+        Text("500 m", fontSize = 10.sp, color = Color.White, modifier = Modifier.align(Alignment.BottomStart).padding(start = 10.dp, bottom = 16.dp))
+        // Zoom : boutons, plus sûrs que le pincement (l'appli a déjà un zoom général au pincement).
+        Column(Modifier.align(Alignment.CenterEnd).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ZoomButton("+") { zoom = (zoom * 1.5f).coerceAtMost(4f) }
+            ZoomButton("−") { zoom = (zoom / 1.5f).coerceAtLeast(0.35f) }
+        }
     }
-    Text("500 m", fontSize = 10.sp, color = Color.White, modifier = Modifier.padding(start = 10.dp, top = 4.dp))
+}
+
+@Composable
+private fun ZoomButton(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.size(38.dp).clip(CircleShape).background(Color(0xC7061018)).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { Text(label, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White) }
 }
 
 private fun DrawScope.drawPin(at: Offset, r: Float) {
@@ -456,6 +479,7 @@ private fun PlacePointSheet(index: SatIndex, strip: ImageBitmap?, existing: List
     var colsShown by remember { mutableFloatStateOf(index.width.toFloat()) }
     var size by remember { mutableStateOf(IntSize.Zero) }
     val measurer = rememberTextMeasurer()
+    val scope = rememberCoroutineScope()
     val landmarks = remember(index) { SurfDatabase.getAllSpots().filter { index.contains(it.latitude, it.longitude) } }
 
     fun place(lat: Double, lon: Double, source: String) {
@@ -520,8 +544,10 @@ private fun PlacePointSheet(index: SatIndex, strip: ImageBitmap?, existing: List
                 val rowsShown = (this.size.height * perPx).coerceAtMost(index.height.toFloat())
                 val left = (centerCol - colsShown / 2).coerceIn(0f, index.width - colsShown)
                 val top = (centerRow - rowsShown / 2).coerceIn(0f, (index.height - rowsShown).coerceAtLeast(0f))
+                val k = strip.height.toFloat() / index.height
                 drawImage(
-                    strip, srcOffset = IntOffset(left.roundToInt(), top.roundToInt()), srcSize = IntSize(colsShown.roundToInt(), rowsShown.roundToInt()),
+                    strip, srcOffset = IntOffset((left * k).roundToInt(), (top * k).roundToInt()),
+                    srcSize = IntSize((colsShown * k).roundToInt().coerceAtLeast(1), (rowsShown * k).roundToInt().coerceAtLeast(1)),
                     dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt())
                 )
                 fun pos(lat: Double, lon: Double) = Offset((index.colOf(lon).toFloat() - left) / perPx, (index.rowOf(lat).toFloat() - top) / perPx)
@@ -542,6 +568,10 @@ private fun PlacePointSheet(index: SatIndex, strip: ImageBitmap?, existing: List
                 existing.drop(1).forEach { p -> drawCircle(Color(0xFF7FC3E6), radius = 5.dp.toPx(), center = pos(p.lat, p.lon)) }
                 pin?.let { (lat, lon) -> drawPin(pos(lat, lon), 11.dp.toPx()) }
             }
+            Column(Modifier.align(Alignment.CenterEnd).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ZoomButton("+") { colsShown = (colsShown / 1.5f).coerceAtLeast(60f) }
+                ZoomButton("−") { colsShown = (colsShown * 1.5f).coerceAtMost(index.width.toFloat()) }
+            }
         }
         Text(message, fontSize = 12.sp, color = colors.onSurfaceVariant)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -555,12 +585,20 @@ private fun PlacePointSheet(index: SatIndex, strip: ImageBitmap?, existing: List
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedTextField(
                     value = coordsText, onValueChange = { coordsText = it }, singleLine = true, modifier = Modifier.weight(1f),
-                    placeholder = { Text("45.31, -1.16 ou lien Google Maps", fontSize = 13.sp) }
+                    placeholder = { Text("45.31, -1.16 ou lien partagé depuis Maps", fontSize = 13.sp) }
                 )
                 Chip("Placer", selected = true) {
-                    val c = SatelliteModel.parseCoordinates(coordsText)
-                    if (c == null) message = "Coordonnées illisibles. Dans Google Maps : appui long sur la carte, puis copie les deux nombres."
-                    else place(c.first, c.second, "Coordonnées")
+                    val direct = SatelliteModel.parseCoordinates(coordsText)
+                    if (direct != null) place(direct.first, direct.second, "Coordonnées")
+                    else if (coordsText.contains("http")) {
+                        // Lien court de partage (maps.app.goo.gl) : on le suit pour lire les coordonnées de l'adresse finale.
+                        message = "Lecture du lien…"
+                        scope.launch {
+                            val c = withContext(Dispatchers.IO) { resolveMapsLink(coordsText) }
+                            if (c == null) message = "Ce lien ne donne pas de coordonnées. Dans Google Maps : appui long sur la carte, puis copie les deux nombres."
+                            else place(c.first, c.second, "Lien")
+                        }
+                    } else message = "Coordonnées illisibles. Exemple : 45.31, -1.16, ou un lien Google Maps."
                 }
             }
         }
@@ -613,4 +651,26 @@ private fun photoLatLon(context: Context, uri: Uri): Pair<Double, Double>? = run
         val out = FloatArray(2)
         if (ExifInterface(input).getLatLong(out) && (out[0] != 0f || out[1] != 0f)) out[0].toDouble() to out[1].toDouble() else null
     }
+}.getOrNull()
+
+/**
+ * Suit un lien de partage Google Maps (maps.app.goo.gl/…) jusqu'à son adresse finale et y lit les coordonnées.
+ * Sert pour une photo : dans Google Photos, « Ouvrir dans Maps », Partager, copier le lien, puis le coller ici.
+ */
+private fun resolveMapsLink(text: String): Pair<Double, Double>? = runCatching {
+    var url = Regex("https?://\\S+").find(text)?.value ?: return null
+    repeat(6) {
+        SatelliteModel.parseCoordinates(java.net.URLDecoder.decode(url, "UTF-8"))?.let { return it }
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.instanceFollowRedirects = false
+        conn.connectTimeout = 8000
+        conn.readTimeout = 8000
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13; Mobile)")
+        val next = conn.getHeaderField("Location")
+        val body = if (next == null && conn.responseCode in 200..299) conn.inputStream.bufferedReader().use { it.readText().take(400_000) } else null
+        conn.disconnect()
+        if (next != null) url = URL(URL(url), next).toString()
+        else return body?.let { SatelliteModel.parseCoordinates(java.net.URLDecoder.decode(it.replace("\\u003d", "="), "UTF-8").let { t -> Regex("!3d-?\\d+\\.\\d+!4d-?\\d+\\.\\d+").find(t)?.value ?: Regex("@-?\\d+\\.\\d+,-?\\d+\\.\\d+").find(t)?.value ?: "" }) }
+    }
+    null
 }.getOrNull()
