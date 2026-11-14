@@ -15,8 +15,11 @@ import kotlin.math.roundToInt
  * les points posés par l'utilisateur (gardés sur son téléphone, jamais dans le dépôt) et la lecture de coordonnées.
  */
 object SatelliteSource {
-    const val BASE_URL = "https://raw.githubusercontent.com/dontpanic34/SurfForecast/data/data/sat/montalivet/"
-    const val INDEX_URL = BASE_URL + "index.json"
+    /** Les photos sont dans la branche `sat` du dépôt (data/sat/<zone>/…), à part du code et des relevés de prévisions. */
+    const val BASE_URL = "https://raw.githubusercontent.com/dontpanic34/SurfForecast/sat/data/sat/"
+    const val ZONES_URL = BASE_URL + "zones.json"
+    fun indexUrl(zoneId: String) = "$BASE_URL$zoneId/index.json"
+    fun imageUrl(zoneId: String, file: String) = "$BASE_URL$zoneId/$file"
 
     /** Au-delà de cette part de nuages sur le point (en %), la photo compte comme nuageuse. */
     const val CLOUDY_PERCENT = 30
@@ -71,11 +74,34 @@ data class SatIndex(
 
     fun isCloudy(image: SatImage, lat: Double): Boolean = cloudAt(image, lat) > SatelliteSource.CLOUDY_PERCENT
 
-    /** Distance au point de repère de la bande, en mots : « 8 km au sud ». */
-    fun distanceWord(lat: Double, lon: Double): String {
-        val km = distanceKm(homeLat, homeLon, lat, lon)
-        return if (km < 0.3) "au point de repère" else "${formatDecimal(km, 1).replace('.', ',')} km au ${if (lat > homeLat) "nord" else "sud"}"
+}
+
+/** Une zone photographiée : une tuile carrée centrée sur ([lat], [lon]) ; [spots] : les spots du catalogue qu'elle couvre. */
+data class SatZone(val id: String, val name: String, val lat: Double, val lon: Double, val spots: List<String>)
+
+/** Les zones disponibles et le côté de leur tuile (km). */
+data class SatZones(val sideKm: Double, val zones: List<SatZone>) {
+    /** La zone qui contient ce point (à 500 m du bord au moins, pour que la vue ne soit pas coupée) ; la plus proche de son centre. */
+    fun zoneFor(lat: Double, lon: Double): SatZone? {
+        val half = sideKm / 2 - 0.5
+        return zones.filter {
+            kotlin.math.abs(lat - it.lat) * 111.32 <= half &&
+                kotlin.math.abs(lon - it.lon) * 111.32 * kotlin.math.cos(it.lat * kotlin.math.PI / 180.0) <= half
+        }.minByOrNull { distanceKm(lat, lon, it.lat, it.lon) }
     }
+
+    /** Les zones, de la plus proche à la plus éloignée d'un point. */
+    fun nearest(lat: Double, lon: Double): List<SatZone> = zones.sortedBy { distanceKm(lat, lon, it.lat, it.lon) }
+}
+
+/** Où se trouve ([lat], [lon]) par rapport à ([refLat], [refLon]), en mots : « 6,5 km au sud », « 2 km à l'ouest ». */
+fun satDistanceWord(lat: Double, lon: Double, refLat: Double, refLon: Double): String {
+    val km = distanceKm(refLat, refLon, lat, lon)
+    if (km < 0.3) return "au même endroit"
+    val dy = (lat - refLat) * 111.32
+    val dx = (lon - refLon) * 111.32 * kotlin.math.cos(refLat * kotlin.math.PI / 180.0)
+    val dir = if (kotlin.math.abs(dy) >= kotlin.math.abs(dx)) (if (dy > 0) "au nord" else "au sud") else (if (dx > 0) "à l'est" else "à l'ouest")
+    return "${formatDecimal(km, 1).replace('.', ',')} km $dir"
 }
 
 /** Un point posé sur la côte. */
@@ -83,6 +109,21 @@ data class SatPoint(val name: String, val lat: Double, val lon: Double)
 
 object SatelliteModel {
     private val json = Json { ignoreUnknownKeys = true }
+
+    fun parseZones(text: String): SatZones? = runCatching {
+        val o = json.parseToJsonElement(text).jsonObject
+        SatZones(
+            sideKm = o["side_km"]?.jsonPrimitive?.doubleOrNull ?: 8.0,
+            zones = o.getValue("zones").jsonArray.map { e ->
+                val z = e.jsonObject
+                SatZone(
+                    id = z.getValue("id").jsonPrimitive.content, name = z.getValue("name").jsonPrimitive.content,
+                    lat = z.getValue("lat").jsonPrimitive.doubleOrNull ?: error("lat"), lon = z.getValue("lon").jsonPrimitive.doubleOrNull ?: error("lon"),
+                    spots = (z["spots"] as? kotlinx.serialization.json.JsonArray)?.map { it.jsonPrimitive.content } ?: emptyList()
+                )
+            }
+        )
+    }.getOrNull()
 
     fun parseIndex(text: String): SatIndex? = runCatching {
         val o = json.parseToJsonElement(text).jsonObject

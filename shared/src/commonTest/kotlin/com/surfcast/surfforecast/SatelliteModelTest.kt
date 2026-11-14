@@ -68,4 +68,30 @@ class SatelliteModelTest {
         assertEquals(SatPoint("Plage du vélo", 45.31, -1.165), back[0])
         assertEquals("Nord   essai", back[1].name)
     }
+
+    private val zonesText = """{"side_km":8.0,"pixel_m":10.0,"zones":[
+        {"id":"montalivet","name":"Montalivet","lat":45.38,"lon":-1.159,"spots":["Montalivet"]},
+        {"id":"montalivet-sud","name":"Montalivet sud","lat":45.322,"lon":-1.166,"spots":[]},
+        {"id":"lacanau","name":"Lacanau","lat":44.998,"lon":-1.205,"spots":["Lacanau"]}]}"""
+
+    @Test
+    fun zoneIsFoundForAPointInsideItsTile() {
+        val zones = assertNotNull(SatelliteModel.parseZones(zonesText))
+        assertEquals(3, zones.zones.size)
+        assertEquals("montalivet", zones.zoneFor(45.38, -1.159)?.id)
+        // 6,5 km au sud de Montalivet : hors de sa tuile de 8 km, dans celle de « Montalivet sud ».
+        assertEquals("montalivet-sud", zones.zoneFor(45.3216, -1.165)?.id)
+        // Entre deux zones et loin de tout : rien.
+        assertNull(zones.zoneFor(45.15, -1.2))
+        assertNull(zones.zoneFor(48.0, -4.0))
+        assertEquals("montalivet", zones.nearest(45.4, -1.16).first().id)
+        assertNull(SatelliteModel.parseZones("pas du json"))
+    }
+
+    @Test
+    fun distanceIsToldInWords() {
+        assertEquals("6,5 km au sud", satDistanceWord(45.3216, -1.159, 45.38, -1.159))
+        assertEquals("au même endroit", satDistanceWord(45.38, -1.159, 45.38, -1.159))
+        assertTrue(satDistanceWord(45.38, -1.2, 45.38, -1.159).endsWith("à l'ouest"))
+    }
 }
