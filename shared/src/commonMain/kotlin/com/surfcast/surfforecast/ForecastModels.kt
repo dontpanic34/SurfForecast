@@ -150,12 +150,14 @@ data class WindSample(val speedKmh: Int, val gustKmh: Int, val direction: String
 
 /**
  * Poids des trois modèles de vagues (MF-WAM, ECMWF Wave, GFS Wave) dans le consensus, selon l'échéance en heures depuis
- * le début du jour : jusqu'à 36 h, MF-WAM et ECMWF à parts égales et GFS Wave à zéro ; dès 60 h, trois parts égales ; fondu entre les deux.
+ * le début du jour : jusqu'à 36 h, MF-WAM et ECMWF à parts égales et GFS Wave à zéro ; dès 60 h, GFS Wave pour un sixième et les deux autres à parts égales ; fondu entre les deux.
  */
 internal fun waveConsensusWeights(leadHours: Double): DoubleArray {
     val fade = ((leadHours - 36.0) / 24.0).coerceIn(0.0, 1.0)
-    val fine = 0.5 * (1 - fade) + fade / 3.0
-    return doubleArrayOf(fine, fine, fade / 3.0)
+    // GFS Wave compte pour un sixième au plus (un tiers avant le 14 novembre) : il sous-estime de 0,15 m face aux bouées.
+    val gfs = fade / 6.0
+    val fine = (1 - gfs) / 2.0
+    return doubleArrayOf(fine, fine, gfs)
 }
 
 /** Ce qu'un modèle de vagues annonce pour un moment : hauteur (m) et période (s). */

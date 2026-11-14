@@ -439,7 +439,7 @@ class SurfRepository(
     /**
      * Consensus des trois modèles de vagues, heure par heure : la hauteur, la période et la direction viennent du même
      * calcul. Court terme (jusqu'à 36 h) : MF-WAM et ECMWF à parts égales, GFS Wave écarté (il surestimait la période
-     * de près de 2 s sur la bouée de Cap Ferret). Long terme (dès 60 h) : les trois à parts égales. Entre les deux,
+     * de près de 2 s sur la bouée de Cap Ferret). Long terme (dès 60 h) : GFS Wave pour un sixième, les deux autres à parts égales. Entre les deux,
      * un fondu, pour ne pas voir un saut. Clapot et houle secondaire : du modèle le plus pesant qui les donne.
      */
     private suspend fun buildConsensusMarine(lat: Double, lon: Double, today: LocalDate): RawMarineHourly = coroutineScope {
