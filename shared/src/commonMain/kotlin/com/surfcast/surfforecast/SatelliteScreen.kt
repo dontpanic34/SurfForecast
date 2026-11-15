@@ -77,6 +77,7 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import kotlin.math.roundToInt
@@ -316,7 +317,12 @@ private fun SatelliteBody(
     LaunchedEffect(playing, frames, speed) {
         if (!playing) return@LaunchedEffect
         if (frames.size < 2) { onPlaying(false); return@LaunchedEffect }
-        if (current == frames.last()) onDate(frames.first().date)
+        // Depuis la fin, on repart du début, mais seulement quand cette première photo est chargée (sinon la date change sans que l'image suive).
+        if (current == frames.last()) {
+            var waitedFirst = 0
+            while (bitmaps.get(frames.first()) == null && waitedFirst < 300) { delay(100); waitedFirst++ }
+            onDate(frames.first().date)
+        }
         var date = if (current == frames.last()) frames.first().date else current?.date
         while (true) {
             delay(longArrayOf(2200L, 1400L, 800L)[speed.coerceIn(0, 2)])
@@ -349,6 +355,11 @@ private fun SatelliteBody(
                 fontSize = 13.sp, color = Color.White, modifier = Modifier.align(Alignment.Center).padding(16.dp)
             )
         }
+        val loadedCount = bitmaps.loaded(frames)
+        if (playing && loadedCount < frames.size) Text(
+            "Chargement des photos $loadedCount/${frames.size}…", fontSize = 11.sp, color = Color.White,
+            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xC7061018)).padding(horizontal = 8.dp, vertical = 4.dp)
+        )
         Text("Copernicus Sentinel-2", fontSize = 9.sp, color = Color(0xCCFFFFFF), modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp))
     }
 
@@ -458,12 +469,23 @@ private fun rememberTileCrops(client: HttpClient, zone: SatZone, frames: List<Sa
     val map = remember(zone.id, point) { mutableStateMapOf<String, Crop>() }
     // La photo affichée d'abord, puis les autres de la période (pour que le film soit fluide).
     LaunchedEffect(frames, current?.file, point, zone.id) {
-        val order = listOfNotNull(current) + frames.reversed()
-        for (image in order) {
-            if (image.file in map) continue
-            val data = bytes[image.file] ?: client.fetchBytes(SatelliteSource.imageUrl(zone.id, image.file))?.also { bytes[image.file] = it } ?: continue
-            val bitmap = try { data.decodeToImageBitmap() } catch (e: CancellationException) { throw e } catch (e: Throwable) { continue }
-            map[image.file] = cropOf(bitmap, index, point)
+        // Puis dans l'ordre du film (la plus ancienne d'abord) : « lecture » peut démarrer dès que les premières sont là.
+        // Six téléchargements en même temps au lieu d'un seul.
+        val order = (listOfNotNull(current) + frames).distinctBy { it.file }
+        val gate = kotlinx.coroutines.sync.Semaphore(6)
+        kotlinx.coroutines.coroutineScope {
+            for (image in order) {
+                if (image.file in map) continue
+                launch {
+                    gate.withPermit {
+                        val data = bytes[image.file] ?: client.fetchBytes(SatelliteSource.imageUrl(zone.id, image.file))?.also { bytes[image.file] = it }
+                        if (data != null) {
+                            val bitmap = try { data.decodeToImageBitmap() } catch (e: CancellationException) { throw e } catch (e: Throwable) { null }
+                            if (bitmap != null) map[image.file] = cropOf(bitmap, index, point)
+                        }
+                    }
+                }
+            }
         }
     }
     return TileCrops(map)
