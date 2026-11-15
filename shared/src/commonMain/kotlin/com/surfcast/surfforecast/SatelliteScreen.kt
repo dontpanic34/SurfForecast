@@ -114,8 +114,16 @@ private suspend fun HttpClient.fetchText(url: String): String? = try {
 }
 
 private suspend fun HttpClient.fetchImage(url: String): ImageBitmap? = try {
+    fetchBytes(url)?.decodeToImageBitmap()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Throwable) {
+    null
+}
+
+private suspend fun HttpClient.fetchBytes(url: String): ByteArray? = try {
     val r = get(url)
-    if (r.status.isSuccess()) r.body<ByteArray>().decodeToImageBitmap() else null
+    if (r.status.isSuccess()) r.body<ByteArray>() else null
 } catch (e: CancellationException) {
     throw e
 } catch (e: Throwable) {
@@ -160,7 +168,7 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
             Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Vue satellite", fontSize = 19.sp, fontWeight = FontWeight.Bold, color = colors.onBackground)
-                    Text("Photos Sentinel-2 de la côte, tous les 2 à 5 jours", fontSize = 12.sp, color = colors.onSurfaceVariant)
+                    Text("Photos Sentinel-2 de la côte, tous les 2 à 5 jours · glisse pour explorer", fontSize = 12.sp, color = colors.onSurfaceVariant)
                 }
                 IconButton(onClick = onClose) { Icon(SurfIcons.Close, contentDescription = "Fermer", tint = colors.onBackground) }
             }
@@ -179,7 +187,14 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
 
             val points = remember(userPoints, spotName, spotLat, spotLon) { listOf(SatPoint(spotName, spotLat, spotLon)) + userPoints }
             val point = points.getOrElse(selected) { points.first() }
-            val zone = allZones.zoneFor(point.lat, point.lon)
+            // Le centre de la vue : au départ le point choisi, puis où l'utilisateur fait glisser la carte, n'importe où sur la côte couverte.
+            var view by remember(point) { mutableStateOf(point) }
+            var zoneHold by remember(point) { mutableStateOf(allZones.zoneFor(point.lat, point.lon)) }
+            val zone = zoneHold?.takeIf { allZones.covers(it, view.lat, view.lon) } ?: allZones.zoneFor(view.lat, view.lon) ?: zoneHold
+            LaunchedEffect(zone?.id) { zoneHold = zone }
+            val moveView: (Double, Double) -> Unit = { lat, lon ->
+                if (allZones.zoneFor(lat, lon) != null) view = SatPoint(point.name, lat, lon)
+            }
 
             if (placing) {
                 PlacePointSheet(
@@ -198,16 +213,20 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
             }
 
             // Le cadre de la zone du point.
-            var index by remember(zone?.id) { mutableStateOf<SatIndex?>(null) }
+            // Les cadres déjà chargés restent en mémoire ; en changeant de zone, la vue précédente reste affichée jusqu'à l'arrivée du nouveau cadre.
+            val indexCache = remember { HashMap<String, SatIndex>() }
+            var loaded by remember { mutableStateOf<Pair<String, SatIndex>?>(null) }
             var indexFailed by remember(zone?.id) { mutableStateOf(false) }
             LaunchedEffect(zone?.id, reload) {
                 indexFailed = false
-                if (zone != null) {
-                    index = client.fetchText(SatelliteSource.indexUrl(zone.id))?.let { SatelliteModel.parseIndex(it) }
-                    if (index == null) indexFailed = true
-                }
+                val z = zone ?: return@LaunchedEffect
+                val cached = indexCache[z.id]
+                if (cached != null) { loaded = z.id to cached; return@LaunchedEffect }
+                val fetched = client.fetchText(SatelliteSource.indexUrl(z.id))?.let { SatelliteModel.parseIndex(it) }
+                if (fetched == null) indexFailed = true else { indexCache[z.id] = fetched; loaded = z.id to fetched }
             }
-            val idx = index
+            val shownZone = loaded?.first?.let { id -> allZones.zones.firstOrNull { it.id == id } }
+            val idx = loaded?.second.takeIf { shownZone != null && allZones.covers(shownZone, view.lat, view.lon, 0.0) }
 
             Column(
                 Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp),
@@ -224,15 +243,21 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
                 }
 
                 if (zone == null) {
-                    NoticeBox("Pas encore de photos ici", "La vue satellite couvre pour l'instant la côte atlantique française, autour des spots du catalogue. Pose un point sur cette côte, ou choisis un autre spot.")
-                } else if (idx == null) {
+                    NoticeBox("Pas encore de photos ici", "La vue satellite couvre pour l'instant toute la côte atlantique française, de Hendaye au Verdon, plus la Vendée et la Bretagne. Choisis un autre spot ou pose un point sur cette côte.")
+                } else if (idx == null || shownZone == null) {
                     if (indexFailed) NoticeBox("Les photos de ${zone.name} ne se chargent pas", "Vérifie ta connexion, puis réessaie.", "Réessayer") { reload++ }
                     else Box(Modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 } else if (idx.images.isEmpty()) {
-                    NoticeBox("Les photos de ${zone.name} arrivent", "La collecte de cette zone est en cours : reviens dans quelques heures.")
+                    NoticeBox("Les photos de ${shownZone.name} arrivent", "La collecte de cette zone est en cours : reviens dans quelques heures.")
                 } else {
                     SatelliteBody(
-                        client = client, zone = zone, idx = idx, point = point, points = points, selected = selected,
+                        client = client, zones = allZones, zone = shownZone, idx = idx, point = point, view = view, onView = moveView,
+                        points = points, selected = selected,
+                        onPinHere = { p ->
+                            userPoints = userPoints + p
+                            SatelliteModel.savePoints(prefs, userPoints)
+                            selected = userPoints.size; prefs.putInt("sat_selected", selected); currentDate = null
+                        },
                         months = months, onMonths = { playing = false; months = it; prefs.putInt("sat_months", it) },
                         speed = speed, onSpeed = { speed = it; prefs.putInt("sat_speed", it) },
                         render = render, onRender = { render = it; prefs.putInt("sat_render", it) },
@@ -267,14 +292,24 @@ private fun NoticeBox(title: String, text: String, action: String? = null, onAct
 /** La photo, le film et les réglages d'un point dont la zone et le cadre sont connus. */
 @Composable
 private fun SatelliteBody(
-    client: HttpClient, zone: SatZone, idx: SatIndex, point: SatPoint, points: List<SatPoint>, selected: Int,
+    client: HttpClient, zones: SatZones, zone: SatZone, idx: SatIndex, point: SatPoint, view: SatPoint, onView: (Double, Double) -> Unit,
+    points: List<SatPoint>, selected: Int, onPinHere: (SatPoint) -> Unit,
     months: Int, onMonths: (Int) -> Unit, speed: Int, onSpeed: (Int) -> Unit, render: Int, onRender: (Int) -> Unit, lowTideOnly: Boolean, onLowTide: (Boolean) -> Unit,
     currentDate: String?, onDate: (String?) -> Unit, playing: Boolean, onPlaying: (Boolean) -> Unit, referenceName: String, onDelete: () -> Unit
 ) {
     val colors = MaterialTheme.colorScheme
     val frames = remember(idx, point, months, lowTideOnly) { SatelliteModel.frames(idx, point.lat, months, clearOnly = true, lowTideOnly = lowTideOnly) }
     val current = frames.firstOrNull { it.date == currentDate } ?: frames.lastOrNull()
-    val bitmaps = rememberTileCrops(client, zone, frames, current, idx, point)
+    // La fenêtre découpée dans chaque photo (4,8 km) est centrée sur un point d'ancrage ; quand la vue s'en éloigne, on la recentre.
+    var anchor by remember(zone.id, point) { mutableStateOf(view) }
+    LaunchedEffect(view, idx) {
+        val dr = idx.rowOf(view.lat) - idx.rowOf(anchor.lat)
+        val dc = idx.colOf(view.lon) - idx.colOf(anchor.lon)
+        if (dr * dr + dc * dc > 80.0 * 80.0) anchor = view
+    }
+    val bitmaps = rememberTileCrops(client, zone, frames, current, idx, anchor)
+    val nearestSpot = remember(view) { SurfDatabase.getAllSpots().minByOrNull { distanceKm(view.lat, view.lon, it.latitude, it.longitude) } }
+    val landmarks = remember(idx) { SurfDatabase.getAllSpots().filter { idx.contains(it.latitude, it.longitude) }.map { SatPoint(it.name, it.latitude, it.longitude) } }
 
     // Le film : une photo toutes les 2,2 s (lent), 1,4 s (normal) ou 0,8 s (rapide). On n'avance que quand la photo suivante est
     // chargée : la photo en cours reste affichée, jamais d'écran noir entre deux dates.
@@ -297,10 +332,10 @@ private fun SatelliteBody(
     // La photo du point.
     Box(Modifier.fillMaxWidth().aspectRatio(SatelliteSource.VIEW_COLS.toFloat() / SatelliteSource.VIEW_ROWS).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
         val crop = current?.let { bitmaps.get(it) }
-        var lastCrop by remember(point) { mutableStateOf<Crop?>(null) }
+        var lastCrop by remember(zone.id, point) { mutableStateOf<Crop?>(null) }
         if (crop != null) lastCrop = crop
         val shown = crop ?: lastCrop
-        if (shown != null) PointView(shown, idx, point, render) else if (current != null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
+        if (shown != null) PointView(shown, idx, point, view, points.drop(1), landmarks, render, onPan = { dc, dr -> onView(idx.latOf(idx.rowOf(view.lat) + dr), idx.lonOf(idx.colOf(view.lon) + dc)) }) else if (current != null) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
         if (current != null) {
             Column(
                 Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xC7061018)).padding(horizontal = 10.dp, vertical = 6.dp)
@@ -315,6 +350,21 @@ private fun SatelliteBody(
             )
         }
         Text("Copernicus Sentinel-2", fontSize = 9.sp, color = Color(0xCCFFFFFF), modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp))
+    }
+
+    // Se déplacer sur la côte : retour au point, nord, sud, et les spots les plus proches.
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (distanceKm(view.lat, view.lon, point.lat, point.lon) > 0.2) Chip("◎ ${point.name}", selected = true) { onView(point.lat, point.lon) }
+        Chip("↑ Nord", selected = false) { onView(view.lat + 4.0 / 111.32, view.lon) }
+        Chip("↓ Sud", selected = false) { onView(view.lat - 4.0 / 111.32, view.lon) }
+        val near = remember(view.lat.roundToInt(), (view.lat * 20).roundToInt(), (view.lon * 20).roundToInt()) {
+            SurfDatabase.getAllSpots().filter { zones.zoneFor(it.latitude, it.longitude) != null }
+                .sortedBy { distanceKm(view.lat, view.lon, it.latitude, it.longitude) }.take(8)
+        }
+        near.forEach { spot -> Chip(spot.name, selected = false, outlined = true) { onView(spot.latitude, spot.longitude) } }
+        Chip("+ Poser ici", selected = false, outlined = true) {
+            onPinHere(SatPoint("Banc près de " + (nearestSpot?.name ?: zone.name), view.lat, view.lon))
+        }
     }
 
     // Lecture, flèches, curseur.
@@ -364,7 +414,7 @@ private fun SatelliteBody(
         Chip("Basse seulement", selected = lowTideOnly) { onLowTide(true) }
     }
     Text(
-        "${zone.name} · " + (if (lowTideOnly) "marée basse seulement : les bancs se comparent mieux. " else "") + "Pince pour zoomer, glisse pour te déplacer.",
+        (nearestSpot?.let { "Près de ${it.name}, ${satDistanceWord(view.lat, view.lon, it.latitude, it.longitude)}" } ?: zone.name) + " · " + (if (lowTideOnly) "marée basse seulement : les bancs se comparent mieux. " else "") + "Pince pour zoomer, glisse pour te déplacer sur toute la côte.",
         fontSize = 11.5.sp, color = colors.onSurfaceVariant
     )
     if (selected > 0 && selected < points.size) {
@@ -403,13 +453,16 @@ private fun cropOf(src: ImageBitmap, index: SatIndex, point: SatPoint): Crop {
 
 @Composable
 private fun rememberTileCrops(client: HttpClient, zone: SatZone, frames: List<SatImage>, current: SatImage?, index: SatIndex, point: SatPoint): TileCrops {
-    val map = remember(point) { mutableStateMapOf<String, Crop>() }
+    // Les octets de chaque photo (environ 160 Ko) restent en mémoire : se déplacer ne retélécharge rien, on redécoupe seulement.
+    val bytes = remember(zone.id) { HashMap<String, ByteArray>() }
+    val map = remember(zone.id, point) { mutableStateMapOf<String, Crop>() }
     // La photo affichée d'abord, puis les autres de la période (pour que le film soit fluide).
-    LaunchedEffect(frames, current?.file, point) {
+    LaunchedEffect(frames, current?.file, point, zone.id) {
         val order = listOfNotNull(current) + frames.reversed()
         for (image in order) {
             if (image.file in map) continue
-            val bitmap = client.fetchImage(SatelliteSource.imageUrl(zone.id, image.file)) ?: continue
+            val data = bytes[image.file] ?: client.fetchBytes(SatelliteSource.imageUrl(zone.id, image.file))?.also { bytes[image.file] = it } ?: continue
+            val bitmap = try { data.decodeToImageBitmap() } catch (e: CancellationException) { throw e } catch (e: Throwable) { continue }
             map[image.file] = cropOf(bitmap, index, point)
         }
     }
@@ -441,44 +494,69 @@ private fun satFilter(mode: Int): ColorFilter? {
 }
 
 /**
- * La fenêtre du point : 1,8 km sur 2,2 km au départ, centrée sur lui. On peut zoomer et dézoomer (pincer ou boutons − et +, jusqu'à
- * 4,4 km de haut) et se déplacer en glissant, dans les 4,8 km découpés autour du point.
+ * La fenêtre de la vue : 1,8 km sur 2,2 km au départ, centrée sur [view]. On zoome et dézoome (pincer ou boutons − et +, jusqu'à 4,4 km de
+ * haut) et on glisse pour se déplacer sur toute la côte : [onPan] reçoit le déplacement en pixels de la photo. Les spots du catalogue et
+ * les points de l'utilisateur sont écrits à côté de leur place, pour se repérer ; le point choisi porte l'épingle rouge.
  */
 @Composable
-private fun PointView(crop: Crop, index: SatIndex, point: SatPoint, render: Int) {
+private fun PointView(
+    crop: Crop, index: SatIndex, point: SatPoint, view: SatPoint, userPoints: List<SatPoint>, landmarks: List<SatPoint>, render: Int,
+    onPan: (dCols: Float, dRows: Float) -> Unit
+) {
     var zoom by remember(point) { mutableFloatStateOf(1f) }
-    var panCols by remember(point) { mutableFloatStateOf(0f) }
-    var panRows by remember(point) { mutableFloatStateOf(0f) }
     var size by remember { mutableStateOf(IntSize.Zero) }
     val minZoom = 0.5f
     val strip = crop.bitmap
     val k = strip.height.toFloat() / crop.size
+    val measurer = rememberTextMeasurer()
+    val pan by androidx.compose.runtime.rememberUpdatedState(onPan)
     Box(Modifier.fillMaxSize()) {
         Canvas(
             Modifier.fillMaxSize().onSizeChanged { size = it }.pointerInput(point) {
-                detectTransformGestures { _, pan, gestureZoom, _ ->
+                detectTransformGestures { _, delta, gestureZoom, _ ->
                     if (size.width == 0) return@detectTransformGestures
                     zoom = (zoom * gestureZoom).coerceIn(minZoom, 4f)
                     val rowsShown = SatelliteSource.VIEW_ROWS / zoom
-                    panCols -= pan.x / size.height * rowsShown
-                    panRows -= pan.y / size.height * rowsShown
+                    pan(-delta.x / size.height * rowsShown, -delta.y / size.height * rowsShown)
                 }
             }
         ) {
             val rows = (SatelliteSource.VIEW_ROWS / zoom).coerceAtMost(crop.size)
             val cols = (rows * this.size.width / this.size.height).coerceAtMost(crop.size)
-            val left = (index.colOf(point.lon).toFloat() + panCols - cols / 2).coerceIn(crop.leftCol, crop.leftCol + crop.size - cols)
-            val top = (index.rowOf(point.lat).toFloat() + panRows - rows / 2).coerceIn(crop.topRow, crop.topRow + crop.size - rows)
+            val left = (index.colOf(view.lon).toFloat() - cols / 2).coerceIn(crop.leftCol, crop.leftCol + crop.size - cols)
+            val top = (index.rowOf(view.lat).toFloat() - rows / 2).coerceIn(crop.topRow, crop.topRow + crop.size - rows)
             drawImage(
                 strip, srcOffset = IntOffset(((left - crop.leftCol) * k).roundToInt(), ((top - crop.topRow) * k).roundToInt()),
                 srcSize = IntSize((cols * k).roundToInt().coerceAtLeast(1), (rows * k).roundToInt().coerceAtLeast(1)),
                 dstSize = IntSize(this.size.width.roundToInt(), this.size.height.roundToInt()),
                 filterQuality = FilterQuality.High, colorFilter = satFilter(render)
             )
-            // Le point lui-même.
-            val px = (index.colOf(point.lon).toFloat() - left) / cols * this.size.width
-            val py = (index.rowOf(point.lat).toFloat() - top) / rows * this.size.height
-            drawPin(Offset(px, py), 9.dp.toPx())
+            fun pos(lat: Double, lon: Double) = Offset((index.colOf(lon).toFloat() - left) / cols * this.size.width, (index.rowOf(lat).toFloat() - top) / rows * this.size.height)
+            // Les repères : spots du catalogue (point blanc) et points de l'utilisateur (point bleu), sans que les noms se recouvrent.
+            val taken = mutableListOf<androidx.compose.ui.geometry.Rect>()
+            fun landmark(p: SatPoint, dot: Color) {
+                val at0 = pos(p.lat, p.lon)
+                if (at0.x < 0 || at0.y < 0 || at0.x > this.size.width || at0.y > this.size.height) return
+                drawCircle(Color.Black.copy(alpha = 0.5f), radius = 4.5.dp.toPx(), center = at0)
+                drawCircle(dot, radius = 3.dp.toPx(), center = at0)
+                val label = measurer.measure(p.name, TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White))
+                val at = Offset((at0.x + 8.dp.toPx()).coerceAtMost(this.size.width - label.size.width - 4.dp.toPx()), at0.y - label.size.height / 2f)
+                val box = androidx.compose.ui.geometry.Rect(at.x - 3.dp.toPx(), at.y - 1.dp.toPx(), at.x + label.size.width + 3.dp.toPx(), at.y + label.size.height + 1.dp.toPx())
+                if (taken.any { it.overlaps(box) }) return
+                taken += box
+                drawRoundRect(Color(0xB308121C), topLeft = box.topLeft, size = box.size, cornerRadius = CornerRadius(6.dp.toPx()))
+                drawText(label, topLeft = at)
+            }
+            userPoints.forEach { landmark(it, Color(0xFF7FC3E6)) }
+            landmarks.forEach { landmark(it, Color.White) }
+            // Le point choisi.
+            val pin = pos(point.lat, point.lon)
+            if (pin.x in 0f..this.size.width && pin.y in 0f..this.size.height) drawPin(pin, 9.dp.toPx())
+            // Le centre de la vue : une petite croix, pour savoir où l'on regarde quand on se déplace.
+            val c = Offset(this.size.width / 2, this.size.height / 2)
+            val arm = 7.dp.toPx()
+            drawLine(Color.White.copy(alpha = 0.8f), Offset(c.x - arm, c.y), Offset(c.x + arm, c.y), strokeWidth = 1.5.dp.toPx())
+            drawLine(Color.White.copy(alpha = 0.8f), Offset(c.x, c.y - arm), Offset(c.x, c.y + arm), strokeWidth = 1.5.dp.toPx())
             // Échelle : 500 m.
             val bar = 50f / cols * this.size.width
             val y = this.size.height - 12.dp.toPx()

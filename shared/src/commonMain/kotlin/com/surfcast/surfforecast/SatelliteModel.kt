@@ -90,6 +90,13 @@ data class SatZones(val sideKm: Double, val zones: List<SatZone>) {
         }.minByOrNull { distanceKm(lat, lon, it.lat, it.lon) }
     }
 
+    /** Vrai si le point est dans la tuile de [zone], à [marginKm] du bord au moins. */
+    fun covers(zone: SatZone, lat: Double, lon: Double, marginKm: Double = 0.5): Boolean {
+        val half = sideKm / 2 - marginKm
+        return kotlin.math.abs(lat - zone.lat) * 111.32 <= half &&
+            kotlin.math.abs(lon - zone.lon) * 111.32 * kotlin.math.cos(zone.lat * kotlin.math.PI / 180.0) <= half
+    }
+
     /** Les zones, de la plus proche à la plus éloignée d'un point. */
     fun nearest(lat: Double, lon: Double): List<SatZone> = zones.sortedBy { distanceKm(lat, lon, it.lat, it.lon) }
 }

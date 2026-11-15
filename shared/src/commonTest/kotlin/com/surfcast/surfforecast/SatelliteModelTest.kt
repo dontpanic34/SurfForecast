@@ -94,4 +94,14 @@ class SatelliteModelTest {
         assertEquals("au même endroit", satDistanceWord(45.38, -1.159, 45.38, -1.159))
         assertTrue(satDistanceWord(45.38, -1.2, 45.38, -1.159).endsWith("à l'ouest"))
     }
+
+    @Test
+    fun coversChecksTheTileWithAMargin() {
+        val zone = SatZone("a", "A", 45.0, -1.0, emptyList())
+        val zones = SatZones(12.0, listOf(zone))
+        assertTrue(zones.covers(zone, 45.0, -1.0))
+        assertTrue(zones.covers(zone, 45.0 + 5.0 / 111.32, -1.0))
+        assertTrue(!zones.covers(zone, 45.0 + 5.8 / 111.32, -1.0))
+        assertTrue(zones.covers(zone, 45.0 + 5.8 / 111.32, -1.0, 0.0))
+    }
 }
