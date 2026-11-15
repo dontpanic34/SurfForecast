@@ -204,42 +204,53 @@ private val DishIcon by lazy {
     strokeIcon("Dish", "M5 8a8 8 0 0 0 11 11z", "M5 8l11 11", "M10 14l5-5", "M15 9l1.5-1.5", "M16 7a1 1 0 1 0 2 0a1 1 0 1 0 -2 0", "M9 21h8", "M13 19v2")
 }
 
-/**
- * « Mesuré en ce moment » : une ligne pour la bouée (la mer : hauteur, période, plus grosse vague) et une pour la station météo (le vent
- * et les rafales), chacune avec sa distance et l'heure de la mesure. Toujours visibles : un chiffre seul ne disait pas d'où il venait.
- */
+/** « LIVE » : deux pastilles (balise, station) ; un appui montre le détail sur une ligne. */
 @Composable
 private fun MeasuresRow(buoy: BuoyReading?, observed: ObservedNow?, windUnit: String) {
     val colors = MaterialTheme.colorScheme
+    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
     val unit = SurfUnitsHelper.getWindUnitSymbol(windUnit)
     fun hm(t: kotlinx.datetime.LocalDateTime) = "${t.hour} h ${t.minute.toString().padStart(2, '0')}"
     @Composable
-    fun Line(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, value: String, detail: String) {
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            androidx.compose.material3.Icon(icon, null, Modifier.size(16.dp).padding(top = 2.dp), tint = colors.onSurface)
-            Column {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
-                    Text(title, fontSize = 11.5.sp, color = colors.onSurfaceVariant, maxLines = 1)
-                    Text(value, fontSize = 13.5.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, color = colors.onSurface, maxLines = 1)
-                }
-                Text(detail, fontSize = 11.sp, color = colors.onSurfaceVariant)
-            }
+    fun Pill(id: Int, icon: androidx.compose.ui.graphics.vector.ImageVector, value: String) {
+        val on = open == id
+        Row(
+            modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) colors.primary.copy(alpha = 0.18f) else colors.surfaceVariant)
+                .clickable { open = if (on) 0 else id }.padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            androidx.compose.material3.Icon(icon, null, Modifier.size(15.dp), tint = if (on) colors.primary else colors.onSurface)
+            Text(value, fontSize = 12.5.sp, color = if (on) colors.primary else colors.onSurface, maxLines = 1)
         }
     }
-    Column(Modifier.padding(top = 4.dp)) {
-        Text("MESURÉ EN CE MOMENT", fontSize = 10.5.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 0.8.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
-        buoy?.let { b ->
-            val t = b.timeUtc.toInstant(kotlinx.datetime.TimeZone.UTC).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
-            val period = b.period?.let { " · ${it.roundToInt()} s" }.orEmpty()
-            val max = b.maxHeight?.let { " · la plus grosse vague : ${formatDecimal(it, 1).replace('.', ',')} m" }.orEmpty()
-            Line(BuoyIcon, "Mer (bouée)", "${formatDecimal(b.significantHeight, 1).replace('.', ',')} m$period", "${b.buoy.name}, à ${b.distanceKm} km$max · ${hm(t)}")
+    Column(Modifier.padding(top = 8.dp)) {
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("LIVE", fontSize = 11.sp, color = colors.onSurfaceVariant, maxLines = 1)
+                buoy?.let { b ->
+                    val period = b.period?.let { " · ${it.roundToInt()} s" }.orEmpty()
+                    Pill(1, BuoyIcon, "${formatDecimal(b.significantHeight, 1).replace('.', ',')} m$period")
+                }
+                observed?.let { o ->
+                    val dir = o.directionDeg?.let { " " + SurfUnitsHelper.formatCardinalFr(getCardinalDirection(it.toDouble())) }.orEmpty()
+                    Pill(2, DishIcon, "${SurfUnitsHelper.formatWindValue(o.windKmh, windUnit)} $unit$dir")
+                }
+            }
         }
-        observed?.let { o ->
-            val t = o.timeUtc.toInstant(kotlinx.datetime.TimeZone.UTC).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
-            val dir = o.directionDeg?.let { " " + SurfUnitsHelper.formatCardinalFr(getCardinalDirection(it.toDouble())) }.orEmpty()
-            val gust = o.gustKmh?.takeIf { it > o.windKmh }?.let { " · rafales ${SurfUnitsHelper.formatWindValue(it, windUnit)} $unit" }.orEmpty()
-            Line(DishIcon, "Vent (station)", "${SurfUnitsHelper.formatWindValue(o.windKmh, windUnit)} $unit$dir", "${niceStationName(o.stationName)}, à ${o.distanceKm.roundToInt()} km$gust · ${hm(t)}")
+        val line = when {
+            open == 1 && buoy != null -> {
+                val t = buoy.timeUtc.toInstant(kotlinx.datetime.TimeZone.UTC).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                val max = buoy.maxHeight?.let { " · max ${formatDecimal(it, 1).replace('.', ',')} m" }.orEmpty()
+                "${buoy.buoy.name}, à ${buoy.distanceKm} km$max · mesuré à ${hm(t)}"
+            }
+            open == 2 && observed != null -> {
+                val t = observed.timeUtc.toInstant(kotlinx.datetime.TimeZone.UTC).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                val gust = observed.gustKmh?.takeIf { it > observed.windKmh }?.let { " · rafales ${SurfUnitsHelper.formatWindValue(it, windUnit)} $unit" }.orEmpty()
+                "${niceStationName(observed.stationName)}, à ${observed.distanceKm.roundToInt()} km$gust · mesuré à ${hm(t)}"
+            }
+            else -> null
         }
+        if (line != null) Text(line, fontSize = 11.5.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
