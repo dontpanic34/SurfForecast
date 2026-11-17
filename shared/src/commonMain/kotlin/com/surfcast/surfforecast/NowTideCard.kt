@@ -121,12 +121,13 @@ fun NowTideCard(
                 )
             }
         }
-        if (isNight && nightText != null) {
+        // La nuit : encart plié = la phrase du matin ; encart déplié = les mêmes tuiles qu'en journée (houle, vent, marée, LIVE).
+        if (isNight && nightText != null && !open) {
             Text(nightText, fontSize = 13.sp, color = colors.onSurface, modifier = Modifier.padding(top = 2.dp, bottom = 2.dp))
             return@Column
         }
         if (!open) return@Column
-        if (dawnText != null) Text(dawnText, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp))
+        if (dawnText != null && !(isNight && nightText != null)) Text(dawnText, fontSize = 13.sp, color = colors.onSurface.copy(alpha = 0.85f), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp))
         val next = nextTide(hourlyModel.rawTime.time, tideInfo)
         val coef = tideInfo?.coefficient
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
