@@ -12,7 +12,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 17 novembre 2026
 
-- **Maquette : choix du spot avec carte** (option A choisie le 17 novembre ; maquette, pas de code) : `docs/maquettes/propositions-v3/choix-spot-carte.html`. Les puces de pays (France, Espagne, Portugal, Maroc) et de région **restent comme aujourd'hui** (le propriétaire en a besoin) ; seule la bascule « Région / Tout le pays » que j'avais ajoutée est retirée. La carte se recadre sur la région choisie (ruban de côte + points, webcams en orange avec 📹, favoris en ★, petit repère du pays en haut à droite), filtre « 📹 Avec webcam », liste dessous. Version « carte qui glisse / zoom en km » écartée. En attente du « go ».
+- **Maquette : choix du spot avec carte** (option A choisie le 17 novembre ; maquette, pas de code) : `docs/maquettes/propositions-v3/choix-spot-carte.html`. Les puces de pays (France, Espagne, Portugal, Maroc) et de région **restent comme aujourd'hui** (le propriétaire en a besoin) ; seule la bascule « Région / Tout le pays » que j'avais ajoutée est retirée. La carte se recadre sur la région choisie, avec le **fond NASA Blue Marble** (mêmes tuiles GIBS que « Où surfer ? », environ 400 m par pixel au maximum ; points, webcams en orange avec 📹, favoris en ★, petit repère du pays en haut à droite), filtre « 📹 Avec webcam », liste dessous. Version « carte qui glisse / zoom en km » écartée. En attente du « go ».
 
 ## 12 novembre 2026
 
