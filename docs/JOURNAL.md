@@ -12,7 +12,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 17 novembre 2026
 
-- **Maquette : choix du spot, carte autour de toi** (option A choisie par le propriétaire le 17 novembre, sans puces de pays ni de région ; maquette, pas de code) : `docs/maquettes/propositions-v3/choix-spot-carte.html`. La carte s'ouvre sur le spot actif, se fait glisser le long de la côte, zoom 25 / 50 / 100 / 300 km, bouton « ◎ Mon spot », filtre « 📹 Webcam », webcams en orange, favoris en ★, repère du cadre visible en haut à droite, liste des spots visibles dessous, la recherche reste en haut. En attente du « go ».
+- **Maquette : choix du spot avec carte** (option A choisie le 17 novembre ; maquette, pas de code) : `docs/maquettes/propositions-v3/choix-spot-carte.html`. Les puces de pays (France, Espagne, Portugal, Maroc) et de région **restent comme aujourd'hui** (le propriétaire en a besoin) ; seule la bascule « Région / Tout le pays » que j'avais ajoutée est retirée. La carte se recadre sur la région choisie (ruban de côte + points, webcams en orange avec 📹, favoris en ★, petit repère du pays en haut à droite), filtre « 📹 Avec webcam », liste dessous. Version « carte qui glisse / zoom en km » écartée. En attente du « go ».
 
 ## 12 novembre 2026
 
