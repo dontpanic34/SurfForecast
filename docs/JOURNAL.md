@@ -10,6 +10,10 @@
 
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
+## 17 novembre 2026
+
+- **Maquette : choix du spot avec carte et webcams** (maquette, pas de code) : `docs/maquettes/propositions-v3/choix-spot-carte.html`. A : carte schématique de la côte de la région (ruban + points, webcams en orange avec 📹, favoris en ★, petit repère du pays en haut à droite), bascule « Région / Tout le pays », filtre « Avec webcam ». B : même liste en « ligne de côte » sans carte. Données réelles (180 spots, 18 webcams, toutes en France). En attente de l'avis du propriétaire.
+
 ## 12 novembre 2026
 
 - **Diagnostic de l'iPhone d'Elisa** (12 novembre) : iPhone avec iOS 18.7 et Safari, WebAssembly GC, WebGL et WebGL2 disponibles, aucune erreur. Ce n'est donc pas un problème de matériel. Son écran de l'appli est mélangé et figé (courbe de marée dessinée par-dessus l'encart des heures), avec « NO GLYPH » à la place des symboles ▾ et ⟳ (police sans ces glyphes). Hypothèse non vérifiée : la copie de l'écran WebGL que fait le diagnostic (toutes les 2 s) perturbe Safari.
