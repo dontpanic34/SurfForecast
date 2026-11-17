@@ -91,10 +91,14 @@ fun NowTideCard(
         if (timeHours.isNotEmpty() && pickedHour != null && onPickHour != null) {
             TimeRuler(hours = timeHours, sun = timeSun, selected = pickedHour, onHourSelected = onPickHour)
         }
-        val open = SkyGraphSettings.nowOpen
+        // La nuit, l'encart est plié par défaut (la phrase du matin) ; le déplier ne change pas le réglage du jour (nowOpen).
+        val nightMode = isNight && nightText != null
+        var nightOpen by androidx.compose.runtime.remember(nightMode) { androidx.compose.runtime.mutableStateOf(false) }
+        val open = if (nightMode) nightOpen else SkyGraphSettings.nowOpen
+        val toggleOpen: () -> Unit = { if (nightMode) { nightOpen = !nightOpen } else { SkyGraphSettings.chooseNowOpen(!open) } }
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).clickable { SkyGraphSettings.chooseNowOpen(!open) },
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).clickable { toggleOpen() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.onSurface.copy(alpha = 0.6f), maxLines = 1)
@@ -104,7 +108,7 @@ fun NowTideCard(
                 } else if (rating != null) {
                     Text(" · " + bandLabelWithTrend(rating, previousRating), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = conditionBand(rating).textColor(), maxLines = 1)
                 }
-                CollapseChevron(!open, { SkyGraphSettings.chooseNowOpen(!open) })
+                CollapseChevron(!open, { toggleOpen() })
             }
             if (onAddSession != null) {
                 Text(
