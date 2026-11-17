@@ -12,7 +12,7 @@ Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche**
 
 ## 17 novembre 2026
 
-- **Maquette : choix du spot avec carte et webcams** (maquette, pas de code) : `docs/maquettes/propositions-v3/choix-spot-carte.html`. A : carte schématique de la côte de la région (ruban + points, webcams en orange avec 📹, favoris en ★, petit repère du pays en haut à droite), bascule « Région / Tout le pays », filtre « Avec webcam ». B : même liste en « ligne de côte » sans carte. Données réelles (180 spots, 18 webcams, toutes en France). En attente de l'avis du propriétaire.
+- **Maquette : choix du spot, carte autour de toi** (option A choisie par le propriétaire le 17 novembre, sans puces de pays ni de région ; maquette, pas de code) : `docs/maquettes/propositions-v3/choix-spot-carte.html`. La carte s'ouvre sur le spot actif, se fait glisser le long de la côte, zoom 25 / 50 / 100 / 300 km, bouton « ◎ Mon spot », filtre « 📹 Webcam », webcams en orange, favoris en ★, repère du cadre visible en haut à droite, liste des spots visibles dessous, la recherche reste en haut. En attente du « go ».
 
 ## 12 novembre 2026
 
