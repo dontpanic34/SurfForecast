@@ -70,19 +70,26 @@ import kotlin.math.sinh
  *  - les mosaïques annuelles du satellite Pléiades (50 cm par pixel), une par an (2012 à 2026 selon l'endroit).
  * Pas de film : quelques dates. La marée de chaque photo n'est pas connue.
  */
-class HighResLayer(val id: String, val label: String, val format: String, val maxZoom: Int, val isAerial: Boolean = false)
+class HighResLayer(val id: String, val label: String, val format: String, val maxZoom: Int, val isAerial: Boolean = false, val kind: String = "", val resolution: String = "")
 
 object IgnTiles {
     private const val BASE = "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM"
 
     const val AERIAL_ID = "ORTHOIMAGERY.ORTHOPHOTOS"
 
-    val aerial = HighResLayer(AERIAL_ID, "Photo aérienne 20 cm", "image/jpeg", 19, isAerial = true)
+    val aerial = HighResLayer(AERIAL_ID, "Photo aérienne 20 cm", "image/jpeg", 19, isAerial = true, kind = "Photo aérienne", resolution = "20 cm par pixel")
 
     /** Mosaïques annuelles Pléiades, de la plus récente à la plus ancienne. */
     val pleiades: List<HighResLayer> = (2026 downTo 2012).map {
-        HighResLayer("ORTHOIMAGERY.ORTHO-SAT.PLEIADES.$it", "Satellite $it", "image/png", 18)
+        HighResLayer("ORTHOIMAGERY.ORTHO-SAT.PLEIADES.$it", "$it", "image/png", 18, kind = "Satellite Pléiades $it", resolution = "50 cm par pixel · mosaïque de l'année")
     }
+
+    /** Mosaïques annuelles SPOT : plus floues (1,5 m) mais une de plus par an, de 2013 à 2024 selon l'endroit. */
+    val spot: List<HighResLayer> = (2024 downTo 2013).map {
+        HighResLayer("ORTHOIMAGERY.ORTHO-SAT.SPOT.$it", "$it", "image/jpeg", 17, kind = "Satellite SPOT $it", resolution = "1,5 m par pixel · mosaïque de l'année")
+    }
+
+    val all: List<HighResLayer> = listOf(aerial) + pleiades + spot
 
     fun tileUrl(layer: HighResLayer, z: Int, x: Int, y: Int) = "$BASE&LAYER=${layer.id}&FORMAT=${layer.format}&TILEMATRIX=$z&TILEROW=$y&TILECOL=$x"
 
@@ -97,6 +104,16 @@ object IgnTiles {
     }
 
     fun parseFlightDate(text: String): String? = Regex("\"date_vol\"\\s*:\\s*\"(\\d{4}-\\d{2}-\\d{2})").find(text)?.groupValues?.get(1)
+
+    /** Deux essais par tuile : sur une connexion mobile lente, une requête isolée échoue parfois. */
+    suspend fun probe(client: io.ktor.client.HttpClient, layer: HighResLayer, z: Int, x: Int, y: Int): Boolean? {
+        repeat(2) {
+            val r = client.fetchBytesStatus(tileUrl(layer, z, x, y))
+            if (r.first == 404 || r.first == 400) return false
+            if (r.first in 200..299) return isUsable(layer, r.second)
+        }
+        return null
+    }
 
     /** Une mosaïque PNG vide (hors couverture) pèse moins de 1,5 Ko ; une tuile absente répond par une erreur. */
     fun isUsable(layer: HighResLayer, bytes: ByteArray?): Boolean = bytes != null && (layer.isAerial || bytes.size > 1500)
@@ -134,28 +151,30 @@ fun HighResBody(client: HttpClient, point: SatPoint, userPoints: List<SatPoint>,
     var size by remember { mutableStateOf(IntSize.Zero) }
     val measurer = rememberTextMeasurer()
 
-    // Les couches qui ont des photos à cet endroit, et la date du vol de la photo aérienne.
-    var available by remember(point) { mutableStateOf<List<HighResLayer>?>(null) }
+    // Les couches qui ont des photos à cet endroit : sondées une par une, les puces apparaissent au fur et à mesure ; une couche dont
+    // le sondage a échoué (réseau) reste proposée, seule une réponse « pas de photo ici » la retire.
+    val probes = remember(point) { mutableStateMapOf<String, Boolean?>() }
+    var probing by remember(point) { mutableStateOf(true) }
     var flightDate by remember(point) { mutableStateOf<String?>(null) }
     var layerId by remember(point) { mutableStateOf(IgnTiles.AERIAL_ID) }
     LaunchedEffect(point) {
         val z = 17
         val tx = floor(IgnTiles.worldX(point.lon, z.toDouble()) / 256).toInt()
         val ty = floor(IgnTiles.worldY(point.lat, z.toDouble()) / 256).toInt()
-        flightDate = client.fetchText(IgnTiles.aerialInfoUrl(point.lat, point.lon))?.let { IgnTiles.parseFlightDate(it) }
-        val found = ArrayList<HighResLayer>()
+        probing = true
         coroutineScope {
-            val gate = Semaphore(5)
-            val results = (listOf(IgnTiles.aerial) + IgnTiles.pleiades).map { layer ->
-                layer to async { gate.withPermit { IgnTiles.isUsable(layer, client.fetchBytes(IgnTiles.tileUrl(layer, z, tx, ty))) } }
+            launch { flightDate = client.fetchText(IgnTiles.aerialInfoUrl(point.lat, point.lon))?.let { IgnTiles.parseFlightDate(it) } }
+            val gate = Semaphore(4)
+            IgnTiles.all.forEach { layer ->
+                launch { gate.withPermit { probes[layer.id] = IgnTiles.probe(client, layer, z, tx, ty) } }
             }
-            results.forEach { (layer, ok) -> if (ok.await()) found += layer }
         }
-        available = found
-        if (found.none { it.id == layerId }) found.firstOrNull()?.let { layerId = it.id }
+        probing = false
+        val firstOk = IgnTiles.all.firstOrNull { probes[it.id] != false }
+        if (probes[layerId] == false && firstOk != null) layerId = firstOk.id
     }
-    val layers = available
-    val layer = layers?.firstOrNull { it.id == layerId } ?: IgnTiles.aerial
+    val layers = IgnTiles.all.filter { probes.containsKey(it.id) && probes[it.id] != false }
+    val layer = IgnTiles.all.firstOrNull { it.id == layerId } ?: IgnTiles.aerial
 
     val cache = remember { mutableStateMapOf<String, ImageBitmap>() }
     val missing = remember { HashSet<String>() }
@@ -169,8 +188,8 @@ fun HighResBody(client: HttpClient, point: SatPoint, userPoints: List<SatPoint>,
     val halfH = size.height / (2.0 * scale)
     val x0 = floor((cxT - halfW) / 256).toInt(); val x1 = floor((cxT + halfW) / 256).toInt()
     val y0 = floor((cyT - halfH) / 256).toInt(); val y1 = floor((cyT + halfH) / 256).toInt()
-    LaunchedEffect(layer.id, tz, x0, x1, y0, y1, layers != null) {
-        if (size.width == 0 || layers == null) return@LaunchedEffect
+    LaunchedEffect(layer.id, tz, x0, x1, y0, y1) {
+        if (size.width == 0) return@LaunchedEffect
         val limit = (1 shl tz) - 1
         val needed = ArrayList<Triple<Int, Int, String>>()
         for (x in x0..x1) for (y in y0..y1) {
@@ -250,10 +269,10 @@ fun HighResBody(client: HttpClient, point: SatPoint, userPoints: List<SatPoint>,
             val bar = (meters / mpp).toFloat(); val y = h - 12.dp.toPx()
             drawLine(Color.White, Offset(10.dp.toPx(), y), Offset(10.dp.toPx() + bar, y), strokeWidth = 3.dp.toPx())
         }
-        if (layers == null || (layers.isNotEmpty() && cache.keys.none { it.startsWith(layer.id) })) {
+        if (cache.keys.none { it.startsWith(layer.id) } && (probing || layers.isNotEmpty())) {
             CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
         }
-        if (layers != null && layers.isEmpty()) {
+        if (!probing && layers.isEmpty()) {
             Text(
                 "Pas de photo haute qualité ici.\nL'IGN ne couvre que la France.",
                 fontSize = 13.sp, color = Color.White, modifier = Modifier.align(Alignment.Center).padding(16.dp)
@@ -263,10 +282,10 @@ fun HighResBody(client: HttpClient, point: SatPoint, userPoints: List<SatPoint>,
             Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xC7061018)).padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
             Text(
-                if (layer.isAerial) (flightDate?.let { "Photo aérienne du " + IgnTiles.dateLabel(it) } ?: "Photo aérienne") else layer.label.replace("Satellite", "Satellite Pléiades"),
+                if (layer.isAerial) (flightDate?.let { "Photo aérienne du " + IgnTiles.dateLabel(it) } ?: "Photo aérienne") else layer.kind,
                 fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White
             )
-            Text(if (layer.isAerial) "20 cm par pixel" else "50 cm par pixel · mosaïque de l'année", fontSize = 12.sp, color = Color.White)
+            Text(layer.resolution, fontSize = 12.sp, color = Color.White)
         }
         Column(Modifier.align(Alignment.CenterEnd).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             ZoomButton("+") { zoom = (zoom + 0.7f).coerceAtMost(layer.maxZoom + 1.5f) }
@@ -276,12 +295,21 @@ fun HighResBody(client: HttpClient, point: SatPoint, userPoints: List<SatPoint>,
     }
 
     // Les dates disponibles.
-    if (layers != null && layers.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    if (layers.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         layers.forEach { l ->
-            val label = if (l.isAerial) "Aérienne" + (flightDate?.let { " " + it.take(4) } ?: "") else l.label.removePrefix("Satellite ")
-            Chip(if (l.isAerial) "✈ $label" else "◉ $label", selected = l.id == layer.id) { layerId = l.id }
+            val label = when {
+                l.isAerial -> "✈ Aérienne" + (flightDate?.let { " " + it.take(4) } ?: "")
+                l.id.contains("PLEIADES") -> "◉ ${l.label}"
+                else -> "◇ ${l.label}"
+            }
+            Chip(label, selected = l.id == layer.id) { layerId = l.id }
         }
+        if (probing) Text("…", fontSize = 12.sp, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
     }
+    Text(
+        "✈ photo aérienne, 20 cm · ◉ satellite Pléiades, 50 cm · ◇ satellite SPOT, 1,5 m. Une photo par an et par type : plus il y en a, mieux tu compares tes sessions.",
+        fontSize = 11.sp, color = colors.onSurfaceVariant
+    )
     // Se déplacer.
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (distanceKm(centerLat, centerLon, point.lat, point.lon) > 0.05) Chip("◎ ${point.name}", selected = true) { centerLat = point.lat; centerLon = point.lon }
@@ -295,7 +323,7 @@ fun HighResBody(client: HttpClient, point: SatPoint, userPoints: List<SatPoint>,
     }
     Text(
         (nearest?.let { "Près de ${it.name}, ${satDistanceWord(centerLat, centerLon, it.latitude, it.longitude)}" } ?: "") +
-            " · Pince pour zoomer, glisse pour te déplacer. Photo aérienne : une campagne tous les 2 à 4 ans ; satellite : une mosaïque par an (plusieurs jours de prise de vue, marée inconnue). © IGN, Licence Ouverte ; Pléiades © CNES, Airbus DS.",
+            " · Pince pour zoomer, glisse pour te déplacer. La marée de chaque photo est inconnue ; une mosaïque annuelle mélange plusieurs jours de prise de vue. © IGN, Licence Ouverte ; Pléiades © CNES, Airbus DS ; SPOT © CNES.",
         fontSize = 11.5.sp, color = colors.onSurfaceVariant
     )
 }

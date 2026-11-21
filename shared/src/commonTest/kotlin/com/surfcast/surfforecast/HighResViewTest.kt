@@ -37,4 +37,13 @@ class HighResViewTest {
         assertTrue(!IgnTiles.isUsable(IgnTiles.aerial, null))
         assertNotNull(IgnTiles.tileUrl(IgnTiles.aerial, 17, 65112, 46954).takeIf { "TILEROW=46954" in it && "TILECOL=65112" in it })
     }
+
+    @Test
+    fun layersCoverAerialPleiadesAndSpotYears() {
+        assertEquals(1 + 15 + 12, IgnTiles.all.size)
+        assertEquals("ORTHOIMAGERY.ORTHO-SAT.SPOT.2019", IgnTiles.spot.first { it.label == "2019" }.id)
+        assertEquals(17, IgnTiles.spot.first().maxZoom)
+        assertEquals(18, IgnTiles.pleiades.first().maxZoom)
+        assertEquals(IgnTiles.all.size, IgnTiles.all.map { it.id }.toSet().size)
+    }
 }
