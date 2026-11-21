@@ -98,14 +98,14 @@ class SatellitePlatform(
 )
 
 private val MONTHS = listOf("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre")
-private val PinRed = Color(0xFFE5392F)
+internal val PinRed = Color(0xFFE5392F)
 
 private fun dateLabel(image: SatImage): String =
     "${frenchShortDayName(LocalDate(image.year, image.month, image.day))} ${image.day} ${MONTHS[image.month - 1]}"
 
 private fun shortDate(image: SatImage): String = "${image.day} ${MONTHS[image.month - 1].take(4)}."
 
-private suspend fun HttpClient.fetchText(url: String): String? = try {
+internal suspend fun HttpClient.fetchText(url: String): String? = try {
     val r = get(url)
     if (r.status.isSuccess()) r.bodyAsText() else null
 } catch (e: CancellationException) {
@@ -122,7 +122,7 @@ private suspend fun HttpClient.fetchImage(url: String): ImageBitmap? = try {
     null
 }
 
-private suspend fun HttpClient.fetchBytes(url: String): ByteArray? = try {
+internal suspend fun HttpClient.fetchBytes(url: String): ByteArray? = try {
     val r = get(url)
     if (r.status.isSuccess()) r.body<ByteArray>() else null
 } catch (e: CancellationException) {
@@ -157,6 +157,7 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
     var months by remember { mutableIntStateOf(prefs.getInt("sat_months", 3)) }
     var speed by remember { mutableIntStateOf(prefs.getInt("sat_speed", 1)) }
     var render by remember { mutableIntStateOf(prefs.getInt("sat_render", 2)) }
+    var source by remember { mutableIntStateOf(prefs.getInt("sat_source", 0)) }
     var lowTideOnly by remember { mutableStateOf(false) }
     var currentDate by remember { mutableStateOf<String?>(null) }
     var playing by remember { mutableStateOf(false) }
@@ -243,7 +244,22 @@ fun SatelliteScreen(spotName: String, spotLat: Double, spotLon: Double, prefs: K
                     Chip("+ Poser un point", selected = false, outlined = true) { playing = false; placing = true }
                 }
 
-                if (zone == null) {
+                // Deux sources : le film Copernicus Sentinel-2 (10 m, un passage tous les 2 à 5 jours) ou les photos IGN (50 cm et 20 cm, quelques dates).
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Chip("Film · Copernicus", selected = source == 0) { playing = false; source = 0; prefs.putInt("sat_source", 0) }
+                    Chip("Haute qualité · IGN", selected = source == 1) { playing = false; source = 1; prefs.putInt("sat_source", 1) }
+                }
+
+                if (source == 1) {
+                    HighResBody(
+                        client = client, point = point, userPoints = userPoints,
+                        onPinHere = { p ->
+                            userPoints = userPoints + p
+                            SatelliteModel.savePoints(prefs, userPoints)
+                            selected = userPoints.size; prefs.putInt("sat_selected", selected); currentDate = null
+                        }
+                    )
+                } else if (zone == null) {
                     NoticeBox("Pas encore de photos ici", "La vue satellite couvre pour l'instant toute la côte atlantique française, de Hendaye au Verdon, plus la Vendée et la Bretagne. Choisis un autre spot ou pose un point sur cette côte.")
                 } else if (idx == null || shownZone == null) {
                     if (indexFailed) NoticeBox("Les photos de ${zone.name} ne se chargent pas", "Vérifie ta connexion, puis réessaie.", "Réessayer") { reload++ }
@@ -593,14 +609,14 @@ private fun PointView(
 }
 
 @Composable
-private fun ZoomButton(label: String, onClick: () -> Unit) {
+internal fun ZoomButton(label: String, onClick: () -> Unit) {
     Box(
         Modifier.size(38.dp).clip(CircleShape).background(Color(0xC7061018)).clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) { Text(label, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White) }
 }
 
-private fun DrawScope.drawPin(at: Offset, r: Float) {
+internal fun DrawScope.drawPin(at: Offset, r: Float) {
     drawCircle(Color.White, radius = r, center = at, style = Stroke(r * 0.35f))
     drawCircle(PinRed, radius = r * 0.45f, center = at)
 }
@@ -614,7 +630,7 @@ private fun OptionRow(label: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Chip(text: String, selected: Boolean, outlined: Boolean = false, onClick: () -> Unit) {
+internal fun Chip(text: String, selected: Boolean, outlined: Boolean = false, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier.clip(RoundedCornerShape(50)).clickable(onClick = onClick),
