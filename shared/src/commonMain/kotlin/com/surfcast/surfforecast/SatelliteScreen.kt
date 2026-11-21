@@ -122,6 +122,16 @@ private suspend fun HttpClient.fetchImage(url: String): ImageBitmap? = try {
     null
 }
 
+/** Code de réponse (0 si le réseau a échoué) et octets du corps (null sauf succès). */
+internal suspend fun HttpClient.fetchBytesStatus(url: String): Pair<Int, ByteArray?> = try {
+    val r = get(url)
+    r.status.value to (if (r.status.isSuccess()) r.body<ByteArray>() else null)
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Throwable) {
+    0 to null
+}
+
 internal suspend fun HttpClient.fetchBytes(url: String): ByteArray? = try {
     val r = get(url)
     if (r.status.isSuccess()) r.body<ByteArray>() else null
