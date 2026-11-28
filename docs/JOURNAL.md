@@ -10,6 +10,15 @@
 
 Du plus récent au plus ancien. État : **en ligne** = site et APK ; **branche** = poussé sur la branche de travail `claude/new-session-pume8w` seulement ; **maquette** = maquette validée ou en attente, pas de code.
 
+## 28 novembre 2026
+
+- **Site sur iPhone (Safari) : écran vide au retour et « chargement infini »** (état : en ligne dès publication sur `web` ; testé avec le moteur de Safari, WebKit, en mode iPhone, sur le vrai site, en remplaçant seulement les fichiers modifiés ; pas testé sur un vrai iPhone). Rapports reçus : beaucoup sont des robots sans rendu graphique (indexeur de Facebook, navigateurs automatisés), mais un vrai iPhone (19 novembre, Safari, iOS 26) avait un écran vide après 3 h 20 en arrière-plan. Trois pannes reproduites :
+  1. **Retour sur l'onglet** : Safari retire le rendu graphique (WebGL) aux onglets en arrière-plan ; le moteur de dessin de l'appli ne repart pas et l'écran reste vide, même après un toucher. Correction (`index.html`) : l'événement « rendu perdu » est écouté sur le canvas (il ne traverse pas le shadow DOM), et l'état est vérifié au retour (`visibilitychange`, `pageshow`, `focus`) ; la page se recharge dès qu'elle est visible (deux fois au plus en trois minutes). Les réglages et le spot sont gardés : vérifié, l'appli revient sur le spot choisi.
+  2. **Réseau qui coupe pendant le téléchargement** (5 Mo compressés au premier lancement) : écran sombre vide pour toujours, ou blocage sur « Chargement ». Correction : les erreurs de téléchargement au démarrage sont repérées, la page se recharge une fois toute seule, puis un message clair avec « Recharger » s'affiche (l'écran de chargement est remis s'il avait été retiré). Aussi : l'appli retire le chargement mais n'affiche rien pendant 15 s.
+  3. **Connexion lente** : à 25 s le site affichait « n'a pas pu démarrer » alors que ça téléchargeait encore ; recharger relançait le téléchargement de zéro. Maintenant « Connexion lente : Surf Log se télécharge encore… » à 12 s, échec seulement sur une vraie erreur ou après 90 s (vérifié avec un téléchargement retardé de 35 s : l'appli démarre).
+  - Les deux fichiers WebAssembly (nom = empreinte du contenu) sont gardés un an par le navigateur (`_headers`) : aux visites suivantes, pas de réseau à traverser pour eux.
+  - Les rapports des robots ne sont plus envoyés (`diag.js`), et un écran vide ou un rendu perdu tente d'abord un rechargement avant d'afficher le diagnostic.
+
 ## 13 novembre 2026
 
 - **Vue satellite : rendu au choix** (14 novembre) : le contraste poussé rendait le sable jaune fluo (« ça tue les yeux ») ; ligne « Rendu » avec Naturel (photo telle quelle), Doux (saturation 1,1, contraste 1,2 : sable crème) et Contrasté (l'ancien réglage), retenu sur les préférences. Demande du propriétaire ensuite : Contrasté à fond par défaut, pour bien voir les bancs.

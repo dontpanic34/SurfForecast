@@ -30,6 +30,55 @@
     <div id="loading-text">Chargement de Surf Log…</div>
 </div>
 <script>
+    // Retour sur l'onglet après un passage en arrière-plan (iPhone surtout) : Safari retire le rendu graphique (WebGL) aux onglets
+    // qu'on quitte, et le moteur de dessin de l'appli ne sait pas repartir sans lui : l'écran restait vide ou figé jusqu'à ce qu'on
+    // recharge à la main (reproduit avec le moteur de Safari, 28 novembre). Quand le rendu est perdu, on recharge la page dès qu'elle
+    // est visible : les réglages et le spot choisi sont gardés sur l'appareil, l'appli revient telle quelle.
+    (function () {
+        var pending = false;
+        function allowed() {
+            // Garde-fou : deux rechargements au plus en trois minutes, pour ne jamais tourner en boucle.
+            try {
+                var now = Date.now();
+                var list = JSON.parse(sessionStorage.getItem("surflog_recover") || "[]").filter(function (t) { return now - t < 180000; });
+                if (list.length >= 2) return false;
+                list.push(now);
+                sessionStorage.setItem("surflog_recover", JSON.stringify(list));
+            } catch (e) {}
+            return true;
+        }
+        window.__recover = function (reason) {
+            if (window.__diagPush) window.__diagPush("reprise", reason);
+            if (document.visibilityState === "hidden") { pending = true; return true; }
+            if (!allowed()) return false;
+            location.reload();
+            return true;
+        };
+        function lost(canvas) {
+            try {
+                var gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+                return !!gl && gl.isContextLost();
+            } catch (e) { return false; }
+        }
+        // Le canvas de l'appli est dans un shadow DOM : l'événement « contexte perdu » ne remonte pas jusqu'au document, on l'écoute sur le canvas.
+        var watched = null;
+        setInterval(function () {
+            var c = window.__findCanvas && window.__findCanvas();
+            if (!c || c === watched) return;
+            watched = c;
+            c.addEventListener("webglcontextlost", function (e) { e.preventDefault(); window.__recover("rendu graphique perdu"); }, false);
+        }, 1000);
+        function check() {
+            if (pending) { pending = false; if (window.__recover("rendu perdu pendant l'arrière-plan")) return; }
+            var c = watched || (window.__findCanvas && window.__findCanvas());
+            if (c && lost(c)) window.__recover("rendu graphique perdu au retour");
+        }
+        document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") setTimeout(check, 300); });
+        window.addEventListener("pageshow", function (e) { if (e.persisted) setTimeout(check, 300); });
+        window.addEventListener("focus", function () { setTimeout(check, 300); });
+    })();
+</script>
+<script>
     // Page blanche : Safari iOS < 18.2 (et d'autres navigateurs anciens) sait lancer WebAssembly mais pas WebAssembly GC, dont l'app a besoin.
     // On le détecte et on le dit clairement ; si le chargement traîne ou plante pour une autre raison, on affiche l'erreur et un bouton.
     (function () {
@@ -62,12 +111,56 @@
         var lastError = "";
         window.addEventListener("error", function (e) { lastError = (e && e.message) || lastError; });
         window.addEventListener("unhandledrejection", function (e) { lastError = String((e && e.reason && (e.reason.message || e.reason)) || lastError); });
-        // L'app retire #loading en démarrant : s'il est encore là après 25 secondes, le chargement a échoué ou la connexion est trop lente.
-        setTimeout(function () {
-            if (document.getElementById("loading") && !window.__findCanvas()) {
-                show("Surf Log n'a pas pu démarrer. Vérifie ta connexion et recharge la page.", true, lastError);
+        // L'app retire #loading en démarrant. Sur un réseau lent (4G faible), le premier téléchargement (environ 5 Mo) peut dépasser
+        // 25 secondes : on ne dit plus « n'a pas pu démarrer » tant que ça télécharge, sinon on recharge et le téléchargement repart
+        // de zéro (le « chargement infini »). Un téléchargement coupé (réseau perdu) se voit aux erreurs : on recharge une fois tout
+        // seul, puis on affiche le message avec le bouton. Reproduit avec le moteur de Safari (28 novembre) : sans ça, l'écran restait
+        // sombre et vide, ou bloqué sur « Chargement ».
+        text.style.maxWidth = "300px";
+        text.style.textAlign = "center";
+        function noApp() { return !window.__findCanvas(); }
+        var failed = false;
+        function fail(reason) {
+            if (failed || !noApp()) return;
+            failed = true;
+            if (window.__diagPush) window.__diagPush("démarrage", reason);
+            var retried = false;
+            try { retried = Date.now() - Number(sessionStorage.getItem("surflog_boot_retry") || 0) < 120000; } catch (e) {}
+            if (!retried && document.visibilityState !== "hidden") {
+                try { sessionStorage.setItem("surflog_boot_retry", String(Date.now())); } catch (e) {}
+                location.reload();
+                return;
             }
-        }, 25000);
+            // L'appli a pu retirer l'écran de chargement avant de planter : on le remet pour que le message se voie.
+            if (!document.getElementById("loading")) {
+                var box = document.createElement("div");
+                box.id = "loading";
+                box.innerHTML = '<img src="icon-192.png" alt="">';
+                box.appendChild(text);
+                document.body.appendChild(box);
+            }
+            show("Surf Log n'a pas pu démarrer : la connexion a coupé pendant le téléchargement. Recharge la page.", true, lastError || reason);
+        }
+        setTimeout(function () {
+            if (document.getElementById("loading") && noApp() && !failed) text.textContent = "Connexion lente : Surf Log se télécharge encore (environ 5 Mo la première fois, ensuite c'est gardé sur le téléphone)…";
+        }, 12000);
+        setTimeout(function () { fail("rien après 90 s"); }, 90000);
+        var removedAt = 0;
+        var bootTimer = setInterval(function () {
+            if (!noApp()) { clearInterval(bootTimer); return; }
+            var errs = window.__diagErrors || [];
+            var loadingShown = !!document.getElementById("loading");
+            var bad = errs.filter(function (m) {
+                return /wasm|CompileError|LinkError|Aborted\(|out of memory/i.test(m) ||
+                    (loadingShown && /promesse : .*(Load failed|Failed to fetch|NetworkError)/i.test(m));
+            });
+            if (bad.length) { clearInterval(bootTimer); fail(bad[0]); return; }
+            // L'appli a retiré le chargement mais ne s'affiche toujours pas.
+            if (!loadingShown) {
+                if (!removedAt) removedAt = Date.now();
+                else if (Date.now() - removedAt > 15000) { clearInterval(bootTimer); fail("pas d'affichage 15 s après le démarrage"); }
+            }
+        }, 1000);
         // Page blanche sans message : l'appli a démarré (un canvas existe) mais n'affiche rien. Pas de WebGL, ou une erreur déjà vue : on montre le diagnostic.
         function webglOk() { try { var c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { return false; } }
         if (!webglOk()) { window.addEventListener("DOMContentLoaded", function () { window.__diagShow("Ce navigateur n'offre pas le rendu graphique (WebGL) dont Surf Log a besoin."); }); }
@@ -91,7 +184,8 @@
                 // un écran sain qui ne bouge pas ne redessine pas (fausses alertes des versions 1.0.511 et 1.0.512).
                 if (sm.length >= 2 && !document.getElementById("loading") && window.__findCanvas()) {
                     window.__diagPush("rendu", sm.length ? "écran uniforme (rgba " + sm[sm.length - 1].color + ") sur " + sm.length + " relevés" : "aucun dessin détecté après le démarrage");
-                    window.__diagShow("Surf Log a démarré mais l'écran reste vide.");
+                    // D'abord un rechargement automatique (souvent un rendu perdu en arrière-plan) ; le diagnostic seulement s'il ne suffit pas.
+                    if (!window.__recover("écran vide")) window.__diagShow("Surf Log a démarré mais l'écran reste vide.");
                 }
             }
         }, 3000);
