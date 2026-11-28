@@ -28,7 +28,11 @@
             return origError.apply(console, arguments);
         };
     }
-    document.addEventListener("webglcontextlost", function () { push("webgl", "contexte perdu"); window.__diagShow && window.__diagShow("Le rendu graphique (WebGL) a été perdu."); }, true);
+    // Rendu perdu (onglet laissé en arrière-plan sur iPhone) : index.html recharge la page ; le diagnostic seulement si ça ne suffit pas.
+    document.addEventListener("webglcontextlost", function () {
+        push("webgl", "contexte perdu");
+        if (!(window.__recover && window.__recover("rendu graphique perdu"))) window.__diagShow && window.__diagShow("Le rendu graphique (WebGL) a été perdu.");
+    }, true);
     document.addEventListener("webglcontextcreationerror", function (e) { push("webgl", "création impossible " + ((e && e.statusMessage) || "")); window.__diagShow && window.__diagShow("Le rendu graphique (WebGL) n'a pas pu démarrer."); }, true);
 
     function webgl(name) {
@@ -148,7 +152,9 @@
         status.style.cssText = "margin-top:10px;font-size:12px;opacity:.8";
         // Envoi automatique au développeur (relais Cloudflare /api/report) : texte technique seulement, une fois par panneau,
         // pas plus d'un envoi toutes les 10 minutes par navigateur, jamais en local ni depuis diag.html.
-        var canSend = !(opts && opts.noSend) && /(^|\.)surflog\.fr$/.test(location.hostname);
+        // Les robots (aperçus de liens, moteurs d'indexation, navigateurs automatisés) n'ont pas de rendu graphique : leurs rapports noyaient les vrais.
+        var robot = navigator.webdriver || /bot|crawler|spider|headless|webindexer|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent || "");
+        var canSend = !(opts && opts.noSend) && !robot && /(^|\.)surflog\.fr$/.test(location.hostname);
         if (canSend) {
             var recent = false;
             try { recent = Date.now() - Number(localStorage.getItem("surflog_report_at") || 0) < 600000; } catch (e) {}
